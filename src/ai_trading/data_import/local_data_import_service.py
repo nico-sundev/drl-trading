@@ -9,7 +9,14 @@ class LocalDataImportService:
 
     # Download CSV data from a given URL
     def _download_data(self, url):
-        return pd.read_csv(url, parse_dates=["Time"], delimiter="\t")
+        return pd.read_csv(
+            url,
+            usecols=["Time", "Open", "High", "Low", "Close"],
+            # index_col="Time",
+            sep="\t",
+            skipinitialspace=True,  # Remove leading/trailing whitespace in headers
+            parse_dates=["Time"],
+        )
 
     # Read local data source and store into dataframe
     def import_data(self, limit) -> dict:

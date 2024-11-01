@@ -1,44 +1,31 @@
 import logging
-import time
+import os
 import pandas as pd
 import pandas_ta as ta
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-from ai_trading.preprocess import multi_tf_preprocessing as pp
 
 
-from ai_trading.data_import.local_data_import_service import LocalDataImportService
+
+
+class TimeSeriesLengthError(Exception):
+    pass
 
 
 # Function to calculate MACD crossover
 def add_macd_crossover(df_source, df_target, postfix=""):
     # Create a temporary DataFrame to store MACD values
-    temp_df = pd.DataFrame()
     macd = ta.macd(
-        df_source["Close"], fast=12, slow=26, signal=9, fillna = True
+        df_source["Close"],
+        fast=12,
+        slow=26,
+        signal=9,
+        fillna=True,
+        signal_indicators=True,
     )
-    df_target["macd_crossover" + postfix] = 0
-    df_target["macd_signal_line_bias" + postfix] = 0
-    
-    temp_df["macd"] = macd["MACD_12_26_9"]
-    temp_df["signal"] = macd["MACDs_12_26_9"]
-    temp_df["histogram"] = macd["MACDh_12_26_9"]
-    for i in range(1, len(temp_df)):
-        if (
-            temp_df["macd"].iloc[i] > temp_df["signal"].iloc[i]
-            and temp_df["macd"].iloc[i - 1] <= temp_df["signal"].iloc[i - 1]
-        ):
-            df_target.at[i, "macd_crossover" + postfix] = 1
-        elif (
-            temp_df["macd"].iloc[i] < temp_df["signal"].iloc[i]
-            and temp_df["macd"].iloc[i - 1] >= temp_df["signal"].iloc[i - 1]
-        ):
-            df_target.at[i, "macd_crossover" + postfix] = -1
+    df_target["macd_cross_bullish" + postfix] = macd["MACDh_12_26_9_XA_0"]
+    df_target["macd_cross_bearish" + postfix] = macd["MACDh_12_26_9_XB_0"]
+    df_target["macd_trend" + postfix] = macd["MACD_12_26_9_A_0"]
 
-    # MACD: Using ta.trend.MACD for the signal line
-    df_target["macd_signal_line_bias" + postfix] = temp_df["macd"].apply(
-        lambda x: 1 if x > 0 else -1
-    )
     return df_target
 
 
@@ -165,11 +152,11 @@ def add_entry_exit_indicators(df_source, df_target, atr_multiplier=1.5, postfix=
 
 # function to calculate market dynamic indicators
 def add_market_dynamic_indicators(df_source, df_target, postfix=""):
-    df_target["rvi_7" + postfix] = (
-        ta.rvi(df_source["Close"], df_source["High"], df_source["Low"], length=7)
+    df_target["rvi_7" + postfix] = ta.rvi(
+        df_source["Close"], df_source["High"], df_source["Low"], length=7
     )
-    df_target["rvi_14" + postfix] = (
-        ta.rvi(df_source["Close"], df_source["High"], df_source["Low"], length=14)
+    df_target["rvi_14" + postfix] = ta.rvi(
+        df_source["Close"], df_source["High"], df_source["Low"], length=14
     )
     return df_target
 
@@ -213,32 +200,58 @@ def merge_higher_tf_data(
     snippet_higher_tf = pd.DataFrame()
     snippet_higher_tf[time_column] = higher_tf_df[time_column]
     snippet_higher_tf["Value"] = higher_tf_df[indicator_column + postfix]
-    
+
     # Create iterators for both datasets
     it_higher_tf = snippet_higher_tf.itertuples()
 
-    # Initialize variables to track current 1H and 4H data points
-    iter_higher_tf = next(it_higher_tf, None)
-    subject_indicator_value = None
+    # move higher TF pointer,
+    # past one pointing to the last recent finished record t and
+    # future one, which is t + 2
+    t_plus_0_iter_higher_tf = next(it_higher_tf, None)
+    t_plus_2_iter_higher_tf = next(it_higher_tf, None)
+
+    if t_plus_2_iter_higher_tf == None:
+        raise TimeSeriesLengthError("Cursor future_iter_higher_tf is invalid")
 
     # Add a new column to df_1h to store the 4H data
     base_df[indicator_column + postfix] = None
+    # Cache last recent finished candle record
+    last_recent_finished_record = None
+
+    # Position the past_iter_higher_tf cursor correctly to be able
+    # to start the multi TF merge operation.
+    # future_iter_higher_tf Cursor will be carried along the way to keep
+    # holding t+1 state
+    while (
+        t_plus_2_iter_higher_tf
+        and base_df.iloc[0]["Time"] > t_plus_2_iter_higher_tf.Time
+    ):
+        last_recent_finished_record = t_plus_2_iter_higher_tf.Value
+        t_plus_2_iter_higher_tf = next(it_higher_tf, None)
+
+    # This is t + 1 Cursor
+    t_plus_1_iter_higher_tf = t_plus_2_iter_higher_tf
+    # Position the t_plus_2_iter_higher_tf Cursor to be t+2
+    t_plus_2_iter_higher_tf = next(it_higher_tf, None)
 
     # Iterate through the 1H dataset and update the 1H DataFrame
     for index, row in base_df.iterrows():
         # If 1H timestamp >= 4H timestamp, update the last_close_4h with the new 4H close
-        if iter_higher_tf and row.Time >= iter_higher_tf.Time:
-            subject_indicator_value = iter_higher_tf.Value
-            iter_higher_tf = next(it_higher_tf, None)  # Move to the next 4H data point
+        if t_plus_2_iter_higher_tf and row.Time >= t_plus_2_iter_higher_tf.Time:
+            last_recent_finished_record = t_plus_1_iter_higher_tf.Value
+            t_plus_1_iter_higher_tf = t_plus_2_iter_higher_tf
+            t_plus_2_iter_higher_tf = next(
+                it_higher_tf, None
+            )  # Move to the next 4H data point
 
         # Update the 1H DataFrame with the latest 4H close price
-        base_df.at[index, indicator_column + postfix] = subject_indicator_value
+        base_df.at[index, indicator_column + postfix] = last_recent_finished_record
 
     return base_df
 
 
 # Function to preprocess multi-timeframe OHLCV data and merge with higher timeframe indicators
-def merge_timeframes_into_base(data_source: dict):
+def merge_timeframes_into_base(data_source: dict, write_results_to_disk=False):
 
     # Calculate indicators for each timeframe
     df_1h = calculate_indicators(data_source["H1"], pd.DataFrame(), 1.5)
@@ -247,11 +260,31 @@ def merge_timeframes_into_base(data_source: dict):
 
     # We will now merge indicator values from higher timeframes (4H, 12H, 1D) into the 1H data
     df_merged = df_1h.copy()
+    # logging.debug(df_merged)
     df_merged["Time"] = data_source["H1"]["Time"]
     df_merged["Close"] = data_source["H1"]["Close"]
+    # logging.debug(df_merged)
 
     df_4h["Time"] = data_source["H4"]["Time"]
     df_4h["Close"] = data_source["H4"]["Close"]
+
+    if write_results_to_disk:
+        df_merged.to_csv(
+            os.path.join(
+                os.path.dirname(__file__),
+                "..\\..\\..\\data\\processed\\df_merged_with_indicators.csv",
+            ),
+            date_format="%Y-%m-%d %H:%M:%S",
+            sep=";",
+        )
+        df_4h.to_csv(
+            os.path.join(
+                os.path.dirname(__file__),
+                "../../../data/processed/df_4h_with_indicators.csv",
+            ),
+            date_format="%Y-%m-%d %H:%M:%S",
+            sep=";",
+        )
 
     # df_1d["Time"] = data_source["D1"]["Time"]
     # df_1d["Close"] = data_source["D1"]["Close"]
@@ -264,6 +297,16 @@ def merge_timeframes_into_base(data_source: dict):
         # df_merged[series_name + '_1d'] = df_merged["Time"].apply(lambda ts: get_past_value(df_1d, ts, series_name))
         # Merge higher timeframe data (e.g., 6-hour close prices) onto the 1-hour base dataframe
         df_merged = merge_higher_tf_data(df_merged, df_4h, series_name, "Time", "_H4")
+
+    if write_results_to_disk:
+        df_merged.to_csv(
+            os.path.join(
+                os.path.dirname(__file__),
+                "..\\..\\..\\data\\processed\\df_merged_combined_with_indicators.csv",
+            ),
+            date_format="%Y-%m-%d %H:%M:%S",
+            sep=";",
+        )
 
     return df_merged
 
@@ -303,62 +346,3 @@ def align_datasets(df_1h, df_4h, df_1d):
         df_1d.at[i, "Open"] = df_4h.at[corresponding_4h_idx, "Close"]
 
     return df_1h, df_4h, df_1d
-
-
-import_svc = LocalDataImportService()
-
-print(f"Running merge_timeframes")
-tf_data_sets: dict
-
-# Generate 1H, 4H, and 1D frequency data
-# start_time = "2023-01-01"
-# df_1h = generate_mock_ohlcv(start_time, periods=24 * 7, freq="1h")  # 1H for 1 week
-# df_4h = generate_mock_ohlcv(start_time, periods=6 * 7, freq="4h")  # 4H for 1 week
-# df_1d = generate_mock_ohlcv(start_time, periods=7, freq="1D")  # 1D for 1 week
-
-# # Align datasets
-# df_1h_aligned, df_4h_aligned, df_1d_aligned = align_datasets(df_1h, df_4h, df_1d)
-
-# # Show the first few rows of each dataframe to confirm alignment
-# # df_1h_aligned.head(12), df_4h_aligned.head(), df_1d_aligned.head()
-# print(df_1h_aligned.head(12))
-# print(df_4h_aligned.head(12))
-# # print(df_1d_aligned.head(12))
-# tf_data_sets = {"H1": df_1h_aligned, "H4": df_4h_aligned}
-
-# Configure logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# # Console handler
-# console_handler = logging.StreamHandler()
-# console_handler.setLevel(logging.DEBUG)
-
-# # Formatter
-# formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-# console_handler.setFormatter(formatter)
-
-# logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
-# # Add the handler to the logger
-# logger.addHandler(console_handler)
-
-# # Test messages
-# logger.debug("This is a debug message.")
-# logger.info("This is an info message.")
-# logger.warning("This is a warning message.")
-# logger.error("This is an error message.")
-# logger.critical("This is a critical message.")
-
-start_time = time.time()
-tf_data_sets = import_svc.import_data(300)
-end_time = time.time()
-execution_time = end_time - start_time
-logging.debug(f"Import data Execution time: {execution_time} seconds")
-
-start_time = time.time()
-merged_dataframe: pd.DataFrame = pp.merge_timeframes_into_base(tf_data_sets)
-end_time = time.time()
-execution_time = end_time - start_time
-logging.debug(f"Merge timeframes Execution time: {execution_time} seconds")
-
-print(merged_dataframe.head(100))
