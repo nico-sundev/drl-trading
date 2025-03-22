@@ -9,8 +9,8 @@ from ai_trading.data_import.local.csv_data_import_service import CsvDataImportSe
 def sample_csv_service():
     """Fixture for testing CSV import."""
     file_paths = {
-        "H1": os.path.join(os.path.dirname(__file__), "resources/test_H1.csv"),
-        "H4": os.path.join(os.path.dirname(__file__), "resources/test_H4.csv"),
+        "H1": os.path.join(os.path.dirname(__file__), "../resources/test_H1.csv"),
+        "H4": os.path.join(os.path.dirname(__file__), "../resources/test_H4.csv"),
     }
     return CsvDataImportService(file_paths)
 

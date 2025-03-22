@@ -1,0 +1,33 @@
+from pandas import DataFrame, concat
+from ai_trading.preprocess.feature.feature_config import FeatureConfig
+from ai_trading.preprocess.feature.feature_engine import FeatureEngine
+
+
+class FeatureAggregator:
+    
+    def __init__(self, feature_engine: FeatureEngine, config: FeatureConfig):
+        self.feature_engine = feature_engine
+        self.config = config
+        
+    def compute(self) -> DataFrame:
+        feature_dfs = [
+            self.feature_engine.compute_macd_signals(
+                self.config.macd.fast, self.config.macd.slow, self.config.macd.signal
+            ),
+            *(self.feature_engine.compute_roc(length) for length in self.config.roc_lengths),
+            *(self.feature_engine.compute_rsi(length) for length in self.config.rsi_lengths),
+        ]
+
+        # Ensure there are no empty DataFrames
+        feature_dfs = [df for df in feature_dfs if not df.empty]
+
+        if not feature_dfs:
+            return DataFrame()  # Return empty DataFrame if there's nothing to merge
+
+        # Concatenate all DataFrames along columns (axis=1), making sure they are aligned by "Time"
+        # The assumption here is that all DataFrames have the same "Time" column
+        merged_df = concat(
+            feature_dfs, axis=1, join="inner"
+        )  # Use 'inner' join to align based on "Time"
+
+        return merged_df

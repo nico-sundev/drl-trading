@@ -17,16 +17,18 @@ def sample_data():
 
 def test_merge_timeframes(sample_data: tuple[pd.DataFrame, pd.DataFrame]) -> None:
     df_30m, df_4h = sample_data
+    # Mock computation of a custom feature for higher TF
+    df_4h["cstm_feature_1"] = df_4h["Close"] + 100
     merger: MergingService = MergingService(df_30m, df_4h)
     df_merged: pd.DataFrame = merger.merge_timeframes()
 
-    assert df_merged.iloc[0]["HTF_Close"] == 1.38485
-    assert df_merged.iloc[-1]["HTF_Close"] == 1.38155
+    assert df_merged.iloc[0]["HTF240_cstm_feature_1"] == 101.38485
+    assert df_merged.iloc[-1]["HTF240_cstm_feature_1"] == 101.38155
 
 
 def test_timeframe_detection() -> None:
-    df: pd.DataFrame = pd.DataFrame({"Time": pd.date_range("2024-03-19 00:00:00", periods=4, freq="1H")})
+    df: pd.DataFrame = pd.DataFrame({"Time": pd.date_range("2024-03-19 00:00:00", periods=4, freq="1h")})
     merger: MergingService = MergingService(df, df)
     detected_tf: pd.Timedelta = merger.detect_timeframe(df)
     
-    assert detected_tf == pd.Timedelta("1H")
+    assert detected_tf == pd.Timedelta("1h")

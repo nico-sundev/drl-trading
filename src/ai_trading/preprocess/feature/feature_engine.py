@@ -1,29 +1,15 @@
-import logging
-import os
 import pandas as pd
 import pandas_ta as ta
 import numpy as np
 
-from ai_trading.preprocess.feature_engineering.feature_config import FeatureConfig
 
+class FeatureEngine:
 
-class FeatureEngineeringService:
-
-    def __init__(
-        self, source: pd.DataFrame, config: FeatureConfig = FeatureConfig(), timeframe_postfix: str = ""
-    ):
+    def __init__(self, source: pd.DataFrame, timeframe_postfix: str = ""):
         self.df_source = source
         self.postfix = timeframe_postfix
-        self.config = config
 
-    def compute_features(self) -> list[pd.DataFrame]:
-        return [
-            self.calculate_macd_signals(self.config.macd.fast, self.config.macd.slow, self.config.macd.signal),
-            *(self.calculate_roc(length) for length in self.config.roc.lengths),
-            *(self.calculate_rsi(length) for length in self.config.rsi.lengths),
-            ]
-
-    def calculate_macd_signals(
+    def compute_macd_signals(
         self, fast_length: int, slow_length: int, signal_length: int
     ):
         """Calculate MACD using the given length parameters.
@@ -47,6 +33,7 @@ class FeatureEngineeringService:
         )
 
         df = pd.DataFrame()
+        df["Time"] = self.df_source["Time"]
         df["macd_cross_bullish" + self.postfix] = macd[
             f"MACDh_{fast_length}_{slow_length}_{signal_length}_XA_0"
         ]
@@ -59,7 +46,7 @@ class FeatureEngineeringService:
 
         return df
 
-    def calculate_rsi(self, length: int) -> pd.DataFrame:
+    def compute_rsi(self, length: int) -> pd.DataFrame:
         """Calculate RSI using the given length parameter.
 
         Args:
@@ -70,13 +57,14 @@ class FeatureEngineeringService:
         """
 
         df = pd.DataFrame()
+        df["Time"] = self.df_source["Time"]
         df[f"rsi_{length}{self.postfix}"] = ta.rsi(
             self.df_source["Close"], length=length
         )
         return df
 
     # Function to calculate multiple Rate of change Series and append to origin DataFrame
-    def calculate_roc(self, length: int) -> pd.DataFrame:
+    def compute_roc(self, length: int) -> pd.DataFrame:
         """Calculate Rate of change using given length parameter.
 
         Args:
@@ -86,6 +74,7 @@ class FeatureEngineeringService:
             pd.DataFrame: A new dataframe consisting of ROC Indicator timeseries data.
         """
         df = pd.DataFrame()
+        df["Time"] = self.df_source["Time"]
         df[f"roc_{length}{self.postfix}"] = ta.roc(
             self.df_source["Close"], length=length
         )

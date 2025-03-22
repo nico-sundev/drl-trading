@@ -1,0 +1,9 @@
+{
+    "macd": {
+        "fast": 3,
+        "slow": 8,
+        "signal": 5
+    },
+    "rsi_lengths": [14, 3],
+    "roc_lengths": [14, 7, 3]
+}

@@ -14,10 +14,12 @@ class MergingService:
 
     def merge_timeframes(self):
         """Performs optimized two-pointer merge of OHLC data."""
-        low_tf = self.detect_timeframe(self.base_df)
+        #low_tf = self.detect_timeframe(self.base_df)
         high_tf = self.detect_timeframe(self.higher_df)
+        high_tf_label = int(high_tf.total_seconds() / 60)
 
-        self.base_df["Close_Time"] = self.base_df["Time"] + low_tf
+
+        #self.base_df["Close_Time"] = self.base_df["Time"] + low_tf
         self.higher_df["Close_Time"] = self.higher_df["Time"] + high_tf
 
         self.base_df = self.base_df.sort_values("Time").reset_index(drop=True)
@@ -37,8 +39,8 @@ class MergingService:
             merged_row = row.to_dict()
             if last_closed_candle is not None:
                 for col in self.higher_df.columns:
-                    if col not in ["Time", "Close_Time"]:
-                        merged_row[f"HTF_{col}"] = last_closed_candle[col]
+                    if col not in ["Time", "Open", "High", "Low", "Close", "Close_Time"]:
+                        merged_row[f"HTF{high_tf_label}_{col}"] = last_closed_candle[col]
 
             merged_data.append(merged_row)
 
