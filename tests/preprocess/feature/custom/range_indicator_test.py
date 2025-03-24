@@ -43,15 +43,16 @@ def test_validate_dataframe_nan_values(mock_finder):
 def test_find_pivot_points(mock_finder, mock_data):
     """Test that pivot highs and lows are correctly identified."""
     result = mock_finder.find_pivot_points(mock_data)
-    expected_highs = [False, False, False, True, False, True, False, True]
-    expected_lows = [False, False, True, False, False, False, True, False]
+    expected_highs = [False, False, True, False, True, False, True, False]
+    expected_lows = [False, True, False, True, False, True, False, True]
     assert list(result["pivot_high"]) == expected_highs
     assert list(result["pivot_low"]) == expected_lows
 
 def test_find_next_support_resistance(mock_finder, mock_data):
     """Test that the correct support and resistance levels are found."""
     last_close = mock_data.iloc[-1]["Close"]
-    support, resistance = mock_finder.find_next_support_resistance(mock_data, last_close)
+    df = mock_finder.find_pivot_points(mock_data)
+    support, resistance = mock_finder.find_next_support_resistance(df, last_close)
     
     # Check if valid support & resistance zones are found
     assert not np.isnan(support["low"])

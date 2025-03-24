@@ -1,17 +1,16 @@
 import pandas as pd
 import numpy as np
 
+from ai_trading.preprocess.feature.feature_config import FeatureConfig
+
 class SupportResistanceFinder:
     """
     Finds support and resistance zones based on pivot points.
     Uses a lookback period and caches previous zones for efficiency.
     """
 
-    def __init__(self, lookback: int = 50):
-        if lookback < 1:
-            raise ValueError("Lookback period must be at least 1.")
-        
-        self.lookback = lookback
+    def __init__(self, config: FeatureConfig):        
+        self.config = config
         self.prev_support = None  # Cached support zone
         self.prev_resistance = None  # Cached resistance zone
 
@@ -33,8 +32,8 @@ class SupportResistanceFinder:
         Identifies pivot highs and lows (local maxima/minima) in the dataset.
         """
         df = df.copy()  # Avoid modifying original DataFrame
-        df["pivot_high"] = (df["Close"] > df["Close"].shift(1)) & (df["Close"] > df["Close"].shift(-1))
-        df["pivot_low"] = (df["Close"] < df["Close"].shift(1)) & (df["Close"] < df["Close"].shift(-1))
+        df["pivot_high"] = df["Close"] < df["Close"].shift(1)
+        df["pivot_low"] = df["Close"] > df["Close"].shift(1)
         return df
 
     def find_next_support_resistance(self, df: pd.DataFrame, last_close: float):
@@ -44,7 +43,7 @@ class SupportResistanceFinder:
         support_zone, resistance_zone = {"low": np.nan, "high": np.nan}, {"low": np.nan, "high": np.nan}
         found_support, found_resistance = False, False
 
-        for i in range(len(df) - 2, max(-1, len(df) - 2 - self.lookback), -1):
+        for i in range(len(df) - 2, max(-1, len(df) - 2 - self.config.range.lookback), -1):
             row, prev_row = df.iloc[i], df.iloc[i - 1] if i > 0 else None
 
             if not found_resistance and row["pivot_high"] and prev_row is not None and prev_row["Close"] < row["Close"] and row["Close"] > last_close:

@@ -1,5 +1,22 @@
 from typing import List
 
+
+class RangeConfig:
+
+    def __init__(self, lookbackLimit: int = 500):
+        self.lookback = lookbackLimit
+
+    @property
+    def lookback(self) -> int:
+        return self._lookback
+
+    @lookback.setter
+    def lookback(self, value: int):
+        if value <= 0:
+            raise ValueError("Lookback must be positive")
+        self._lookback = value
+
+
 class MACDConfig:
     def __init__(self, fast: int, slow: int, signal: int):
         self.fast = fast
@@ -38,10 +55,17 @@ class MACDConfig:
 
 
 class FeatureConfig:
-    def __init__(self, macd: MACDConfig, rsi_lengths: List[int], roc_lengths: List[int]):
+    def __init__(
+        self,
+        macd: MACDConfig,
+        rsi_lengths: List[int],
+        roc_lengths: List[int],
+        range: RangeConfig,
+    ):
         self.macd = macd
         self.rsi_lengths = rsi_lengths
         self.roc_lengths = roc_lengths
+        self.range = range
 
     def to_dict(self) -> dict:
         return {
@@ -52,4 +76,5 @@ class FeatureConfig:
             },
             "rsi_lengths": self.rsi_lengths,
             "roc_lengths": self.roc_lengths,
+            "range": {"lookback": self.range.lookback},
         }
