@@ -103,7 +103,7 @@ class SupportResistanceFinder:
         Caches zones for efficiency and reuses them if they remain valid.
         """
         self.validate_dataframe()  # Validate input data
-        df = self.source_data_frame
+        df = self.source_data_frame.copy()
         clean_cache = False
 
         for index, row in df.iterrows():

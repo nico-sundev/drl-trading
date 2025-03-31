@@ -2,6 +2,8 @@ import pandas as pd
 import pandas_ta as ta
 import numpy as np
 
+from ai_trading.preprocess.feature.custom.range_indicator import SupportResistanceFinder
+
 
 class FeatureEngine:
 
@@ -78,6 +80,24 @@ class FeatureEngine:
         df[f"roc_{length}{self.postfix}"] = ta.roc(
             self.df_source["Close"], length=length
         )
+
+        return df
+    
+    def compute_ranges(self, config) -> pd.DataFrame:
+        """Compute S/R price ranges
+
+        Args:
+            config (_type_): _description_
+
+        Returns:
+            pd.DataFrame: A new dataframe consisting of S/R Ranges timeseries data.
+        """
+        df = pd.DataFrame()
+        df["Time"] = self.df_source["Time"]
+        finder = SupportResistanceFinder(self.df_source, config)
+        ranges = finder.find_support_resistance_zones()
+        df[f"resistance_range_{self.postfix}"] = ranges["resistance_range"]
+        df[f"support_range_{self.postfix}"] = ranges["support_range"]
 
         return df
 
