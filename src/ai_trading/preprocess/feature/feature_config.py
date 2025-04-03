@@ -5,8 +5,8 @@ from ai_trading.preprocess.feature.custom.enum.wick_handle_strategy_enum import 
 
 class RangeConfig:
 
-    def __init__(self, lookbackLimit: int = 500, wick_handle_strategy: WICK_HANDLE_STRATEGY = WICK_HANDLE_STRATEGY.PREVIOUS_WICK_ONLY):
-        self.lookback = lookbackLimit
+    def __init__(self, lookback: int = 500, wick_handle_strategy: WICK_HANDLE_STRATEGY = WICK_HANDLE_STRATEGY.PREVIOUS_WICK_ONLY):
+        self.lookback = lookback
         self.wick_handle_strategy = wick_handle_strategy
 
     @property

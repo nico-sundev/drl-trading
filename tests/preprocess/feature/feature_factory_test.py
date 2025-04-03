@@ -3,7 +3,7 @@ import numpy as np
 from pandas import DataFrame, Series, to_datetime
 import pytest
 
-from ai_trading.preprocess.feature.feature_engine import FeatureEngine
+from ai_trading.preprocess.feature.feature_factory import FeatureFactory
 
 
 @pytest.fixture
@@ -31,7 +31,7 @@ def mock_data() -> DataFrame:
 
 @pytest.fixture
 def feature_engine(mock_data):
-    return FeatureEngine(mock_data, "test")
+    return FeatureFactory(mock_data, "test")
 
 
 @patch("pandas_ta.rsi")

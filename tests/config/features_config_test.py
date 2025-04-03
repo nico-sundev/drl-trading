@@ -11,7 +11,8 @@ def temp_config_file():
     config_data = {
         "macd": {"fast": 12, "slow": 26, "signal": 9},
         "rsi_lengths": [14, 3],
-        "roc_lengths": [14, 7, 3]
+        "roc_lengths": [14, 7, 3],
+        "range": {"lookback": 5, "wick_handle_strategy": "PREVIOUS_WICK_ONLY"}
     }
     
     with tempfile.NamedTemporaryFile(mode="w+", delete=False) as temp_file:
@@ -38,3 +39,7 @@ def test_load_config_from_json(temp_config_file):
     # Check RSI and ROC lengths
     assert config.rsi_lengths == expected_data["rsi_lengths"]
     assert config.roc_lengths == expected_data["roc_lengths"]
+    
+    # Check Range indicator values
+    assert config.range.lookback == expected_data["range"]["lookback"]
+    assert config.range.wick_handle_strategy == expected_data["range"]["wick_handle_strategy"]

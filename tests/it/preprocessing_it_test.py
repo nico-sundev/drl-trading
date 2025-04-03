@@ -5,7 +5,7 @@ from ai_trading.config.config_loader import ConfigLoader
 from ai_trading.data_import.data_import_manager import DataImportManager
 from ai_trading.data_import.local.csv_data_import_service import CsvDataImportService
 from ai_trading.preprocess.feature.feature_config import FeatureConfig
-from ai_trading.preprocess.feature.feature_engine import FeatureEngine
+from ai_trading.preprocess.feature.feature_factory import FeatureFactory
 from ai_trading.preprocess.merging_service import MergingService
 
 
@@ -26,15 +26,13 @@ def test_preprocessing():
     config: FeatureConfig = ConfigLoader.from_json(os.path.join(os.path.dirname(__file__), "..\\..\\configs\\featuresConfig.json"))
     
     # Feature Engineering
-    fe_1h: FeatureEngine = FeatureEngine(df_1h)
-    fe_4h: FeatureEngine = FeatureEngine(df_4h)
+    fe_1h: FeatureFactory = FeatureFactory(df_1h)
+    fe_4h: FeatureFactory = FeatureFactory(df_4h)
     
     # Only test integration of one indicator, to keep it simple and quicker
     feature_df_1h = fe_1h.compute_rsi(config.rsi_lengths[0])
     feature_df_4h = fe_4h.compute_rsi(config.rsi_lengths[0])
     
-    # TODO: to concat, check all indicator dataframe columns also to contain time col
-
     # Merge Timeframes
     merger: MergingService = MergingService(feature_df_1h, feature_df_4h)
     feature_df_merged: pd.DataFrame = merger.merge_timeframes()

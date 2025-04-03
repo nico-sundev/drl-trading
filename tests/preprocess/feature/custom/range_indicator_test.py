@@ -1,24 +1,9 @@
-from unittest.mock import MagicMock
 import pytest
 import pandas as pd
 import numpy as np
 
 from ai_trading.preprocess.feature.custom.enum.wick_handle_strategy_enum import WICK_HANDLE_STRATEGY
 from ai_trading.preprocess.feature.custom.range_indicator import PIVOT_HIGH, PIVOT_LOW, SupportResistanceFinder
-
-
-@pytest.fixture
-def mock_config():
-    """Fixture to create a mock config object"""
-    mock_config = MagicMock()
-    mock_config.macd.fast = 3
-    mock_config.macd.slow = 6
-    mock_config.macd.signal = 5
-    mock_config.roc_lengths = [14, 7, 3]
-    mock_config.rsi_lengths = [14, 3]
-    mock_config.range.lookback = 5
-    mock_config.range.wick_handle_strategy = WICK_HANDLE_STRATEGY.LAST_WICK_ONLY
-    return mock_config
 
 
 @pytest.fixture
@@ -47,9 +32,9 @@ def mock_pivot_cache():
 
 
 @pytest.fixture
-def mock_finder(mock_data, mock_config):
+def mock_finder(mock_data):
     """Returns an instance of SupportResistanceFinder with a small lookback."""
-    return SupportResistanceFinder(mock_data, mock_config)
+    return SupportResistanceFinder(mock_data, 5, WICK_HANDLE_STRATEGY.LAST_WICK_ONLY)
 
 
 def test_validate_dataframe_success(mock_finder):

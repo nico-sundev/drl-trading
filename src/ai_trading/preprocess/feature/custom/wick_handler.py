@@ -1,4 +1,5 @@
 from typing import Optional
+from numpy import mean
 from pandas import DataFrame
 from ai_trading.preprocess.feature.custom.enum.wick_handle_strategy_enum import (
     WICK_HANDLE_STRATEGY,
@@ -33,15 +34,17 @@ class WickHandler:
             return pre_prev_row["Low"] if prev_candle_green else pre_prev_row["High"]
 
         def mean_wick():
-            return (last_wick + previous_wick).mean()
+            return mean([last_wick(), previous_wick()])
 
         def max_below_atr():
             if atr is None:
                 raise ValueError("ATR value is required for MAX_BELOW_ATR strategy")
             return (
-                max((last_wick + previous_wick).min(), prev_row["Open"] - atr)
+                max([min([last_wick(), previous_wick()]), prev_row["Open"] - atr])
                 if prev_candle_green
-                else min((last_wick + previous_wick).max(), prev_row["Open"] + atr)
+                else min(
+                    [([last_wick(), previous_wick()]).max(), prev_row["Open"] + atr]
+                )
             )
 
         strategy_map = {

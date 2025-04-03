@@ -5,5 +5,9 @@
         "signal": 9
     },
     "rsi_lengths": [14, 3],
-    "roc_lengths": [14, 7, 3]
+    "roc_lengths": [14, 7, 3],
+    "range": {
+        "lookback": 100,
+        "wick_handle_strategy": "PREVIOUS_WICK_ONLY"
+    }
 }

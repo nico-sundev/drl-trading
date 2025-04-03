@@ -2,10 +2,11 @@ import pandas as pd
 import pandas_ta as ta
 import numpy as np
 
+from ai_trading.preprocess.feature.custom.enum.wick_handle_strategy_enum import WICK_HANDLE_STRATEGY
 from ai_trading.preprocess.feature.custom.range_indicator import SupportResistanceFinder
 
 
-class FeatureEngine:
+class FeatureFactory:
 
     def __init__(self, source: pd.DataFrame, timeframe_postfix: str = ""):
         self.df_source = source
@@ -83,21 +84,22 @@ class FeatureEngine:
 
         return df
     
-    def compute_ranges(self, config) -> pd.DataFrame:
+    def compute_ranges(self, lookback: int, wick_handle_strategy: WICK_HANDLE_STRATEGY) -> pd.DataFrame:
         """Compute S/R price ranges
 
         Args:
-            config (_type_): _description_
+            lookback (int): Iteration limit for pivot points cache
+            wick_handle_strategy (WICK_HANDLE_STRATEGY): Strategy to calculate pivot point zone bottom or top
 
         Returns:
-            pd.DataFrame: A new dataframe consisting of S/R Ranges timeseries data.
+            pd.DataFrame: A new dataframe consisting of Range Indicator timeseries data.
         """
         df = pd.DataFrame()
         df["Time"] = self.df_source["Time"]
-        finder = SupportResistanceFinder(self.df_source, config)
+        finder = SupportResistanceFinder(self.df_source, lookback, wick_handle_strategy)
         ranges = finder.find_support_resistance_zones()
-        df[f"resistance_range_{self.postfix}"] = ranges["resistance_range"]
-        df[f"support_range_{self.postfix}"] = ranges["support_range"]
+        df[f"resistance_range{lookback}{self.postfix}"] = ranges["resistance_range"]
+        df[f"support_range{lookback}{self.postfix}"] = ranges["support_range"]
 
         return df
 

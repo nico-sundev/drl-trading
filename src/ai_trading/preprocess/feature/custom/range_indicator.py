@@ -2,8 +2,8 @@ from typing import Optional
 import pandas as pd
 import numpy as np
 
+from ai_trading.preprocess.feature.custom.enum.wick_handle_strategy_enum import WICK_HANDLE_STRATEGY
 from ai_trading.preprocess.feature.custom.wick_handler import WickHandler
-from ai_trading.preprocess.feature.feature_config import FeatureConfig
 
 PIVOT_HIGH = "pivot_high"
 PIVOT_LOW = "pivot_low"
@@ -15,8 +15,9 @@ class SupportResistanceFinder:
     Uses a lookback period and caches previous zones for efficiency.
     """
 
-    def __init__(self, source_data_frame: pd.DataFrame, config: FeatureConfig):
-        self.config = config
+    def __init__(self, source_data_frame: pd.DataFrame, lookback: int, wick_handle_strategy: WICK_HANDLE_STRATEGY):
+        self.lookback = lookback
+        self.wick_handle_strategy = wick_handle_strategy
         self.source_data_frame = source_data_frame
         self.pivot_cache = pd.DataFrame(columns=["index", "top", "bottom", "type"])
         self.prev_support = None
@@ -71,7 +72,7 @@ class SupportResistanceFinder:
 
         for i in range(
             len(self.pivot_cache) - 1,
-            max(-1, len(self.pivot_cache) - 1 - self.config.range.lookback),
+            max(-1, len(self.pivot_cache) - 1 - self.lookback),
             -1,
         ):
             curr_pivot_point = self.pivot_cache.iloc[i]
@@ -126,7 +127,7 @@ class SupportResistanceFinder:
             # check if new pivot high has been created
             if found_pivot_high:
                 pivot_top = WickHandler.calculate_wick_threshold(
-                    df, index, self.config.range.wick_handle_strategy
+                    df, index, self.wick_handle_strategy
                 )
                 # update cache
                 self.pivot_cache.loc[len(self.pivot_cache)] = [
@@ -161,7 +162,7 @@ class SupportResistanceFinder:
             # check if new pivot low has been created
             if found_pivot_low:
                 pivot_bottom = WickHandler.calculate_wick_threshold(
-                    df, index, self.config.range.wick_handle_strategy
+                    df, index, self.wick_handle_strategy
                 )
                 pivot_top = row["Open"]
                 # update cache

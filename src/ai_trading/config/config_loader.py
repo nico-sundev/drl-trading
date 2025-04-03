@@ -1,5 +1,5 @@
 import json
-from ai_trading.preprocess.feature.feature_config import FeatureConfig, MACDConfig
+from ai_trading.preprocess.feature.feature_config import FeatureConfig, MACDConfig, RangeConfig
 
 class ConfigLoader:
     @staticmethod
@@ -11,5 +11,6 @@ class ConfigLoader:
         return FeatureConfig(
             macd=MACDConfig(**data["macd"]),
             rsi_lengths=data["rsi_lengths"],
-            roc_lengths=data["roc_lengths"]
+            roc_lengths=data["roc_lengths"],
+            range=RangeConfig(**data["range"])
         )
