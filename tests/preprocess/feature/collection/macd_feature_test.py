@@ -1,25 +1,13 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 import numpy as np
 from pandas import DataFrame, Series, to_datetime
 import pytest
-
-from ai_trading.preprocess.feature.feature_factory import FeatureFactory
+from ai_trading.preprocess.feature.collection.macd_feature import MacdFeature
 
 
 @pytest.fixture
 def mock_data() -> DataFrame:
-    data = {
-        "Time": [
-        ],
-        "Open": [
-        ],
-        "High": [
-        ],
-        "Low": [
-        ],
-        "Close": [
-        ]
-    }
+    data = {"Time": [], "Open": [], "High": [], "Low": [], "Close": []}
 
     # Create the DataFrame
     df = DataFrame(data)
@@ -30,22 +18,30 @@ def mock_data() -> DataFrame:
 
 
 @pytest.fixture
-def feature_engine(mock_data):
-    return FeatureFactory(mock_data, "test")
+def feature(mock_data):
+    return MacdFeature(mock_data, "test")
+
+
+@pytest.fixture
+def config():
+    mock_config = MagicMock()
+    mock_config.fast = 3
+    mock_config.slow = 6
+    mock_config.signal = 5
+    return mock_config
 
 
 @patch("pandas_ta.rsi")
-def test_compute_rsi(patched_rsi, feature_engine):
+def test_compute_rsi(patched_rsi, feature, config):
     # Given
-    rsi_length = 14
     patched_rsi.return_value = Series([50, 55, 60, 65, 70, 75])
 
     # When
-    result = feature_engine.compute_rsi(length=rsi_length)
+    result = feature.compute(config)
 
     # Then
     patched_rsi.assert_called_once_with(
-        feature_engine.df_source["Close"], length=rsi_length
+        feature.df_source["Close"], length=config.length
     )
     assert "Time" in result.columns
     assert "rsi_14test" in result.columns
@@ -53,32 +49,13 @@ def test_compute_rsi(patched_rsi, feature_engine):
     assert result["rsi_14test"].head(6).tolist() == expected_values
 
 
-@patch("pandas_ta.roc")
-def test_compute_roc(patched_roc, feature_engine):
-
-    # Given
-    roc_length = 3
-    patched_roc.return_value = Series([50, 55, 60, 65, 70, 75])
-
-    # When
-    result = feature_engine.compute_roc(roc_length)
-
-    # Then
-    patched_roc.assert_called_once_with(
-        feature_engine.df_source["Close"], length=roc_length
-    )
-    assert "Time" in result.columns
-    assert f"roc_{roc_length}test" in result.columns
-    expected_values = [50, 55, 60, 65, 70, 75]
-    assert result[f"roc_{roc_length}test"].head(6).tolist() == expected_values
-
 @patch("pandas_ta.macd")
-def test_compute_macd_signals(patched_macd, feature_engine):
+def test_compute_macd_signals(patched_macd, feature, config):
 
     # Given
-    fast_length = 3
-    slow_length = 6
-    signal_length = 5
+    fast_length = config.fast
+    slow_length = config.slow
+    signal_length = config.signal
     macd_result = DataFrame()
     macd_result[f"MACD_{fast_length}_{slow_length}_{signal_length}_A_0"] = Series(
         [0, 0, 1, 0, 1, 0] # MACD Trend
@@ -92,13 +69,11 @@ def test_compute_macd_signals(patched_macd, feature_engine):
     patched_macd.return_value = macd_result
 
     # When
-    result = feature_engine.compute_macd_signals(
-        fast_length, slow_length, signal_length
-    )
+    result = feature.compute(config)
 
     # Then
     patched_macd.assert_called_once_with(
-        feature_engine.df_source["Close"],
+        feature.df_source["Close"],
         fast=fast_length,
         slow=slow_length,
         signal=signal_length,
