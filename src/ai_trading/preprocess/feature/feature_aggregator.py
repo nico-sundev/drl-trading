@@ -1,11 +1,11 @@
 from pandas import DataFrame, concat
-from ai_trading.preprocess.feature.feature_config import FeatureConfig
+from ai_trading.config.feature_config import FeaturesConfig
 from ai_trading.preprocess.feature.feature_factory import FeatureFactory
 
 
 class FeatureAggregator:
     
-    def __init__(self, feature_factory: FeatureFactory, config: FeatureConfig):
+    def __init__(self, feature_factory: FeatureFactory, config: FeaturesConfig):
         self.feature_factory = feature_factory
         self.config = config
         

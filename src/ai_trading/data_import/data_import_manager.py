@@ -1,13 +1,13 @@
 from typing import Dict, Optional
 import pandas as pd
 
-from ai_trading.data_import.abstract_data_import_service import AbstractDataImportService
+from ai_trading.data_import.base_data_import_service import BaseDataImportService
 
 
 class DataImportManager:
     """Manages data import from different sources."""
 
-    def __init__(self, import_service: AbstractDataImportService):
+    def __init__(self, import_service: BaseDataImportService):
         """
         Initializes with a data import service.
 

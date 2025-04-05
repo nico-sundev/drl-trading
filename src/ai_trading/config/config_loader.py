@@ -1,16 +1,14 @@
-import json
-from ai_trading.preprocess.feature.feature_config import FeatureConfig, MACDConfig, RangeConfig
+from ai_trading.config.application_config import ApplicationConfig
+from ai_trading.config.feature_config import FeaturesConfig
+
 
 class ConfigLoader:
     @staticmethod
-    def from_json(json_path: str) -> FeatureConfig:
-        """Load config from JSON file."""
-        with open(json_path, "r") as file:
-            data = json.load(file)
-        
-        return FeatureConfig(
-            macd=MACDConfig(**data["macd"]),
-            rsi_lengths=data["rsi_lengths"],
-            roc_lengths=data["roc_lengths"],
-            range=RangeConfig(**data["range"])
-        )
+    def feature_config(path: str) -> FeaturesConfig:
+        with open(path) as f:
+            return FeaturesConfig.model_validate_json(f.read())
+
+    @staticmethod
+    def get_config(path: str) -> ApplicationConfig:
+        with open(path) as f:
+            return ApplicationConfig.model_validate_json(f.read())

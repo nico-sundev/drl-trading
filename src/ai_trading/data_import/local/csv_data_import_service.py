@@ -1,9 +1,9 @@
 import pandas as pd
 from typing import Dict, Optional
-from ..abstract_data_import_service import AbstractDataImportService
+from ..base_data_import_service import BaseDataImportService
 
 
-class CsvDataImportService(AbstractDataImportService):
+class CsvDataImportService(BaseDataImportService):
     """Service to import OHLC data from CSV files."""
 
     def __init__(self, file_paths: Dict[str, str]):

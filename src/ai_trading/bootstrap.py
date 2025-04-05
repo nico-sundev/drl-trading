@@ -1,5 +1,7 @@
 # Create the environment and train the agents
-from ai_trading.preprocess.include_indicators import preprocess_dataset
+from ai_trading.model.dataset_container import DataSetContainer
+from ai_trading.preprocess.data_set_prep_service import DataSetPrepService
+from ai_trading.config.feature_config import FeaturesConfig
 from ai_trading.trading_env import StockTradingEnv
 from ai_trading.train_and_test import (
     create_env_and_train_agents,
@@ -8,13 +10,9 @@ from ai_trading.train_and_test import (
 from stable_baselines3.common.vec_env import DummyVecEnv
 
 # -----------------------------------------------------------------------------
-tickers = ["MMM", "AXP", "AAPL"]
-# tickers = [
-#     'MMM', 'AXP', 'AAPL', 'BA', 'CAT', 'CVX', 'CSCO', 'KO', 'DIS',
-#     'GS', 'HD', 'IBM', 'INTC', 'JNJ', 'JPM', 'MCD', 'MRK', 'MSFT', 'NKE',
-#     'PFE', 'PG', 'TRV', 'UNH', 'VZ', 'V', 'WBA', 'WMT', 'XOM'
-# ]
-data_sets = preprocess_dataset(tickers)
+feature_config: FeaturesConfig
+data_set_prep_svc = DataSetPrepService(feature_config)
+data_sets: DataSetContainer = data_set_prep_svc.get_data_sets()
 threshold = 0.1
 total_timesteps = 10000
 (

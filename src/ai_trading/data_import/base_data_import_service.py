@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 import pandas as pd
-from typing import Dict, Optional
+from typing import Optional
 
 
-class AbstractDataImportService(ABC):
+class BaseDataImportService(ABC):
     """Abstract interface for data import services."""
 
     @abstractmethod
