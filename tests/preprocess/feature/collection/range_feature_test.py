@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 import numpy as np
-from pandas import DataFrame, Series, to_datetime
+from pandas import DataFrame, Series, date_range, to_datetime
 import pytest
 from ai_trading.preprocess.feature.collection.macd_feature import MacdFeature
 from ai_trading.preprocess.feature.collection.range_feature import RangeFeature
@@ -9,20 +9,17 @@ from ai_trading.preprocess.feature.custom.enum.wick_handle_strategy_enum import 
 
 @pytest.fixture
 def mock_data() -> DataFrame:
-    data = {"Time": [], "Open": [], "High": [], "Low": [], "Close": []}
-
-    # Create the DataFrame
-    df = DataFrame(data)
-
-    # Convert Time column to datetime
-    df["Time"] = to_datetime(df["Time"])
-    return df
-
+    return DataFrame({
+        "Time": date_range(start="2022-01-01", periods=5, freq="D"),
+        "Open": [1, 2, 3, 4, 5],
+        "High": [2, 3, 4, 5, 6],
+        "Low": [0.5, 1.5, 2.5, 3.5, 4.5],
+        "Close": [1.5, 2.5, 3.5, 4.5, 5.5]
+    })
 
 @pytest.fixture
 def feature(mock_data):
     return RangeFeature(mock_data, "test")
-
 
 @pytest.fixture
 def config():
@@ -31,20 +28,29 @@ def config():
     mock_config.wick_handle_strategy = WICK_HANDLE_STRATEGY.LAST_WICK_ONLY
     return mock_config
 
-
-@patch("pandas_ta.rsi")
-def test_compute_rsi(patched_rsi, feature, config):
+@patch("ai_trading.preprocess.feature.collection.range_feature.SupportResistanceFinder")
+def test_compute_range_feature(mock_finder_class, mock_data, feature, config):
     # Given
-    patched_rsi.return_value = Series([50, 55, 60, 65, 70, 75])
-
+    mock_finder = MagicMock()
+    mock_finder.find_support_resistance_zones.return_value = DataFrame({
+        "resistance_range": [1, 0, 1, 0, 1],
+        "support_range": [0, 1, 0, 1, 0]
+    })
+    mock_finder_class.return_value = mock_finder
+    
     # When
-    result = feature.compute(config)
+    result_df = feature.compute(config)
 
     # Then
-    patched_rsi.assert_called_once_with(
-        feature.df_source["Close"], length=config.length
-    )
-    assert "Time" in result.columns
-    assert "rsi_14test" in result.columns
-    expected_values = [50, 55, 60, 65, 70, 75]
-    assert result["rsi_14test"].head(6).tolist() == expected_values
+    # mock_finder_class.assert_called_once_with(
+    #     feature.df_source["Close"], length=config.length
+    # )
+    # Check columns exist
+    assert f"resistance_range5test" in result_df.columns
+    assert f"support_range5test" in result_df.columns
+    assert len(result_df) == 5
+    assert result_df["Time"].equals(mock_data["Time"])
+
+    # Check the mocked values are passed through
+    assert list(result_df[f"resistance_range5test"]) == [1, 0, 1, 0, 1]
+    assert list(result_df[f"support_range5test"]) == [0, 1, 0, 1, 0]
