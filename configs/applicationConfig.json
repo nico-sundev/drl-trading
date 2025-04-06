@@ -1,0 +1,95 @@
+{
+    "localDataImportConfig": {
+      "datasets": {
+          "H1": "../data/raw/EURUSD_H1.csv",
+          "H4": "../data/raw/EURUSD_H4.csv",
+          "D1": "../data/raw/EURUSD_D1.csv"
+      }
+    },
+    "featuresConfig": {
+      "featureDefinitions": [
+        {
+          "name": "macd",
+          "enabled": true,
+          "derivatives": [],
+          "parameterSets": [
+            {
+              "fast": 12,
+              "slow": 26,
+              "signal": 9
+            }
+          ]
+        },
+        {
+          "name": "rsi",
+          "enabled": true,
+          "derivatives": [1],
+          "parameterSets": [
+            {
+              "length": 7
+            },
+            {
+              "length": 14
+            },
+            {
+              "length": 21
+            }
+          ]
+        },
+        {
+          "name": "roc",
+          "enabled": true,
+          "derivatives": [1],
+          "parameterSets": [
+            {
+              "length": 1
+            },
+            {
+              "length": 3
+            },
+            {
+              "length": 5
+            }
+          ]
+        },
+        {
+          "name": "range",
+          "enabled": true,
+          "derivatives": [],
+          "parameterSets": [
+            {
+              "lookback": 500,
+              "wickHandleStrategy": "LAST_WICK_ONLY"
+            }
+          ]
+        },
+        {
+          "name": "rvi",
+          "enabled": true,
+          "derivatives": [1],
+          "parameterSets": [
+            {
+              "length": 7
+            },
+            {
+              "length": 14
+            },
+            {
+              "length": 21
+            }
+          ]
+        }
+      ]
+    },
+    "modelConfig": {
+      "agents": [],
+      "trainingSplitRatio": 0.8,
+      "validatingSplitRatio": 0.1,
+      "testingSplitRatio": 0.1
+    },
+    "environmentConfig": {
+      "fee": 0.005,
+      "slippageAtrBased": 0.01
+    }
+  }
+  

@@ -1,7 +1,5 @@
 import os
 import pytest
-import pandas as pd
-
 from ai_trading.data_import.local.csv_data_import_service import CsvDataImportService
 
 

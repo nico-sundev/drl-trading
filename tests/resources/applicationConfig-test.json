@@ -61,10 +61,26 @@
             "wickHandleStrategy": "LAST_WICK_ONLY"
           }
         ]
+      },
+      {
+        "name": "rvi",
+        "enabled": true,
+        "derivatives": [1],
+        "parameterSets": [
+          {
+            "length": 7
+          },
+          {
+            "length": 14
+          },
+          {
+            "length": 21
+          }
+        ]
       }
     ]
   },
-  "modelConfig": {
+  "rlModelConfig": {
     "agents": [],
     "trainingSplitRatio": 0.8,
     "validatingSplitRatio": 0.1,

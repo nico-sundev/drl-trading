@@ -26,7 +26,8 @@ class CsvDataImportService(BaseDataImportService):
 
     def import_data(self, limit: Optional[int] = None) -> Dict[str, pd.DataFrame]:
         """Imports data from CSV files."""
-        data = {
-            timeframe: self._load_csv(path).head(limit) for timeframe, path in self.file_paths.items()
-        }
+        data = {}
+        for timeframe, path in self.file_paths.items():
+            df = self._load_csv(path)
+            data[timeframe] = df.head(limit) if limit is not None else df
         return data

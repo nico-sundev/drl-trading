@@ -1,12 +1,13 @@
 from typing import List, Union
 from ai_trading.config.base_schema import BaseSchema
-from pydantic import BaseModel, model_validator
+from pydantic import model_validator
 from ai_trading.config.feature_config_mapper import (
     FEATURE_CONFIG_MAP,
     MacdConfig,
     RangeConfig,
     RocConfig,
     RsiConfig,
+    RviConfig,
 )
 
 
@@ -19,7 +20,8 @@ class FeatureDefinition(BaseSchema):
         MacdConfig, 
         RsiConfig,
         RocConfig,
-        RangeConfig
+        RangeConfig,
+        RviConfig
         ]] = []
 
     @model_validator(mode="before")
