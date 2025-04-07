@@ -9,6 +9,7 @@ from ai_trading.config.feature_config_mapper import (
     RsiConfig,
     RviConfig,
 )
+from ai_trading.config.feature_config_registry import FeatureConfigRegistry
 
 
 class FeatureDefinition(BaseSchema):
@@ -29,8 +30,9 @@ class FeatureDefinition(BaseSchema):
     def parse_parameter_sets(cls, data: dict) -> dict:
         name = data.get("name")
         raw_params = data.get("parameterSets", [])
+        config_registry = FeatureConfigRegistry()
 
-        config_cls = FEATURE_CONFIG_MAP.get(name.lower())
+        config_cls = config_registry.feature_config_map.get(name.lower())
         if not config_cls:
             raise ValueError(f"No config class found for feature name '{name}'")
 

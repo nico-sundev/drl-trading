@@ -3,7 +3,6 @@ import tempfile
 import pytest
 from ai_trading.config.config_loader import ConfigLoader
 from ai_trading.config.feature_config_mapper import MacdConfig, RangeConfig, RocConfig, RsiConfig
-from ai_trading.preprocess.feature.collection.feature_mapper import FEATURE_MAP
 from ai_trading.preprocess.feature.custom.enum.wick_handle_strategy_enum import WICK_HANDLE_STRATEGY
 
 

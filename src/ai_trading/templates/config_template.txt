@@ -1,0 +1,3 @@
+class ${FeatureName}Config(BaseParameterSetConfig):
+    # Add your parameters here
+    length: int

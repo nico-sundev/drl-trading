@@ -1,11 +1,10 @@
 import os
-from pandas import DataFrame, concat
 import pytest
 from ai_trading.config.config_loader import ConfigLoader
 from ai_trading.data_import.data_import_manager import DataImportManager
 from ai_trading.data_import.local.csv_data_import_service import CsvDataImportService
-from ai_trading.preprocess.feature.collection.feature_mapper import FEATURE_MAP
 from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregator
+from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
 
 
 @pytest.fixture
@@ -22,8 +21,12 @@ def config():
     return ConfigLoader.get_config(os.path.join(os.path.dirname(__file__), "../resources/applicationConfig-test.json"))
 
 @pytest.fixture
-def feature_aggregator(dataset, config):
-    return FeatureAggregator(dataset, config.features_config)
+def class_registry():
+    return FeatureClassRegistry()
+
+@pytest.fixture
+def feature_aggregator(dataset, config, class_registry):
+    return FeatureAggregator(dataset, config.features_config, class_registry)
 
 def test_features(feature_aggregator: FeatureAggregator):
     # Given
