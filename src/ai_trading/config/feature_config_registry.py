@@ -1,7 +1,9 @@
 import importlib
 import inspect
 import pkgutil
-from typing import Dict, Type
+from typing import Dict, Type, Union
+
+from pydantic import TypeAdapter
 from ai_trading.config.base_parameter_set_config import BaseParameterSetConfig
 
 
@@ -30,7 +32,10 @@ class FeatureConfigRegistry:
             module = importlib.import_module(full_module_name)
 
             for name, obj in inspect.getmembers(module, inspect.isclass):
-                if issubclass(obj, BaseParameterSetConfig) and obj is not BaseParameterSetConfig:
+                if (
+                    issubclass(obj, BaseParameterSetConfig)
+                    and obj is not BaseParameterSetConfig
+                ):
                     feature_name = name.replace("Config", "").lower()
                     config_map[feature_name] = obj
 

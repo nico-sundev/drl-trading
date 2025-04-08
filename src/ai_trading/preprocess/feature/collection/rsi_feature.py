@@ -1,5 +1,5 @@
 from pandas import DataFrame
-from ai_trading.config.feature_config_mapper import RsiConfig
+from ai_trading.config.feature_config_collection import RsiConfig
 from ai_trading.preprocess.feature.collection.base_feature import BaseFeature
 import pandas_ta as ta
 

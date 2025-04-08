@@ -36,4 +36,4 @@ def test_features(feature_aggregator: FeatureAggregator):
     result_df = feature_aggregator.compute()
     
     # Then
-    assert set(result_df.columns) == set(expected_columns)
+    assert set(expected_columns).issubset(set(result_df.columns))

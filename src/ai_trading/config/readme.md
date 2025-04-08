@@ -1,5 +1,5 @@
 # Add new feature:
-- Define new config in                      feature_config_mapper.py  
+- Define new config in                      feature_config_collection.py  
 - Add type to parsed_parameter_sets List in feature_config.py
 - Add config to                             applicationConfig.py
 - Implement Feature class here like         ai_trading/preprocess/feature/collection/example_feature.py
