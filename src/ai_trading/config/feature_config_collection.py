@@ -25,3 +25,7 @@ class RangeConfig(BaseParameterSetConfig):
     type: Literal["range"]
     lookback: int
     wick_handle_strategy: WICK_HANDLE_STRATEGY
+
+class BollbandsConfig(BaseParameterSetConfig):
+    type: Literal["bollbands"]
+    length: int

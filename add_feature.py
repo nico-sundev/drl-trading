@@ -5,7 +5,7 @@ from string import Template
 
 # ==== CONFIGURATION ====
 
-FEATURE_PACKAGE = "ai_trading/preprocess/feature/collection"
+FEATURE_PACKAGE = "src/ai_trading/preprocess/feature/collection"
 TEST_PACKAGE = "tests/preprocess/feature/collection"
 TEMPLATE_DIR = "templates"  # Folder where your templates live
 
@@ -29,6 +29,7 @@ def render_template(path: str, substitutions: dict) -> str:
 
 def create_file_from_template(output_path: str, template_path: str, substitutions: dict):
     content = render_template(template_path, substitutions)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, 'w') as f:
         f.write(content)
     print(f"Created: {output_path}")
