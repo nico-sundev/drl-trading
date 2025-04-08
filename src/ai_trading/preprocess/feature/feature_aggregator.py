@@ -18,11 +18,12 @@ class FeatureAggregator:
     def compute(self) -> DataFrame:
         feature_results = []
         for feature in self.config.feature_definitions:
-            for param_set in feature.parsed_parameter_sets:
-                feature_class = self.class_registry.feature_class_map[feature.name]
-                feature_instance = feature_class(self.source_df)
-                feature_df = feature_instance.compute(param_set)
-                feature_results.append(feature_df)
+            if feature.enabled:
+                for param_set in feature.parsed_parameter_sets:
+                    feature_class = self.class_registry.feature_class_map[feature.name]
+                    feature_instance = feature_class(self.source_df)
+                    feature_df = feature_instance.compute(param_set)
+                    feature_results.append(feature_df)
 
         return concat(
             [df.set_index("Time") for df in feature_results], axis=1

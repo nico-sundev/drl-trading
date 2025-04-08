@@ -23,7 +23,7 @@ def mock_feature_definition(mock_param_set):
     return feature_def
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_config(mock_feature_definition):
     config = mock.Mock()
     config.feature_definitions = [mock_feature_definition]
@@ -35,14 +35,14 @@ def mock_feature_df():
     return DataFrame({"Time": [1, 2, 3], "rsi_14": [30, 50, 70]})
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_feature_class_instance(mock_feature_df, mock_param_set):
     instance = mock.Mock()
     instance.compute.return_value = mock_feature_df
     return instance
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_registry(mock_feature_class_instance):
     mock_class = mock.Mock(return_value=mock_feature_class_instance)
     registry = mock.Mock()

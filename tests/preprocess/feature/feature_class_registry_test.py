@@ -12,15 +12,14 @@ class MacdFeature(BaseFeature):
 class RsiFeature(BaseFeature):
     pass
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def registry():
     return FeatureClassRegistry()
 
 # Test the discover_feature_classes function
 def test_discover_feature_classes(registry):
     with mock.patch("pkgutil.iter_modules") as mock_iter_modules, \
-         mock.patch("importlib.import_module") as mock_import_module, \
-         mock.patch("inspect.getmembers") as mock_getmembers:
+         mock.patch("importlib.import_module") as mock_import_module:
 
         # Mock the base package (with __path__) and a feature module
         mock_base_package = mock.Mock()
@@ -38,9 +37,6 @@ def test_discover_feature_classes(registry):
                 return mock_feature_module
 
         mock_import_module.side_effect = import_module_side_effect
-
-        # You can now skip mocking `inspect.getmembers` entirely, it will work
-
 
         # Mock iter_modules to simulate one module
         mock_iter_modules.return_value = [

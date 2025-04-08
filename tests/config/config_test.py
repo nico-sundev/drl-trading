@@ -85,9 +85,9 @@ def test_load_config_from_json(temp_config_file):
     assert macd.signal == 7
 
     # RSI
-    rsi = get_feature_param_set("rsi", index=1)
+    rsi = get_feature_param_set("rsi")
     assert isinstance(rsi, RsiConfig)
-    assert rsi.length == 14
+    assert rsi.length == 7
 
     # ROC
     roc = get_feature_param_set("roc", index=2)
