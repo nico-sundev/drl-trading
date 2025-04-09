@@ -5,9 +5,9 @@ from string import Template
 
 # ==== CONFIGURATION ====
 
-FEATURE_PACKAGE = "src/ai_trading/preprocess/feature/collection"
-TEST_PACKAGE = "tests/preprocess/feature/collection"
-TEMPLATE_DIR = "templates"  # Folder where your templates live
+FEATURE_PACKAGE = "../src/ai_trading/preprocess/feature/collection"
+TEST_PACKAGE = "../tests/preprocess/feature/collection"
+TEMPLATE_DIR = "../templates"  # Folder where your templates live
 
 # Template filenames (you'll provide these)
 FEATURE_TEMPLATE_FILE = "feature_template.txt"
@@ -54,7 +54,7 @@ def main():
     create_file_from_template(feature_path, feature_template, substitutions)
 
     # 2. Create Unit Test
-    test_path = os.path.join(TEST_PACKAGE, f"test_{feature_name}_feature.py")
+    test_path = os.path.join(TEST_PACKAGE, f"{feature_name}_feature_test.py")
     test_template = os.path.join(TEMPLATE_DIR, TEST_TEMPLATE_FILE)
     create_file_from_template(test_path, test_template, substitutions)
 

@@ -1,12 +1,13 @@
+import dask
 import dask.dataframe as dd
-import pandas_ta as ta  # for technical indicators
+from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregator
 
-def compute_features(file_path: str):
-    df = dd.read_parquet(file_path)
+class DaskFeatureComputer:
+    def __init__(self, config, class_registry):
+        self.config = config
+        self.class_registry = class_registry
 
-    # Compute indicators with Dask
-    df["macd"] = df["Close"].map_partitions(lambda s: ta.macd(s).iloc[:, 0])
-    df["rsi"] = df["Close"].map_partitions(lambda s: ta.rsi(s))
-    df["roc"] = df["Close"].map_partitions(lambda s: ta.roc(s))
-
-    df.to_parquet("data/features.parquet", engine="pyarrow")  # Save for Feast
+    def compute(self, df: dd.DataFrame) -> dd.DataFrame:
+        # Split work by feature + param_set
+        aggregator = FeatureAggregator(df, self.config, self.class_registry)
+        return dask.delayed(aggregator.compute)().compute()

@@ -8,8 +8,8 @@ from ai_trading.preprocess.merging_service import MergingService
 def sample_data():
     """Fixture for testing CSV import."""
     file_paths = {
-        "H1": os.path.join(os.path.dirname(__file__), "../resources/test_H1.csv"),
-        "H4": os.path.join(os.path.dirname(__file__), "../resources/test_H4.csv"),
+        "H1": os.path.join(os.path.dirname(__file__), "../../resources/test_H1.csv"),
+        "H4": os.path.join(os.path.dirname(__file__), "../../resources/test_H4.csv"),
     }
     svc = CsvDataImportService(file_paths)
     data = svc.import_data()
