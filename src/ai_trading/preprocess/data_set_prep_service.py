@@ -6,7 +6,7 @@ import pandas as pd
 from ai_trading.config.config_loader import ConfigLoader
 from ai_trading.data_import.data_import_manager import DataImportManager
 from ai_trading.data_import.local.csv_data_import_service import CsvDataImportService
-from ai_trading.model.dataset_container import DataSetContainer
+from ai_trading.model.preprocessed_dataset_container import PreprocessedDataSetContainer
 from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregator
 from ai_trading.config.feature_config import FeaturesConfig
 from ai_trading.preprocess.feature.feature_factory import FeatureFactory
@@ -22,10 +22,10 @@ class DataSetPrepService:
     # file path of datasets -> timeframes
     # train val tst ratio
     
-    def get_data_sets(self) -> DataSetContainer:
+    def get_data_sets(self) -> PreprocessedDataSetContainer:
         return self.split_time_series(self.prepare_data_set())
     
-    def split_time_series(self, df: pd.DataFrame, train_ratio=0.8, val_ratio=0.1, test_ratio=0.1) -> DataSetContainer:
+    def split_time_series(self, df: pd.DataFrame, train_ratio=0.8, val_ratio=0.1, test_ratio=0.1) -> PreprocessedDataSetContainer:
         assert math.isclose(train_ratio + val_ratio + test_ratio, 1.0), "Ratios must sum to 1.0"
         
         n = len(df)
@@ -36,7 +36,7 @@ class DataSetPrepService:
         df_val = df.iloc[train_end:val_end]
         df_test = df.iloc[val_end:]
 
-        return DataSetContainer(df_train, df_val, df_test)
+        return PreprocessedDataSetContainer(df_train, df_val, df_test)
 
     
     def prepare_data_set(self):

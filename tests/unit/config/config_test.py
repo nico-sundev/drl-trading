@@ -2,8 +2,15 @@ import json
 import tempfile
 import pytest
 from ai_trading.config.config_loader import ConfigLoader
-from ai_trading.config.feature_config_collection import MacdConfig, RangeConfig, RocConfig, RsiConfig
-from ai_trading.preprocess.feature.custom.enum.wick_handle_strategy_enum import WICK_HANDLE_STRATEGY
+from ai_trading.config.feature_config_collection import (
+    MacdConfig,
+    RangeConfig,
+    RocConfig,
+    RsiConfig,
+)
+from ai_trading.preprocess.feature.custom.enum.wick_handle_strategy_enum import (
+    WICK_HANDLE_STRATEGY,
+)
 
 
 @pytest.fixture
@@ -11,10 +18,18 @@ def temp_config_file():
     """Creates a temporary JSON config file for testing."""
     config_data = {
         "localDataImportConfig": {
-            "datasets": {
-                "H1": "../../resources/test_H1.csv",
-                "H4": "../../resources/test_H4.csv",
-            }
+            "datasets": [
+                {
+                    "timeframe": "H1",
+                    "base_dataset": True,
+                    "file_path": "../../resources/test_H1.csv",
+                },
+                {
+                    "timeframe": "H4",
+                    "base_dataset": False,
+                    "file_path": "../../resources/test_H4.csv",
+                },
+            ]
         },
         "featuresConfig": {
             "featureDefinitions": [
@@ -22,26 +37,40 @@ def temp_config_file():
                     "name": "macd",
                     "enabled": True,
                     "derivatives": [],
-                    "parameterSets": [{"fast": 3, "slow": 5, "signal": 7}],
+                    "parameterSets": [
+                        {"enabled": True, "fast": 3, "slow": 5, "signal": 7}
+                    ],
                 },
                 {
                     "name": "rsi",
                     "enabled": True,
                     "derivatives": [1],
-                    "parameterSets": [{"length": 7}, {"length": 14}, {"length": 21}],
+                    "parameterSets": [
+                        {"enabled": True, "length": 7},
+                        {"enabled": True, "length": 14},
+                        {"enabled": True, "length": 21},
+                    ],
                 },
                 {
                     "name": "roc",
                     "enabled": True,
                     "derivatives": [1],
-                    "parameterSets": [{"length": 1}, {"length": 3}, {"length": 5}],
+                    "parameterSets": [
+                        {"enabled": True, "length": 1},
+                        {"enabled": True, "length": 3},
+                        {"enabled": True, "length": 5},
+                    ],
                 },
                 {
                     "name": "range",
                     "enabled": True,
                     "derivatives": [],
                     "parameterSets": [
-                        {"lookback": 5, "wickHandleStrategy": "LAST_WICK_ONLY"}
+                        {
+                            "enabled": True,
+                            "lookback": 5,
+                            "wickHandleStrategy": "LAST_WICK_ONLY",
+                        }
                     ],
                 },
             ]
@@ -68,8 +97,9 @@ def temp_config_file():
 
 
 def test_load_config_from_json(temp_config_file):
-    temp_file_path, expected_data = temp_config_file    
+    temp_file_path, expected_data = temp_config_file
     config = ConfigLoader.get_config(temp_file_path)
+
     # Helper to extract config by name
     def get_feature_param_set(name, index=0):
         for feat in config.features_config.feature_definitions:

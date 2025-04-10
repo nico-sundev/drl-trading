@@ -1,7 +1,8 @@
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 import pandas as pd
 
 from ai_trading.data_import.base_data_import_service import BaseDataImportService
+from ai_trading.model.asset_price_dataset import AssetPriceDataSet
 
 
 class DataImportManager:
@@ -15,6 +16,6 @@ class DataImportManager:
         """
         self.import_service = import_service
 
-    def get_data(self, limit: Optional[int] = None) -> Dict[str, pd.DataFrame]:
+    def get_data(self, limit: Optional[int] = None) -> List[AssetPriceDataSet]:
         """Fetches OHLC data using the selected service."""
         return self.import_service.import_data(limit)

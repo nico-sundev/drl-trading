@@ -1,5 +1,5 @@
 # Create the environment and train the agents
-from ai_trading.model.dataset_container import DataSetContainer
+from ai_trading.model.preprocessed_dataset_container import PreprocessedDataSetContainer
 from ai_trading.preprocess.data_set_prep_service import DataSetPrepService
 from ai_trading.config.feature_config import FeaturesConfig
 from ai_trading.trading_env import StockTradingEnv
@@ -12,7 +12,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 # -----------------------------------------------------------------------------
 feature_config: FeaturesConfig
 data_set_prep_svc = DataSetPrepService(feature_config)
-data_sets: DataSetContainer = data_set_prep_svc.get_data_sets()
+data_sets: PreprocessedDataSetContainer = data_set_prep_svc.get_data_sets()
 threshold = 0.1
 total_timesteps = 10000
 (

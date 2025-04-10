@@ -3,7 +3,7 @@ from pandas import DataFrame
 
 
 @dataclass
-class DataSetContainer:
+class PreprocessedDataSetContainer:
     training_data: DataFrame
     validation_data: DataFrame
     test_data: DataFrame

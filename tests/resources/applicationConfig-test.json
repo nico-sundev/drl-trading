@@ -1,9 +1,17 @@
 {
   "localDataImportConfig": {
-    "datasets": {
-      "H1": "../../resources/test_H1.csv",
-      "H4": "../../resources/test_H4.csv"
-    }
+    "datasets": [
+      {
+        "timeframe": "H1",
+        "base_dataset": true,
+        "file_path": "../../resources/test_H1.csv"
+      },
+      {
+        "timeframe": "H4",
+        "base_dataset": false,
+        "file_path": "../../resources/test_H4.csv"
+      }
+    ]
   },
   "featuresConfig": {
     "featureDefinitions": [
@@ -13,6 +21,7 @@
         "derivatives": [],
         "parameterSets": [
           {
+            "enabled": true,
             "fast": 3,
             "slow": 5,
             "signal": 7
@@ -25,6 +34,7 @@
         "derivatives": [1],
         "parameterSets": [
           {
+            "enabled": true,
             "length": 7
           }
         ]
@@ -35,12 +45,15 @@
         "derivatives": [1],
         "parameterSets": [
           {
+            "enabled": true,
             "length": 1
           },
           {
+            "enabled": true,
             "length": 3
           },
           {
+            "enabled": true,
             "length": 5
           }
         ]
@@ -51,6 +64,7 @@
         "derivatives": [],
         "parameterSets": [
           {
+            "enabled": true,
             "lookback": 5,
             "wickHandleStrategy": "LAST_WICK_ONLY"
           }
@@ -62,12 +76,15 @@
         "derivatives": [1],
         "parameterSets": [
           {
+            "enabled": true,
             "length": 7
           },
           {
+            "enabled": true,
             "length": 14
           },
           {
+            "enabled": true,
             "length": 21
           }
         ]

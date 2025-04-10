@@ -1,0 +1,2 @@
+todo:
+- truncate higher timeframes datasets based on start time/date of the base timeframes dataset, to prevent uneccessary data to be computed
