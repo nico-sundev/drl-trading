@@ -76,10 +76,13 @@ def temp_config_file():
             ]
         },
         "rlModelConfig": {
-            "agents": [],
+            "agentRegistryPackage": "ai_trading.agents",
+            "agents": ["PPO", "A2C", "DDPG", "SAC", "TD3", "Ensemble"],
             "trainingSplitRatio": 0.8,
             "validatingSplitRatio": 0.1,
             "testingSplitRatio": 0.1,
+            "agent_threshold": 0.1,
+            "total_timesteps": 10000,
         },
         "environmentConfig": {"fee": 0.005, "slippageAtrBased": 0.01},
     }
