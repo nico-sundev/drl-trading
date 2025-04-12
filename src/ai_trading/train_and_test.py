@@ -1,12 +1,6 @@
-# Function to create the environment and train the agents
-from ai_trading.agents.ppo_agent import (
-    A2CAgent,
-    DDPGAgent,
-    EnsembleAgent,
-    PPOAgent,
-    SACAgent,
-    TD3Agent,
-)
+from ai_trading.agents.agent_registry import AgentRegistry
+from ai_trading.agents.ppo_agent import PPOAgent, A2CAgent, DDPGAgent, SACAgent, TD3Agent, EnsembleAgent
+from typing import Dict, List
 from ai_trading.trading_env import StockTradingEnv
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,53 +14,31 @@ def create_env_and_train_agents(
     val_data: pd.DataFrame,
     total_timesteps: int,
     threshold: float,
+    agent_config: List[str],
 ):
-
+    """
+    Create environments and train agents dynamically based on the configuration.
+    """
     # Create environments for training and validation
     train_env = DummyVecEnv([lambda: StockTradingEnv(train_data)])
     val_env = DummyVecEnv([lambda: StockTradingEnv(val_data)])
+    
+    agent_registry = AgentRegistry()
 
-    # Train and Validate PPO Agent
-    ppo_agent = PPOAgent(train_env, total_timesteps, threshold)
-    ppo_agent.validate(val_env)
+    agents = {}
+    for agent_name in agent_config:
+        if agent_name in agent_registry.agent_class_map:
+            agent_class = agent_registry.agent_class_map[agent_name]
+            agents[agent_name] = agent_class(train_env, total_timesteps, threshold)
+            agents[agent_name].validate(val_env)
 
-    # Train and Validate A2C Agent
-    a2c_agent = A2CAgent(train_env, total_timesteps, threshold)
-    a2c_agent.validate(val_env)
+    # Create the ensemble agent if specified
+    if "Ensemble" in agent_config:
+        ensemble_agents = [agent for name, agent in agents.items() if name != "Ensemble"]
+        agents["Ensemble"] = EnsembleAgent(ensemble_agents, threshold)
+        agents["Ensemble"].validate(val_env)
 
-    # Train and Validate DDPG Agent
-    ddpg_agent = DDPGAgent(train_env, total_timesteps, threshold)
-    ddpg_agent.validate(val_env)
-
-    # Train and Validate SAC Agent
-    sac_agent = SACAgent(train_env, total_timesteps, threshold)
-    sac_agent.validate(val_env)
-
-    # Train and Validate TD3 Agent
-    td3_agent = TD3Agent(train_env, total_timesteps, threshold)
-    td3_agent.validate(val_env)
-
-    # Train and Validate the ensemble agent
-    ensemble_agent = EnsembleAgent(
-        ppo_agent.model,
-        a2c_agent.model,
-        ddpg_agent.model,
-        sac_agent.model,
-        td3_agent.model,
-        threshold,
-    )
-    ensemble_agent.validate(val_env)
-
-    return (
-        train_env,
-        val_env,
-        ppo_agent,
-        a2c_agent,
-        ddpg_agent,
-        sac_agent,
-        td3_agent,
-        ensemble_agent,
-    )
+    return train_env, val_env, agents
 
 
 # -----------------------------------------------------------------------------

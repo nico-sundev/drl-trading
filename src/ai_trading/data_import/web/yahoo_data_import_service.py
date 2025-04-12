@@ -6,7 +6,7 @@ from IPython.display import display
 from ai_trading.data_import.base_data_import_service import (
     BaseDataImportService,
 )
-from ai_trading.model.preprocessed_dataset_container import PreprocessedDataSetContainer
+from ai_trading.model.split_dataset_container import SplitDataSetContainer
 
 # List of stocks in the Dow Jones 30
 # tickers = [

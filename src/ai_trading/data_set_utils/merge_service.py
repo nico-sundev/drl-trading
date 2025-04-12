@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-class MergingService:
+class MergeService:
     """Merges a higher timeframe dataset into a lower timeframe dataset."""
 
     def __init__(self, base_df, higher_df):

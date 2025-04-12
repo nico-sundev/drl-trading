@@ -1,8 +1,10 @@
 import os
+from typing import List
 import pandas as pd
 import pytest
 from ai_trading.data_import.local.csv_data_import_service import CsvDataImportService
-from ai_trading.preprocess.merging_service import MergingService
+from ai_trading.model.asset_price_dataset import AssetPriceDataSet
+from ai_trading.data_set_utils.merge_service import MergeService
 
 @pytest.fixture
 def sample_data():
@@ -12,14 +14,13 @@ def sample_data():
         "H4": os.path.join(os.path.dirname(__file__), "../../resources/test_H4.csv"),
     }
     svc = CsvDataImportService(file_paths)
-    data = svc.import_data()
-    return [data["H1"], data["H4"]]
+    return svc.import_data()
 
-def test_merge_timeframes(sample_data: tuple[pd.DataFrame, pd.DataFrame]) -> None:
+def test_merge_timeframes(sample_data: List[AssetPriceDataSet]) -> None:
     df_30m, df_4h = sample_data
     # Mock computation of a custom feature for higher TF
     df_4h["cstm_feature_1"] = df_4h["Close"] + 100
-    merger: MergingService = MergingService(df_30m, df_4h)
+    merger: MergeService = MergeService(df_30m, df_4h)
     df_merged: pd.DataFrame = merger.merge_timeframes()
 
     assert df_merged.iloc[0]["HTF240_cstm_feature_1"] == 101.38485
@@ -28,7 +29,7 @@ def test_merge_timeframes(sample_data: tuple[pd.DataFrame, pd.DataFrame]) -> Non
 
 def test_timeframe_detection() -> None:
     df: pd.DataFrame = pd.DataFrame({"Time": pd.date_range("2024-03-19 00:00:00", periods=4, freq="1h")})
-    merger: MergingService = MergingService(df, df)
+    merger: MergeService = MergeService(df, df)
     detected_tf: pd.Timedelta = merger.detect_timeframe(df)
     
     assert detected_tf == pd.Timedelta("1h")
