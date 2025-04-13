@@ -19,39 +19,6 @@ from dask import delayed, compute
 
 from ai_trading.preprocess.preprocess_service import PreprocessService
 
-
-@pytest.fixture
-def datasets():
-    file_paths = [
-        {
-            "timeframe": "H1",
-            "base_dataset": True,
-            "file_path": os.path.join(
-                os.path.dirname(__file__), "..\\..\\data\\raw\\EURUSD_H1.csv"
-            ),
-        },
-        {
-            "timeframe": "H4",
-            "base_dataset": False,
-            "file_path": os.path.join(
-                os.path.dirname(__file__), "..\\..\\data\\raw\\EURUSD_H4.csv"
-            ),
-        },
-    ]
-    import_properties_objects = [
-        AssetPriceImportProperties(
-            timeframe=item["timeframe"],
-            base_dataset=item["base_dataset"],
-            file_path=item["file_path"],
-        )
-        for item in file_paths
-    ]
-
-    repository = CsvDataImportService(import_properties_objects)
-    importer = DataImportManager(repository)
-    return importer.get_data(100)
-
-
 @pytest.fixture
 def reset_registry():
     FeatureConfigRegistry._instance = None
@@ -68,8 +35,13 @@ def config(reset_registry):
     config.features_config.feature_definitions = [
         f for f in config.features_config.feature_definitions if f.name == "rsi"
     ]
-    return config.features_config
+    return config
 
+@pytest.fixture
+def datasets(config):
+    repository = CsvDataImportService(config.local_data_import_config.datasets)
+    importer = DataImportManager(repository)
+    return importer.get_data(100)
 
 @pytest.fixture
 def class_registry():
@@ -78,7 +50,7 @@ def class_registry():
 
 @pytest.fixture
 def preprocess_service(datasets, config, class_registry):
-    return PreprocessService(datasets, config, class_registry)
+    return PreprocessService(datasets, config.features_config, class_registry)
 
 def test_preprocessing(preprocess_service):
     #Given

@@ -2,7 +2,7 @@ import inspect
 import pkgutil
 import importlib
 from typing import Dict, Type
-from ai_trading.agents.ppo_agent import PPOAgent
+from ai_trading.agents.agent_collection import PPOAgent
 
 class AgentRegistry:
     _instance = None
@@ -34,7 +34,7 @@ class AgentRegistry:
                     agent_map[agent_name] = obj
 
         # Ensure EnsembleAgent is always included
-        from ai_trading.agents.ppo_agent import EnsembleAgent
+        from ai_trading.agents.agent_collection import EnsembleAgent
         agent_map["EnsembleAgent"] = EnsembleAgent
 
         return agent_map

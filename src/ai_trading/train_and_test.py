@@ -1,5 +1,5 @@
 from ai_trading.agents.agent_registry import AgentRegistry
-from ai_trading.agents.ppo_agent import PPOAgent, A2CAgent, DDPGAgent, SACAgent, TD3Agent, EnsembleAgent
+from ai_trading.agents.agent_collection import PPOAgent, A2CAgent, DDPGAgent, SACAgent, TD3Agent, EnsembleAgent
 from typing import Dict, List
 from ai_trading.trading_env import StockTradingEnv
 import matplotlib.pyplot as plt

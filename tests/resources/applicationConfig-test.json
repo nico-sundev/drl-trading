@@ -4,12 +4,12 @@
       {
         "timeframe": "H1",
         "base_dataset": true,
-        "file_path": "../../resources/test_H1.csv"
+        "file_path": "C:\\Users\\nico-\\Documents\\git\\ai_trading\\tests\\resources\\test_H1.csv"
       },
       {
         "timeframe": "H4",
         "base_dataset": false,
-        "file_path": "../../resources/test_H4.csv"
+        "file_path": "C:\\Users\\nico-\\Documents\\git\\ai_trading\\tests\\resources\\test_H4.csv"
       }
     ]
   },
@@ -92,10 +92,13 @@
     ]
   },
   "rlModelConfig": {
-    "agents": [],
+    "agentRegistryPackage": "ai_trading.agents",
+    "agents": ["PPO", "A2C", "DDPG", "SAC", "TD3", "Ensemble"],
     "trainingSplitRatio": 0.8,
     "validatingSplitRatio": 0.1,
-    "testingSplitRatio": 0.1
+    "testingSplitRatio": 0.1,
+    "agent_threshold": 0.1,
+    "total_timesteps": 10000
   },
   "environmentConfig": {
     "fee": 0.005,

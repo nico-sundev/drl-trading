@@ -1,9 +1,7 @@
 import importlib
 import inspect
 import pkgutil
-from typing import Dict, Type, Union
-
-from pydantic import TypeAdapter
+from typing import Dict, Type
 from ai_trading.config.base_parameter_set_config import BaseParameterSetConfig
 
 
