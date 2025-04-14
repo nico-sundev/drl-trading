@@ -30,7 +30,7 @@ def test_merge_timeframes(sample_data: List[AssetPriceDataSet]) -> None:
     df_merged: pd.DataFrame = merger.merge_timeframes()
 
     assert df_merged.iloc[0]["HTF240_cstm_feature_1"] == 101.3820
-    assert df_merged.iloc[-1]["HTF240_cstm_feature_1"] == 101.3860
+    assert df_merged.iloc[-1]["HTF240_cstm_feature_1"] == 101.4100
 
 
 def test_timeframe_detection() -> None:

@@ -10,6 +10,9 @@ class MacdFeature(BaseFeature):
         self.postfix = postfix
 
     def compute(self, config: MacdConfig) -> DataFrame:
+        df = DataFrame()
+        df["Time"] = self.df_source["Time"]
+        
         macd = ta.macd(
             self.df_source["Close"],
             fast=config.fast,
@@ -18,9 +21,9 @@ class MacdFeature(BaseFeature):
             fillna=np.nan,
             signal_indicators=True,
         )
+        if macd is None:
+            return df
 
-        df = DataFrame()
-        df["Time"] = self.df_source["Time"]
         df["macd_cross_bullish" + self.postfix] = macd[f"MACDh_{config.fast}_{config.slow}_{config.signal}_XA_0"]
         df["macd_cross_bearish" + self.postfix] = macd[f"MACDh_{config.fast}_{config.slow}_{config.signal}_XB_0"]
         df["macd_trend" + self.postfix] = macd[f"MACD_{config.fast}_{config.slow}_{config.signal}_A_0"]
