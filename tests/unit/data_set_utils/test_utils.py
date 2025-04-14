@@ -1,5 +1,7 @@
 from unittest.mock import MagicMock
-from ai_trading.data_set_utils.util import separate_base_and_other_datasets
+
+import pandas as pd
+from ai_trading.data_set_utils.util import detect_timeframe, separate_computed_datasets
 from ai_trading.model.computed_dataset_container import ComputedDataSetContainer
 from ai_trading.model.asset_price_dataset import AssetPriceDataSet
 
@@ -27,10 +29,18 @@ def test_separate_base_and_other_datasets():
     datasets = [base_dataset_container, other_dataset_container_1, other_dataset_container_2]
 
     # Call the function
-    result_base, result_others = separate_base_and_other_datasets(datasets)
+    result_base, result_others = separate_computed_datasets(datasets)
 
     # Assertions
     assert result_base == base_dataset_container
     assert other_dataset_container_1 in result_others
     assert other_dataset_container_2 in result_others
     assert len(result_others) == 2
+
+def test_timeframe_detection() -> None:
+    df: pd.DataFrame = pd.DataFrame(
+        {"Time": pd.date_range("2024-03-19 00:00:00", periods=4, freq="1h")}
+    )
+    detected_tf: pd.Timedelta = detect_timeframe(df)
+
+    assert detected_tf == pd.Timedelta("1h")

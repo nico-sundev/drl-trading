@@ -3,6 +3,10 @@ import os
 from ai_trading.config.config_loader import ConfigLoader
 from ai_trading.data_import.data_import_manager import DataImportManager
 from ai_trading.data_import.local.csv_data_import_service import CsvDataImportService
+from ai_trading.data_set_utils.timeframe_stripper_service import (
+    TimeframeStripperService,
+)
+from ai_trading.data_set_utils.util import separate_base_and_other_datasets
 from ai_trading.model.split_dataset_container import SplitDataSetContainer
 from ai_trading.data_set_utils.split_service import SplitService
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
@@ -25,6 +29,10 @@ data_load_manager = DataImportManager(csv_import_svc)
 raw_asset_price_datasets = data_load_manager.get_data(
     config.local_data_import_config.limit
 )
+
+# Transform and strip other timeframes using the stripper service
+tf_stripper_svc = TimeframeStripperService()
+stripped_raw_asset_price_datasets = tf_stripper_svc.strip_asset_price_datasets(raw_asset_price_datasets)
 
 # Initialize the feature class registry
 feature_class_registry = FeatureClassRegistry()

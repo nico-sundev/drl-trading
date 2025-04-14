@@ -1,5 +1,7 @@
 import pandas as pd
 
+from ai_trading.data_set_utils.util import detect_timeframe
+
 
 class MergeService:
     """Merges a higher timeframe dataset into a lower timeframe dataset."""
@@ -8,14 +10,10 @@ class MergeService:
         self.base_df = base_df
         self.higher_df = higher_df
 
-    def detect_timeframe(self, df):
-        """Auto-detects the timeframe of a dataset."""
-        return df["Time"].diff().mode()[0]
-
     def merge_timeframes(self):
         """Performs optimized two-pointer merge of OHLC data."""
         #low_tf = self.detect_timeframe(self.base_df)
-        high_tf = self.detect_timeframe(self.higher_df)
+        high_tf = detect_timeframe(self.higher_df)
         high_tf_label = int(high_tf.total_seconds() / 60)
 
 

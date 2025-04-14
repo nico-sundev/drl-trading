@@ -1,28 +1,16 @@
 import os
-from typing import List
-import dask
-import pandas as pd
 import pytest
 
 from ai_trading.config.config_loader import ConfigLoader
 from ai_trading.config.feature_config_registry import FeatureConfigRegistry
 from ai_trading.data_import.data_import_manager import DataImportManager
 from ai_trading.data_import.local.csv_data_import_service import CsvDataImportService
-from ai_trading.model.asset_price_dataset import AssetPriceDataSet
-from ai_trading.model.asset_price_import_properties import AssetPriceImportProperties
-from ai_trading.model.computed_dataset_container import ComputedDataSetContainer
-from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregator
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
-from ai_trading.preprocess.feature.feature_factory import FeatureFactory
-from ai_trading.data_set_utils.merge_service import MergeService
-from dask import delayed, compute
-
 from ai_trading.preprocess.preprocess_service import PreprocessService
 
 @pytest.fixture
 def reset_registry():
     FeatureConfigRegistry._instance = None
-
 
 @pytest.fixture
 def config(reset_registry):

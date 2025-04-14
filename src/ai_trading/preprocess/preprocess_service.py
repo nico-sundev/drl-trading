@@ -3,7 +3,7 @@ from typing import List
 import dask
 from ai_trading.config.feature_config import FeaturesConfig
 from ai_trading.data_set_utils.merge_service import MergeService
-from ai_trading.data_set_utils.util import separate_base_and_other_datasets
+from ai_trading.data_set_utils.util import separate_computed_datasets
 from ai_trading.model.asset_price_dataset import AssetPriceDataSet
 from ai_trading.model.computed_dataset_container import ComputedDataSetContainer
 from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregator
@@ -36,7 +36,7 @@ class PreprocessService:
         asset_price_datasets: List[ComputedDataSetContainer] = dask.compute(
             *feature_results
         )
-        base_dataset, other_datasets = separate_base_and_other_datasets(
+        base_dataset, other_datasets = separate_computed_datasets(
             asset_price_datasets
         )
 
