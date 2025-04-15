@@ -1,18 +1,29 @@
+from pandas import DataFrame
 from ai_trading.agents.agent_registry import AgentRegistry
 from ai_trading.agents.agent_collection import EnsembleAgent
 from stable_baselines3.common.vec_env import DummyVecEnv
 
+from ai_trading.config.environment_config import EnvironmentConfig
 from ai_trading.custom_env import TradingEnv
+
 
 class AgentTrainingService:
     """
     Service to handle the creation of environments and training of agents.
     """
 
-    def __init__(self, agent_registry: AgentRegistry):
+    def __init__(self, env_config: EnvironmentConfig, agent_registry: AgentRegistry):
         self.agent_registry = agent_registry
+        self.env_config = env_config
 
-    def create_env_and_train_agents(self, train_data, val_data, total_timesteps, threshold, agent_config):
+    def create_env_and_train_agents(
+        self,
+        train_data: DataFrame,
+        val_data: DataFrame,
+        total_timesteps: int,
+        threshold: float,
+        agent_config: list[str]
+    ):
         """
         Create environments and train agents dynamically based on the configuration.
 
@@ -27,8 +38,8 @@ class AgentTrainingService:
             tuple: Training environment, validation environment, and trained agents.
         """
         # Create environments for training and validation
-        train_env = DummyVecEnv([lambda: TradingEnv(train_data)])
-        val_env = DummyVecEnv([lambda: TradingEnv(val_data)])
+        train_env = DummyVecEnv([lambda: TradingEnv(train_data, self.env_config)])
+        val_env = DummyVecEnv([lambda: TradingEnv(val_data, self.env_config)])
 
         agents = {}
         for agent_name in agent_config:
@@ -39,7 +50,9 @@ class AgentTrainingService:
 
         # Create the ensemble agent if specified
         if "Ensemble" in agent_config:
-            ensemble_agents = [agent for name, agent in agents.items() if name != "Ensemble"]
+            ensemble_agents = [
+                agent for name, agent in agents.items() if name != "Ensemble"
+            ]
             agents["Ensemble"] = EnsembleAgent(ensemble_agents, threshold)
             agents["Ensemble"].validate(val_env)
 

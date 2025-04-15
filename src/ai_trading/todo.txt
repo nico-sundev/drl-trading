@@ -11,13 +11,8 @@ general development advice/rules:
 - if possible, structure every test method in # Given ... # When ... # Then sections
 
 todo features:
-- train_and_test.py -> separation of responsibilities -> create services with meaningful naming -> also create unit tests
-# Extract responsibilities from train_and_test.py into separate services
-# 1. Create a service for environment creation and agent training
-# 2. Create a service for testing and visualizing agents
-# 3. Ensure unit tests are created for these services
-# 4. Refactor train_and_test.py to use these services
 - review custom_env.py -> possible improvements and also create a unit test
 - feature store feast implementation -> create feature_view dynamically, like feature_aggregator is dynamically computing features
 - use FinRL library -> migration from native stablebaselines3 to finrl -> start with trading_env.py class
 - MLFlow integration -> configure to use local service
+- create GNN -> see all_in_one.py -> start with: Which data to we need and how do we have to preprocess
