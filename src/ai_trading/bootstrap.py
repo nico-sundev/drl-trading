@@ -6,17 +6,11 @@ from ai_trading.data_import.local.csv_data_import_service import CsvDataImportSe
 from ai_trading.data_set_utils.timeframe_stripper_service import (
     TimeframeStripperService,
 )
-from ai_trading.data_set_utils.util import separate_base_and_other_datasets
 from ai_trading.model.split_dataset_container import SplitDataSetContainer
 from ai_trading.data_set_utils.split_service import SplitService
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
 from ai_trading.preprocess.preprocess_service import PreprocessService
-from ai_trading.trading_env import StockTradingEnv
-from ai_trading.train_and_test import (
-    create_env_and_train_agents,
-    test_and_visualize_agents,
-)
-from stable_baselines3.common.vec_env import DummyVecEnv
+from ai_trading.services.agent_training_service import AgentTrainingService
 
 # Initialize the config
 config = ConfigLoader.get_config(
@@ -32,7 +26,9 @@ raw_asset_price_datasets = data_load_manager.get_data(
 
 # Transform and strip other timeframes using the stripper service
 tf_stripper_svc = TimeframeStripperService()
-stripped_raw_asset_price_datasets = tf_stripper_svc.strip_asset_price_datasets(raw_asset_price_datasets)
+stripped_raw_asset_price_datasets = tf_stripper_svc.strip_asset_price_datasets(
+    raw_asset_price_datasets
+)
 
 # Initialize the feature class registry
 feature_class_registry = FeatureClassRegistry()
@@ -55,11 +51,12 @@ data_sets: SplitDataSetContainer = data_set_prep_svc.split_dataset(
 )
 
 # Create the environment and train the agents
+training_svc = AgentTrainingService()
 (
     train_env,
     val_env,
     agents,
-) = create_env_and_train_agents(
+) = training_svc.create_env_and_train_agents(
     data_sets.training_data,
     data_sets.validation_data,
     config.rl_model_config.total_timesteps,
@@ -69,7 +66,8 @@ data_sets: SplitDataSetContainer = data_set_prep_svc.split_dataset(
 
 n_tests = 1000
 
-test_and_visualize_agents(train_env, agents, data_sets.training_data, n_tests=n_tests)
+# testing_svc = AgentTestingService()
+# test_and_visualize_agents(train_env, agents, data_sets.training_data, n_tests=n_tests)
 
-test_env = DummyVecEnv([lambda: StockTradingEnv(data_sets.test_data)])
-test_and_visualize_agents(test_env, agents, data_sets.test_data, n_tests=n_tests)
+# test_env = DummyVecEnv([lambda: StockTradingEnv(data_sets.test_data)])
+# test_and_visualize_agents(test_env, agents, data_sets.test_data, n_tests=n_tests)
