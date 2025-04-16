@@ -84,7 +84,15 @@ def temp_config_file():
             "agent_threshold": 0.1,
             "total_timesteps": 10000,
         },
-        "environmentConfig": {"fee": 0.005, "slippageAtrBased": 0.01},
+        "environmentConfig": {
+            "fee": 0.005,
+            "slippageAtrBased": 0.01,
+            "start_balance": 10000.0,
+            "max_daily_drawdown": 0.02,
+            "max_alltime_drawdown": 0.05,
+            "max_percentage_open_position": 100.0,
+            "min_percentage_open_position": 1.0,
+        },
     }
 
     with tempfile.NamedTemporaryFile(mode="w+", delete=False) as temp_file:

@@ -18,6 +18,7 @@ def registry():
     return AgentRegistry(package_name="tests.unit.agents")
 
 # Test the discover_agents function
+@pytest.mark.slow
 def test_discover_agents(registry):
     with mock.patch("pkgutil.iter_modules") as mock_iter_modules, mock.patch("importlib.import_module") as mock_import_module:
 

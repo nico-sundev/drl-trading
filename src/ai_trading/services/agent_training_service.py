@@ -4,7 +4,7 @@ from ai_trading.agents.agent_collection import EnsembleAgent
 from stable_baselines3.common.vec_env import DummyVecEnv
 
 from ai_trading.config.environment_config import EnvironmentConfig
-from ai_trading.custom_env import TradingEnv
+from ai_trading.gyms.custom_env import TradingEnv
 
 
 class AgentTrainingService:
