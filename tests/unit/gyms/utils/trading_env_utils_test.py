@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from ai_trading.utils.trading_env_utils import TradingEnvUtils, TradingDirection
+from ai_trading.gyms.utils.trading_env_utils import TradingEnvUtils, TradingDirection
 
 
 class TestTradingEnvUtils:

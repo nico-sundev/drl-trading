@@ -103,10 +103,15 @@
   "environmentConfig": {
     "fee": 0.005,
     "slippageAtrBased": 0.01,
-    "start_balance": 10000.0,
-    "max_daily_drawdown": 0.02,
-    "max_alltime_drawdown": 0.05,
-    "max_percentage_open_position": 100.0,
-    "min_percentage_open_position": 1.0
+    "slippageAgainstTradeProbability": 0.6,
+    "startBalance": 10000.0,
+    "maxDailyDrawdown": 0.02,
+    "maxAlltimeDrawdown": 0.05,
+    "maxPercentageOpenPosition": 100.0,
+    "minPercentageOpenPosition": 1.0,
+    "inMoneyFactor": 1.0,
+    "outOfMoneyFactor": 1.0,
+    "liquidationPenaltyFactor": 2.0,
+    "minLiquidationPenalty": 100.0
   }
 }

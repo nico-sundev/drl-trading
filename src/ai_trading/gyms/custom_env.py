@@ -3,9 +3,10 @@ from gymnasium import spaces
 import numpy as np
 from pandas import DataFrame
 import logging
+import random
 
 from ai_trading.config.environment_config import EnvironmentConfig
-from ai_trading.utils.trading_env_utils import TradingEnvUtils, TradingDirection
+from ai_trading.gyms.utils.trading_env_utils import TradingEnvUtils, TradingDirection
 
 logger = logging.getLogger(__name__)
 
@@ -15,24 +16,19 @@ class TradingEnv(gym.Env):
         super(TradingEnv, self).__init__()
         self.env_config = env_config
         self.env_data_source = env_data_source
-        
-        # Factors for reward calculation
-        self.in_money_factor = 1.0  # Factor for in-the-money positions
-        self.out_of_money_factor = 1.0  # Factor for out-of-the-money positions
-        self.liquidation_penalty_factor = 2.0  # Higher penalty for liquidation
-        self.min_liquidation_penalty = 100.0  # Minimum penalty for liquidation
-        self.slippage = 0.0  # TODO: Implement slippage based on ATR
 
+        # Initialize from environment config
+        self.initial_balance = env_config.start_balance
+        self.balance = env_config.start_balance
+        
         # Position tracking
         self.current_step = 0
         self.done = False
-        self.initial_balance = env_config.start_balance
-        self.balance = env_config.start_balance
         self.position_state = 0  # 1 for long, -1 for short, 0 for no position
         self.time_in_position = 0
         self.position_open_price = None
         self.number_contracts_owned = 0.0
-        self.pnl = 0.0  # Initialize as float
+        self.pnl = 0.0
         self.current_leverage = 1.0
         self.liquidation_price = None
         self.was_liquidated = False
@@ -47,7 +43,7 @@ class TradingEnv(gym.Env):
         # 5 (Await Entry)
         self.action_space = spaces.Tuple(
             (
-                spaces.Discrete(6),  # 5 discrete actions
+                spaces.Discrete(6),  # Discrete actions
                 spaces.Box(
                     low=env_config.min_percentage_open_position,
                     high=env_config.max_percentage_open_position,
@@ -78,6 +74,7 @@ class TradingEnv(gym.Env):
         self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
 
     def reset(self):
+        """Reset environment state."""
         self.current_step = 0
         self.balance = self.initial_balance
         self.position_state = 0
@@ -143,6 +140,39 @@ class TradingEnv(gym.Env):
         self.was_liquidated = True
         self.last_liquidation_loss = liquidation_loss
 
+    def _calculate_dynamic_slippage(self, direction: TradingDirection, current_price: float) -> float:
+        """Calculate dynamic slippage based on ATR and trade direction.
+        
+        This method calculates slippage as a percentage of the price (e.g., 0.01 = 1%) to match
+        TradingEnvUtils' expectation of percentage-based slippage values. The slippage is:
+        1. Based on ATR relative to current price to reflect market volatility
+        2. Works against the trade with env_config.slippage_against_trade_probability (default 60%)
+        3. Used both for position entry price adjustment and fee calculations
+        
+        Args:
+            direction: The direction of the trade (LONG/SHORT)
+            current_price: The current price
+            
+        Returns:
+            float: The calculated slippage as a percentage (0.01 = 1%)
+        """
+        # Get ATR value from the current data
+        current_data = self.env_data_source.iloc[self.current_step]
+        atr = current_data.atr
+        
+        # Base slippage as a percentage (ATR relative to price)
+        base_slippage = (atr / current_price) * self.env_config.slippage_atr_based
+        
+        # Determine if slippage works against the trade (60% probability by default)
+        against_trade = random.random() < self.env_config.slippage_against_trade_probability
+        
+        # For long positions: negative slippage means price goes up before entry
+        # For short positions: positive slippage means price goes down before entry
+        if against_trade:
+            return base_slippage if direction == TradingDirection.LONG else -base_slippage
+        else:
+            return -base_slippage if direction == TradingDirection.LONG else base_slippage
+
     def _take_action(self, action):
         discrete_action = action[0]
         open_position_percentage = action[1][0]
@@ -157,14 +187,17 @@ class TradingEnv(gym.Env):
                 self._close_position(current_price)
 
             self.position_state = 1
-            self.position_open_price = current_price
+            slippage = self._calculate_dynamic_slippage(TradingDirection.LONG, current_price)
+            # Apply slippage to entry price
+            self.position_open_price = current_price * (1 + slippage)
+            # Calculate contracts based on original price to maintain correct position size
             self.number_contracts_owned = TradingEnvUtils.calculate_number_contracts(
                 TradingDirection.LONG,
                 open_position_percentage,
                 current_price,
                 self.balance,
                 self.env_config.fee,
-                self.slippage,
+                0,  # Don't apply slippage twice
                 leverage
             )
             self.time_in_position = 0
@@ -180,20 +213,23 @@ class TradingEnv(gym.Env):
                 self._close_position(current_price)
 
             self.position_state = -1
-            self.position_open_price = current_price
+            slippage = self._calculate_dynamic_slippage(TradingDirection.SHORT, current_price)
+            # Apply slippage to entry price
+            self.position_open_price = current_price * (1 + slippage)
+            # Calculate contracts based on original price to maintain correct position size
             self.number_contracts_owned = TradingEnvUtils.calculate_number_contracts(
                 TradingDirection.SHORT,
                 open_position_percentage,
                 current_price,
                 self.balance,
                 self.env_config.fee,
-                self.slippage,
+                0,  # Don't apply slippage twice
                 leverage
             )
             self.time_in_position = 0
             self.pnl = 0.0
             self._update_liquidation_price(leverage)
-
+            
         elif discrete_action == 3:  # Hold Position
             if self.position_state != 0:
                 self.time_in_position += 1
@@ -209,7 +245,10 @@ class TradingEnv(gym.Env):
             current_price,
             self.number_contracts_owned,
             self.env_config.fee,
-            self.slippage,
+            self._calculate_dynamic_slippage(
+                TradingDirection.LONG if self.position_state == 1 else TradingDirection.SHORT,
+                current_price
+            ),
             percentage
         )
         self.balance += (self.pnl * percentage) - closing_fee
@@ -229,7 +268,10 @@ class TradingEnv(gym.Env):
             self.position_open_price,
             self.number_contracts_owned,
             self.env_config.fee,
-            self.slippage
+            self._calculate_dynamic_slippage(
+                TradingDirection.LONG if self.position_state == 1 else TradingDirection.SHORT,
+                current_price
+            )
         )
 
     def _close_position(self, current_price: float):
@@ -238,7 +280,10 @@ class TradingEnv(gym.Env):
             current_price,
             self.number_contracts_owned,
             self.env_config.fee,
-            self.slippage
+            self._calculate_dynamic_slippage(
+                TradingDirection.LONG if self.position_state == 1 else TradingDirection.SHORT,
+                current_price
+            )
         )
         self.balance += self.pnl - closing_fee
         self.position_state = 0
@@ -265,22 +310,19 @@ class TradingEnv(gym.Env):
         if self.current_step >= len(self.env_data_source) - 1:
             self.done = True
 
-        # Calculate reward
+        # Calculate reward using config factors
         reward = 0.0
         if self.was_liquidated:
-            # Apply a significant penalty for liquidation, with minimum penalty and time factor
-            base_penalty = max(abs(self.last_liquidation_loss), self.min_liquidation_penalty)
+            base_penalty = max(abs(self.last_liquidation_loss), self.env_config.min_liquidation_penalty)
             time_factor = max(self.time_in_position, 1)  # Ensure at least 1 time unit
-            reward = -self.liquidation_penalty_factor * base_penalty * time_factor
+            reward = -self.env_config.liquidation_penalty_factor * base_penalty * time_factor
             self.was_liquidated = False
             self.last_liquidation_loss = 0.0
         elif self.position_state != 0:
             if self.pnl > 0:
-                # For profitable positions, reward increases with time but at a decreasing rate
-                reward = self.in_money_factor * self.pnl * np.sqrt(self.time_in_position)
+                reward = self.env_config.in_money_factor * self.pnl * np.sqrt(self.time_in_position)
             else:
-                # For losing positions, penalty increases more quickly with time
-                reward = -self.out_of_money_factor * abs(self.pnl) * (self.time_in_position ** 1.5)
+                reward = -self.env_config.out_of_money_factor * abs(self.pnl) * (self.time_in_position ** 1.5)
 
         return self._next_observation(), reward, self.done, {}
 

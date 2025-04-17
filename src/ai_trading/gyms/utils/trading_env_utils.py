@@ -24,11 +24,11 @@ class TradingEnvUtils:
 
         Args:
             direction (TradingDirection): Direction of the trade (LONG or SHORT)
-            open_position_percentage (float): Percentage of the balance to open a new position
+            open_position_percentage (float): Percentage of the balance to open a new position (0-100)
             current_price (float): Current price of the asset
             balance (float): Current account balance
-            fee (float): Trading fee percentage
-            slippage (float, optional): Slippage percentage. Defaults to 0.0
+            fee (float): Trading fee as a percentage (0.01 = 1%)
+            slippage (float, optional): Slippage as a percentage (0.01 = 1%). Defaults to 0.0
             leverage (float, optional): Leverage multiplier. Defaults to 1.0
 
         Returns:
@@ -84,9 +84,9 @@ class TradingEnvUtils:
         Args:
             current_price (float): Current price of the asset
             position_size (float): Size of the position
-            fee (float): Trading fee percentage
-            slippage (float, optional): Slippage percentage. Defaults to 0.0
-            percentage (float, optional): Percentage of position being closed. Defaults to 1.0
+            fee (float): Trading fee as a percentage (0.01 = 1%)
+            slippage (float, optional): Slippage as a percentage (0.01 = 1%). Defaults to 0.0
+            percentage (float, optional): Percentage of position being closed (0-1). Defaults to 1.0
 
         Returns:
             float: The calculated closing fee
@@ -107,8 +107,8 @@ class TradingEnvUtils:
             current_price (float): Current price of the asset
             position_open_price (float): Price at which position was opened
             position_size (float): Size of the position (positive for long, negative for short)
-            fee (float): Trading fee percentage
-            slippage (float, optional): Slippage percentage. Defaults to 0.0
+            fee (float): Trading fee as a percentage (0.01 = 1%)
+            slippage (float, optional): Slippage as a percentage (0.01 = 1%). Defaults to 0.0
 
         Returns:
             float: The calculated profit/loss
