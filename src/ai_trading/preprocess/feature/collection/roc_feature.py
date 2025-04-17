@@ -15,3 +15,6 @@ class RocFeature(BaseFeature):
             self.df_source["Close"], length=config.length
         )
         return df
+
+    def get_sub_features_names(self, config: RocConfig) -> list[str]:
+        return [f"roc_{config.length}{self.postfix}"]

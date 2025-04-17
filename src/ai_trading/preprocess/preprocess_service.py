@@ -1,6 +1,7 @@
 from typing import List
 
 import dask
+from pandas import DataFrame
 from ai_trading.config.feature_config import FeaturesConfig
 from ai_trading.data_set_utils.merge_service import MergeService
 from ai_trading.data_set_utils.util import separate_computed_datasets
@@ -23,7 +24,7 @@ class PreprocessService:
         self.datasets = datasets
         pass
 
-    def preprocess_data(self):
+    def preprocess_data(self) -> DataFrame:
         # Parallelize feature computation for each dataset using delayed
         feature_results = [
             delayed(self.compute_feature)(

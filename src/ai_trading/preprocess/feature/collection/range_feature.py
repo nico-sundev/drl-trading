@@ -20,3 +20,9 @@ class RangeFeature(BaseFeature):
         df[f"resistance_range{config.lookback}{self.postfix}"] = ranges["resistance_range"]
         df[f"support_range{config.lookback}{self.postfix}"] = ranges["support_range"]
         return df
+
+    def get_sub_features_names(self, config: RangeConfig) -> list[str]:
+        return [
+            f"resistance_range{config.lookback}{self.postfix}",
+            f"support_range{config.lookback}{self.postfix}"
+        ]

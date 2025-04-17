@@ -5,6 +5,15 @@ from pydantic import model_validator
 from ai_trading.config.feature_config_registry import FeatureConfigRegistry
 
 
+class FeatureStoreConfig(BaseSchema):
+    enabled: bool = False
+    repo_path: str = "feature_repo"
+    offline_store_path: str = "data/features.parquet"
+    entity_name: str = "symbol"
+    ttl_days: int = 365
+    online_enabled: bool = True
+
+
 class FeatureDefinition(BaseSchema):
     name: str
     enabled: bool

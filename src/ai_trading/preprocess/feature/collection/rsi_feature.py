@@ -15,3 +15,6 @@ class RsiFeature(BaseFeature):
             self.df_source["Close"], length=config.length
         )
         return df
+
+    def get_sub_features_names(self, config: RsiConfig) -> list[str]:
+        return [f"rsi_{config.length}{self.postfix}"]

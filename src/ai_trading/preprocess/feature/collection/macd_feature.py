@@ -28,3 +28,10 @@ class MacdFeature(BaseFeature):
         df["macd_cross_bearish" + self.postfix] = macd[f"MACDh_{config.fast}_{config.slow}_{config.signal}_XB_0"]
         df["macd_trend" + self.postfix] = macd[f"MACD_{config.fast}_{config.slow}_{config.signal}_A_0"]
         return df
+
+    def get_sub_features_names(self, config: MacdConfig) -> list[str]:
+        return [
+            f"macd_cross_bullish{self.postfix}",
+            f"macd_cross_bearish{self.postfix}",
+            f"macd_trend{self.postfix}"
+        ]

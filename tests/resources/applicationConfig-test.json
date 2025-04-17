@@ -111,5 +111,13 @@
     "minPercentageOpenPosition": 1.0,
     "inMoneyFactor": 1.0,
     "outOfMoneyFactor": 1.0
+  },
+  "featureStoreConfig": {
+    "enabled": true,
+    "repo_path": "test_feature_repo",
+    "offline_store_path": "test_data/features.parquet",
+    "entity_name": "symbol",
+    "ttl_days": 1,
+    "online_enabled": true
   }
 }

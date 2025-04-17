@@ -15,3 +15,6 @@ class RviFeature(BaseFeature):
             self.df_source["Close"], self.df_source["High"], self.df_source["Low"], length=config.length
         )
         return df
+
+    def get_sub_features_names(self, config: RviConfig) -> list[str]:
+        return [f"rvi_{config.length}{self.postfix}"]
