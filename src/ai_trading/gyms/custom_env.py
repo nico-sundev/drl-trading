@@ -12,10 +12,18 @@ logger = logging.getLogger(__name__)
 
 
 class TradingEnv(gym.Env):
-    def __init__(self, env_data_source: DataFrame, env_config: EnvironmentConfig):
+    def __init__(self, env_data_source: DataFrame, env_config: EnvironmentConfig, feature_start_index: int):
+        """Initialize the trading environment.
+        
+        Args:
+            env_data_source: DataFrame containing price data and computed features
+            env_config: Configuration for the trading environment
+            feature_start_index: Index in env_data_source columns where computed/normalized features start
+        """
         super(TradingEnv, self).__init__()
         self.env_config = env_config
         self.env_data_source = env_data_source
+        self.feature_start_index = feature_start_index
 
         # Initialize from environment config
         self.initial_balance = env_config.start_balance
@@ -65,12 +73,11 @@ class TradingEnv(gym.Env):
             )
         )
 
-        # Observation space
-        num_of_features = len(self.env_data_source.columns)
-        computational_excluded_features = 1  # close price
-        total_features = num_of_features - computational_excluded_features
-        low = np.full(total_features, -np.inf)
-        high = np.full(total_features, np.inf)
+        # Observation space calculation based on computed features only
+        feature_columns = self.env_data_source.columns[feature_start_index:]
+        num_features = len(feature_columns)
+        low = np.full(num_features, -np.inf)
+        high = np.full(num_features, np.inf)
         self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
 
     def reset(self):
@@ -90,19 +97,18 @@ class TradingEnv(gym.Env):
         return self._next_observation()
 
     def _next_observation(self):
+        """Get the next observation from the environment.
+        
+        Returns only the computed and normalized features starting from feature_start_index,
+        excluding strategy-specific data like prices, ATR, etc.
+        
+        Returns:
+            numpy.ndarray: Array of computed features in float32 format
+        """
         feature_set = self.env_data_source.iloc[self.current_step]
-        return np.array(
-            [
-                feature_set,
-                self.position_state,
-                self.time_in_position,
-                self.pnl,
-                self.number_contracts_owned,
-                self.current_leverage,
-                self.liquidation_price if self.liquidation_price is not None else 0.0,
-            ],
-            dtype=object
-        )
+        # Select only computed features starting from feature_start_index
+        computed_features = feature_set.iloc[self.feature_start_index:].values
+        return computed_features.astype(np.float32)
 
     def _update_liquidation_price(self, leverage: float):
         """Update liquidation price for leveraged positions."""
@@ -119,7 +125,7 @@ class TradingEnv(gym.Env):
 
     def _check_liquidation(self, high: float, low: float) -> bool:
         """Check if position should be liquidated based on high/low prices."""
-        if self.liquidation_price is None or self.position_state == 0:
+        if self.liquidation_price is None or not TradingEnvUtils.has_active_position(self.position_state):
             return False
 
         if self.position_state == 1:  # Long position
@@ -148,22 +154,14 @@ class TradingEnv(gym.Env):
         1. Based on ATR relative to current price to reflect market volatility
         2. Works against the trade with env_config.slippage_against_trade_probability (default 60%)
         3. Used both for position entry price adjustment and fee calculations
-        
-        Args:
-            direction: The direction of the trade (LONG/SHORT)
-            current_price: The current price
-            
-        Returns:
-            float: The calculated slippage as a percentage (0.01 = 1%)
         """
-        # Get ATR value from the current data
         current_data = self.env_data_source.iloc[self.current_step]
         atr = current_data.atr
         
         # Base slippage as a percentage (ATR relative to price)
         base_slippage = (atr / current_price) * self.env_config.slippage_atr_based
         
-        # Determine if slippage works against the trade (60% probability by default)
+        # Determine if slippage works against the trade
         against_trade = random.random() < self.env_config.slippage_against_trade_probability
         
         # For long positions: negative slippage means price goes up before entry
@@ -263,15 +261,13 @@ class TradingEnv(gym.Env):
             self.current_leverage = 1.0
 
     def _update_pnl(self, current_price: float):
+        direction = TradingEnvUtils.get_position_direction(self.position_state)
         self.pnl = TradingEnvUtils.calculate_pnl(
             current_price,
             self.position_open_price,
             self.number_contracts_owned,
             self.env_config.fee,
-            self._calculate_dynamic_slippage(
-                TradingDirection.LONG if self.position_state == 1 else TradingDirection.SHORT,
-                current_price
-            )
+            self._calculate_dynamic_slippage(direction, current_price)
         )
 
     def _close_position(self, current_price: float):
@@ -294,6 +290,30 @@ class TradingEnv(gym.Env):
         self.liquidation_price = None
         self.current_leverage = 1.0
 
+    def _calculate_reward(self) -> float:
+        """Calculate reward for the current position state.
+        
+        The reward function considers:
+        1. For profitable positions:
+           - Reward increases with the square root of time
+           - Reward scaled by in-money factor
+        2. For losing positions:
+           - Penalty increases more quickly with time (power of 1.5)
+           - Penalty scaled by out-of-money factor
+           - This naturally handles liquidation cases as the PnL already accounts 
+             for leveraged losses
+        
+        Returns:
+            float: The calculated reward value
+        """
+        if self.pnl > 0:
+            # For profitable positions, reward increases with time but at a decreasing rate
+            return self.env_config.in_money_factor * self.pnl * np.sqrt(self.time_in_position)
+        else:
+            # For losing positions, penalty increases more quickly with time
+            # This also handles liquidation as PnL already accounts for leveraged losses
+            return -self.env_config.out_of_money_factor * abs(self.pnl) * (self.time_in_position ** 1.5)
+
     def step(self, action):
         current_data = self.env_data_source.iloc[self.current_step]
         
@@ -310,19 +330,12 @@ class TradingEnv(gym.Env):
         if self.current_step >= len(self.env_data_source) - 1:
             self.done = True
 
-        # Calculate reward using config factors
-        reward = 0.0
-        if self.was_liquidated:
-            base_penalty = max(abs(self.last_liquidation_loss), self.env_config.min_liquidation_penalty)
-            time_factor = max(self.time_in_position, 1)  # Ensure at least 1 time unit
-            reward = -self.env_config.liquidation_penalty_factor * base_penalty * time_factor
-            self.was_liquidated = False
-            self.last_liquidation_loss = 0.0
-        elif self.position_state != 0:
-            if self.pnl > 0:
-                reward = self.env_config.in_money_factor * self.pnl * np.sqrt(self.time_in_position)
-            else:
-                reward = -self.env_config.out_of_money_factor * abs(self.pnl) * (self.time_in_position ** 1.5)
+        # Calculate reward
+        reward = self._calculate_reward()
+
+        # Reset liquidation flags after reward calculation
+        self.was_liquidated = False
+        self.last_liquidation_loss = 0.0
 
         return self._next_observation(), reward, self.done, {}
 

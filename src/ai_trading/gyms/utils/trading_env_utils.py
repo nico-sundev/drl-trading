@@ -117,3 +117,31 @@ class TradingEnvUtils:
         raw_pnl = price_difference * position_size
         fees = TradingEnvUtils.calculate_close_fee(current_price, position_size, fee, slippage)
         return raw_pnl - fees
+
+    @staticmethod
+    def get_position_direction(position_state: int) -> TradingDirection:
+        """Convert position state to TradingDirection enum.
+        
+        Args:
+            position_state (int): Position state (1 for long, -1 for short, 0 for none)
+            
+        Returns:
+            TradingDirection: Corresponding trading direction enum value
+        """
+        if position_state == 1:
+            return TradingDirection.LONG
+        elif position_state == -1:
+            return TradingDirection.SHORT
+        return TradingDirection.NONE
+
+    @staticmethod
+    def has_active_position(position_state: int) -> bool:
+        """Check if there is an active position.
+        
+        Args:
+            position_state (int): Position state (1 for long, -1 for short, 0 for none)
+            
+        Returns:
+            bool: True if there is an active position, False otherwise
+        """
+        return position_state != 0

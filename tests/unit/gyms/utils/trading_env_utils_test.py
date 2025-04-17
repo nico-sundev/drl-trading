@@ -174,3 +174,44 @@ class TestTradingEnvUtils:
         expected = raw_pnl - fees
         assert np.isclose(result, expected)
         assert result < 0  # Should be unprofitable
+
+    # Position Direction Tests
+    def test_get_position_direction_long(self):
+        # Given
+        position_state = 1
+
+        # When
+        result = TradingEnvUtils.get_position_direction(position_state)
+
+        # Then
+        assert result == TradingDirection.LONG
+
+    def test_get_position_direction_short(self):
+        # Given
+        position_state = -1
+
+        # When
+        result = TradingEnvUtils.get_position_direction(position_state)
+
+        # Then
+        assert result == TradingDirection.SHORT
+
+    def test_get_position_direction_none(self):
+        # Given
+        position_state = 0
+
+        # When
+        result = TradingEnvUtils.get_position_direction(position_state)
+
+        # Then
+        assert result == TradingDirection.NONE
+
+    # Position State Tests
+    def test_has_active_position(self):
+        # Given
+        position_states = [-1, 0, 1]
+
+        # When/Then
+        assert TradingEnvUtils.has_active_position(-1) is True
+        assert TradingEnvUtils.has_active_position(0) is False
+        assert TradingEnvUtils.has_active_position(1) is True
