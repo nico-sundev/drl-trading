@@ -11,5 +11,3 @@ class EnvironmentConfig(BaseSchema):
     min_percentage_open_position: float
     in_money_factor: float  # Reward multiplier for profitable trades
     out_of_money_factor: float  # Penalty multiplier for losing trades
-    liquidation_penalty_factor: float  # Additional penalty for liquidation
-    min_liquidation_penalty: float  # Minimum penalty for liquidation

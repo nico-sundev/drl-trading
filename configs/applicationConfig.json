@@ -134,8 +134,6 @@
     "maxPercentageOpenPosition": 100.0,
     "minPercentageOpenPosition": 1.0,
     "inMoneyFactor": 1.0,
-    "outOfMoneyFactor": 1.0,
-    "liquidationPenaltyFactor": 2.0,
-    "minLiquidationPenalty": 100.0
+    "outOfMoneyFactor": 1.0
   }
 }

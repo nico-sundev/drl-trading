@@ -35,7 +35,9 @@ class TradingEnvUtils:
             float: Number of contracts to open
         """
         total_position_value = (balance * open_position_percentage / 100.0) * leverage
-        total_position_value_excluding_fee = total_position_value * (1.0 - fee - slippage)
+        total_position_value_excluding_fee = total_position_value * (
+            1.0 - fee - slippage
+        )
         return (total_position_value_excluding_fee / current_price) * direction.value
 
     @staticmethod
@@ -58,7 +60,9 @@ class TradingEnvUtils:
             ValueError: If leverage <= 1 or if no active position
         """
         if leverage <= 1:
-            raise ValueError("Leverage must be greater than 1 to calculate liquidation price.")
+            raise ValueError(
+                "Leverage must be greater than 1 to calculate liquidation price."
+            )
 
         if position_size == 0:
             raise ValueError("No active position to calculate liquidation price.")
@@ -77,7 +81,7 @@ class TradingEnvUtils:
         position_size: float,
         fee: float,
         slippage: float = 0.0,
-        percentage: float = 1.0
+        percentage: float = 1.0,
     ) -> float:
         """Calculate the closing fee for a position.
 
@@ -99,7 +103,7 @@ class TradingEnvUtils:
         position_open_price: float,
         position_size: float,
         fee: float,
-        slippage: float = 0.0
+        slippage: float = 0.0,
     ) -> float:
         """Calculate profit/loss for a position.
 
@@ -115,16 +119,18 @@ class TradingEnvUtils:
         """
         price_difference = current_price - position_open_price
         raw_pnl = price_difference * position_size
-        fees = TradingEnvUtils.calculate_close_fee(current_price, position_size, fee, slippage)
+        fees = TradingEnvUtils.calculate_close_fee(
+            current_price, position_size, fee, slippage
+        )
         return raw_pnl - fees
 
     @staticmethod
     def get_position_direction(position_state: int) -> TradingDirection:
         """Convert position state to TradingDirection enum.
-        
+
         Args:
             position_state (int): Position state (1 for long, -1 for short, 0 for none)
-            
+
         Returns:
             TradingDirection: Corresponding trading direction enum value
         """
@@ -137,10 +143,10 @@ class TradingEnvUtils:
     @staticmethod
     def has_active_position(position_state: int) -> bool:
         """Check if there is an active position.
-        
+
         Args:
             position_state (int): Position state (1 for long, -1 for short, 0 for none)
-            
+
         Returns:
             bool: True if there is an active position, False otherwise
         """

@@ -94,9 +94,7 @@ def temp_config_file():
             "max_percentage_open_position": 100.0,
             "min_percentage_open_position": 1.0,
             "in_money_factor": 1.0,
-            "out_of_money_factor": 1.0,
-            "liquidation_penalty_factor": 2.0,
-            "min_liquidation_penalty": 100.0,
+            "out_of_money_factor": 1.0
         },
     }
 
