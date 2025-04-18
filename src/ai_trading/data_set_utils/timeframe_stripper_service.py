@@ -1,6 +1,6 @@
-import pandas as pd
 import logging
-from datetime import timedelta
+
+import pandas as pd
 
 from ai_trading.data_set_utils.util import (
     detect_timeframe,

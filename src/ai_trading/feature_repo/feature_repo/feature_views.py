@@ -1,11 +1,12 @@
-from typing import List
-from feast import FeatureView, Field
-from feast.types import Float32
 from datetime import timedelta
+from typing import List
+
+from feast import FeatureView, Field
+from feast.data_source import DataSource
+from feast.types import Float32
 
 from ai_trading.config.feature_config import FeaturesConfig
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
-from feast.data_source import DataSource
 
 
 class FeatureViewFactory:

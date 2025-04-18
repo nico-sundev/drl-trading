@@ -1,7 +1,4 @@
-import dask.dataframe as dd
 import pandas as pd
-import pandas_ta as ta  # for technical indicators
-
 from feast import FeatureStore
 
 fs = FeatureStore(repo_path="feature_repo")

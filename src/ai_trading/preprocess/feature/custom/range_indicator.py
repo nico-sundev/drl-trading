@@ -1,8 +1,9 @@
-from typing import Optional
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-from ai_trading.preprocess.feature.custom.enum.wick_handle_strategy_enum import WICK_HANDLE_STRATEGY
+from ai_trading.preprocess.feature.custom.enum.wick_handle_strategy_enum import (
+    WICK_HANDLE_STRATEGY,
+)
 from ai_trading.preprocess.feature.custom.wick_handler import WickHandler
 
 PIVOT_HIGH = "pivot_high"
@@ -15,7 +16,12 @@ class SupportResistanceFinder:
     Uses a lookback period and caches previous zones for efficiency.
     """
 
-    def __init__(self, source_data_frame: pd.DataFrame, lookback: int, wick_handle_strategy: WICK_HANDLE_STRATEGY):
+    def __init__(
+        self,
+        source_data_frame: pd.DataFrame,
+        lookback: int,
+        wick_handle_strategy: WICK_HANDLE_STRATEGY,
+    ):
         self.lookback = lookback
         self.wick_handle_strategy = wick_handle_strategy
         self.source_data_frame = source_data_frame
@@ -113,15 +119,15 @@ class SupportResistanceFinder:
                 df.loc[index, "resistance_range"] = np.nan
                 df.loc[index, "support_range"] = np.nan
                 continue
-            
+
             last_close = row["Close"]
 
             resistance_valid = (
                 self.prev_resistance and last_close < self.prev_resistance["top"]
-            )                
+            )
             support_valid = (
-                    self.prev_support and last_close > self.prev_support["bottom"]
-                )
+                self.prev_support and last_close > self.prev_support["bottom"]
+            )
             [found_pivot_high, found_pivot_low] = self.find_pivot_points(index)
 
             # check if new pivot high has been created
@@ -148,17 +154,14 @@ class SupportResistanceFinder:
                 )
             # resistance must be recalculated
             else:
-                next_resistance_zone = self.find_next_zone(
-                        PIVOT_HIGH, last_close
-                    )
+                next_resistance_zone = self.find_next_zone(PIVOT_HIGH, last_close)
                 if not np.isnan(next_resistance_zone["bottom"]):
                     df.loc[index, "resistance_range"] = (
                         next_resistance_zone["bottom"] - last_close
                     )
                     self.prev_resistance = next_resistance_zone
                     clean_cache = True
-            
-            
+
             # check if new pivot low has been created
             if found_pivot_low:
                 pivot_bottom = WickHandler.calculate_wick_threshold(
@@ -176,28 +179,22 @@ class SupportResistanceFinder:
                 df.loc[index, "support_range"] = pivot_top - last_close
                 # update prev zone references
                 self.prev_support = {"bottom": pivot_bottom, "top": pivot_top}
-                
+
             # check if former support is still valid
             elif support_valid:
                 pivot_top = self.prev_support["top"]
                 # Calculate range
-                df.loc[index, "support_range"] = (
-                        pivot_top - last_close
-                    )
+                df.loc[index, "support_range"] = pivot_top - last_close
             # support must be recalculated
             else:
-                next_support_zone = self.find_next_zone(
-                        PIVOT_LOW, last_close
-                    )
+                next_support_zone = self.find_next_zone(PIVOT_LOW, last_close)
                 if not np.isnan(next_support_zone["top"]):
                     pivot_top = next_support_zone["top"]
-                    df.loc[index, "support_range"] = (
-                        pivot_top - last_close
-                    )
+                    df.loc[index, "support_range"] = pivot_top - last_close
                     self.prev_support = next_support_zone
                     clean_cache = True
 
             if clean_cache:
                 self.clean_pivot_cache(last_close)
-                
+
         return df

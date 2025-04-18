@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class WICK_HANDLE_STRATEGY(Enum):
     LAST_WICK_ONLY = "LAST_WICK_ONLY"
     PREVIOUS_WICK_ONLY = "PREVIOUS_WICK_ONLY"

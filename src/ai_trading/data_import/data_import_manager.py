@@ -1,5 +1,4 @@
-from typing import Dict, List, Optional
-import pandas as pd
+from typing import List, Optional
 
 from ai_trading.data_import.base_data_import_service import BaseDataImportService
 from ai_trading.model.asset_price_dataset import AssetPriceDataSet

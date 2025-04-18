@@ -1,6 +1,8 @@
 import types
 from unittest import mock
+
 import pytest
+
 from ai_trading.config.base_parameter_set_config import BaseParameterSetConfig
 from ai_trading.config.feature_config_registry import FeatureConfigRegistry
 
@@ -36,8 +38,8 @@ def test_discover_config_classes(reset_registry):
 
         # Create mocked feature config module
         mock_feature_module = types.ModuleType("mock_feature_module")
-        setattr(mock_feature_module, "MacdConfig", MacdConfig)
-        setattr(mock_feature_module, "RsiConfig", RsiConfig)
+        mock_feature_module.MacdConfig = MacdConfig
+        mock_feature_module.RsiConfig = RsiConfig
 
         # Dynamic import logic
         def import_module_side_effect(name):

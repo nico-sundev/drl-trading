@@ -1,7 +1,9 @@
 from unittest.mock import MagicMock, patch
+
 import numpy as np
-from pandas import DataFrame, Series, to_datetime
 import pytest
+from pandas import DataFrame, Series, to_datetime
+
 from ai_trading.preprocess.feature.collection.macd_feature import MacdFeature
 
 
@@ -30,6 +32,7 @@ def config():
     mock_config.signal = 5
     return mock_config
 
+
 @patch("pandas_ta.macd")
 def test_compute_macd_signals(patched_macd, feature, config):
 
@@ -39,13 +42,13 @@ def test_compute_macd_signals(patched_macd, feature, config):
     signal_length = config.signal
     macd_result = DataFrame()
     macd_result[f"MACD_{fast_length}_{slow_length}_{signal_length}_A_0"] = Series(
-        [0, 0, 1, 0, 1, 0] # MACD Trend
+        [0, 0, 1, 0, 1, 0]  # MACD Trend
     )
     macd_result[f"MACDh_{fast_length}_{slow_length}_{signal_length}_XB_0"] = Series(
-        [1, 0, 1, 0, 1, 1] # Cross bearish
+        [1, 0, 1, 0, 1, 1]  # Cross bearish
     )
     macd_result[f"MACDh_{fast_length}_{slow_length}_{signal_length}_XA_0"] = Series(
-        [1, 1, 1, 1, 1, 1] # Cross bullish
+        [1, 1, 1, 1, 1, 1]  # Cross bullish
     )
     patched_macd.return_value = macd_result
 

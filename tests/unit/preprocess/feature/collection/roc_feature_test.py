@@ -1,6 +1,8 @@
 from unittest.mock import MagicMock, patch
-from pandas import DataFrame, Series, to_datetime
+
 import pytest
+from pandas import DataFrame, Series, to_datetime
+
 from ai_trading.preprocess.feature.collection.roc_feature import RocFeature
 
 

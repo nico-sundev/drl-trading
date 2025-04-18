@@ -11,9 +11,9 @@ general development advice/rules:
 - if possible, structure every test method in # Given ... # When ... # Then sections
 
 todo features:
-- feature store feast implementation -> create feature_view dynamically, like feature_aggregator is dynamically computing features
-    - i want you to implement feast featurestore in my test env. init feature store in /tests directory, create a unit test class with everything to setup and then i want to experiment with it. basically my goal is:
-
 - use FinRL library -> migration from native stablebaselines3 to finrl -> start with trading_env.py class
+- setup multiple environments using multiple symbol
+- check dummyvecenv vs subprocvecenv
+- model save checkpoints
 - MLFlow integration -> configure to use local service
 - create GNN -> see all_in_one.py -> start with: Which data to we need and how do we have to preprocess

@@ -2,14 +2,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from IPython.display import display
+
 from ai_trading.services.agent_testing_service import AgentTestingService
+
 
 class TestAndVisualize:
     def __init__(self, agent_testing_service: AgentTestingService):
         self.agent_testing_service = agent_testing_service
 
-    def test_and_visualize_agents(self, env, agents: dict, data: pd.DataFrame, n_tests: int):
-        self.agent_testing_service.test_and_visualize_agents(env, agents, data, n_tests=n_tests)
+    def test_and_visualize_agents(
+        self, env, agents: dict, data: pd.DataFrame, n_tests: int
+    ):
+        self.agent_testing_service.test_and_visualize_agents(
+            env, agents, data, n_tests=n_tests
+        )
 
     def visualize_portfolio(
         self,
@@ -58,7 +64,9 @@ class TestAndVisualize:
         plt.legend()
         plt.show()
 
-    def visualize_multiple_portfolio_net_worth(self, steps: list, net_worths_list: list, labels: list):
+    def visualize_multiple_portfolio_net_worth(
+        self, steps: list, net_worths_list: list, labels: list
+    ):
         plt.figure(figsize=(12, 6))
         for i, net_worths in enumerate(net_worths_list):
             plt.plot(steps, net_worths, label=labels[i])
@@ -68,7 +76,9 @@ class TestAndVisualize:
         plt.legend()
         plt.show()
 
-    def compare_and_plot_agents(self, agents_metrics: list, labels: list, risk_free_rate: float = 0.0):
+    def compare_and_plot_agents(
+        self, agents_metrics: list, labels: list, risk_free_rate: float = 0.0
+    ):
         def compare_agents(agents_metrics, labels):
             returns = []
             stds = []

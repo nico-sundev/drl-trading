@@ -1,6 +1,8 @@
 import json
 import tempfile
+
 import pytest
+
 from ai_trading.config.config_loader import ConfigLoader
 from ai_trading.config.feature_config_collection import (
     MacdConfig,
@@ -94,7 +96,7 @@ def temp_config_file():
             "max_percentage_open_position": 100.0,
             "min_percentage_open_position": 1.0,
             "in_money_factor": 1.0,
-            "out_of_money_factor": 1.0
+            "out_of_money_factor": 1.0,
         },
     }
 

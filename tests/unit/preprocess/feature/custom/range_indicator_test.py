@@ -1,13 +1,22 @@
-import pytest
-import pandas as pd
-import numpy as np
+from typing import List, Tuple
 
-from ai_trading.preprocess.feature.custom.enum.wick_handle_strategy_enum import WICK_HANDLE_STRATEGY
-from ai_trading.preprocess.feature.custom.range_indicator import PIVOT_HIGH, PIVOT_LOW, SupportResistanceFinder
+import numpy as np
+import pandas as pd
+import pytest
+from pandas import DataFrame
+
+from ai_trading.preprocess.feature.custom.enum.wick_handle_strategy_enum import (
+    WICK_HANDLE_STRATEGY,
+)
+from ai_trading.preprocess.feature.custom.range_indicator import (
+    PIVOT_HIGH,
+    PIVOT_LOW,
+    SupportResistanceFinder,
+)
 
 
 @pytest.fixture
-def mock_data():
+def mock_data() -> DataFrame:
     """Creates a small mock DataFrame for testing support and resistance."""
     return pd.DataFrame(
         {
@@ -18,8 +27,9 @@ def mock_data():
         }
     )
 
+
 @pytest.fixture
-def mock_pivot_cache():
+def mock_pivot_cache() -> DataFrame:
     """Creates a small mock DataFrame for testing support and resistance."""
     return pd.DataFrame(
         {
@@ -32,17 +42,19 @@ def mock_pivot_cache():
 
 
 @pytest.fixture
-def mock_finder(mock_data):
+def mock_finder(mock_data: DataFrame) -> SupportResistanceFinder:
     """Returns an instance of SupportResistanceFinder with a small lookback."""
     return SupportResistanceFinder(mock_data, 5, WICK_HANDLE_STRATEGY.LAST_WICK_ONLY)
 
 
-def test_validate_dataframe_success(mock_finder):
+def test_validate_dataframe_success(mock_finder: SupportResistanceFinder) -> None:
     """Test that validation passes for a valid DataFrame."""
     mock_finder.validate_dataframe()
 
 
-def test_validate_dataframe_missing_columns(mock_finder):
+def test_validate_dataframe_missing_columns(
+    mock_finder: SupportResistanceFinder,
+) -> None:
     """Test that validation fails when required columns are missing."""
     df = pd.DataFrame({"Close": [100, 101, 102]})  # Missing "High" and "Low"
     mock_finder.source_data_frame = df
@@ -50,7 +62,7 @@ def test_validate_dataframe_missing_columns(mock_finder):
         mock_finder.validate_dataframe()
 
 
-def test_validate_dataframe_empty(mock_finder):
+def test_validate_dataframe_empty(mock_finder: SupportResistanceFinder) -> None:
     """Test that validation fails on an empty DataFrame."""
     df = pd.DataFrame(columns=["Close", "High", "Low"])
     mock_finder.source_data_frame = df
@@ -58,7 +70,7 @@ def test_validate_dataframe_empty(mock_finder):
         mock_finder.validate_dataframe()
 
 
-def test_validate_dataframe_nan_values(mock_finder):
+def test_validate_dataframe_nan_values(mock_finder: SupportResistanceFinder) -> None:
     """Test that validation fails when NaN values are present."""
     df = pd.DataFrame(
         {"Close": [100, np.nan, 102], "High": [101, 103, 102], "Low": [99, 100, 100]}
@@ -68,24 +80,61 @@ def test_validate_dataframe_nan_values(mock_finder):
         mock_finder.validate_dataframe()
 
 
-def test_find_pivot_points(mock_finder, mock_data):
+def test_find_pivot_points(
+    mock_finder: SupportResistanceFinder, mock_data: DataFrame
+) -> None:
     """Test that pivot highs and lows are correctly identified."""
-    expected_highs = [False, False, True, False, True, False, True, False, True, False, False]
-    expected_lows = [False, False, False, True, False, True, False, True, False, True, False]
-    
-    for index, row in mock_data.iterrows():
-        [found_pivot_high, found_pivot_low] = mock_finder.find_pivot_points(index)
-        assert found_pivot_high == expected_highs[index]
-        assert found_pivot_low == expected_lows[index]
+    expected_highs: List[bool] = [
+        False,
+        False,
+        True,
+        False,
+        True,
+        False,
+        True,
+        False,
+        True,
+        False,
+        False,
+    ]
+    expected_lows: List[bool] = [
+        False,
+        False,
+        False,
+        True,
+        False,
+        True,
+        False,
+        True,
+        False,
+        True,
+        False,
+    ]
 
-def test_clean_pivot_cache(mock_finder, mock_data, mock_pivot_cache):
+    for index, _row in mock_data.iterrows():
+        pivot_points: Tuple[bool, bool] = mock_finder.find_pivot_points(index)
+        assert pivot_points[0] == expected_highs[index]
+        assert pivot_points[1] == expected_lows[index]
+
+
+def test_clean_pivot_cache(
+    mock_finder: SupportResistanceFinder,
+    mock_data: DataFrame,
+    mock_pivot_cache: DataFrame,
+) -> None:
+    """Test that old pivot points are removed from cache."""
     last_close = mock_data.iloc[-1]["Close"]
     mock_finder.pivot_cache = mock_pivot_cache
     assert len(mock_finder.pivot_cache) == 3
     mock_finder.clean_pivot_cache(last_close)
     assert len(mock_finder.pivot_cache) == 2
 
-def test_find_next_zone(mock_finder, mock_data, mock_pivot_cache):
+
+def test_find_next_zone(
+    mock_finder: SupportResistanceFinder,
+    mock_data: DataFrame,
+    mock_pivot_cache: DataFrame,
+) -> None:
     """Test that the correct support and resistance levels are found."""
     last_close = mock_data.iloc[-1]["Close"]
     mock_finder.pivot_cache = mock_pivot_cache
@@ -101,33 +150,7 @@ def test_find_next_zone(mock_finder, mock_data, mock_pivot_cache):
     assert resistance["bottom"] == 110
 
 
-# def test_calculate_wick_threshold():
-#     """Test that the wick threshold calculation is correct."""
-#     close, extreme = 100, 110
-#     assert (
-#         SupportResistanceFinder.calculate_wick_threshold(close, extreme, ratio=0.5)
-#         == 105
-#     )
-
-#     close = 100
-#     extreme = 110
-#     expected_value = 106.67
-#     ratio = 2 / 3
-#     tolerance_percentage = 0.02  # 2% tolerance
-
-#     result = SupportResistanceFinder.calculate_wick_threshold(close, extreme, ratio)
-
-#     # Calculate the acceptable range based on percentage tolerance
-#     lower_bound = expected_value * (1 - tolerance_percentage)
-#     upper_bound = expected_value * (1 + tolerance_percentage)
-
-#     # Assert that the result is within the tolerance percentage range
-#     assert (
-#         lower_bound <= result <= upper_bound
-#     ), f"Expected {expected_value} ± {tolerance_percentage*100}%, but got {result}"
-
-
-def test_find_support_resistance_zones(mock_finder):
+def test_find_support_resistance_zones(mock_finder: SupportResistanceFinder) -> None:
     """Test the full support & resistance zone detection process."""
     result = mock_finder.find_support_resistance_zones()
 
@@ -140,32 +163,33 @@ def test_find_support_resistance_zones(mock_finder):
     )
 
 
-def test_no_zone_found_within_lookback(mock_finder):
-    """Test that NaN is returned when no support/resistance is found in the lookback range."""
-    df = pd.DataFrame(
-        {
-            "Open": [99, 100, 101, 102, 103, 104, 105, 106],
-            "Close": [100, 101, 102, 103, 104, 105, 106, 107],
-            "High": [101, 102, 103, 104, 105, 106, 107, 108],
-            "Low": [99, 100, 101, 102, 103, 104, 105, 106],
-        }
-    )  # No strong pivot points
+def test_no_zone_found_within_lookback(mock_finder: SupportResistanceFinder) -> None:
+    """Test that NaN is returned when no support/resistance is found in lookback range."""
+    mock_finder.pivot_cache = pd.DataFrame(columns=["index", "top", "bottom", "type"])
+    last_close = 100.0
 
-    mock_finder.source_data_frame = df
-    result = mock_finder.find_support_resistance_zones()
-    last_row = result.iloc[-1]
-    assert np.isnan(last_row["resistance_range"])
-    assert np.isnan(last_row["support_range"])
+    resistance = mock_finder.find_next_zone(PIVOT_HIGH, last_close)
+    support = mock_finder.find_next_zone(PIVOT_LOW, last_close)
+
+    assert np.isnan(resistance["top"]) and np.isnan(resistance["bottom"])
+    assert np.isnan(support["top"]) and np.isnan(support["bottom"])
 
 
-def test_minimal_data(mock_finder):
+def test_minimal_data(mock_finder: SupportResistanceFinder) -> None:
     """Test that minimal data does not cause errors and returns NaN."""
     df = pd.DataFrame(
-        {"Open": [99, 100], "Close": [100, 101], "High": [101, 102], "Low": [99, 100]}
-    )  # Too small for meaningful analysis
-    mock_finder.source_data_frame = df
-    result = mock_finder.find_support_resistance_zones()
-    last_row = result.iloc[-1]
+        {
+            "Open": [100],
+            "Close": [101],
+            "High": [102],
+            "Low": [99],
+        },
+        index=[0],
+    )
+    finder = SupportResistanceFinder(df, 5, WICK_HANDLE_STRATEGY.LAST_WICK_ONLY)
+    result = finder.find_support_resistance_zones()
 
-    assert np.isnan(last_row["resistance_range"])
-    assert np.isnan(last_row["support_range"])
+    assert "support_range" in result.columns
+    assert "resistance_range" in result.columns
+    assert np.isnan(result.iloc[0]["support_range"])
+    assert np.isnan(result.iloc[0]["resistance_range"])

@@ -1,37 +1,48 @@
-import pytest
+from typing import Dict, List
 from unittest.mock import MagicMock
+
 import numpy as np
+import pytest
+
 from ai_trading.services.agent_testing_service import AgentTestingService
 
+
 @pytest.fixture
-def mock_env():
+def mock_env() -> MagicMock:
     env = MagicMock()
     env.reset.return_value = np.array([0, 0, 0, 0, 0])  # Mock observation
     env.step.return_value = (
         np.array([0, 0, 0, 0, 0]),  # observation
         0.0,  # reward
         False,  # done
-        {}  # info
+        {},  # info
     )
     return env
 
+
 @pytest.fixture
-def mock_agent():
+def mock_agent() -> MagicMock:
     agent = MagicMock()
     agent.predict = MagicMock(return_value=[0])
     return agent
 
+
 @pytest.fixture
-def mock_stock_data():
+def mock_stock_data() -> Dict[str, List[float]]:
     return {"AAPL": [], "GOOGL": []}
 
-def test_test_agent(mock_env, mock_agent, mock_stock_data):
+
+def test_test_agent(
+    mock_env: MagicMock, mock_agent: MagicMock, mock_stock_data: Dict[str, List[float]]
+) -> None:
     # Arrange
     service = AgentTestingService()
     n_tests = 10
 
     # Act
-    metrics = service.test_agent(mock_env, mock_agent, mock_stock_data, n_tests=n_tests, visualize=False)
+    metrics = service.test_agent(
+        mock_env, mock_agent, mock_stock_data, n_tests=n_tests, visualize=False
+    )
 
     # Assert
     assert "steps" in metrics, "Metrics should include steps."
@@ -40,8 +51,9 @@ def test_test_agent(mock_env, mock_agent, mock_stock_data):
     assert "shares_held" in metrics, "Metrics should include shares held."
     assert len(metrics["steps"]) == n_tests, "Number of steps should match n_tests."
 
+
 @pytest.mark.skip(reason="Temporarily disabling this test")
-def test_visualize_multiple_portfolio_net_worth():
+def test_visualize_multiple_portfolio_net_worth() -> None:
     # Arrange
     service = AgentTestingService()
     steps = list(range(10))

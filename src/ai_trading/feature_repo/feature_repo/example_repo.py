@@ -3,7 +3,6 @@
 from datetime import timedelta
 
 import pandas as pd
-
 from feast import (
     Entity,
     FeatureService,
@@ -94,9 +93,7 @@ driver_activity_v1 = FeatureService(
         driver_stats_fv[["conv_rate"]],  # Sub-selects a feature from a feature view
         transformed_conv_rate,  # Selects all features from the feature view
     ],
-    logging_config=LoggingConfig(
-        destination=FileLoggingDestination(path="data")
-    ),
+    logging_config=LoggingConfig(destination=FileLoggingDestination(path="data")),
 )
 driver_activity_v2 = FeatureService(
     name="driver_activity_v2", features=[driver_stats_fv, transformed_conv_rate]

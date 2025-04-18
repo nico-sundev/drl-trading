@@ -1,5 +1,7 @@
 from typing import List
+
 from ai_trading.config.base_schema import BaseSchema
+
 
 class RlModelConfig(BaseSchema):
     agentRegistryPackage: str  # Path to the package containing agent classes

@@ -1,9 +1,12 @@
 from typing import List, Optional
+
 import dask
-from dask import delayed
 import pandas as pd
+from dask import delayed
+
 from ai_trading.model.asset_price_dataset import AssetPriceDataSet
 from ai_trading.model.asset_price_import_properties import AssetPriceImportProperties
+
 from ..base_data_import_service import BaseDataImportService
 
 
@@ -33,14 +36,20 @@ class CsvDataImportService(BaseDataImportService):
         """Imports data from CSV files."""
 
         compute_tasks = [
-            delayed(self._load_csv)(dataset_property.file_path, limit)  # Delay the _load_csv method
+            delayed(self._load_csv)(
+                dataset_property.file_path, limit
+            )  # Delay the _load_csv method
             for dataset_property in self.importProperties
         ]
-        
+
         # Now for each dataset, construct the AssetPriceDataSet
         asset_price_datasets = [
-            AssetPriceDataSet(dataset_property.timeframe, dataset_property.base_dataset, data)
-            for dataset_property, data in zip(self.importProperties, dask.compute(*compute_tasks))  # Compute the results of the delayed tasks
+            AssetPriceDataSet(
+                dataset_property.timeframe, dataset_property.base_dataset, data
+            )
+            for dataset_property, data in zip(
+                self.importProperties, dask.compute(*compute_tasks)
+            )  # Compute the results of the delayed tasks
         ]
-        
+
         return asset_price_datasets

@@ -1,5 +1,7 @@
 import os
+
 import pytest
+
 from ai_trading.data_import.local.csv_data_import_service import CsvDataImportService
 from ai_trading.model.asset_price_import_properties import AssetPriceImportProperties
 
@@ -40,4 +42,7 @@ def test_csv_import(sample_csv_service: CsvDataImportService):
 
     data = sample_csv_service.import_data(limit=1)
     timeframes = [dataset.timeframe for dataset in data]
-    assert any(dataset.timeframe == "H1" and not dataset.asset_price_dataset.empty for dataset in data)
+    assert any(
+        dataset.timeframe == "H1" and not dataset.asset_price_dataset.empty
+        for dataset in data
+    )

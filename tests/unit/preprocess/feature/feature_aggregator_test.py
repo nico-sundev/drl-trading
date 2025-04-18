@@ -1,5 +1,6 @@
-import pytest
 from unittest import mock
+
+import pytest
 from pandas import DataFrame
 
 from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregator
@@ -50,7 +51,9 @@ def mock_registry(mock_feature_class_instance):
     return registry
 
 
-def test_feature_aggregator_compute(dummy_df, mock_config, mock_registry, mock_feature_df):
+def test_feature_aggregator_compute(
+    dummy_df, mock_config, mock_registry, mock_feature_df
+):
     aggregator = FeatureAggregator(dummy_df, mock_config, mock_registry)
     result_df = aggregator.compute()
 

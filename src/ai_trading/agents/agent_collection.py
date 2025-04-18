@@ -1,8 +1,11 @@
-from stable_baselines3 import PPO, A2C, DDPG, SAC, TD3
+from typing import List
+
 import numpy as np
+from stable_baselines3 import A2C, DDPG, SAC, TD3
+
 from ai_trading.agents.ppo_agent import PPOAgent
 from ai_trading.policies.pol_grad_loss_cb import PolicyGradientLossCallback
-from typing import List
+
 
 # Define A2C Agent
 class A2CAgent(PPOAgent):
@@ -12,7 +15,9 @@ class A2CAgent(PPOAgent):
         self.callback = PolicyGradientLossCallback()
         self.model.learn(total_timesteps=total_timesteps, callback=self.callback)
 
+
 # -----------------------------------------------------------------------------
+
 
 # Define DDPG Agent
 class DDPGAgent(PPOAgent):
@@ -22,7 +27,9 @@ class DDPGAgent(PPOAgent):
         self.callback = PolicyGradientLossCallback()
         self.model.learn(total_timesteps=total_timesteps, callback=self.callback)
 
+
 # -----------------------------------------------------------------------------
+
 
 # Define SAC Agent
 class SACAgent(PPOAgent):
@@ -32,7 +39,9 @@ class SACAgent(PPOAgent):
         self.callback = PolicyGradientLossCallback()
         self.model.learn(total_timesteps=total_timesteps, callback=self.callback)
 
+
 # -----------------------------------------------------------------------------
+
 
 # Define TD3 Agent
 class TD3Agent(PPOAgent):
@@ -42,7 +51,9 @@ class TD3Agent(PPOAgent):
         self.callback = PolicyGradientLossCallback()
         self.model.learn(total_timesteps=total_timesteps, callback=self.callback)
 
+
 # -----------------------------------------------------------------------------
+
 
 # Define Ensemble Agent
 class EnsembleAgent:
@@ -65,4 +76,4 @@ class EnsembleAgent:
             total_rewards += reward
             if done:
                 obs = env.reset()
-        print(f'Ensemble Agent Validation Reward: {total_rewards}')
+        print(f"Ensemble Agent Validation Reward: {total_rewards}")

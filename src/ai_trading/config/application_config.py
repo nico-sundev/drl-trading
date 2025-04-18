@@ -1,4 +1,5 @@
 from typing import Optional
+
 from ai_trading.config.base_schema import BaseSchema
 from ai_trading.config.environment_config import EnvironmentConfig
 from ai_trading.config.feature_config import FeaturesConfig, FeatureStoreConfig

@@ -1,7 +1,49 @@
 import numpy as np
-import pandas as pd
 import shap
 from sklearn.feature_selection import VarianceThreshold
+
+
+def evaluate_features_with_drl(feature_sets, env, agent, episodes=10):
+    """
+    Evaluate different feature sets using DRL agent performance.
+
+    Args:
+        feature_sets: List of feature column sets to evaluate
+        env: DRL environment
+        agent: DRL agent
+        episodes: Number of episodes to evaluate each feature set
+
+    Returns:
+        List of feature names that performed best
+    """
+    best_reward = float("-inf")
+    best_features = None
+
+    for features in feature_sets:
+        total_reward = 0
+        env.reset()  # Reset environment with new feature set
+        env.set_active_features(features)  # Assuming environment has this method
+
+        for _ in range(episodes):
+            done = False
+            state = env.reset()
+            episode_reward = 0
+
+            while not done:
+                action = agent.predict(state)
+                next_state, reward, done, _ = env.step(action)
+                episode_reward += reward
+                state = next_state
+
+            total_reward += episode_reward
+
+        avg_reward = total_reward / episodes
+        if avg_reward > best_reward:
+            best_reward = avg_reward
+            best_features = features
+
+    return best_features
+
 
 class DRLFeatureSelector:
     def __init__(self, env, agent, threshold=0.9):
@@ -24,12 +66,16 @@ class DRLFeatureSelector:
         """Remove highly correlated features."""
         corr_matrix = X.corr().abs()
         upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
-        to_drop = [column for column in upper.columns if any(upper[column] > self.threshold)]
+        to_drop = [
+            column for column in upper.columns if any(upper[column] > self.threshold)
+        ]
         return X.drop(columns=to_drop)
 
     def evaluate_feature_subsets(self, X, num_trials=3):
         """Train agent with different feature subsets and return the best one."""
-        feature_sets = [list(X.sample(frac=0.8, axis=1).columns) for _ in range(num_trials)]
+        feature_sets = [
+            list(X.sample(frac=0.8, axis=1).columns) for _ in range(num_trials)
+        ]
         best_features = evaluate_features_with_drl(feature_sets, self.env, self.agent)
         return X[best_features]
 
@@ -54,4 +100,6 @@ class DRLFeatureSelector:
             X_filtered = self.remove_correlated_features(X_filtered)
             return self.evaluate_feature_subsets(X_filtered)
         else:
-            raise ValueError("Invalid method. Choose 'filter', 'wrapper', 'embedded', or 'hybrid'.")
+            raise ValueError(
+                "Invalid method. Choose 'filter', 'wrapper', 'embedded', or 'hybrid'."
+            )

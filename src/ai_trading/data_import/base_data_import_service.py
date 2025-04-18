@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-import pandas as pd
 from typing import List, Optional
 
 from ai_trading.model.asset_price_dataset import AssetPriceDataSet

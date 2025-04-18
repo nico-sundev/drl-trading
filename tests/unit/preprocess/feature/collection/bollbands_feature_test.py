@@ -1,6 +1,8 @@
 from unittest.mock import MagicMock, patch
-from pandas import DataFrame, Series, date_range, to_datetime
+
 import pytest
+from pandas import DataFrame, date_range, to_datetime
+
 from ai_trading.preprocess.feature.collection.bollbands_feature import BollbandsFeature
 
 
@@ -27,15 +29,18 @@ def config():
     mock_config.length = 14
     return mock_config
 
+
 @patch("pandas_ta.bbands")
 def test_bollbands_feature_computation(patched_bollbands, feature, config):
-    df = DataFrame({
-        "Time": date_range("2020-01-01", periods=10),
-        "Close": range(10),
-        "Open": range(10),
-        "High": range(10),
-        "Low": range(10),
-    })
+    df = DataFrame(
+        {
+            "Time": date_range("2020-01-01", periods=10),
+            "Close": range(10),
+            "Open": range(10),
+            "High": range(10),
+            "Low": range(10),
+        }
+    )
     feature = BollbandsFeature(df)
     # config = ...  # Insert mock config here
     # result = feature.compute(config)

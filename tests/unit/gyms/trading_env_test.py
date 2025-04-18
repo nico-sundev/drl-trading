@@ -1,8 +1,9 @@
+import random
+import time
+
 import numpy as np
 import pandas as pd
 import pytest
-import time
-import random
 
 from ai_trading.config.environment_config import EnvironmentConfig
 from ai_trading.gyms.custom_env import TradingEnv
@@ -118,7 +119,7 @@ class TestTradingEnv:
             current_price
             * (env.env_data_source.iloc[0].atr / current_price)
             * env.env_config.slippage_atr_based
-            * 1.001 # This is really important, because otherwise tests will be flaky and sometimes fail
+            * 1.001  # This is really important, because otherwise tests will be flaky and sometimes fail
         )
         assert (
             price_diff <= expected_max_slippage

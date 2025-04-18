@@ -1,12 +1,13 @@
-import gymnasium as gym
-from gymnasium import spaces
-import numpy as np
-from pandas import DataFrame
 import logging
 import random
 
+import gymnasium as gym
+import numpy as np
+from gymnasium import spaces
+from pandas import DataFrame
+
 from ai_trading.config.environment_config import EnvironmentConfig
-from ai_trading.gyms.utils.trading_env_utils import TradingEnvUtils, TradingDirection
+from ai_trading.gyms.utils.trading_env_utils import TradingDirection, TradingEnvUtils
 
 logger = logging.getLogger(__name__)
 

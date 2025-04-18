@@ -1,20 +1,27 @@
+from typing import cast
+
+import pandas_ta as ta
 from pandas import DataFrame
+
+from ai_trading.config.base_parameter_set_config import BaseParameterSetConfig
 from ai_trading.config.feature_config_collection import RocConfig
 from ai_trading.preprocess.feature.collection.base_feature import BaseFeature
-import pandas_ta as ta
+
 
 class RocFeature(BaseFeature):
-    def __init__(self, source: DataFrame, postfix: str = ""):
+    def __init__(self, source: DataFrame, postfix: str = "") -> None:
         self.df_source = source
         self.postfix = postfix
 
-    def compute(self, config: RocConfig) -> DataFrame:
+    def compute(self, config: BaseParameterSetConfig) -> DataFrame:
+        roc_config = cast(RocConfig, config)
         df = DataFrame()
         df["Time"] = self.df_source["Time"]
-        df[f"roc_{config.length}{self.postfix}"] = ta.roc(
-            self.df_source["Close"], length=config.length
+        df[f"roc_{roc_config.length}{self.postfix}"] = ta.roc(
+            self.df_source["Close"], length=roc_config.length
         )
         return df
 
-    def get_sub_features_names(self, config: RocConfig) -> list[str]:
-        return [f"roc_{config.length}{self.postfix}"]
+    def get_sub_features_names(self, config: BaseParameterSetConfig) -> list[str]:
+        roc_config = cast(RocConfig, config)
+        return [f"roc_{roc_config.length}{self.postfix}"]

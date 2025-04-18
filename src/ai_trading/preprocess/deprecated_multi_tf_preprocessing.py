@@ -1,10 +1,8 @@
-import logging
 import os
-import pandas as pd
-import pandas_ta as ta
+
 import numpy as np
-
-
+import pandas as pd
+import pandas_ta as ta  # type: ignore
 
 
 class TimeSeriesLengthError(Exception):
@@ -205,12 +203,10 @@ def merge_higher_tf_data(
     it_higher_tf = snippet_higher_tf.itertuples()
 
     # move higher TF pointer,
-    # past one pointing to the last recent finished record t and
-    # future one, which is t + 2
-    t_plus_0_iter_higher_tf = next(it_higher_tf, None)
+    # future one pointing to t + 2
     t_plus_2_iter_higher_tf = next(it_higher_tf, None)
 
-    if t_plus_2_iter_higher_tf == None:
+    if t_plus_2_iter_higher_tf is None:
         raise TimeSeriesLengthError("Cursor future_iter_higher_tf is invalid")
 
     # Add a new column to df_1h to store the 4H data
@@ -290,11 +286,7 @@ def merge_timeframes_into_base(data_source: dict, write_results_to_disk=False):
     # df_1d["Close"] = data_source["D1"]["Close"]
 
     # For each 1H candle, find the most recent 4H, 12H, and 1D data points to prevent lookahead bias
-    for series_name, series in df_1h.items():
-        # Merge 4H indicators
-        # df_merged[series_name + '_4h'] = df_merged["Time"].apply(lambda ts: get_past_value(df_4h, ts, series_name))
-        # Merge 1D indicators
-        # df_merged[series_name + '_1d'] = df_merged["Time"].apply(lambda ts: get_past_value(df_1d, ts, series_name))
+    for series_name, _series in df_1h.items():
         # Merge higher timeframe data (e.g., 6-hour close prices) onto the 1-hour base dataframe
         df_merged = merge_higher_tf_data(df_merged, df_4h, series_name, "Time", "_H4")
 

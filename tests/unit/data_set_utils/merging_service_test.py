@@ -1,10 +1,11 @@
-import os
 from typing import List
+
 import pandas as pd
 import pytest
+
+from ai_trading.data_set_utils.merge_service import MergeService
 from ai_trading.data_set_utils.util import separate_computed_datasets
 from ai_trading.model.asset_price_dataset import AssetPriceDataSet
-from ai_trading.data_set_utils.merge_service import MergeService
 from ai_trading.model.computed_dataset_container import ComputedDataSetContainer
 from tests.unit.fixture.sample_data import mock_ohlcv_data_1h, mock_ohlcv_data_4h
 

@@ -1,5 +1,6 @@
-import pytest
 import pandas as pd
+import pytest
+
 from ai_trading.preprocess.feature.custom.enum.wick_handle_strategy_enum import (
     WICK_HANDLE_STRATEGY,
 )

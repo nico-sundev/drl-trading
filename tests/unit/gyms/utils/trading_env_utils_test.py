@@ -1,11 +1,12 @@
-import pytest
 import numpy as np
-from ai_trading.gyms.utils.trading_env_utils import TradingEnvUtils, TradingDirection
+import pytest
+
+from ai_trading.gyms.utils.trading_env_utils import TradingDirection, TradingEnvUtils
 
 
 class TestTradingEnvUtils:
     # Calculate Number Contracts Tests
-    def test_calculate_number_contracts_long(self):
+    def test_calculate_number_contracts_long(self) -> None:
         # Given
         direction = TradingDirection.LONG
         open_position_percentage = 50.0
@@ -17,7 +18,13 @@ class TestTradingEnvUtils:
 
         # When
         result = TradingEnvUtils.calculate_number_contracts(
-            direction, open_position_percentage, current_price, balance, fee, slippage, leverage
+            direction,
+            open_position_percentage,
+            current_price,
+            balance,
+            fee,
+            slippage,
+            leverage,
         )
 
         # Then
@@ -25,7 +32,7 @@ class TestTradingEnvUtils:
         assert np.isclose(result, expected)
         assert result > 0  # Should be positive for long positions
 
-    def test_calculate_number_contracts_short(self):
+    def test_calculate_number_contracts_short(self) -> None:
         # Given
         direction = TradingDirection.SHORT
         open_position_percentage = 50.0
@@ -37,7 +44,13 @@ class TestTradingEnvUtils:
 
         # When
         result = TradingEnvUtils.calculate_number_contracts(
-            direction, open_position_percentage, current_price, balance, fee, slippage, leverage
+            direction,
+            open_position_percentage,
+            current_price,
+            balance,
+            fee,
+            slippage,
+            leverage,
         )
 
         # Then
@@ -46,7 +59,7 @@ class TestTradingEnvUtils:
         assert result < 0  # Should be negative for short positions
 
     # Liquidation Price Tests
-    def test_calculate_liquidation_price_long(self):
+    def test_calculate_liquidation_price_long(self) -> None:
         # Given
         position_open_price = 100.0
         position_size = 1.0
@@ -58,10 +71,12 @@ class TestTradingEnvUtils:
         )
 
         # Then
-        assert result < position_open_price  # Liquidation price should be lower for longs
+        assert (
+            result < position_open_price
+        )  # Liquidation price should be lower for longs
         assert result > 0  # Should always be positive
 
-    def test_calculate_liquidation_price_short(self):
+    def test_calculate_liquidation_price_short(self) -> None:
         # Given
         position_open_price = 100.0
         position_size = -1.0
@@ -73,10 +88,12 @@ class TestTradingEnvUtils:
         )
 
         # Then
-        assert result > position_open_price  # Liquidation price should be higher for shorts
+        assert (
+            result > position_open_price
+        )  # Liquidation price should be higher for shorts
         assert result > 0  # Should always be positive
 
-    def test_calculate_liquidation_price_invalid_leverage(self):
+    def test_calculate_liquidation_price_invalid_leverage(self) -> None:
         # Given
         position_open_price = 100.0
         position_size = 1.0
@@ -88,7 +105,7 @@ class TestTradingEnvUtils:
                 position_open_price, position_size, leverage
             )
 
-    def test_calculate_liquidation_price_no_position(self):
+    def test_calculate_liquidation_price_no_position(self) -> None:
         # Given
         position_open_price = 100.0
         position_size = 0.0
@@ -101,7 +118,7 @@ class TestTradingEnvUtils:
             )
 
     # Close Fee Tests
-    def test_calculate_close_fee_full_close(self):
+    def test_calculate_close_fee_full_close(self) -> None:
         # Given
         current_price = 100.0
         position_size = 2.0
@@ -117,7 +134,7 @@ class TestTradingEnvUtils:
         expected = abs(100.0 * 2.0) * (0.01 + 0.001)
         assert np.isclose(result, expected)
 
-    def test_calculate_close_fee_partial_close(self):
+    def test_calculate_close_fee_partial_close(self) -> None:
         # Given
         current_price = 100.0
         position_size = 2.0
@@ -135,7 +152,7 @@ class TestTradingEnvUtils:
         assert np.isclose(result, expected)
 
     # PNL Tests
-    def test_calculate_pnl_profitable_long(self):
+    def test_calculate_pnl_profitable_long(self) -> None:
         # Given
         current_price = 110.0
         position_open_price = 100.0
@@ -155,7 +172,7 @@ class TestTradingEnvUtils:
         assert np.isclose(result, expected)
         assert result > 0  # Should be profitable
 
-    def test_calculate_pnl_losing_short(self):
+    def test_calculate_pnl_losing_short(self) -> None:
         # Given
         current_price = 110.0
         position_open_price = 100.0
@@ -176,7 +193,7 @@ class TestTradingEnvUtils:
         assert result < 0  # Should be unprofitable
 
     # Position Direction Tests
-    def test_get_position_direction_long(self):
+    def test_get_position_direction_long(self) -> None:
         # Given
         position_state = 1
 
@@ -186,7 +203,7 @@ class TestTradingEnvUtils:
         # Then
         assert result == TradingDirection.LONG
 
-    def test_get_position_direction_short(self):
+    def test_get_position_direction_short(self) -> None:
         # Given
         position_state = -1
 
@@ -196,7 +213,7 @@ class TestTradingEnvUtils:
         # Then
         assert result == TradingDirection.SHORT
 
-    def test_get_position_direction_none(self):
+    def test_get_position_direction_none(self) -> None:
         # Given
         position_state = 0
 
@@ -207,7 +224,7 @@ class TestTradingEnvUtils:
         assert result == TradingDirection.NONE
 
     # Position State Tests
-    def test_has_active_position(self):
+    def test_has_active_position(self) -> None:
         # Given
         position_states = [-1, 0, 1]
 

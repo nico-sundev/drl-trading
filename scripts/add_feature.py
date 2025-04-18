@@ -1,7 +1,6 @@
-import sys
 import os
+import sys
 from string import Template
-
 
 # ==== CONFIGURATION ====
 
@@ -18,19 +17,21 @@ CONFIG_TEMPLATE_FILE = "config_template.txt"
 
 
 def snake_to_pascal(snake: str) -> str:
-    return ''.join(word.capitalize() for word in snake.split('_'))
+    return "".join(word.capitalize() for word in snake.split("_"))
 
 
 def render_template(path: str, substitutions: dict) -> str:
-    with open(path, 'r') as f:
+    with open(path, "r") as f:
         template = Template(f.read())
     return template.substitute(substitutions)
 
 
-def create_file_from_template(output_path: str, template_path: str, substitutions: dict):
+def create_file_from_template(
+    output_path: str, template_path: str, substitutions: dict
+):
     content = render_template(template_path, substitutions)
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         f.write(content)
     print(f"Created: {output_path}")
 
@@ -43,10 +44,7 @@ def main():
     feature_name = sys.argv[1].lower()
     class_prefix = snake_to_pascal(feature_name)
 
-    substitutions = {
-        "feature_name": feature_name,
-        "FeatureName": class_prefix
-    }
+    substitutions = {"feature_name": feature_name, "FeatureName": class_prefix}
 
     # 1. Create Feature class
     feature_path = os.path.join(FEATURE_PACKAGE, f"{feature_name}_feature.py")

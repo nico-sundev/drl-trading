@@ -1,6 +1,6 @@
-import re
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
+
 
 class BaseSchema(BaseModel):
     model_config = ConfigDict(

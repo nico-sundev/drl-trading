@@ -1,5 +1,7 @@
 from stable_baselines3 import PPO
+
 from ai_trading.policies.pol_grad_loss_cb import PolicyGradientLossCallback
+
 
 # Define PPO Agent
 class PPOAgent:
@@ -22,11 +24,11 @@ class PPOAgent:
         recommendations = []
         for a in action:
             if a > self.threshold:
-                recommendations.append('buy')
+                recommendations.append("buy")
             elif a < -self.threshold:
-                recommendations.append('sell')
+                recommendations.append("sell")
             else:
-                recommendations.append('hold')
+                recommendations.append("hold")
         return recommendations
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -40,4 +42,4 @@ class PPOAgent:
             total_rewards += reward
             if done:
                 obs = env.reset()
-        print(f'Agent Validation Reward: {total_rewards}')
+        print(f"Agent Validation Reward: {total_rewards}")

@@ -1,8 +1,10 @@
+from typing import Dict, List, Tuple
+
 from pandas import DataFrame
-from ai_trading.agents.agent_registry import AgentRegistry
-from ai_trading.agents.agent_collection import EnsembleAgent
 from stable_baselines3.common.vec_env import DummyVecEnv
 
+from ai_trading.agents.agent_collection import EnsembleAgent, PPOAgent
+from ai_trading.agents.agent_registry import AgentRegistry
 from ai_trading.config.environment_config import EnvironmentConfig
 from ai_trading.gyms.custom_env import TradingEnv
 
@@ -12,7 +14,9 @@ class AgentTrainingService:
     Service to handle the creation of environments and training of agents.
     """
 
-    def __init__(self, env_config: EnvironmentConfig, agent_registry: AgentRegistry):
+    def __init__(
+        self, env_config: EnvironmentConfig, agent_registry: AgentRegistry
+    ) -> None:
         self.agent_registry = agent_registry
         self.env_config = env_config
 
@@ -22,8 +26,8 @@ class AgentTrainingService:
         val_data: DataFrame,
         total_timesteps: int,
         threshold: float,
-        agent_config: list[str]
-    ):
+        agent_config: List[str],
+    ) -> Tuple[DummyVecEnv, DummyVecEnv, Dict[str, PPOAgent]]:
         """
         Create environments and train agents dynamically based on the configuration.
 
@@ -41,7 +45,7 @@ class AgentTrainingService:
         train_env = DummyVecEnv([lambda: TradingEnv(train_data, self.env_config)])
         val_env = DummyVecEnv([lambda: TradingEnv(val_data, self.env_config)])
 
-        agents = {}
+        agents: Dict[str, PPOAgent] = {}
         for agent_name in agent_config:
             if agent_name in self.agent_registry.agent_class_map:
                 agent_class = self.agent_registry.agent_class_map[agent_name]

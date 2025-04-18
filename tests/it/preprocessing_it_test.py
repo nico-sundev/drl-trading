@@ -1,4 +1,5 @@
 import os
+
 import pytest
 
 from ai_trading.config.config_loader import ConfigLoader
@@ -8,9 +9,11 @@ from ai_trading.data_import.local.csv_data_import_service import CsvDataImportSe
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
 from ai_trading.preprocess.preprocess_service import PreprocessService
 
+
 @pytest.fixture
 def reset_registry():
     FeatureConfigRegistry._instance = None
+
 
 @pytest.fixture
 def config(reset_registry):
@@ -25,11 +28,13 @@ def config(reset_registry):
     ]
     return config
 
+
 @pytest.fixture
 def datasets(config):
     repository = CsvDataImportService(config.local_data_import_config.datasets)
     importer = DataImportManager(repository)
     return importer.get_data(100)
+
 
 @pytest.fixture
 def class_registry():
@@ -40,18 +45,19 @@ def class_registry():
 def preprocess_service(datasets, config, class_registry):
     return PreprocessService(datasets, config.features_config, class_registry)
 
+
 def test_preprocessing(preprocess_service):
-    #Given
+    # Given
     expected_columns = {
         "Time",
-        f"rsi_7",
-        f"HTF240_rsi_7",
+        "rsi_7",
+        "HTF240_rsi_7",
     }
-    
+
     # When
     result = preprocess_service.preprocess_data()
     actual_columns = set(result.columns)
-    
+
     # Then
     assert (
         actual_columns == expected_columns

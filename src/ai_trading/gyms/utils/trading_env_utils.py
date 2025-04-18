@@ -1,6 +1,4 @@
 from enum import Enum
-import numpy as np
-from typing import Union
 
 
 class TradingDirection(Enum):
@@ -38,7 +36,9 @@ class TradingEnvUtils:
         total_position_value_excluding_fee = total_position_value * (
             1.0 - fee - slippage
         )
-        return (total_position_value_excluding_fee / current_price) * direction.value
+        return float(
+            (total_position_value_excluding_fee / current_price) * direction.value
+        )
 
     @staticmethod
     def calculate_liquidation_price(
@@ -71,9 +71,9 @@ class TradingEnvUtils:
         adjustment_factor = 1 - (1 / (leverage**1.1))  # Exponential adjustment
 
         if position_size > 0:  # Long trade
-            return position_open_price * adjustment_factor
+            return float(position_open_price * adjustment_factor)
         else:  # Short trade
-            return position_open_price / adjustment_factor
+            return float(position_open_price / adjustment_factor)
 
     @staticmethod
     def calculate_close_fee(
@@ -95,7 +95,7 @@ class TradingEnvUtils:
         Returns:
             float: The calculated closing fee
         """
-        return abs(current_price * position_size * percentage) * (fee + slippage)
+        return float(abs(current_price * position_size * percentage) * (fee + slippage))
 
     @staticmethod
     def calculate_pnl(
@@ -122,7 +122,7 @@ class TradingEnvUtils:
         fees = TradingEnvUtils.calculate_close_fee(
             current_price, position_size, fee, slippage
         )
-        return raw_pnl - fees
+        return float(raw_pnl - fees)
 
     @staticmethod
     def get_position_direction(position_state: int) -> TradingDirection:
@@ -150,4 +150,4 @@ class TradingEnvUtils:
         Returns:
             bool: True if there is an active position, False otherwise
         """
-        return position_state != 0
+        return bool(position_state != 0)

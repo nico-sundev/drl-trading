@@ -1,6 +1,8 @@
 from typing import Optional
+
 from numpy import mean
 from pandas import DataFrame
+
 from ai_trading.preprocess.feature.custom.enum.wick_handle_strategy_enum import (
     WICK_HANDLE_STRATEGY,
 )

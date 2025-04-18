@@ -2,6 +2,7 @@ import importlib
 import inspect
 import pkgutil
 from typing import Dict, Type
+
 from ai_trading.preprocess.feature.collection.base_feature import BaseFeature
 
 

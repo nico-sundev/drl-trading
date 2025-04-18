@@ -1,12 +1,9 @@
-from typing import List, Optional
-from pandas import DataFrame
-import yfinance as yf
-from IPython.display import display
+from typing import Optional
 
-from ai_trading.data_import.base_data_import_service import (
-    BaseDataImportService,
-)
-from ai_trading.model.split_dataset_container import SplitDataSetContainer
+import yfinance as yf
+from pandas import DataFrame
+
+from ai_trading.data_import.base_data_import_service import BaseDataImportService
 
 # List of stocks in the Dow Jones 30
 # tickers = [

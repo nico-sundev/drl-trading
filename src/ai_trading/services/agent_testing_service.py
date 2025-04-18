@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-import numpy as np
+
 
 class AgentTestingService:
     """
@@ -81,9 +81,13 @@ class AgentTestingService:
         metrics = {}
         for agent_name, agent in agents.items():
             print(f"Testing {agent_name}...")
-            metrics[agent_name] = self.test_agent(env, agent, data, n_tests=n_tests, visualize=True)
+            metrics[agent_name] = self.test_agent(
+                env, agent, data, n_tests=n_tests, visualize=True
+            )
 
         net_worths = [metrics[agent_name]["net_worths"] for agent_name in agents.keys()]
         steps = next(iter(metrics.values()))["steps"]
 
-        self.visualize_multiple_portfolio_net_worth(steps, net_worths, list(agents.keys()))
+        self.visualize_multiple_portfolio_net_worth(
+            steps, net_worths, list(agents.keys())
+        )

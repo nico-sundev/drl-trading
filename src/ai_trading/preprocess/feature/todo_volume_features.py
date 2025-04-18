@@ -1,8 +1,9 @@
+from functools import lru_cache
+from typing import Optional
+
 import numpy as np
 import pandas as pd
 import pandas_ta as ta
-from functools import lru_cache
-from typing import Optional
 
 try:
     from feast import FeatureStore  # Optional: Feature store integration
@@ -11,23 +12,32 @@ except ImportError:
 
 
 class VolumeIndicators:
-    
-    def __init__(self, df: pd.DataFrame, use_feature_store: bool = False, feature_store_path: Optional[str] = None):
+
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        use_feature_store: bool = False,
+        feature_store_path: Optional[str] = None,
+    ):
         """
         Initialize the class with a DataFrame containing:
         - 'Close': Closing price
         - 'High': Highest price
         - 'Low': Lowest price
         - 'Volume': Trading volume
-        
+
         Params:
         - use_feature_store (bool): Whether to use a feature store
         - feature_store_path (str, optional): Path to the feature store repo (if applicable)
         """
         self.df = df.copy()
         self.use_feature_store = use_feature_store
-        self.feature_store = FeatureStore(feature_store_path) if use_feature_store and FeatureStore else None
-    
+        self.feature_store = (
+            FeatureStore(feature_store_path)
+            if use_feature_store and FeatureStore
+            else None
+        )
+
     @lru_cache(maxsize=32)
     def compute_atr(self, length: int = 14) -> pd.Series:
         """Compute the Average True Range (ATR)"""
@@ -85,16 +95,16 @@ class VolumeIndicators:
         cached_features = self.fetch_features()
         if cached_features is not None:
             return cached_features  # Return from feature store if available
-        
+
         indicators = {
             "Normalized_Volume": self.compute_normalized_volume(),
             "VROC": self.compute_vroc(),
             "Relative_Volume": self.compute_relative_volume(),
             "OBV": self.compute_obv(),
             "Normalized_OBV": self.compute_normalized_obv(),
-            "VVR": self.compute_vvr()
+            "VVR": self.compute_vvr(),
         }
         result_df = pd.DataFrame(indicators, index=self.df.index)
-        
+
         self.store_features(result_df)  # Store in feature store if enabled
         return result_df
