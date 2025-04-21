@@ -1,6 +1,7 @@
 from typing import cast
 
-import pandas_ta as ta  # type: ignore
+import numpy as np
+import pandas_ta as ta
 from pandas import DataFrame
 
 from ai_trading.config.base_parameter_set_config import BaseParameterSetConfig
@@ -20,9 +21,11 @@ class MacdFeature(BaseFeature):
 
         macd = ta.macd(
             self.df_source["Close"],
-            fast=macd_config.fast,
-            slow=macd_config.slow,
-            signal=macd_config.signal,
+            fast=macd_config.fast_length,
+            slow=macd_config.slow_length,
+            signal=macd_config.signal_length,
+            fillna=np.nan,
+            signal_indicators=True,
         )
 
         df["macd_cross_bullish" + self.postfix] = macd[
@@ -36,7 +39,7 @@ class MacdFeature(BaseFeature):
         ]
         return df
 
-    def get_sub_features_names(self, config: MacdConfig) -> list[str]:
+    def get_sub_features_names(self, cfg: BaseParameterSetConfig) -> list[str]:
         return [
             f"macd_cross_bullish{self.postfix}",
             f"macd_cross_bearish{self.postfix}",

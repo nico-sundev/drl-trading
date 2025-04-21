@@ -1,12 +1,13 @@
 import logging
 import os
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Union
 
 from pandas import DataFrame
-from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.vec_env import DummyVecEnv
 
+from ai_trading.agents.agent_collection import EnsembleAgent
 from ai_trading.agents.agent_registry import AgentRegistry
+from ai_trading.agents.ppo_agent import PPOAgent
 from ai_trading.config.application_config import ApplicationConfig
 from ai_trading.config.config_loader import ConfigLoader
 from ai_trading.config.logging_config import configure_logging
@@ -33,7 +34,7 @@ def bootstrap(config: ApplicationConfig) -> DataFrame:
     logger.info("Configuration loaded successfully")
 
     # Initialize services
-    data_import_svc = CsvDataImportService(config.local_data_import_config)
+    data_import_svc = CsvDataImportService(config.local_data_import_config.datasets)
     raw_asset_price_datasets = data_import_svc.import_data()
     logger.info(f"Imported {len(raw_asset_price_datasets)} raw asset price datasets")
 
@@ -63,7 +64,7 @@ def bootstrap(config: ApplicationConfig) -> DataFrame:
 
 def create_environments_and_train(
     base_dataset: DataFrame, config: ApplicationConfig
-) -> Tuple[DummyVecEnv, DummyVecEnv, Dict[str, BaseAlgorithm]]:
+) -> Tuple[DummyVecEnv, DummyVecEnv, Dict[str, Union[PPOAgent, EnsembleAgent]]]:
     """Create environments and train agents.
 
     Args:

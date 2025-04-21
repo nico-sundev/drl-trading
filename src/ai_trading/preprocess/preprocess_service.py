@@ -35,7 +35,7 @@ class PreprocessService:
         # Compute all delayed tasks in parallel
         asset_price_datasets: List[ComputedDataSetContainer] = dask.compute(
             *feature_results
-        )[0]
+        )
         base_dataset, other_datasets = separate_computed_datasets(asset_price_datasets)
 
         # Initialize a merged dataset with the base_dataset first

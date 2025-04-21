@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 from pandas import DataFrame
 from stable_baselines3.common.vec_env import DummyVecEnv
@@ -27,7 +27,7 @@ class AgentTrainingService:
         total_timesteps: int,
         threshold: float,
         agent_config: List[str],
-    ) -> Tuple[DummyVecEnv, DummyVecEnv, Dict[str, PPOAgent]]:
+    ) -> Tuple[DummyVecEnv, DummyVecEnv, Dict[str, Union[PPOAgent, EnsembleAgent]]]:
         """
         Create environments and train agents dynamically based on the configuration.
 
@@ -41,11 +41,18 @@ class AgentTrainingService:
         Returns:
             tuple: Training environment, validation environment, and trained agents.
         """
-        # Create environments for training and validation
-        train_env = DummyVecEnv([lambda: TradingEnv(train_data, self.env_config)])
-        val_env = DummyVecEnv([lambda: TradingEnv(val_data, self.env_config)])
+        # Assume feature columns start from index 5 (you might need to adjust this based on your data structure)
+        feature_start_index = 5
 
-        agents: Dict[str, PPOAgent] = {}
+        # Create environments for training and validation
+        train_env = DummyVecEnv(
+            [lambda: TradingEnv(train_data, self.env_config, feature_start_index)]
+        )
+        val_env = DummyVecEnv(
+            [lambda: TradingEnv(val_data, self.env_config, feature_start_index)]
+        )
+
+        agents: Dict[str, Union[PPOAgent, EnsembleAgent]] = {}
         for agent_name in agent_config:
             if agent_name in self.agent_registry.agent_class_map:
                 agent_class = self.agent_registry.agent_class_map[agent_name]

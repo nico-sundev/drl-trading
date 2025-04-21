@@ -1,17 +1,17 @@
 from gymnasium import Env
-from stable_baselines3 import PPO
+from stable_baselines3 import A2C
 
 from ai_trading.agents.agent_policy import AgentPolicy
 
 
-class PPOAgent(AgentPolicy[PPO]):
+class A2CAgent(AgentPolicy[A2C]):
     """
-    Implementation of an agent using Proximal Policy Optimization (PPO).
+    Implementation of an agent using Advantage Actor-Critic (A2C).
     """
 
     def __init__(self, env: Env, total_timesteps: int, threshold: float = 0.5) -> None:
         """
-        Initialize the PPO agent.
+        Initialize the A2C agent.
 
         Args:
             env: Training environment

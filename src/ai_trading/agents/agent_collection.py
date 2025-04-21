@@ -1,79 +1,24 @@
-from typing import List
+"""
+Module that collects and exposes all agent implementations.
+This module makes it convenient to import any agent type from a single place.
+"""
 
-import numpy as np
-from stable_baselines3 import A2C, DDPG, SAC, TD3
-
+from ai_trading.agents.a2c_agent import A2CAgent
+from ai_trading.agents.abstract_base_agent import AbstractBaseAgent
+from ai_trading.agents.agent_policy import AgentPolicy
+from ai_trading.agents.ddpg_agent import DDPGAgent
+from ai_trading.agents.ensemble_agent import EnsembleAgent
 from ai_trading.agents.ppo_agent import PPOAgent
-from ai_trading.policies.pol_grad_loss_cb import PolicyGradientLossCallback
+from ai_trading.agents.sac_agent import SACAgent
+from ai_trading.agents.td3_agent import TD3Agent
 
-
-# Define A2C Agent
-class A2CAgent(PPOAgent):
-    def __init__(self, env, total_timesteps, threshold):
-        super().__init__(env, total_timesteps, threshold)
-        self.model = A2C("MlpPolicy", env, verbose=1)
-        self.callback = PolicyGradientLossCallback()
-        self.model.learn(total_timesteps=total_timesteps, callback=self.callback)
-
-
-# -----------------------------------------------------------------------------
-
-
-# Define DDPG Agent
-class DDPGAgent(PPOAgent):
-    def __init__(self, env, total_timesteps, threshold):
-        super().__init__(env, total_timesteps, threshold)
-        self.model = DDPG("MlpPolicy", env, verbose=1)
-        self.callback = PolicyGradientLossCallback()
-        self.model.learn(total_timesteps=total_timesteps, callback=self.callback)
-
-
-# -----------------------------------------------------------------------------
-
-
-# Define SAC Agent
-class SACAgent(PPOAgent):
-    def __init__(self, env, total_timesteps, threshold):
-        super().__init__(env, total_timesteps, threshold)
-        self.model = SAC("MlpPolicy", env, verbose=1)
-        self.callback = PolicyGradientLossCallback()
-        self.model.learn(total_timesteps=total_timesteps, callback=self.callback)
-
-
-# -----------------------------------------------------------------------------
-
-
-# Define TD3 Agent
-class TD3Agent(PPOAgent):
-    def __init__(self, env, total_timesteps, threshold):
-        super().__init__(env, total_timesteps, threshold)
-        self.model = TD3("MlpPolicy", env, verbose=1)
-        self.callback = PolicyGradientLossCallback()
-        self.model.learn(total_timesteps=total_timesteps, callback=self.callback)
-
-
-# -----------------------------------------------------------------------------
-
-
-# Define Ensemble Agent
-class EnsembleAgent:
-    def __init__(self, agents: List[PPOAgent], threshold: float):
-        self.agents = agents
-        self.threshold = threshold
-
-    def predict(self, obs):
-        predictions = [agent.predict(obs) for agent in self.agents]
-        # Combine predictions based on some logic (e.g., majority vote, weighted average)
-        # For simplicity, return the first agent's prediction
-        return np.mean(predictions, axis=0)
-
-    def validate(self, env):
-        obs = env.reset()
-        total_rewards = 0
-        for _ in range(1000):  # Adjust based on needs
-            action = self.predict(obs)
-            obs, reward, done, _ = env.step(action)
-            total_rewards += reward
-            if done:
-                obs = env.reset()
-        print(f"Ensemble Agent Validation Reward: {total_rewards}")
+__all__ = [
+    "AbstractBaseAgent",
+    "AgentPolicy",
+    "PPOAgent",
+    "A2CAgent",
+    "DDPGAgent",
+    "SACAgent",
+    "TD3Agent",
+    "EnsembleAgent",
+]

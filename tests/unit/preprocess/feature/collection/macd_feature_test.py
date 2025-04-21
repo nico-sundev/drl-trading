@@ -27,9 +27,9 @@ def feature(mock_data):
 @pytest.fixture
 def config():
     mock_config = MagicMock()
-    mock_config.fast = 3
-    mock_config.slow = 6
-    mock_config.signal = 5
+    mock_config.fast_length = 3
+    mock_config.slow_length = 6
+    mock_config.signal_length = 5
     return mock_config
 
 
@@ -37,9 +37,9 @@ def config():
 def test_compute_macd_signals(patched_macd, feature, config):
 
     # Given
-    fast_length = config.fast
-    slow_length = config.slow
-    signal_length = config.signal
+    fast_length = config.fast_length
+    slow_length = config.slow_length
+    signal_length = config.signal_length
     macd_result = DataFrame()
     macd_result[f"MACD_{fast_length}_{slow_length}_{signal_length}_A_0"] = Series(
         [0, 0, 1, 0, 1, 0]  # MACD Trend

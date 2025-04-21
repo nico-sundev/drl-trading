@@ -40,7 +40,12 @@ def temp_config_file():
                     "enabled": True,
                     "derivatives": [],
                     "parameterSets": [
-                        {"enabled": True, "fast": 3, "slow": 5, "signal": 7}
+                        {
+                            "enabled": True,
+                            "fast_length": 3,
+                            "slow_length": 5,
+                            "signal_length": 7,
+                        }
                     ],
                 },
                 {
@@ -126,9 +131,9 @@ def test_load_config_from_json(temp_config_file):
     # MACD
     macd = get_feature_param_set("macd")
     assert isinstance(macd, MacdConfig)
-    assert macd.fast == 3
-    assert macd.slow == 5
-    assert macd.signal == 7
+    assert macd.fast_length == 3
+    assert macd.slow_length == 5
+    assert macd.signal_length == 7
 
     # RSI
     rsi = get_feature_param_set("rsi")
