@@ -2,17 +2,18 @@ import types
 from unittest import mock
 
 import pytest
+from stable_baselines3 import A2C, PPO
 
+from ai_trading.agents.agent_policy import AgentPolicy
 from ai_trading.agents.agent_registry import AgentRegistry
-from ai_trading.agents.ppo_agent import PPOAgent
 
 
 # Mocked Agent classes for testing
-class MockPPOAgent(PPOAgent):
+class MockPPOAgent(AgentPolicy[PPO]):
     pass
 
 
-class MockA2CAgent(PPOAgent):
+class MockA2CAgent(AgentPolicy[A2C]):
     pass
 
 
@@ -61,4 +62,4 @@ def test_discover_agents(registry):
         assert agent_map["mockppo"].__name__ == "MockPPOAgent"
         assert agent_map["mocka2c"].__name__ == "MockA2CAgent"
         assert len(agent_map) == 3  # Includes EnsembleAgent
-        assert "EnsembleAgent" in agent_map
+        assert "ensemble" in agent_map

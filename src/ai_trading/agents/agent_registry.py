@@ -11,7 +11,7 @@ from ai_trading.agents.ensemble_agent import EnsembleAgent
 class AgentRegistry:
     _instance = None
 
-    def __new__(cls) -> "AgentRegistry":
+    def __new__(cls, *args, **kwargs) -> "AgentRegistry":
         if cls._instance is None:
             cls._instance = super(AgentRegistry, cls).__new__(cls)
         return cls._instance
