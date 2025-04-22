@@ -43,7 +43,19 @@ warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
 strict_optional = true
+ignore_missing_imports = true
+# Cache improvements from mypy.ini
+cache_dir = ".mypy_cache"
+incremental = true
+follow_imports = "silent"
+# Exclude all test files in the tests directory
+exclude = "tests"
 
 [[tool.mypy.overrides]]
 module = ["pandas.*", "numpy.*", "pytest.*"]
 ignore_missing_imports = true
+
+# Special handling for todo files (from mypy.ini)
+[[tool.mypy.overrides]]
+module = ["todo_*"]
+ignore_errors = true
