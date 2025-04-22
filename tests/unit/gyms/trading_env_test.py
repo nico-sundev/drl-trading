@@ -81,14 +81,14 @@ class TestTradingEnv:
         assert env.current_step == 0, "Initial step should be 0"
         assert env.done is False, "Environment should not start in done state"
 
-    def test_reset_state(self, env):
+    def test_reset_state(self, env: TradingEnv) -> None:
         # Given
         env.balance = 5000.0
         env.position_state = 1
         env.current_step = 10
 
         # When
-        observation = env.reset()
+        observation, _ = env.reset()
 
         # Then
         assert env.balance == 10000.0, "Balance should be reset to initial value"
@@ -96,19 +96,19 @@ class TestTradingEnv:
         assert env.current_step == 0, "Step should be reset to 0"
         assert isinstance(observation, np.ndarray), "Observation should be numpy array"
 
-    def test_open_long_position(self, env):
+    def test_open_long_position(self, env: TradingEnv) -> None:
         # Given
         action = (
             0,
-            [0.5],
-            [0],
-            [1],
+            np.array([0.5], dtype=np.float32),
+            np.array([0], dtype=np.float32),
+            np.array([1], dtype=np.int16),
         )  # Open long with 50% of balance, no partial close, 1x leverage
         initial_balance = env.balance
         current_price = env.env_data_source.iloc[0].price
 
         # When
-        observation, reward, done, info = env.step(action)
+        observation, reward, done, terminated, info = env.step(action)
 
         # Then
         assert env.position_state == 1, "Position should be long"
@@ -129,13 +129,18 @@ class TestTradingEnv:
         ), "Balance shouldn't change on position open"
         assert env.liquidation_price is None, "No liquidation price for 1x leverage"
 
-    def test_open_leveraged_long_position(self, env):
+    def test_open_leveraged_long_position(self, env: TradingEnv) -> None:
         # Given
         leverage = 5
-        action = (0, [0.5], [0], [leverage])  # Open long with 50% balance, 5x leverage
+        action = (
+            0,
+            np.array([0.5], dtype=np.float32),
+            np.array([0], dtype=np.float32),
+            np.array([leverage], dtype=np.int16),
+        )  # Open long with 50% balance, 5x leverage
 
         # When
-        observation, reward, done, info = env.step(action)
+        observation, reward, done, terminated, info = env.step(action)
 
         # Then
         assert env.position_state == 1, "Position should be long"
@@ -145,28 +150,45 @@ class TestTradingEnv:
             env.liquidation_price < env.position_open_price
         ), "Liquidation price should be below entry for longs"
 
-    def test_open_short_position(self, env):
+    def test_open_short_position(self, env: TradingEnv) -> None:
         # Given
-        action = (2, [0.5], [0], [1])  # Open short with 50% balance, no leverage
+        action = (
+            2,
+            np.array([0.5], dtype=np.float32),
+            np.array([0], dtype=np.float32),
+            np.array([1], dtype=np.int16),
+        )  # Open short with 50% balance, no leverage
 
         # When
-        observation, reward, done, info = env.step(action)
+        observation, reward, done, terminated, info = env.step(action)
 
         # Then
         assert env.position_state == -1, "Position should be short"
         assert env.number_contracts_owned < 0, "Should own negative contracts"
         assert env.liquidation_price is None, "No liquidation price for 1x leverage"
 
-    def test_close_position(self, env):
+    def test_close_position(self, env: TradingEnv) -> None:
         # Given
         # First open a position
-        env.step((0, [0.5], [0], [1]))
+        env.step(
+            (
+                0,
+                np.array([0.5], dtype=np.float32),
+                np.array([0], dtype=np.float32),
+                np.array([1], dtype=np.int16),
+            )
+        )
         initial_contracts = env.number_contracts_owned
 
         # When
         # Then close it
-        action = (1, [0], [0], [1])  # Close position
-        observation, reward, done, info = env.step(action)
+        action = (
+            1,
+            np.array([0], dtype=np.float32),
+            np.array([0], dtype=np.float32),
+            np.array([1], dtype=np.int16),
+        )  # Close position
+        observation, reward, done, terminated, info = env.step(action)
 
         # Then
         assert env.position_state == 0, "Position should be closed"
@@ -177,12 +199,24 @@ class TestTradingEnv:
     def test_partial_close_position(self, env):
         # Given
         # Open a position first
-        env.step((0, [0.5], [0], [1]))
+        env.step(
+            (
+                0,
+                np.array([0.5], dtype=np.float32),
+                np.array([0], dtype=np.float32),
+                np.array([1], dtype=np.int16),
+            )
+        )
         initial_contracts = env.number_contracts_owned
 
         # When
-        action = (4, [0], [0.5], [1])  # Partial close 50%
-        observation, reward, done, info = env.step(action)
+        action = (
+            4,
+            np.array([0], dtype=np.float32),
+            np.array([0.5], dtype=np.float32),
+            np.array([1], dtype=np.int16),
+        )  # Partial close 50%
+        observation, reward, done, terminated, info = env.step(action)
 
         # Then
         assert env.position_state == 1, "Position should remain open"
@@ -194,7 +228,14 @@ class TestTradingEnv:
         # Given
         # Open a leveraged long position
         leverage = 5
-        env.step((0, [0.5], [0], [leverage]))
+        env.step(
+            (
+                0,
+                np.array([0.5], dtype=np.float32),
+                np.array([0], dtype=np.float32),
+                np.array([leverage], dtype=np.int16),
+            )
+        )
         initial_balance = env.balance
         liquidation_price = env.liquidation_price
 
@@ -205,8 +246,13 @@ class TestTradingEnv:
         )
 
         # When
-        action = (3, [0], [0], [leverage])  # Try to hold position
-        observation, reward, done, info = env.step(action)
+        action = (
+            3,
+            np.array([0], dtype=np.float32),
+            np.array([0], dtype=np.float32),
+            np.array([leverage], dtype=np.int16),
+        )  # Try to hold position
+        observation, reward, done, terminated, info = env.step(action)
 
         # Then
         assert env.position_state == 0, "Position should be liquidated"
@@ -220,7 +266,14 @@ class TestTradingEnv:
         # Given
         # Open a leveraged short position
         leverage = 5
-        env.step((2, [0.5], [0], [leverage]))
+        env.step(
+            (
+                2,
+                np.array([0.5], dtype=np.float32),
+                np.array([0], dtype=np.float32),
+                np.array([leverage], dtype=np.int16),
+            )
+        )
         initial_balance = env.balance
         liquidation_price = env.liquidation_price
 
@@ -230,8 +283,13 @@ class TestTradingEnv:
         )
 
         # When
-        action = (3, [0], [0], [leverage])  # Try to hold position
-        observation, reward, done, info = env.step(action)
+        action = (
+            3,
+            np.array([0], dtype=np.float32),
+            np.array([0], dtype=np.float32),
+            np.array([leverage], dtype=np.int16),
+        )  # Try to hold position
+        observation, reward, done, terminated, info = env.step(action)
 
         # Then
         assert env.position_state == 0, "Position should be liquidated"
@@ -244,7 +302,14 @@ class TestTradingEnv:
     def test_reward_profitable_trade(self, env: TradingEnv):
         # Given
         # Open a position and simulate time passage
-        env.step((0, [0.5], [0], [1]))  # Open long position
+        env.step(
+            (
+                0,
+                np.array([0.5], dtype=np.float32),
+                np.array([0], dtype=np.float32),
+                np.array([1], dtype=np.int16),
+            )
+        )  # Open long position
         initial_balance = env.balance
         env.time_in_position = 4  # Simulate 4 time steps
 
@@ -255,8 +320,13 @@ class TestTradingEnv:
         )
 
         # When
-        action = (3, [0], [0], [1])  # Hold position
-        observation, reward, done, info = env.step(action)
+        action = (
+            3,
+            np.array([0], dtype=np.float32),
+            np.array([0], dtype=np.float32),
+            np.array([1], dtype=np.int16),
+        )  # Hold position
+        observation, reward, done, terminated, info = env.step(action)
 
         # Then
         # With in_money_factor=1.0, sqrt(time)=2, and ~20% profit
@@ -269,7 +339,14 @@ class TestTradingEnv:
     def test_reward_losing_trade(self, env):
         # Given
         # Open a position and simulate time passage
-        env.step((0, [0.5], [0], [1]))  # Open long position
+        env.step(
+            (
+                0,
+                np.array([0.5], dtype=np.float32),
+                np.array([0], dtype=np.float32),
+                np.array([1], dtype=np.int16),
+            )
+        )  # Open long position
         initial_balance = env.balance
         env.time_in_position = 2  # Simulate 2 time steps
 
@@ -280,8 +357,13 @@ class TestTradingEnv:
         )
 
         # When
-        action = (3, [0], [0], [1])  # Hold position
-        observation, reward, done, info = env.step(action)
+        action = (
+            3,
+            np.array([0], dtype=np.float32),
+            np.array([0], dtype=np.float32),
+            np.array([1], dtype=np.int16),
+        )  # Hold position
+        observation, reward, done, terminated, info = env.step(action)
 
         # Then
         # With out_of_money_factor=1.0, time^1.5~2.83, and ~10% loss
@@ -300,10 +382,11 @@ class TestTradingEnv:
         # When
         # Run through entire episode
         done = False
+        terminated = False
         total_steps = 0
-        while not done:
+        while not done and not terminated:
             action = env.action_space.sample()
-            _, _, done, _ = env.step(action)
+            _, _, done, terminated, _ = env.step(action)
             total_steps += 1
 
         # Then

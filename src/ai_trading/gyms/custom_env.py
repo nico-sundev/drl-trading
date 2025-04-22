@@ -1,5 +1,6 @@
 import logging
 import random
+from typing import Any, Dict, Optional, Tuple
 
 import gymnasium as gym
 import numpy as np
@@ -13,6 +14,11 @@ logger = logging.getLogger(__name__)
 
 
 class TradingEnv(gym.Env):
+    """Single trading environment based on gym.Env.
+
+    This environment can be used directly with gymnasium or wrapped in a VecEnv.
+    """
+
     def __init__(
         self,
         env_data_source: DataFrame,
@@ -38,13 +44,14 @@ class TradingEnv(gym.Env):
         # Position tracking
         self.current_step = 0
         self.done = False
+        self.terminated = False
         self.position_state = 0  # 1 for long, -1 for short, 0 for no position
         self.time_in_position = 0
-        self.position_open_price = None
+        self.position_open_price: Optional[float] = None
         self.number_contracts_owned = 0.0
         self.pnl = 0.0
         self.current_leverage = 1.0
-        self.liquidation_price = None
+        self.liquidation_price: Optional[float] = None
         self.was_liquidated = False
         self.last_liquidation_loss = 0.0
 
@@ -86,8 +93,19 @@ class TradingEnv(gym.Env):
         high = np.full(num_features, np.inf)
         self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
 
-    def reset(self):
-        """Reset environment state."""
+    def reset(
+        self, seed: Optional[int] = None, options: Optional[dict] = None
+    ) -> Tuple[np.ndarray, dict]:
+        """Reset environment state.
+
+        Args:
+            seed: Random seed for reproducibility
+            options: Additional options for reset
+
+        Returns:
+            np.ndarray: Initial observation after reset
+        """
+        super().reset(seed=seed)
         self.current_step = 0
         self.balance = self.initial_balance
         self.position_state = 0
@@ -96,32 +114,36 @@ class TradingEnv(gym.Env):
         self.position_open_price = None
         self.pnl = 0.0
         self.done = False
+        self.terminated = False
         self.current_leverage = 1.0
         self.liquidation_price = None
         self.was_liquidated = False
         self.last_liquidation_loss = 0.0
-        return self._next_observation()
+        return self._next_observation(), options or {}
 
-    def _next_observation(self):
+    def _next_observation(self) -> np.ndarray:
         """Get the next observation from the environment.
 
         Returns only the computed and normalized features starting from feature_start_index,
         excluding strategy-specific data like prices, ATR, etc.
 
         Returns:
-            numpy.ndarray: Array of computed features in float32 format
+            np.ndarray: Array of computed features in float32 format
         """
         feature_set = self.env_data_source.iloc[self.current_step]
         # Select only computed features starting from feature_start_index
         computed_features = feature_set.iloc[self.feature_start_index :].values
         return computed_features.astype(np.float32)
 
-    def _update_liquidation_price(self, leverage: float):
+    def _update_liquidation_price(self, leverage: float) -> None:
         """Update liquidation price for leveraged positions."""
         if leverage > 1.0 and self.position_state != 0:
-            self.liquidation_price = TradingEnvUtils.calculate_liquidation_price(
-                self.position_open_price, self.number_contracts_owned, leverage
-            )
+            if self.position_open_price is not None:
+                self.liquidation_price = TradingEnvUtils.calculate_liquidation_price(
+                    self.position_open_price, self.number_contracts_owned, leverage
+                )
+            else:
+                self.liquidation_price = None
             self.current_leverage = leverage
         else:
             self.liquidation_price = None
@@ -139,7 +161,7 @@ class TradingEnv(gym.Env):
         else:  # Short position
             return high >= self.liquidation_price
 
-    def _handle_liquidation(self, current_price: float):
+    def _handle_liquidation(self, current_price: float) -> None:
         """Handle liquidation of a position."""
         logger.info(f"Position liquidated at price {current_price}")
         # Then close the position
@@ -170,15 +192,17 @@ class TradingEnv(gym.Env):
         # For long positions: negative slippage means price goes up before entry
         # For short positions: positive slippage means price goes down before entry
         if against_trade:
-            return (
+            return float(
                 base_slippage if direction == TradingDirection.LONG else -base_slippage
             )
         else:
-            return (
+            return float(
                 -base_slippage if direction == TradingDirection.LONG else base_slippage
             )
 
-    def _take_action(self, action):
+    def _take_action(
+        self, action: Tuple[int, np.ndarray, np.ndarray, np.ndarray]
+    ) -> None:
         discrete_action = action[0]
         open_position_percentage = action[1][0]
         partial_close_percentage = action[2][0]
@@ -247,7 +271,7 @@ class TradingEnv(gym.Env):
             if self.position_state != 0 and 0 < partial_close_percentage <= 1:
                 self._partial_close_position(current_price, partial_close_percentage)
 
-    def _partial_close_position(self, current_price: float, percentage: float):
+    def _partial_close_position(self, current_price: float, percentage: float) -> None:
         self._update_pnl(current_price)
         closing_fee = TradingEnvUtils.calculate_close_fee(
             current_price,
@@ -274,17 +298,17 @@ class TradingEnv(gym.Env):
             self.liquidation_price = None
             self.current_leverage = 1.0
 
-    def _update_pnl(self, current_price: float):
+    def _update_pnl(self, current_price: float) -> None:
         direction = TradingEnvUtils.get_position_direction(self.position_state)
         self.pnl = TradingEnvUtils.calculate_pnl(
             current_price,
-            self.position_open_price,
+            self.position_open_price if self.position_open_price is not None else 0.0,
             self.number_contracts_owned,
             self.env_config.fee,
             self._calculate_dynamic_slippage(direction, current_price),
         )
 
-    def _close_position(self, current_price: float):
+    def _close_position(self, current_price: float) -> None:
         self._update_pnl(current_price)
         closing_fee = TradingEnvUtils.calculate_close_fee(
             current_price,
@@ -323,7 +347,7 @@ class TradingEnv(gym.Env):
         """
         if self.pnl > 0:
             # For profitable positions, reward increases with time but at a decreasing rate
-            return (
+            return float(
                 self.env_config.in_money_factor
                 * self.pnl
                 * np.sqrt(self.time_in_position)
@@ -331,13 +355,23 @@ class TradingEnv(gym.Env):
         else:
             # For losing positions, penalty increases more quickly with time
             # This also handles liquidation as PnL already accounts for leveraged losses
-            return (
+            return float(
                 -self.env_config.out_of_money_factor
                 * abs(self.pnl)
                 * (self.time_in_position**1.5)
             )
 
-    def step(self, action):
+    def step(
+        self, action: Tuple[int, np.ndarray, np.ndarray, np.ndarray]
+    ) -> Tuple[Any, float, bool, bool, Dict[str, Any]]:
+        """Execute one step in the environment.
+
+        Args:
+            action: Tuple containing (discrete_action, open_position_percentage, partial_close_percentage, leverage)
+
+        Returns:
+            Tuple containing (observation, reward, done, info)
+        """
         current_data = self.env_data_source.iloc[self.current_step]
 
         if TradingEnvUtils.has_active_position(self.position_state):
@@ -356,6 +390,10 @@ class TradingEnv(gym.Env):
         if self.current_step >= len(self.env_data_source) - 1:
             self.done = True
 
+        # TODO Check if Drawdown is too high and set terminated to True
+        if self.current_step >= len(self.env_data_source) - 1:
+            self.terminated = True
+
         # Calculate reward
         reward = self._calculate_reward()
 
@@ -365,9 +403,14 @@ class TradingEnv(gym.Env):
             self.time_in_position = 0
             self.liquidation_price = None
 
-        return self._next_observation(), reward, self.done, {}
+        return self._next_observation(), reward, self.done, self.terminated, {}
 
-    def render(self, mode="human"):
+    def render(self, mode: str = "human") -> None:
+        """Render the environment.
+
+        Args:
+            mode: The rendering mode
+        """
         logger.info(f"Step: {self.current_step}")
         logger.info(f"Price Data: {self.env_data_source.iloc[self.current_step]}")
         logger.info(

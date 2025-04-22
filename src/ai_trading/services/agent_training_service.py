@@ -1,10 +1,10 @@
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple
 
 from pandas import DataFrame
 from stable_baselines3.common.vec_env import DummyVecEnv
 
-from ai_trading.agents.agent_collection import EnsembleAgent, PPOAgent
-from ai_trading.agents.agent_registry import AgentRegistry
+from ai_trading.agents.abstract_base_agent import AbstractBaseAgent
+from ai_trading.agents.agent_factory import AgentFactory
 from ai_trading.config.environment_config import EnvironmentConfig
 from ai_trading.gyms.custom_env import TradingEnv
 
@@ -14,11 +14,15 @@ class AgentTrainingService:
     Service to handle the creation of environments and training of agents.
     """
 
-    def __init__(
-        self, env_config: EnvironmentConfig, agent_registry: AgentRegistry
-    ) -> None:
-        self.agent_registry = agent_registry
+    def __init__(self, env_config: EnvironmentConfig) -> None:
+        """
+        Initialize the training service with configuration and agent factory.
+
+        Args:
+            env_config: Environment configuration settings
+        """
         self.env_config = env_config
+        self.agent_factory = AgentFactory()
 
     def create_env_and_train_agents(
         self,
@@ -27,7 +31,7 @@ class AgentTrainingService:
         total_timesteps: int,
         threshold: float,
         agent_config: List[str],
-    ) -> Tuple[DummyVecEnv, DummyVecEnv, Dict[str, Union[PPOAgent, EnsembleAgent]]]:
+    ) -> Tuple[DummyVecEnv, DummyVecEnv, Dict[str, AbstractBaseAgent]]:
         """
         Create environments and train agents dynamically based on the configuration.
 
@@ -52,19 +56,13 @@ class AgentTrainingService:
             [lambda: TradingEnv(val_data, self.env_config, feature_start_index)]
         )
 
-        agents: Dict[str, Union[PPOAgent, EnsembleAgent]] = {}
-        for agent_name in agent_config:
-            if agent_name in self.agent_registry.agent_class_map:
-                agent_class = self.agent_registry.agent_class_map[agent_name]
-                agents[agent_name] = agent_class(train_env, total_timesteps, threshold)
-                agents[agent_name].validate(val_env)
+        # Create agents using the factory
+        agents = self.agent_factory.create_multiple_agents(
+            agent_config, train_env, total_timesteps, threshold
+        )
 
-        # Create the ensemble agent if specified
-        if "Ensemble" in agent_config:
-            ensemble_agents = [
-                agent for name, agent in agents.items() if name != "Ensemble"
-            ]
-            agents["Ensemble"] = EnsembleAgent(ensemble_agents, threshold)
-            agents["Ensemble"].validate(val_env)
+        # Validate all agents
+        for _agent_name, agent in agents.items():
+            agent.validate(val_env)
 
         return train_env, val_env, agents

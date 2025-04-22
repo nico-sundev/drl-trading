@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Any, List
+from typing import List
 
 import numpy as np
-from gymnasium import Env
+from stable_baselines3.common.vec_env import VecEnv
 
 
 class AbstractBaseAgent(ABC):
@@ -15,7 +15,7 @@ class AbstractBaseAgent(ABC):
     threshold: float = 0.5  # Default threshold value, can be overridden by subclasses
 
     @abstractmethod
-    def predict(self, obs: Any) -> np.ndarray:
+    def predict(self, obs: np.ndarray) -> np.ndarray:
         """
         Generate a prediction (action) based on the observation.
 
@@ -48,7 +48,7 @@ class AbstractBaseAgent(ABC):
         return recommendations
 
     @abstractmethod
-    def validate(self, env: Env) -> None:
+    def validate(self, env: VecEnv) -> None:
         """
         Validate the agent's performance on the given environment.
 

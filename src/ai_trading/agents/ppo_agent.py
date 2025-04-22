@@ -1,21 +1,88 @@
-from gymnasium import Env
+from typing import List
+
+import numpy as np
 from stable_baselines3 import PPO
+from stable_baselines3.common.vec_env import VecEnv
 
-from ai_trading.agents.agent_policy import AgentPolicy
+from ai_trading.agents.abstract_base_agent import AbstractBaseAgent
+from ai_trading.policies.pol_grad_loss_cb import PolicyGradientLossCallback
 
 
-class PPOAgent(AgentPolicy[PPO]):
+class PPOAgent(AbstractBaseAgent):
     """
     Implementation of an agent using Proximal Policy Optimization (PPO).
+
+    This agent works with vectorized environments (VecEnv) from Stable Baselines3,
+    which allow for efficient parallel environment execution.
     """
 
-    def __init__(self, env: Env, total_timesteps: int, threshold: float = 0.5) -> None:
+    def __init__(
+        self, env: VecEnv, total_timesteps: int, threshold: float = 0.5
+    ) -> None:
         """
-        Initialize the PPO agent.
+        Initialize and train a PPO agent.
 
         Args:
-            env: Training environment
-            total_timesteps: Number of timesteps for training
-            threshold: Threshold for action recommendations
+            env: Vectorized environment for training
+            total_timesteps: Number of timesteps to train for
+            threshold: Decision threshold for action recommendations
         """
-        super().__init__(env, total_timesteps, threshold)
+        self.callback = PolicyGradientLossCallback()
+        # Initialize and train the model
+        self.model = PPO("MlpPolicy", env, verbose=1)
+        self.model.learn(total_timesteps=total_timesteps, callback=self.callback)
+        self.threshold = threshold
+
+    def predict(self, obs: np.ndarray) -> np.ndarray:
+        """
+        Generate a prediction using the trained model.
+
+        Args:
+            obs: Observation from the environment
+
+        Returns:
+            Action as numpy array
+        """
+        action, _ = self.model.predict(np.array(obs), deterministic=True)
+        return action
+
+    def validate(self, env: VecEnv) -> None:
+        """
+        Validate the agent's performance on the given vectorized environment.
+
+        Args:
+            env: Vectorized environment to validate against
+        """
+        obs = env.reset()
+        total_rewards = 0.0
+
+        for _ in range(1000):  # Adjust based on needs
+            action, _ = self.model.predict(np.array(obs), deterministic=True)
+            obs, rewards, dones, infos = env.step(action)
+
+            # Sum rewards across all environments
+            total_rewards += float(np.sum(rewards))
+
+            # No need to manually reset as VecEnv handles this automatically
+
+        print(f"{self.__class__.__name__} Validation Reward: {total_rewards}")
+
+    def action_to_recommendation(self, action: np.ndarray) -> List[str]:
+        """
+        Convert numeric action values to trading recommendations.
+
+        Args:
+            action: Numeric action values
+
+        Returns:
+            List of recommendations ('buy', 'sell', or 'hold')
+        """
+        recommendations = []
+        for a in action:
+            if a > self.threshold:
+                recommendations.append("buy")
+            elif a < -self.threshold:
+                recommendations.append("sell")
+            else:
+                recommendations.append("hold")
+        return recommendations

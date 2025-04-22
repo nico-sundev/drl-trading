@@ -22,31 +22,33 @@ class WickHandler:
         prev_row, pre_prev_row = df.iloc[index] if index >= 0 else None, (
             df.iloc[index - 1] if index > 0 else None
         )
+        if prev_row is None or pre_prev_row is None:
+            raise ValueError("Not enough data for wick calculation")
 
         prev_candle_green = prev_row["Close"] > prev_row["Open"]
 
-        def last_wick():
-            if prev_row is None:
-                raise ValueError("Not enough data for last wick calculation")
-            return prev_row["Low"] if prev_candle_green else prev_row["High"]
+        def last_wick() -> float:
+            return (
+                float(prev_row["Low"]) if prev_candle_green else float(prev_row["High"])
+            )
 
-        def previous_wick():
-            if pre_prev_row is None:
-                raise ValueError("Not enough data for previous wick calculation")
-            return pre_prev_row["Low"] if prev_candle_green else pre_prev_row["High"]
+        def previous_wick() -> float:
+            return (
+                float(pre_prev_row["Low"])
+                if prev_candle_green
+                else float(pre_prev_row["High"])
+            )
 
-        def mean_wick():
-            return mean([last_wick(), previous_wick()])
+        def mean_wick() -> float:
+            return float(mean([last_wick(), previous_wick()]))
 
-        def max_below_atr():
+        def max_below_atr() -> float:
             if atr is None:
                 raise ValueError("ATR value is required for MAX_BELOW_ATR strategy")
-            return (
+            return float(
                 max([min([last_wick(), previous_wick()]), prev_row["Open"] - atr])
                 if prev_candle_green
-                else min(
-                    [([last_wick(), previous_wick()]).max(), prev_row["Open"] + atr]
-                )
+                else min(max(last_wick(), previous_wick(), prev_row["Open"] + atr))
             )
 
         strategy_map = {

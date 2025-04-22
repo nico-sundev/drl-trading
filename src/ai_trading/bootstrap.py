@@ -1,13 +1,11 @@
 import logging
 import os
-from typing import Dict, Tuple, Union
+from typing import Dict, Tuple
 
 from pandas import DataFrame
 from stable_baselines3.common.vec_env import DummyVecEnv
 
-from ai_trading.agents.agent_collection import EnsembleAgent
-from ai_trading.agents.agent_registry import AgentRegistry
-from ai_trading.agents.ppo_agent import PPOAgent
+from ai_trading.agents.abstract_base_agent import AbstractBaseAgent
 from ai_trading.config.application_config import ApplicationConfig
 from ai_trading.config.config_loader import ConfigLoader
 from ai_trading.config.logging_config import configure_logging
@@ -64,7 +62,7 @@ def bootstrap(config: ApplicationConfig) -> DataFrame:
 
 def create_environments_and_train(
     base_dataset: DataFrame, config: ApplicationConfig
-) -> Tuple[DummyVecEnv, DummyVecEnv, Dict[str, Union[PPOAgent, EnsembleAgent]]]:
+) -> Tuple[DummyVecEnv, DummyVecEnv, Dict[str, AbstractBaseAgent]]:
     """Create environments and train agents.
 
     Args:
@@ -83,13 +81,8 @@ def create_environments_and_train(
         df=base_dataset, split_ratios=(0.8, 0.1, 0.1)  # train, val, test ratios
     )
 
-    # Initialize agent registry
-    agent_registry = AgentRegistry()
-
-    # Create the environment and train the agents
-    training_svc = AgentTrainingService(
-        env_config=config.environment_config, agent_registry=agent_registry
-    )
+    # Create the environment and train the agents using the factory pattern
+    training_svc = AgentTrainingService(env_config=config.environment_config)
 
     return training_svc.create_env_and_train_agents(
         data_sets.training_data,
