@@ -6,7 +6,7 @@ from typing import Dict, List, Type
 
 from stable_baselines3.common.vec_env import VecEnv
 
-from ai_trading.agents.abstract_base_agent import AbstractBaseAgent
+from ai_trading.agents.base_agent import BaseAgent
 from ai_trading.agents.ppo_agent import PPOAgent
 
 
@@ -25,7 +25,7 @@ class AgentFactory:
         The mapping is kept simple and can be extended with more agent types as needed.
         """
         # Mapping of agent name strings to their respective classes
-        self.agent_class_map: Dict[str, Type[AbstractBaseAgent]] = {
+        self.agent_class_map: Dict[str, Type[BaseAgent]] = {
             "PPO": PPOAgent,
             # Add other agents here as they are implemented
             # "DQN": DQNAgent,
@@ -39,7 +39,7 @@ class AgentFactory:
         env: VecEnv,
         total_timesteps: int,
         threshold: float = 0.5,
-    ) -> AbstractBaseAgent:
+    ) -> BaseAgent:
         """
         Create and return an agent instance of the specified type.
 
@@ -68,7 +68,7 @@ class AgentFactory:
         env: VecEnv,
         total_timesteps: int,
         threshold: float = 0.5,
-    ) -> Dict[str, AbstractBaseAgent]:
+    ) -> Dict[str, BaseAgent]:
         """
         Create multiple agents based on a list of agent type strings.
 
@@ -81,7 +81,7 @@ class AgentFactory:
         Returns:
             Dictionary mapping agent type strings to agent instances
         """
-        agents: Dict[str, AbstractBaseAgent] = {}
+        agents: Dict[str, BaseAgent] = {}
 
         for agent_type in agent_types:
             if agent_type in self.agent_class_map:

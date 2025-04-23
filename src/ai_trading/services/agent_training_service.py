@@ -3,8 +3,8 @@ from typing import Dict, List, Tuple
 from pandas import DataFrame
 from stable_baselines3.common.vec_env import DummyVecEnv
 
-from ai_trading.agents.abstract_base_agent import AbstractBaseAgent
 from ai_trading.agents.agent_factory import AgentFactory
+from ai_trading.agents.base_agent import BaseAgent
 from ai_trading.config.environment_config import EnvironmentConfig
 from ai_trading.gyms.custom_env import TradingEnv
 
@@ -31,7 +31,7 @@ class AgentTrainingService:
         total_timesteps: int,
         threshold: float,
         agent_config: List[str],
-    ) -> Tuple[DummyVecEnv, DummyVecEnv, Dict[str, AbstractBaseAgent]]:
+    ) -> Tuple[DummyVecEnv, DummyVecEnv, Dict[str, BaseAgent]]:
         """
         Create environments and train agents dynamically based on the configuration.
 

@@ -4,15 +4,31 @@ from typing import List
 import numpy as np
 from stable_baselines3.common.vec_env import VecEnv
 
+from ai_trading.policies.pol_grad_loss_cb import PolicyGradientLossCallback
 
-class AbstractBaseAgent(ABC):
+
+class BaseAgent(ABC):
     """
     Abstract base class for all trading agents.
 
     Defines the common interface that all agent implementations must follow.
     """
 
-    threshold: float = 0.5  # Default threshold value, can be overridden by subclasses
+    def __init__(
+        self, env: VecEnv, total_timesteps: int, threshold: float = 0.5
+    ) -> None:
+        """
+        Initialize and train a PPO agent.
+
+        Args:
+            env: Vectorized environment for training
+            total_timesteps: Number of timesteps to train for
+            threshold: Decision threshold for action recommendations
+        """
+        self.callback = PolicyGradientLossCallback()
+        self.threshold = threshold
+        self.env = env
+        self.total_timesteps = total_timesteps
 
     @abstractmethod
     def predict(self, obs: np.ndarray) -> np.ndarray:

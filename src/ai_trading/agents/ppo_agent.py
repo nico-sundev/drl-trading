@@ -4,11 +4,10 @@ import numpy as np
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecEnv
 
-from ai_trading.agents.abstract_base_agent import AbstractBaseAgent
-from ai_trading.policies.pol_grad_loss_cb import PolicyGradientLossCallback
+from ai_trading.agents.base_agent import BaseAgent
 
 
-class PPOAgent(AbstractBaseAgent):
+class PPOAgent(BaseAgent):
     """
     Implementation of an agent using Proximal Policy Optimization (PPO).
 
@@ -19,19 +18,10 @@ class PPOAgent(AbstractBaseAgent):
     def __init__(
         self, env: VecEnv, total_timesteps: int, threshold: float = 0.5
     ) -> None:
-        """
-        Initialize and train a PPO agent.
-
-        Args:
-            env: Vectorized environment for training
-            total_timesteps: Number of timesteps to train for
-            threshold: Decision threshold for action recommendations
-        """
-        self.callback = PolicyGradientLossCallback()
+        super().__init__(env, total_timesteps, threshold)
         # Initialize and train the model
         self.model = PPO("MlpPolicy", env, verbose=1)
         self.model.learn(total_timesteps=total_timesteps, callback=self.callback)
-        self.threshold = threshold
 
     def predict(self, obs: np.ndarray) -> np.ndarray:
         """

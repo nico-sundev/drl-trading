@@ -5,7 +5,7 @@ from typing import Dict, List, Tuple
 from pandas import DataFrame
 from stable_baselines3.common.vec_env import DummyVecEnv
 
-from ai_trading.agents.abstract_base_agent import AbstractBaseAgent
+from ai_trading.agents.base_agent import BaseAgent
 from ai_trading.config.application_config import ApplicationConfig
 from ai_trading.config.config_loader import ConfigLoader
 from ai_trading.config.logging_config import configure_logging
@@ -74,7 +74,7 @@ def bootstrap(config: ApplicationConfig) -> DataFrame:
 
 def create_environments_and_train(
     base_dataset: DataFrame, config: ApplicationConfig
-) -> Tuple[DummyVecEnv, DummyVecEnv, Dict[str, AbstractBaseAgent]]:
+) -> Tuple[DummyVecEnv, DummyVecEnv, Dict[str, BaseAgent]]:
     """Create environments and train agents.
 
     Args:

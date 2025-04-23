@@ -5,14 +5,14 @@ import pandas as pd
 import pytest
 from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv
 
-from ai_trading.agents.abstract_base_agent import AbstractBaseAgent
 from ai_trading.agents.agent_factory import AgentFactory
+from ai_trading.agents.base_agent import BaseAgent
 from ai_trading.config.environment_config import EnvironmentConfig
 from ai_trading.services.agent_training_service import AgentTrainingService
 
 
 # Mock implementation of AbstractBaseAgent for testing
-class MockAgent(AbstractBaseAgent):
+class MockAgent(BaseAgent):
     """Mock agent implementation for testing"""
 
     def __init__(

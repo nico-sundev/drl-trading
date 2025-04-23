@@ -14,7 +14,7 @@ class TimeframeStripperService:
     Service to strip higher timeframe datasets based on the end timestamp of the base dataset.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.logger = logging.getLogger(__name__)
 
     def strip_higher_timeframes(
@@ -40,7 +40,7 @@ class TimeframeStripperService:
         )
 
         # Filter the dataframe to include only rows where the open timestamp is below the threshold
-        stripped_df = higher_timeframe_df[
+        stripped_df: pd.DataFrame = higher_timeframe_df[
             higher_timeframe_df["Time"] < threshold_timestamp
         ]
 
