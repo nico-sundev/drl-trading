@@ -23,16 +23,16 @@ def mock_data() -> DataFrame:
 
 
 @pytest.fixture
-def feature(mock_data):
-    return RangeFeature(mock_data, "test")
-
-
-@pytest.fixture
 def config():
     mock_config = MagicMock()
     mock_config.lookback = 5
     mock_config.wick_handle_strategy = WICK_HANDLE_STRATEGY.LAST_WICK_ONLY
     return mock_config
+
+
+@pytest.fixture
+def feature(mock_data, config):
+    return RangeFeature(mock_data, config, "test")
 
 
 @patch("ai_trading.preprocess.feature.collection.range_feature.SupportResistanceFinder")
@@ -45,7 +45,7 @@ def test_compute_range_feature(mock_finder_class, mock_data, feature, config):
     mock_finder_class.return_value = mock_finder
 
     # When
-    result_df = feature.compute(config)
+    result_df = feature.compute()
 
     # Then
     # mock_finder_class.assert_called_once_with(

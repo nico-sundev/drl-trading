@@ -1,0 +1,10 @@
+todo features:
+- use FinRL library -> migration from native stablebaselines3 to finrl -> start with trading_env.py class
+- setup multiple environments using multiple symbol
+- check dummyvecenv vs subprocvecenv
+- model save checkpoints
+- MLFlow integration -> configure to use local service
+- create GNN -> see all_in_one.py -> start with: Which data to we need and how do we have to preprocess
+- change project manager to UV
+- use vecnormalize
+- research for SBX for faster training

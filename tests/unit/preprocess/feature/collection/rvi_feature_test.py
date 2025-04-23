@@ -8,7 +8,7 @@ from ai_trading.preprocess.feature.collection.rvi_feature import RviFeature
 
 @pytest.fixture
 def mock_data() -> DataFrame:
-    data = {"Time": [], "Open": [], "High": [], "Low": [], "Close": []}
+    data: dict[str, list] = {"Time": [], "Open": [], "High": [], "Low": [], "Close": []}
 
     # Create the DataFrame
     df = DataFrame(data)
@@ -19,24 +19,26 @@ def mock_data() -> DataFrame:
 
 
 @pytest.fixture
-def feature(mock_data):
-    return RviFeature(mock_data, "test")
-
-
-@pytest.fixture
-def config():
+def config() -> MagicMock:
     mock_config = MagicMock()
     mock_config.length = 14
     return mock_config
 
 
+@pytest.fixture
+def feature(mock_data: DataFrame, config: MagicMock) -> RviFeature:
+    return RviFeature(mock_data, config, "test")
+
+
 @patch("pandas_ta.rvi")
-def test_compute_rvi(patched_rvi, feature, config):
+def test_compute_rvi(
+    patched_rvi: MagicMock, feature: RviFeature, config: MagicMock
+) -> None:
     # Given
     patched_rvi.return_value = Series([50, 55, 60, 65, 70, 75])
 
     # When
-    result = feature.compute(config)
+    result = feature.compute()
 
     # Then
     patched_rvi.assert_called_once_with(

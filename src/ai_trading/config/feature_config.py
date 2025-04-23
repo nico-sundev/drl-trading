@@ -8,12 +8,12 @@ from ai_trading.config.feature_config_registry import FeatureConfigRegistry
 
 
 class FeatureStoreConfig(BaseSchema):
-    enabled: bool = False
-    repo_path: str = "feature_repo"
-    offline_store_path: str = "data/features.parquet"
-    entity_name: str = "symbol"
-    ttl_days: int = 365
-    online_enabled: bool = True
+    enabled: bool
+    repo_path: str
+    offline_store_path: str
+    entity_name: str
+    ttl_days: int
+    online_enabled: bool
 
 
 class FeatureDefinition(BaseSchema):

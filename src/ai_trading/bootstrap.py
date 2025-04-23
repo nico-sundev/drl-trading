@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 from pandas import DataFrame
 from stable_baselines3.common.vec_env import DummyVecEnv
@@ -14,6 +14,7 @@ from ai_trading.data_set_utils.split_service import SplitService
 from ai_trading.data_set_utils.timeframe_stripper_service import (
     TimeframeStripperService,
 )
+from ai_trading.model.asset_price_dataset import AssetPriceDataSet
 from ai_trading.model.split_dataset_container import SplitDataSetContainer
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
 from ai_trading.preprocess.preprocess_service import PreprocessService
@@ -31,15 +32,26 @@ def bootstrap(config: ApplicationConfig) -> DataFrame:
     # Load configuration
     logger.info("Configuration loaded successfully")
 
-    # Initialize services
-    data_import_svc = CsvDataImportService(config.local_data_import_config.datasets)
-    raw_asset_price_datasets = data_import_svc.import_data()
-    logger.info(f"Imported {len(raw_asset_price_datasets)} raw asset price datasets")
+    # Initialize services and aggregate datasets from all symbols
+    all_datasets: List[AssetPriceDataSet] = []
+
+    # Create a single CsvDataImportService with the complete config
+    data_import_svc = CsvDataImportService(config.local_data_import_config)
+
+    # Import data for all symbols
+    symbol_containers = data_import_svc.import_data()
+
+    # Extract datasets from all symbols
+    for symbol_container in symbol_containers:
+        all_datasets.extend(symbol_container.datasets)
+        logger.info(f"Imported datasets for symbol {symbol_container.symbol}")
+
+    logger.info(f"Imported {len(all_datasets)} raw asset price datasets in total")
 
     # Transform and strip other timeframes using the stripper service
     tf_stripper_svc = TimeframeStripperService()
     stripped_raw_asset_price_datasets = tf_stripper_svc.strip_asset_price_datasets(
-        raw_asset_price_datasets
+        all_datasets
     )
     logger.info("Timeframe stripping completed")
 

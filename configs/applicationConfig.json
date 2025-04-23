@@ -1,20 +1,25 @@
 {
   "localDataImportConfig": {
-    "datasets": [
+    "symbols": [
       {
-        "timeframe": "H1",
-        "base_dataset": true,
-        "file_path": "../data/raw/EURUSD_H1.csv"
-      },
-      {
-        "timeframe": "H4",
-        "base_dataset": false,
-        "file_path": "../data/raw/EURUSD_H4.csv"
-      },
-      {
-        "timeframe": "D1",
-        "base_dataset": false,
-        "file_path": "../data/raw/EURUSD_D1.csv"
+        "symbol": "EURUSD",
+        "datasets": [
+          {
+            "timeframe": "H1",
+            "base_dataset": true,
+            "file_path": "../data/raw/EURUSD_H1.csv"
+          },
+          {
+            "timeframe": "H4",
+            "base_dataset": false,
+            "file_path": "../data/raw/EURUSD_H4.csv"
+          },
+          {
+            "timeframe": "D1",
+            "base_dataset": false,
+            "file_path": "../data/raw/EURUSD_D1.csv"
+          }
+        ]
       }
     ]
   },

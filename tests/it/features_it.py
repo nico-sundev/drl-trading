@@ -26,13 +26,20 @@ def config(reset_registry):
 
 @pytest.fixture
 def dataset(config):
-    repository = CsvDataImportService(config.local_data_import_config.datasets)
+    all_datasets = []
+
+    # Create a service with the complete config
+    repository = CsvDataImportService(config.local_data_import_config)
     importer = DataImportManager(repository)
-    return [
-        dataset.asset_price_dataset
-        for dataset in importer.get_data(100)
-        if dataset.timeframe == "H1"
-    ][0]
+
+    # Get all symbol containers
+    symbol_containers = importer.get_data(100)
+
+    # Extract datasets from all symbols
+    for symbol_container in symbol_containers:
+        all_datasets.extend(symbol_container.datasets)
+
+    return [dataset for dataset in all_datasets if dataset.timeframe == "H1"][0]
 
 
 @pytest.fixture(autouse=True)

@@ -6,6 +6,8 @@ from pandas import DataFrame, concat
 
 from ai_trading.config.base_parameter_set_config import BaseParameterSetConfig
 from ai_trading.config.feature_config import FeaturesConfig, FeatureStoreConfig
+from ai_trading.model.asset_price_dataset import AssetPriceDataSet
+from ai_trading.preprocess.feature.collection.base_feature import BaseFeature
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
 
 logger = logging.getLogger(__name__)
@@ -14,24 +16,24 @@ logger = logging.getLogger(__name__)
 class FeatureAggregator:
     def __init__(
         self,
-        source_df: DataFrame,
+        asset_data: AssetPriceDataSet,
+        symbol: str,
         config: FeaturesConfig,
         class_registry: FeatureClassRegistry,
-        feature_store_config: Optional[FeatureStoreConfig] = None,
-    ):
-        self.source_df = source_df
+        feature_store_config: FeatureStoreConfig,
+    ) -> None:
+        self.asset_data = asset_data
         self.config = config
+        self.symbol = symbol
         self.class_registry = class_registry
         self.feature_store_config = feature_store_config
         self.feature_store = None
 
-        if feature_store_config and feature_store_config.enabled:
+        if feature_store_config.enabled:
             logger.info("Initializing feature store connection")
             self.feature_store = FeatureStore(repo_path=feature_store_config.repo_path)
 
-    def _get_historical_features(
-        self, feature_name: str, param_set: BaseParameterSetConfig
-    ) -> Optional[DataFrame]:
+    def _get_historical_features(self, feature: BaseFeature) -> Optional[DataFrame]:
         """Try to retrieve features from feature store if available."""
         if not self.feature_store:
             return None
@@ -39,25 +41,18 @@ class FeatureAggregator:
         try:
             # Create entity DataFrame for feature retrieval
             entity_df = DataFrame()
-            entity_df["Time"] = self.source_df["Time"]
-            entity_df["event_timestamp"] = self.source_df["Time"]
-            if self.feature_store_config and self.feature_store_config.entity_name:
-                entity_df[self.feature_store_config.entity_name] = (
-                    self._get_symbol_from_df()
-                )
-            else:
-                raise ValueError(
-                    "FeatureStoreConfig or its entity_name is not properly configured."
-                )
+            entity_df["Time"] = self.asset_data.asset_price_dataset["Time"]
+            entity_df["event_timestamp"] = self.asset_data.asset_price_dataset["Time"]
+            # TODO
+            # entity_df[self.feature_store_config.entity_name] = (
+            #     self._get_symbol_from_df()
+            # )
 
             # Get feature view name based on feature and params
-            feature_view_name = f"{feature_name}_{param_set.hash_id()}"
-            feature_refs = [
-                f"{feature_view_name}:{col}"
-                for col in self.class_registry.feature_class_map[feature_name](
-                    []
-                ).get_sub_features_names(param_set)
-            ]
+            feature_view_name = (
+                f"{feature.get_feature_name()}_{feature.config.hash_id()}"
+            )
+            feature_refs = feature.get_sub_features_names()
 
             logger.info(f"Attempting to retrieve features from store: {feature_refs}")
             historical_features = self.feature_store.get_historical_features(
@@ -83,10 +78,13 @@ class FeatureAggregator:
                 if not param_set.enabled:
                     continue
 
-                # Try to get features from store first
-                historical_features = self._get_historical_features(
-                    feature.name, param_set
+                feature_class = self.class_registry.feature_class_map[feature.name]
+                feature_instance = feature_class(
+                    source=self.asset_data.asset_price_dataset, config=param_set
                 )
+
+                # Try to get features from store first
+                historical_features = self._get_historical_features(feature_instance)
                 if historical_features is not None:
                     feature_results.append(historical_features)
                     continue
@@ -95,9 +93,7 @@ class FeatureAggregator:
                 logger.info(
                     f"Computing features for {feature.name} with params {param_set}"
                 )
-                feature_class = self.class_registry.feature_class_map[feature.name]
-                feature_instance = feature_class(self.source_df)
-                feature_df = feature_instance.compute(param_set)
+                feature_df = feature_instance.compute()
 
                 # Store computed features if feature store is enabled
                 if self.feature_store:
@@ -113,7 +109,10 @@ class FeatureAggregator:
         ).reset_index()
 
     def _store_computed_features(
-        self, feature_df: DataFrame, feature_name: str, param_set
+        self,
+        feature_df: DataFrame,
+        feature_name: str,
+        param_set: BaseParameterSetConfig,
     ) -> None:
         """Store computed features in the feature store."""
         if not self.feature_store:
@@ -122,9 +121,10 @@ class FeatureAggregator:
         try:
             # Add required columns for feast
             feature_df["event_timestamp"] = feature_df["Time"]
-            feature_df[self.feature_store_config.entity_name] = (
-                self._get_symbol_from_df()
-            )
+            # TODO Check this
+            # feature_df[self.feature_store_config.entity_name] = (
+            #     self._get_symbol_from_df()
+            # )
 
             feature_view_name = f"{feature_name}_{param_set.hash_id()}"
             logger.info(

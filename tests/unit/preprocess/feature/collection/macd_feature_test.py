@@ -20,17 +20,17 @@ def mock_data() -> DataFrame:
 
 
 @pytest.fixture
-def feature(mock_data):
-    return MacdFeature(mock_data, "test")
-
-
-@pytest.fixture
 def config():
     mock_config = MagicMock()
     mock_config.fast_length = 3
     mock_config.slow_length = 6
     mock_config.signal_length = 5
     return mock_config
+
+
+@pytest.fixture
+def feature(mock_data, config):
+    return MacdFeature(mock_data, config, "test")
 
 
 @patch("pandas_ta.macd")
@@ -53,7 +53,7 @@ def test_compute_macd_signals(patched_macd, feature, config):
     patched_macd.return_value = macd_result
 
     # When
-    result = feature.compute(config)
+    result = feature.compute()
 
     # Then
     patched_macd.assert_called_once_with(

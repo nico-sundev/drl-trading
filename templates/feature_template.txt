@@ -1,15 +1,21 @@
+import pandas_ta as ta
 from pandas import DataFrame
+
+from ai_trading.config.base_parameter_set_config import BaseParameterSetConfig
 from ai_trading.config.feature_config_collection import ${FeatureName}Config
 from ai_trading.preprocess.feature.collection.base_feature import BaseFeature
-import pandas_ta as ta
 
 class ${FeatureName}Feature(BaseFeature):
-    def __init__(self, source: DataFrame, postfix: str = ""):
-        self.df_source = source
-        self.postfix = postfix
 
-    def compute(self, config: ${FeatureName}Config) -> DataFrame:
+    def __init__(self, source: DataFrame, config: BaseParameterSetConfig, postfix: str = "") -> None:
+        super().__init__(source, config, postfix)
+        self.config: ${FeatureName}Config = self.config
+
+    def compute(self) -> DataFrame:
         df = DataFrame()
         df["Time"] = self.df_source["Time"]
         # TODO: implement ${feature_name} logic here
         return df
+
+    def get_sub_features_names(self) -> list[str]:
+        return [f"feature_{self.config.length}{self.postfix}"]

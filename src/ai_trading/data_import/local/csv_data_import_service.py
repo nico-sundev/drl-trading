@@ -1,11 +1,13 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import dask
 import pandas as pd
 from dask import delayed
 
+from ai_trading.config.local_data_import_config import LocalDataImportConfig
 from ai_trading.model.asset_price_dataset import AssetPriceDataSet
 from ai_trading.model.asset_price_import_properties import AssetPriceImportProperties
+from ai_trading.model.symbol_import_container import SymbolImportContainer
 
 from ..base_data_import_service import BaseDataImportService
 
@@ -13,16 +15,26 @@ from ..base_data_import_service import BaseDataImportService
 class CsvDataImportService(BaseDataImportService):
     """Service to import OHLC data from CSV files."""
 
-    def __init__(self, importProperties: List[AssetPriceImportProperties]):
+    def __init__(self, config: LocalDataImportConfig):
         """
-        Initializes with file paths.
+        Initializes with local data import configuration.
 
-        :param file_paths: Dictionary where keys are timeframes (e.g., "H1", "H4") and values are file paths.
+        Args:
+            config: Configuration containing symbols with their datasets
         """
-        self.importProperties = importProperties
+        self.config = config
 
     def _load_csv(self, file_path: str, limit: Optional[int] = None) -> pd.DataFrame:
-        """Loads a CSV file into a DataFrame."""
+        """
+        Loads a CSV file into a DataFrame.
+
+        Args:
+            file_path: Path to the CSV file
+            limit: Optional limit on number of rows to read
+
+        Returns:
+            DataFrame with OHLC data
+        """
         return pd.read_csv(
             file_path,
             usecols=["Time", "Open", "High", "Low", "Close"],
@@ -32,24 +44,64 @@ class CsvDataImportService(BaseDataImportService):
             nrows=limit,
         )
 
-    def import_data(self, limit: Optional[int] = None) -> List[AssetPriceDataSet]:
-        """Imports data from CSV files."""
+    def _get_symbol_asset_price_tuple(
+        self, dataset_properties: AssetPriceImportProperties, symbol: str
+    ) -> Tuple[str, AssetPriceDataSet]:
+        """
+        Fills an AssetPriceDataSet with data from a CSV file.
 
-        compute_tasks = [
-            delayed(self._load_csv)(
-                dataset_property.file_path, limit
-            )  # Delay the _load_csv method
-            for dataset_property in self.importProperties
-        ]
+        Args:
+            dataset_properties (AssetPriceImportProperties): Properties of the dataset
+            symbol (str): Symbol for which the dataset is being filled
 
-        # Now for each dataset, construct the AssetPriceDataSet
-        asset_price_datasets = [
-            AssetPriceDataSet(
-                dataset_property.timeframe, dataset_property.base_dataset, data
-            )
-            for dataset_property, data in zip(
-                self.importProperties, dask.compute(*compute_tasks)
-            )  # Compute the results of the delayed tasks
-        ]
+        Returns:
+            Tuple[str, AssetPriceDataSet]: A tuple containing the symbol and the filled AssetPriceDataSet
+        """
+        return symbol, AssetPriceDataSet(
+            timeframe=dataset_properties.timeframe,
+            base_dataset=dataset_properties.base_dataset,
+            asset_price_dataset=self._load_csv(
+                dataset_properties.file_path, self.config.limit
+            ),
+        )
 
-        return asset_price_datasets
+    def import_data(self, limit: Optional[int] = None) -> List[SymbolImportContainer]:
+        """
+        Imports data from CSV files for all symbols.
+
+        Args:
+            limit: Optional limit on number of rows to read
+
+        Returns:
+            List of SymbolImportContainer objects, one for each symbol
+        """
+        # Use provided limit or fallback to config limit
+        symbol_containers = []
+
+        for symbol_config in self.config.symbols:
+            # Create tasks for all datasets of all symbols
+            compute_tasks = [
+                delayed(self._get_symbol_asset_price_tuple)(
+                    dataset_property, symbol_config.symbol
+                )
+                for dataset_property in symbol_config.datasets
+            ]
+
+            # Process all datasets in parallel with dask
+            computed_results = dask.compute(*compute_tasks)
+
+            # Group datasets by symbol
+            symbol_datasets: dict[str, list[AssetPriceDataSet]] = {}
+            for symbol, dataset in computed_results:
+                if symbol not in symbol_datasets:
+                    symbol_datasets[symbol] = []
+                symbol_datasets[symbol].append(dataset)
+
+            # Create containers for each symbol
+            for symbol, datasets in symbol_datasets.items():
+                symbol_container = SymbolImportContainer(
+                    symbol=symbol, datasets=datasets
+                )
+                symbol_containers.append(symbol_container)
+
+        return symbol_containers

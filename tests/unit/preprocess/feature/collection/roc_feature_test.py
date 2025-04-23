@@ -19,15 +19,15 @@ def mock_data() -> DataFrame:
 
 
 @pytest.fixture
-def feature(mock_data):
-    return RocFeature(mock_data, "test")
-
-
-@pytest.fixture
 def config():
     mock_config = MagicMock()
     mock_config.length = 3
     return mock_config
+
+
+@pytest.fixture
+def feature(mock_data, config):
+    return RocFeature(mock_data, config, "test")
 
 
 @patch("pandas_ta.roc")
@@ -37,7 +37,7 @@ def test_compute_roc(patched_roc, feature, config):
     patched_roc.return_value = Series([50, 55, 60, 65, 70, 75])
 
     # When
-    result = feature.compute(config)
+    result = feature.compute()
 
     # Then
     patched_roc.assert_called_once_with(

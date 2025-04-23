@@ -31,9 +31,20 @@ def config(reset_registry):
 
 @pytest.fixture
 def datasets(config):
-    repository = CsvDataImportService(config.local_data_import_config.datasets)
+    all_datasets = []
+
+    # Create a service with the complete config
+    repository = CsvDataImportService(config.local_data_import_config)
     importer = DataImportManager(repository)
-    return importer.get_data(100)
+
+    # Get all symbol containers
+    symbol_containers = importer.get_data(100)
+
+    # Extract datasets from all symbols
+    for symbol_container in symbol_containers:
+        all_datasets.extend(symbol_container.datasets)
+
+    return all_datasets
 
 
 @pytest.fixture

@@ -20,18 +20,24 @@ def temp_config_file():
     """Creates a temporary JSON config file for testing."""
     config_data = {
         "localDataImportConfig": {
-            "datasets": [
+            "symbols": [
                 {
-                    "timeframe": "H1",
-                    "base_dataset": True,
-                    "file_path": "../../resources/test_H1.csv",
-                },
-                {
-                    "timeframe": "H4",
-                    "base_dataset": False,
-                    "file_path": "../../resources/test_H4.csv",
-                },
-            ]
+                    "symbol": "EURUSD",
+                    "datasets": [
+                        {
+                            "timeframe": "H1",
+                            "base_dataset": True,
+                            "file_path": "../../resources/test_H1.csv",
+                        },
+                        {
+                            "timeframe": "H4",
+                            "base_dataset": False,
+                            "file_path": "../../resources/test_H4.csv",
+                        },
+                    ],
+                }
+            ],
+            "limit": 100,
         },
         "featuresConfig": {
             "featureDefinitions": [

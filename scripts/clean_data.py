@@ -1,30 +1,61 @@
 import os
+from typing import List
 
+from ai_trading.config.local_data_import_config import (
+    LocalDataImportConfig,
+    SymbolConfig,
+)
 from ai_trading.data_import.data_import_manager import DataImportManager
 from ai_trading.data_import.local.csv_data_import_service import CsvDataImportService
+from ai_trading.model.asset_price_import_properties import AssetPriceImportProperties
 
 ticker = "EURUSD"
-file_paths = {
-    "H1": os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "data", "raw", f"{ticker}_H1.csv")
-    ),
-    "H4": os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "data", "raw", f"{ticker}_H4.csv")
-    ),
-}
-repository = CsvDataImportService(file_paths)
-importer = DataImportManager(repository)
-datasets = importer.get_data()
 
-for dfkey in datasets.keys():
-    datasets[dfkey].to_parquet(
-        os.path.abspath(
+# Create import properties for each timeframe
+import_properties: List[AssetPriceImportProperties] = [
+    AssetPriceImportProperties(
+        timeframe="H1",
+        base_dataset=True,
+        file_path=os.path.abspath(
             os.path.join(
-                os.path.dirname(__file__),
-                "..",
-                "data",
-                "processed",
-                f"{ticker}_{dfkey}.parquet",
+                os.path.dirname(__file__), "..", "data", "raw", f"{ticker}_H1.csv"
+            )
+        ),
+    ),
+    AssetPriceImportProperties(
+        timeframe="H4",
+        base_dataset=False,
+        file_path=os.path.abspath(
+            os.path.join(
+                os.path.dirname(__file__), "..", "data", "raw", f"{ticker}_H4.csv"
+            )
+        ),
+    ),
+]
+
+# Create a symbol config
+symbol_config = SymbolConfig(symbol=ticker, datasets=import_properties)
+
+# Create a local data import config
+local_config = LocalDataImportConfig(symbols=[symbol_config])
+
+# Initialize service with config
+repository = CsvDataImportService(local_config)
+importer = DataImportManager(repository)
+symbol_containers = importer.get_data()
+
+# Save datasets to parquet files
+for symbol_container in symbol_containers:
+    for dataset in symbol_container.datasets:
+        timeframe = dataset.timeframe
+        dataset.asset_price_dataset.to_parquet(
+            os.path.abspath(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "..",
+                    "data",
+                    "processed",
+                    f"{symbol_container.symbol}_{timeframe}.parquet",
+                )
             )
         )
-    )

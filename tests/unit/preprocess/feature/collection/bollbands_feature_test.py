@@ -19,19 +19,21 @@ def mock_data() -> DataFrame:
 
 
 @pytest.fixture
-def feature(mock_data):
-    return BollbandsFeature(mock_data, "test")
-
-
-@pytest.fixture
-def config():
+def config() -> MagicMock:
     mock_config = MagicMock()
     mock_config.length = 14
     return mock_config
 
 
+@pytest.fixture
+def feature(mock_data: DataFrame, config: MagicMock) -> BollbandsFeature:
+    return BollbandsFeature(mock_data, config, "test")
+
+
 @patch("pandas_ta.bbands")
-def test_bollbands_feature_computation(patched_bollbands, feature, config):
+def test_bollbands_feature_computation(
+    patched_bollbands: MagicMock, feature: BollbandsFeature, config: MagicMock
+) -> None:
     df = DataFrame(
         {
             "Time": date_range("2020-01-01", periods=10),
@@ -41,8 +43,7 @@ def test_bollbands_feature_computation(patched_bollbands, feature, config):
             "Low": range(10),
         }
     )
-    feature = BollbandsFeature(df)
     # config = ...  # Insert mock config here
     # result = feature.compute(config)
     # assert not result.empty
-    assert True  # Placeholder
+    raise AssertionError("This has to be implemented first")  # Placeholder

@@ -19,15 +19,15 @@ def mock_data() -> DataFrame:
 
 
 @pytest.fixture
-def feature(mock_data):
-    return RsiFeature(mock_data, "test")
-
-
-@pytest.fixture
 def config():
     mock_config = MagicMock()
     mock_config.length = 14
     return mock_config
+
+
+@pytest.fixture
+def feature(mock_data, config):
+    return RsiFeature(mock_data, config, "test")
 
 
 @patch("pandas_ta.rsi")
@@ -36,7 +36,7 @@ def test_compute_rsi(patched_rsi, feature, config):
     patched_rsi.return_value = Series([50, 55, 60, 65, 70, 75])
 
     # When
-    result = feature.compute(config)
+    result = feature.compute()
 
     # Then
     patched_rsi.assert_called_once_with(

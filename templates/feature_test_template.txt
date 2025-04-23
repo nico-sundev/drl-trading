@@ -1,12 +1,14 @@
 from unittest.mock import MagicMock, patch
-from pandas import DataFrame, Series, to_datetime
+
 import pytest
+from pandas import DataFrame, Series, to_datetime
+
 from ai_trading.preprocess.feature.collection.${feature_name}_feature import ${FeatureName}Feature
 
 
 @pytest.fixture
 def mock_data() -> DataFrame:
-    data = {"Time": [], "Open": [], "High": [], "Low": [], "Close": []}
+    data: dict[str, list] = {"Time": [], "Open": [], "High": [], "Low": [], "Close": []}
 
     # Create the DataFrame
     df = DataFrame(data)
@@ -15,29 +17,32 @@ def mock_data() -> DataFrame:
     df["Time"] = to_datetime(df["Time"])
     return df
 
-
 @pytest.fixture
-def feature(mock_data):
-    return ${FeatureName}Feature(mock_data, "test")
-
-
-@pytest.fixture
-def config():
+def config() -> MagicMock:
     mock_config = MagicMock()
     mock_config.length = 14
     return mock_config
 
+@pytest.fixture
+def feature(mock_data: DataFrame, config: MagicMock) -> ${FeatureName}Feature:
+    return ${FeatureName}Feature(mock_data, config, "test")
+
 @patch("pandas_ta.${feature_name}")
-def test_${feature_name}_feature_computation(patched_${feature_name}, feature, config):
-    df = pd.DataFrame({
-        "Time": pd.date_range("2020-01-01", periods=10),
-        "Close": range(10),
-        "Open": range(10),
-        "High": range(10),
-        "Low": range(10),
-    })
-    feature = ${FeatureName}Feature(df)
-    # config = ...  # Insert mock config here
-    # result = feature.compute(config)
-    # assert not result.empty
-    assert True  # Placeholder
+def test_compute_rvi(patched_${feature_name}: MagicMock, feature: ${FeatureName}Feature, config: MagicMock) -> None:
+    # Given
+    patched_${feature_name}.return_value = Series([50, 55, 60, 65, 70, 75])
+
+    # When
+    result = feature.compute()
+
+    # Then
+    patched_${feature_name}.assert_called_once_with(
+        feature.df_source["Close"],
+        feature.df_source["High"],
+        feature.df_source["Low"],
+        length=config.length,
+    )
+    assert "Time" in result.columns
+    assert "${feature_name}_14test" in result.columns
+    expected_values = [50, 55, 60, 65, 70, 75]
+    assert result["${feature_name}_14test"].head(6).tolist() == expected_values
