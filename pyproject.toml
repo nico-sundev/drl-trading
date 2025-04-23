@@ -3,6 +3,58 @@
 requires = ["setuptools>=46.1.0", "setuptools_scm[toml]>=5"]
 build-backend = "setuptools.build_meta"
 
+# Project metadata
+[project]
+name = "ai_trading"
+description = "AI-powered trading system with reinforcement learning capabilities"
+authors = [
+    {name = "sonntagnico", email = "nico-tor@hotmail.com"},
+]
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python",
+]
+dynamic = ["version"]
+dependencies = [
+    # Core dependencies for runtime
+    "numpy",
+    "pandas",
+    "pandas_ta",
+    "matplotlib",
+    "gymnasium",
+    "stable_baselines3",
+    "scikit-learn",
+    "torch",
+    "torch-geometric",
+    "yfinance",
+    # Feature storage and management
+    "feast",
+    "fastparquet",
+    # API and services
+    "fastapi",
+    "uvicorn",
+    "click",
+]
+
+[project.urls]
+Documentation = "https://pyscaffold.org/"
+
+[project.optional-dependencies]
+testing = [
+    "pytest",
+    "pytest-cov",
+    "pytest-benchmark",
+]
+dev = [
+    "mypy",
+    "ruff",
+    "ipython",
+]
+
+# Keep existing setuptools_scm configuration
 [tool.setuptools_scm]
 # For smarter version schemes and other configuration options,
 # check out https://github.com/pypa/setuptools_scm
@@ -48,14 +100,120 @@ ignore_missing_imports = true
 cache_dir = ".mypy_cache"
 incremental = true
 follow_imports = "silent"
-# Exclude all test files in the tests directory
-exclude = "tests"
+# Exclude all test files in the tests directory and files including "TODO" in filename
+exclude = [
+    "^tests/",
+    "(?i).*todo.*\\.py$"
+]
 
 [[tool.mypy.overrides]]
 module = ["pandas.*", "numpy.*", "pytest.*"]
 ignore_missing_imports = true
 
-# Special handling for todo files (from mypy.ini)
-[[tool.mypy.overrides]]
-module = ["todo_*"]
-ignore_errors = true
+[tool.pytest]
+testpaths = [
+    "tests/unit",
+    "tests/it",
+    "tests/benchmarks"
+]
+python_files = "*_test.py"
+python_classes = "Test*"
+python_functions = "test_*"
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s %(levelname)s %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')"
+]
+addopts = [
+    "--verbose",
+    "-ra",
+    "-m 'not slow'",
+    "--cov=ai_trading",
+    "--cov-report=term-missing"
+]
+
+# Add tox configuration
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+minversion = 3.24
+envlist = default
+isolated_build = True
+
+[testenv]
+description = Invoke pytest to run automated tests
+setenv =
+    TOXINIDIR = {toxinidir}
+passenv =
+    HOME
+    SETUPTOOLS_*
+extras =
+    testing
+commands =
+    pytest {posargs}
+
+[testenv:{build,clean}]
+description =
+    build: Build the package in isolation according to PEP517, see https://github.com/pypa/build
+    clean: Remove old distribution files and temporary build artifacts (./build and ./dist)
+skip_install = True
+changedir = {toxinidir}
+deps =
+    build: build[virtualenv]
+passenv =
+    SETUPTOOLS_*
+commands =
+    clean: python -c 'import shutil; [shutil.rmtree(p, True) for p in ("build", "dist")]'
+    clean: python -c 'import pathlib, shutil; [shutil.rmtree(p, True) for p in pathlib.Path("src").glob("*.egg-info")]'
+    build: python -m build {posargs}
+
+[testenv:publish]
+description =
+    Publish the package you have been developing to a package index server.
+    By default, it uses testpypi. If you really want to publish your package
+    to be publicly accessible in PyPI, use the `-- --repository pypi` option.
+skip_install = True
+changedir = {toxinidir}
+passenv =
+    TWINE_USERNAME
+    TWINE_PASSWORD
+    TWINE_REPOSITORY
+    TWINE_REPOSITORY_URL
+deps = twine
+commands =
+    python -m twine check dist/*
+    python -m twine upload {posargs:--repository {env:TWINE_REPOSITORY:testpypi}} dist/*
+"""
+
+# Package discovery configuration
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = ["tests"]
+
+# Coverage configuration (migrated from .coveragerc)
+[tool.coverage.run]
+source = ["ai_trading"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/conftest.py",
+    "*/setup.py",
+    "*/bootstrap.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+    "raise ImportError",
+    "if False:",
+]

@@ -4,6 +4,7 @@ from typing import Optional
 from feast import FeatureStore
 from pandas import DataFrame, concat
 
+from ai_trading.config.base_parameter_set_config import BaseParameterSetConfig
 from ai_trading.config.feature_config import FeaturesConfig, FeatureStoreConfig
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
 
@@ -28,15 +29,8 @@ class FeatureAggregator:
             logger.info("Initializing feature store connection")
             self.feature_store = FeatureStore(repo_path=feature_store_config.repo_path)
 
-    def _get_symbol_from_df(self) -> str:
-        """Extract symbol from the dataset name if possible."""
-        for column in self.source_df.columns:
-            if column.startswith("symbol"):
-                return self.source_df[column].iloc[0]
-        return "EURUSD"  # Default fallback if symbol not found
-
     def _get_historical_features(
-        self, feature_name: str, param_set
+        self, feature_name: str, param_set: BaseParameterSetConfig
     ) -> Optional[DataFrame]:
         """Try to retrieve features from feature store if available."""
         if not self.feature_store:
@@ -47,9 +41,14 @@ class FeatureAggregator:
             entity_df = DataFrame()
             entity_df["Time"] = self.source_df["Time"]
             entity_df["event_timestamp"] = self.source_df["Time"]
-            entity_df[self.feature_store_config.entity_name] = (
-                self._get_symbol_from_df()
-            )
+            if self.feature_store_config and self.feature_store_config.entity_name:
+                entity_df[self.feature_store_config.entity_name] = (
+                    self._get_symbol_from_df()
+                )
+            else:
+                raise ValueError(
+                    "FeatureStoreConfig or its entity_name is not properly configured."
+                )
 
             # Get feature view name based on feature and params
             feature_view_name = f"{feature_name}_{param_set.hash_id()}"
