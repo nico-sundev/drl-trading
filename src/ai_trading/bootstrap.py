@@ -88,7 +88,7 @@ def create_environments_and_train(
         - Dictionary of trained agents mapped by name
     """
     # Split the preprocessed data into training, validation, and test sets
-    data_set_prep_svc = SplitService()
+    data_set_prep_svc = SplitService(config.rl_model_config)
     data_sets: SplitDataSetContainer = data_set_prep_svc.split_dataset(
         df=base_dataset, split_ratios=(0.8, 0.1, 0.1)  # train, val, test ratios
     )
