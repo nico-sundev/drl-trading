@@ -10,18 +10,18 @@ from ai_trading.model.split_dataset_container import SplitDataSetContainer
 @pytest.fixture
 def rl_model_config() -> MagicMock:
     mocked_config = MagicMock()
-    mocked_config.train_ratio = 0.7
-    mocked_config.val_ratio = 0.2
-    mocked_config.test_ratio = 0.1
+    mocked_config.training_split_ratio = 0.7
+    mocked_config.validating_split_ratio = 0.2
+    mocked_config.testing_split_ratio = 0.1
     return mocked_config
 
 
 @pytest.fixture
 def invalid_rl_model_config() -> MagicMock:
     mocked_config = MagicMock()
-    mocked_config.train_ratio = 0.7
-    mocked_config.val_ratio = 0.2
-    mocked_config.test_ratio = 0.5
+    mocked_config.training_split_ratio = 0.7
+    mocked_config.validating_split_ratio = 0.2
+    mocked_config.testing_split_ratio = 0.5
     return mocked_config
 
 
@@ -50,9 +50,9 @@ def test_split_dataset(split_service: SplitService, mocked_df: pd.DataFrame) -> 
 def test_invalid_ratios(
     invalid_rl_model_config: MagicMock, mocked_df: pd.DataFrame
 ) -> None:
-    # Attempt to create SplitService with invalid config
     # Given
     svc = SplitService(invalid_rl_model_config)
 
+    # When/Then
     with pytest.raises(AssertionError):
         svc.split_dataset(mocked_df)

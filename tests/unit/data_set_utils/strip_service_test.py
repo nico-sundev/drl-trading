@@ -2,9 +2,7 @@ from datetime import timedelta
 
 import pytest
 
-from ai_trading.data_set_utils.timeframe_stripper_service import (
-    TimeframeStripperService,
-)
+from ai_trading.data_set_utils.strip_service import StripService
 from ai_trading.model.asset_price_dataset import AssetPriceDataSet
 from tests.unit.fixture.sample_data import mock_ohlcv_data_1h, mock_ohlcv_data_4h
 
@@ -21,7 +19,7 @@ def higher_timeframe_dataset():
 
 def test_strip_higher_timeframes(base_dataset, higher_timeframe_dataset):
     # Arrange
-    service = TimeframeStripperService()
+    service = StripService()
     base_end_timestamp = base_dataset["Time"].iloc[
         -1
     ]  # Last timestamp of the base dataset
@@ -40,7 +38,7 @@ def test_strip_higher_timeframes(base_dataset, higher_timeframe_dataset):
 
 def test_strip_asset_price_datasets(base_dataset, higher_timeframe_dataset):
     # Arrange
-    service = TimeframeStripperService()
+    service = StripService()
     datasets = [
         AssetPriceDataSet("H1", True, base_dataset),
         AssetPriceDataSet("H4", False, higher_timeframe_dataset),

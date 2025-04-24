@@ -11,9 +11,7 @@ from ai_trading.config.config_loader import ConfigLoader
 from ai_trading.config.logging_config import configure_logging
 from ai_trading.data_import.local.csv_data_import_service import CsvDataImportService
 from ai_trading.data_set_utils.split_service import SplitService
-from ai_trading.data_set_utils.timeframe_stripper_service import (
-    TimeframeStripperService,
-)
+from ai_trading.data_set_utils.strip_service import StripService
 from ai_trading.model.asset_price_dataset import AssetPriceDataSet
 from ai_trading.model.split_dataset_container import SplitDataSetContainer
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
@@ -49,7 +47,7 @@ def bootstrap(config: ApplicationConfig) -> DataFrame:
     logger.info(f"Imported {len(all_datasets)} raw asset price datasets in total")
 
     # Transform and strip other timeframes using the stripper service
-    tf_stripper_svc = TimeframeStripperService()
+    tf_stripper_svc = StripService()
     stripped_raw_asset_price_datasets = tf_stripper_svc.strip_asset_price_datasets(
         all_datasets
     )

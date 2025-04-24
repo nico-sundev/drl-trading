@@ -9,7 +9,7 @@ from ai_trading.data_set_utils.util import (
 from ai_trading.model.asset_price_dataset import AssetPriceDataSet
 
 
-class TimeframeStripperService:
+class StripService:
     """
     Service to strip higher timeframe datasets based on the end timestamp of the base dataset.
     """
