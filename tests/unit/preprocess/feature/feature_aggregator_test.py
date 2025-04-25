@@ -1,11 +1,12 @@
 """Unit tests for the FeatureAggregator class."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
 from pandas import DataFrame
 
+from ai_trading.config.base_parameter_set_config import BaseParameterSetConfig
 from ai_trading.config.feature_config import FeatureDefinition, FeaturesConfig
 from ai_trading.model.asset_price_dataset import AssetPriceDataSet
 from ai_trading.preprocess.feast.feast_service import FeastService
@@ -22,32 +23,69 @@ class MockFeature(BaseFeature):
         df = self.df_source.copy()
         df["feature1"] = 1.0
         df["feature2"] = 2.0
-        return df
+        if self.config.name == "drop_time":
+            return df.drop(columns=["Time"])
+        else:
+            return df
 
     def get_sub_features_names(self) -> list[str]:
         """Return mock sub-feature names."""
         return ["feature1", "feature2"]
 
+    def get_feature_name(self) -> str:
+        """Return the base name of the feature."""
+        return "MockFeature"
+
 
 @pytest.fixture
-def mock_param_set() -> MagicMock:
+def mock_param_set() -> BaseParameterSetConfig:
     """Create a mock parameter set for features."""
-    param_set = MagicMock()
+    param_set = MagicMock(spec=BaseParameterSetConfig)
     param_set.enabled = True
-    param_set.hash_id.return_value = "abc123"
+    param_set.hash_id.return_value = "abc123hash"
+    param_set.name = "default_params"
+    return param_set
+
+
+@pytest.fixture
+def mock_param_set_drop_time() -> BaseParameterSetConfig:
+    """Create a mock parameter set that causes MockFeature to drop Time."""
+    param_set = MagicMock(spec=BaseParameterSetConfig)
+    param_set.enabled = True
+    param_set.hash_id.return_value = "droptimehash"
+    param_set.name = "drop_time"
     return param_set
 
 
 @pytest.fixture
 def mock_feature_definition(mock_param_set) -> FeatureDefinition:
     """Create a mock feature definition."""
-    return FeatureDefinition(
-        name="MockFeature",
-        enabled=True,
-        derivatives=[],
-        parameter_sets=[],
-        parsed_parameter_sets=[mock_param_set],
-    )
+    # Mock the FeatureConfigRegistry before creating the FeatureDefinition
+    with patch(
+        "ai_trading.config.feature_config.FeatureConfigRegistry"
+    ) as mock_registry_class:
+        # Create mock instance with feature_config_map property
+        mock_registry_instance = MagicMock()
+        mock_registry_class.return_value = mock_registry_instance
+
+        # Mock config class for 'mockfeature'
+        class MockFeatureConfig(BaseParameterSetConfig):
+            pass
+
+        # Set up the mock registry to return our mock config class
+        mock_registry_instance.feature_config_map = {"mockfeature": MockFeatureConfig}
+
+        # Now create the FeatureDefinition which will use our mocked registry
+        mock_feature_def = FeatureDefinition(
+            name="MockFeature",
+            enabled=True,
+            derivatives=[],
+            parameter_sets=[],  # Empty raw params
+        )
+
+        # Manually set the parsed_parameter_sets since we're bypassing the validator
+        mock_feature_def.parsed_parameter_sets = [mock_param_set]
+        return mock_feature_def
 
 
 @pytest.fixture
@@ -57,9 +95,9 @@ def mock_features_config(mock_feature_definition) -> FeaturesConfig:
 
 
 @pytest.fixture
-def mock_asset_data() -> AssetPriceDataSet:
-    """Create a mock asset price dataset."""
-    df = DataFrame(
+def mock_asset_df() -> DataFrame:
+    """Create a mock DataFrame for asset price data."""
+    return DataFrame(
         {
             "Time": pd.date_range(start="2022-01-01", periods=10, freq="H"),
             "Open": [1.0] * 10,
@@ -70,17 +108,29 @@ def mock_asset_data() -> AssetPriceDataSet:
         }
     )
 
-    return AssetPriceDataSet(
+
+@pytest.fixture
+def mock_asset_data(mock_asset_df) -> AssetPriceDataSet:
+    """Create a mock asset price dataset."""
+    asset_data = AssetPriceDataSet(
         timeframe="H1",
         base_dataset=True,
-        asset_price_dataset=df,
+        asset_price_dataset=mock_asset_df,
     )
+    # Add symbol as an attribute after initialization
+    return asset_data
+
+
+@pytest.fixture
+def mock_symbol() -> str:
+    """Create a mock symbol for testing."""
+    return "EURUSD"
 
 
 @pytest.fixture
 def mock_class_registry() -> FeatureClassRegistry:
     """Create a mock feature class registry."""
-    registry = MagicMock()
+    registry = MagicMock(spec=FeatureClassRegistry)
     registry.feature_class_map = {"MockFeature": MockFeature}
     return registry
 
@@ -96,150 +146,317 @@ def mock_feast_service() -> FeastService:
 
 @pytest.fixture
 def feature_aggregator(
-    mock_asset_data, mock_features_config, mock_class_registry, mock_feast_service
+    mock_features_config, mock_class_registry, mock_feast_service
 ) -> FeatureAggregator:
     """Create a FeatureAggregator instance with mocked dependencies."""
     return FeatureAggregator(
-        asset_data=mock_asset_data,
-        symbol="EURUSD",
         config=mock_features_config,
         class_registry=mock_class_registry,
         feast_service=mock_feast_service,
     )
 
 
-def test_compute_with_no_features(feature_aggregator):
-    """Test compute returns empty DataFrame when no features are enabled."""
+def test_compute_single_feature_no_cache(
+    feature_aggregator,
+    mock_feature_definition,
+    mock_param_set,
+    mock_feast_service,
+    mock_asset_df,
+    mock_asset_data,
+    mock_symbol,
+):
+    """Test _compute_or_get_single_feature when feature is not cached."""
     # Given
-    feature_aggregator.config.feature_definitions[0].enabled = False
+    # Feature not in cache
+    mock_feast_service.get_historical_features.return_value = None
 
     # When
-    result = feature_aggregator.compute()
+    # Compute feature without cache
+    result_df = feature_aggregator._compute_or_get_single_feature(
+        mock_feature_definition, mock_param_set, mock_asset_df, mock_symbol
+    )
 
     # Then
-    assert result.empty
+    # Verify feature was retrieved from Feast and stored back
+    mock_feast_service.get_historical_features.assert_called_once_with(
+        feature_name="MockFeature",
+        param_hash="abc123hash",
+        sub_feature_names=["feature1", "feature2"],
+    )
+    mock_feast_service.store_computed_features.assert_called_once()
+    assert result_df is not None
+    assert not result_df.empty
+    assert "Time" in result_df.columns
+    expected_col1 = f"MockFeature_{mock_param_set.hash_id()}_feature1"
+    expected_col2 = f"MockFeature_{mock_param_set.hash_id()}_feature2"
+    assert expected_col1 in result_df.columns
+    assert expected_col2 in result_df.columns
+    assert "feature1" not in result_df.columns
+    assert "feature2" not in result_df.columns
+    assert "Open" not in result_df.columns
+    assert len(result_df.columns) == 3
+    pd.testing.assert_series_equal(
+        result_df["Time"], mock_asset_df["Time"], check_names=False
+    )
 
 
-def test_compute_with_disabled_parameter_sets(feature_aggregator):
-    """Test compute returns empty DataFrame when no parameter sets are enabled."""
+def test_compute_single_feature_with_cache(
+    feature_aggregator,
+    mock_feature_definition,
+    mock_param_set,
+    mock_feast_service,
+    mock_asset_df,
+    mock_asset_data,
+    mock_symbol,
+):
+    """Test _compute_or_get_single_feature when feature is cached."""
     # Given
+    # Feature exists in cache
+    cached_features = DataFrame(
+        {
+            "feature1": [1.0] * 10,
+            "feature2": [2.0] * 10,
+            "Time": mock_asset_df["Time"],
+        }
+    )
+    mock_feast_service.get_historical_features.return_value = cached_features
+
+    # When
+    # Retrieve feature from cache
+    result_df = feature_aggregator._compute_or_get_single_feature(
+        mock_feature_definition, mock_param_set, mock_asset_df, mock_symbol
+    )
+
+    # Then
+    # Verify feature was retrieved from cache and not computed again
+    mock_feast_service.get_historical_features.assert_called_once()
+    mock_feast_service.store_computed_features.assert_not_called()
+    assert result_df is not None
+    assert "Time" in result_df.columns
+    expected_col1 = f"MockFeature_{mock_param_set.hash_id()}_feature1"
+    expected_col2 = f"MockFeature_{mock_param_set.hash_id()}_feature2"
+    assert expected_col1 in result_df.columns
+    assert expected_col2 in result_df.columns
+    assert "feature1" not in result_df.columns
+    assert "feature2" not in result_df.columns
+    assert len(result_df.columns) == 3
+    pd.testing.assert_series_equal(
+        result_df["Time"], mock_asset_df["Time"], check_names=False
+    )
+
+
+def test_compute_single_feature_disabled_feature_def(
+    feature_aggregator,
+    mock_feature_definition,
+    mock_param_set,
+    mock_asset_df,
+    mock_asset_data,
+    mock_symbol,
+):
+    """Test _compute_or_get_single_feature returns None if feature def is disabled."""
+    # Given
+    # Feature definition is disabled
+    mock_feature_definition.enabled = False
+
+    # When
+    # Attempt to compute the feature
+    result = feature_aggregator._compute_or_get_single_feature(
+        mock_feature_definition, mock_param_set, mock_asset_df, mock_symbol
+    )
+
+    # Then
+    # Verify None is returned
+    assert result is None
+
+
+def test_compute_single_feature_disabled_param_set(
+    feature_aggregator,
+    mock_feature_definition,
+    mock_param_set,
+    mock_asset_df,
+    mock_asset_data,
+    mock_symbol,
+):
+    """Test _compute_or_get_single_feature returns None if param set is disabled."""
+    # Given
+    # Parameter set is disabled
+    mock_param_set.enabled = False
+
+    # When
+    # Attempt to compute the feature
+    result = feature_aggregator._compute_or_get_single_feature(
+        mock_feature_definition, mock_param_set, mock_asset_df, mock_symbol
+    )
+
+    # Then
+    # Verify None is returned
+    assert result is None
+
+
+def test_compute_single_feature_handles_computation_error(
+    feature_aggregator,
+    mock_feature_definition,
+    mock_param_set,
+    mock_class_registry,
+    mock_asset_df,
+    mock_asset_data,
+    mock_symbol,
+):
+    """Test _compute_or_get_single_feature returns None if computation fails."""
+    # Given
+    # Feature computation will raise an error
+    mock_feature_instance = MagicMock()
+    mock_feature_instance.compute.side_effect = ValueError("Computation failed")
+    mock_feature_instance.get_feature_name.return_value = "MockFeature"
+    mock_feature_instance.get_sub_features_names.return_value = ["f1"]
+
+    mock_feature_class = MagicMock(return_value=mock_feature_instance)
+    feature_aggregator.class_registry.feature_class_map["MockFeature"] = (
+        mock_feature_class
+    )
+
+    # When
+    # Attempt to compute the feature
+    result = feature_aggregator._compute_or_get_single_feature(
+        mock_feature_definition, mock_param_set, mock_asset_df, mock_symbol
+    )
+
+    # Then
+    # Verify None is returned and compute was called
+    assert result is None
+    mock_feature_instance.compute.assert_called_once()
+
+
+def test_compute_single_feature_handles_missing_time_after_compute(
+    feature_aggregator,
+    mock_feature_definition,
+    mock_param_set_drop_time,
+    mock_feast_service,
+    mock_asset_df,
+    mock_asset_data,
+    mock_symbol,
+):
+    """Test _compute_or_get_single_feature returns None if 'Time' is missing after compute."""
+    # Given
+    # Feature not in cache and will drop Time column when computed
+    mock_feast_service.get_historical_features.return_value = None
+
+    # When
+    # Attempt to compute the feature
+    result = feature_aggregator._compute_or_get_single_feature(
+        mock_feature_definition, mock_param_set_drop_time, mock_asset_df, mock_symbol
+    )
+
+    # Then
+    # Verify None is returned
+    assert result is None
+    mock_feast_service.get_historical_features.assert_called_once()
+
+
+@patch(
+    "ai_trading.preprocess.feature.feature_aggregator.delayed",
+    side_effect=lambda fn: fn,
+)
+def test_compute_returns_callable_tasks(
+    mock_delayed_patch, feature_aggregator, mock_asset_data, mock_symbol
+):
+    """Test that compute returns a list of callable tasks wrapping the correct method."""
+    # Given
+    # Feature aggregator with default configuration
+
+    # When
+    # Call compute() method with asset data and symbol
+    tasks = feature_aggregator.compute(asset_data=mock_asset_data, symbol=mock_symbol)
+
+    # Then
+    # Verify tasks are created correctly
+    assert isinstance(tasks, list)
+    assert len(tasks) == 1
+    mock_delayed_patch.assert_called_once()
+    # Check that the delayed function is _compute_or_get_single_feature (check function name)
+    assert (
+        mock_delayed_patch.call_args[0][0].__name__ == "_compute_or_get_single_feature"
+    )
+
+
+@patch(
+    "ai_trading.preprocess.feature.feature_aggregator.delayed",
+    side_effect=lambda fn: fn,
+)
+def test_compute_handles_multiple_param_sets(
+    mock_delayed_patch, feature_aggregator, mock_asset_data, mock_symbol
+):
+    """Test compute creates tasks for multiple parameter sets."""
+    # Given
+    # Feature with multiple parameter sets
+    mock_param_set2 = MagicMock(spec=BaseParameterSetConfig)
+    mock_param_set2.enabled = True
+    mock_param_set2.hash_id.return_value = "def456hash"
+    mock_param_set2.name = "other_params"
+    feature_aggregator.config.feature_definitions[0].parsed_parameter_sets.append(
+        mock_param_set2
+    )
+
+    # When
+    # Call compute() method with asset data and symbol
+    tasks = feature_aggregator.compute(asset_data=mock_asset_data, symbol=mock_symbol)
+
+    # Then
+    # Verify correct number of tasks are created
+    assert isinstance(tasks, list)
+    assert len(tasks) == 2
+    assert mock_delayed_patch.call_count == 2
+
+
+@patch(
+    "ai_trading.preprocess.feature.feature_aggregator.delayed",
+    side_effect=lambda fn: fn,
+)
+def test_compute_skips_disabled_features_and_params(
+    mock_delayed_patch, feature_aggregator, mock_asset_data, mock_symbol
+):
+    """Test compute skips disabled features and parameter sets."""
+    # Given
+    # Setup with disabled features and parameter sets
+    mock_param_set2 = MagicMock(spec=BaseParameterSetConfig)
+    mock_param_set2.enabled = True
+    mock_param_set2.hash_id.return_value = "p2"
+    mock_param_set2.name = "p2"
+
+    # Create second mock feature definition without relying on constructor validation
+    with patch(
+        "ai_trading.config.feature_config.FeatureConfigRegistry"
+    ) as mock_registry_class:
+        mock_registry_instance = MagicMock()
+        mock_registry_class.return_value = mock_registry_instance
+
+        class MockFeatureConfig(BaseParameterSetConfig):
+            pass
+
+        mock_registry_instance.feature_config_map = {"mockfeature2": MockFeatureConfig}
+
+        mock_feature_def2 = MagicMock(spec=FeatureDefinition)
+        mock_feature_def2.name = "MockFeature2"
+        mock_feature_def2.enabled = False
+        mock_feature_def2.parsed_parameter_sets = [mock_param_set2]
+
+        # Add the mock feature definition to the config
+        feature_aggregator.config.feature_definitions.append(mock_feature_def2)
+        feature_aggregator.class_registry.feature_class_map["MockFeature2"] = (
+            MockFeature
+        )
+
+    # Disable the first feature's parameter set
     feature_aggregator.config.feature_definitions[0].parsed_parameter_sets[
         0
     ].enabled = False
 
     # When
-    result = feature_aggregator.compute()
+    # Call compute() method with asset data and symbol
+    tasks = feature_aggregator.compute(asset_data=mock_asset_data, symbol=mock_symbol)
 
     # Then
-    assert result.empty
-
-
-def test_compute_with_cached_features(feature_aggregator, mock_feast_service):
-    """Test compute uses cached features from feature store when available."""
-    # Given
-    historical_features = DataFrame(
-        {
-            "Time": pd.date_range(start="2022-01-01", periods=10, freq="H"),
-            "feature1": [1.0] * 10,
-            "feature2": [2.0] * 10,
-        }
-    )
-    mock_feast_service.get_historical_features.return_value = historical_features
-
-    # When
-    result = feature_aggregator.compute()
-
-    # Then
-    assert not result.empty
-    mock_feast_service.get_historical_features.assert_called_once()
-    mock_feast_service.store_computed_features.assert_not_called()
-
-
-def test_compute_without_cached_features(feature_aggregator, mock_feast_service):
-    """Test compute calculates and stores features when not in feature store."""
-    # Given
-    mock_feast_service.get_historical_features.return_value = None
-
-    # When
-    result = feature_aggregator.compute()
-
-    # Then
-    assert not result.empty
-    mock_feast_service.get_historical_features.assert_called_once()
-    mock_feast_service.store_computed_features.assert_called_once()
-
-    # Verify computed features contain expected columns
-    assert "feature1" in result.columns
-    assert "feature2" in result.columns
-
-
-def test_compute_with_disabled_feature_store(feature_aggregator, mock_feast_service):
-    """Test compute works when feature store is disabled."""
-    # Given
-    mock_feast_service.is_enabled.return_value = False
-
-    # When
-    result = feature_aggregator.compute()
-
-    # Then
-    assert not result.empty
-    mock_feast_service.get_historical_features.assert_called_once()
-    mock_feast_service.store_computed_features.assert_not_called()
-
-    # Verify computed features contain expected columns
-    assert "feature1" in result.columns
-    assert "feature2" in result.columns
-
-
-def test_compute_handles_multiple_feature_results(
-    feature_aggregator, mock_feast_service, mock_features_config
-):
-    """Test compute correctly combines multiple feature results."""
-    # Given
-    # Add second feature definition
-    mock_param_set2 = MagicMock()
-    mock_param_set2.enabled = True
-    mock_param_set2.hash_id.return_value = "def456"
-
-    mock_feature_def2 = FeatureDefinition(
-        name="MockFeature",
-        enabled=True,
-        derivatives=[],
-        parameter_sets=[],
-        parsed_parameter_sets=[mock_param_set2],
-    )
-
-    feature_aggregator.config.feature_definitions.append(mock_feature_def2)
-
-    # Configure first feature to come from cache
-    cached_features = DataFrame(
-        {
-            "Time": pd.date_range(start="2022-01-01", periods=10, freq="H"),
-            "cached_feature1": [10.0] * 10,
-            "cached_feature2": [20.0] * 10,
-        }
-    )
-
-    # Mock to return cached results only for first feature
-    def mock_get_historical_features(feature_name, param_hash, sub_feature_names):
-        if param_hash == "abc123":
-            return cached_features
-        return None
-
-    mock_feast_service.get_historical_features.side_effect = (
-        mock_get_historical_features
-    )
-
-    # When
-    result = feature_aggregator.compute()
-
-    # Then
-    assert not result.empty
-    # Should be called twice (once for each feature)
-    assert mock_feast_service.get_historical_features.call_count == 2
-    # Should be called once (only for the second feature that wasn't cached)
-    assert mock_feast_service.store_computed_features.call_count == 1
-
-    # Check that result contains columns from both features
-    assert "cached_feature1" in result.columns or "feature1" in result.columns
-    assert "cached_feature2" in result.columns or "feature2" in result.columns
+    # Verify no tasks are created for disabled features/parameters
+    assert isinstance(tasks, list)
+    assert len(tasks) == 0
+    assert mock_delayed_patch.call_count == 0

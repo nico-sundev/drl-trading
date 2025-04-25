@@ -119,10 +119,10 @@
   },
   "featureStoreConfig": {
     "enabled": true,
-    "repo_path": "test_feature_repo",
-    "offline_store_path": "test_data/features.parquet",
+    "repo_path": "tests/resources/test_feature_repo",
+    "offline_store_path": "tests/resources/test_feature_store_data",
     "entity_name": "symbol",
     "ttl_days": 1,
-    "online_enabled": true
+    "online_enabled": false
   }
 }

@@ -14,6 +14,7 @@ from ai_trading.data_set_utils.split_service import SplitService
 from ai_trading.data_set_utils.strip_service import StripService
 from ai_trading.model.asset_price_dataset import AssetPriceDataSet
 from ai_trading.model.split_dataset_container import SplitDataSetContainer
+from ai_trading.preprocess.feast.feast_service import FeastService
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
 from ai_trading.preprocess.preprocess_service import PreprocessService
 from ai_trading.services.agent_training_service import AgentTrainingService
@@ -57,12 +58,13 @@ def bootstrap(config: ApplicationConfig) -> DataFrame:
     feature_class_registry = FeatureClassRegistry()
     logger.info("Feature class registry initialized")
 
+    feast_svc = FeastService()
     # Preprocess the asset price datasets with feature store support
     preprocess_svc = PreprocessService(
         datasets=stripped_raw_asset_price_datasets,
         features_config=config.features_config,
         feature_class_registry=feature_class_registry,
-        feature_store_config=config.feature_store_config,
+        feast_service=feast_svc,
     )
     preprocessed_dataset = preprocess_svc.preprocess_data()
     logger.info("Feature preprocessing completed")
@@ -87,9 +89,7 @@ def create_environments_and_train(
     """
     # Split the preprocessed data into training, validation, and test sets
     data_set_prep_svc = SplitService(config.rl_model_config)
-    data_sets: SplitDataSetContainer = data_set_prep_svc.split_dataset(
-        df=base_dataset, split_ratios=(0.8, 0.1, 0.1)  # train, val, test ratios
-    )
+    data_sets: SplitDataSetContainer = data_set_prep_svc.split_dataset(df=base_dataset)
 
     # Create the environment and train the agents using the factory pattern
     training_svc = AgentTrainingService(env_config=config.environment_config)

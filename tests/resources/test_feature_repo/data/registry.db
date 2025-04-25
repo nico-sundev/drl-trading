@@ -1,0 +1,33 @@
+
+F
+&
+__dummy"
+__dummy_idJai_trading_test
+şŠ°À°ÊªßşŠ°À°Êªß
+A
+!
+symbol"symbolJai_trading_test
+şŠ°À°ÊªßşŠ°À°Êªß1"$cf6354e1-02c1-4597-91ff-1a954a79bec6*şŠ°ÀØÖçß2˜
+÷
+macd_defaultai_trading_testsymbol"
+macd"
+macd_signal"
+macd_histogram*
+feature_typemacd2€£:‚event_timestampZ../test_feature_store_dataŠ1feast.infra.offline_stores.file_source.FileSource¢../test_feature_store_data
+şŠ°À°ÊªßşŠ°À°Êªß2ş
+İ
+rsi_defaultai_trading_testsymbol"	
+rsi_7"
+
+rsi_14*
+feature_typersi2€£:‚event_timestampZ../test_feature_store_dataŠ1feast.infra.offline_stores.file_source.FileSource¢../test_feature_store_data
+şŠ°ÀØÖçßşŠ°ÀØÖçßRá
+®
+,feast.infra.online_stores.sqlite.SqliteTable"~
+^c:\Users\nico-\Documents\git\ai_trading\tests\resources\test_feature_repo\data\online_store.dbai_trading_test_macd_default
+­
+,feast.infra.online_stores.sqlite.SqliteTable"}
+^c:\Users\nico-\Documents\git\ai_trading\tests\resources\test_feature_repo\data\online_store.dbai_trading_test_rsi_defaultb”event_timestampZ../test_feature_store_dataŠ1feast.infra.offline_stores.file_source.FileSource¢../test_feature_store_dataªai_trading_testŠ1
+
+ai_trading_test
+şŠ°ÀˆñÈ»şŠ°ÀˆñÈ»

@@ -30,21 +30,13 @@ def config(reset_registry):
 
 
 @pytest.fixture
-def datasets(config):
-    all_datasets = []
-
+def symbol_container(config):
     # Create a service with the complete config
     repository = CsvDataImportService(config.local_data_import_config)
     importer = DataImportManager(repository)
 
     # Get all symbol containers
-    symbol_containers = importer.get_data(100)
-
-    # Extract datasets from all symbols
-    for symbol_container in symbol_containers:
-        all_datasets.extend(symbol_container.datasets)
-
-    return all_datasets
+    return importer.get_data(100)[0]
 
 
 @pytest.fixture
@@ -53,11 +45,28 @@ def class_registry():
 
 
 @pytest.fixture
-def preprocess_service(datasets, config, class_registry):
-    return PreprocessService(datasets, config.features_config, class_registry)
+def feast_service(config, symbol_container, init_feast_for_tests):
+    """Create a real FeastService for testing."""
+    from ai_trading.preprocess.feast.feast_service import FeastService
+
+    return FeastService(
+        feature_store_config=config.feature_store_config,
+        symbol=symbol_container.symbol,
+        asset_data=symbol_container.datasets[0],
+    )
 
 
-def test_preprocessing(preprocess_service):
+@pytest.fixture
+def preprocess_service(config, class_registry, feast_service):
+    return PreprocessService(
+        features_config=config.features_config,
+        feature_class_registry=class_registry,
+        feast_service=feast_service,
+    )
+
+
+def test_preprocessing(preprocess_service, symbol_container):
+    """Test that preprocessing creates the expected feature columns."""
     # Given
     expected_columns = {
         "Time",
@@ -66,7 +75,7 @@ def test_preprocessing(preprocess_service):
     }
 
     # When
-    result = preprocess_service.preprocess_data()
+    result = preprocess_service.preprocess_data(symbol_container)
     actual_columns = set(result.columns)
 
     # Then
