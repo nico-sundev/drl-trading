@@ -1,4 +1,5 @@
 import logging
+from abc import ABC, abstractmethod
 from typing import List, Optional
 
 import pandas as pd
@@ -11,17 +12,45 @@ from ai_trading.config.feature_config import (
     FeatureDefinition,
     FeaturesConfig,
 )
-from ai_trading.data_set_utils.util import (
-    ensure_datetime_time_column,  # Import new util function
-)
+from ai_trading.data_set_utils.util import ensure_datetime_time_column
 from ai_trading.model.asset_price_dataset import AssetPriceDataSet
-from ai_trading.preprocess.feast.feast_service import FeastService
+from ai_trading.preprocess.feast.feast_service import FeastServiceInterface
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
 
 logger = logging.getLogger(__name__)
 
 
-class FeatureAggregator:
+class FeatureAggregatorInterface(ABC):
+    """
+    Interface defining the contract for feature aggregation operations.
+
+    Implementations of this interface are responsible for:
+    1. Defining computation tasks for features based on configuration.
+    2. Using the feature store to retrieve previously computed features within tasks.
+    3. Storing newly computed features in the feature store within tasks.
+    4. Renaming feature columns according to a consistent convention.
+    """
+
+    @abstractmethod
+    def compute(self, asset_data: AssetPriceDataSet, symbol: str) -> List[Delayed]:
+        """
+        Generates a list of delayed tasks for computing or retrieving features.
+
+        Each task corresponds to one feature definition and one parameter set.
+        The task, when executed, will return a DataFrame containing the 'Time'
+        column and the renamed feature columns, or None if skipped/failed.
+
+        Args:
+            asset_data: Dataset containing asset price information.
+            symbol: The trading symbol being processed.
+
+        Returns:
+            List[dask.delayed]: A list of delayed objects ready for computation.
+        """
+        pass
+
+
+class FeatureAggregator(FeatureAggregatorInterface):
     """
     Aggregates and computes features for asset price datasets using delayed execution.
 
@@ -36,7 +65,7 @@ class FeatureAggregator:
         self,
         config: FeaturesConfig,
         class_registry: FeatureClassRegistry,
-        feast_service: FeastService,
+        feast_service: FeastServiceInterface,
     ) -> None:
         """
         Initialize the FeatureAggregator with configuration and services.
@@ -56,6 +85,7 @@ class FeatureAggregator:
         param_set: BaseParameterSetConfig,
         original_df: DataFrame,
         symbol: str,
+        asset_data: AssetPriceDataSet,
     ) -> Optional[DataFrame]:
         """
         Computes or retrieves a single feature for a given parameter set.
@@ -67,6 +97,7 @@ class FeatureAggregator:
             param_set: The specific parameter set to use.
             original_df: The dataset to compute features on.
             symbol: The trading symbol being processed.
+            asset_data: The asset price dataset containing metadata.
 
         Returns:
             DataFrame with the 'Time' column and the computed/retrieved feature
@@ -92,6 +123,8 @@ class FeatureAggregator:
                 feature_name=feature_name,
                 param_hash=param_hash,
                 sub_feature_names=sub_feature_names,
+                asset_data=asset_data,
+                symbol=symbol,
             )
 
         feature_df: Optional[DataFrame] = None
@@ -141,6 +174,8 @@ class FeatureAggregator:
                         feature_name=feature_name,
                         param_hash=param_hash,
                         sub_feature_names=sub_feature_names,
+                        asset_data=asset_data,
+                        symbol=symbol,
                     )
                 except Exception as e:
                     logger.error(
@@ -228,7 +263,7 @@ class FeatureAggregator:
                 # Pass copies of feature_def and param_set if they might be mutated,
                 # though usually config objects are treated as immutable.
                 task = delayed(self._compute_or_get_single_feature)(
-                    feature_def, param_set, original_df, symbol
+                    feature_def, param_set, original_df, symbol, asset_data
                 )
                 delayed_tasks.append(task)
 

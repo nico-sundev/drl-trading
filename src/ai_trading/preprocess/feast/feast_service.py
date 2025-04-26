@@ -1,4 +1,5 @@
 import logging
+from abc import ABC, abstractmethod
 from datetime import timedelta
 from typing import List, Optional
 
@@ -12,70 +13,53 @@ from ai_trading.model.asset_price_dataset import AssetPriceDataSet
 logger = logging.getLogger(__name__)
 
 
-class FeastService:
+class FeastServiceInterface(ABC):
     """
-    Service for interacting with the Feast feature store.
+    Interface for interacting with a feature store.
 
-    This class handles all interactions with the Feast feature store, including
-    initializing the store, creating entities and feature views, storing computed
-    features, and retrieving historical features.
+    This interface defines the contract for services that handle feature storage,
+    retrieval, and feature view management.
     """
 
-    def __init__(
-        self,
-        feature_store_config: FeatureStoreConfig,
-        symbol: str,
-        asset_data: AssetPriceDataSet,
-    ) -> None:
+    @abstractmethod
+    def get_entity_value(self, symbol: str, timeframe: str) -> str:
         """
-        Initialize the FeastService with configuration and data context.
+        Get the entity value for the given symbol and timeframe.
 
         Args:
-            feature_store_config: Configuration for the feature store
-            symbol: The trading symbol being processed
-            asset_data: Dataset containing asset price information
-        """
-        self.config = feature_store_config
-        self.symbol = symbol
-        self.asset_data = asset_data
-        self.feature_store = None
-        self.entity = None
-
-        if feature_store_config.enabled:
-            logger.info("Initializing feature store connection")
-            self.feature_store = FeatureStore(repo_path=feature_store_config.repo_path)
-
-            # Define entity for this symbol and timeframe
-            self.entity = Entity(
-                name=self.config.entity_name,
-                join_keys=[self.config.entity_name],
-                description=f"Entity for {self.symbol}/{self.asset_data.timeframe} asset price data",
-            )
-
-    def get_entity_value(self) -> str:
-        """
-        Get the entity value for the current asset data, combining symbol and timeframe.
+            symbol: The trading symbol
+            timeframe: The timeframe of the data
 
         Returns:
             str: A unique identifier combining symbol and timeframe
         """
-        return f"{self.symbol}_{self.asset_data.timeframe}"
+        pass
 
-    def get_feature_view_name(self, feature_name: str, param_hash: str) -> str:
+    @abstractmethod
+    def get_feature_view_name(
+        self, feature_name: str, param_hash: str, timeframe: str
+    ) -> str:
         """
         Create a unique feature view name incorporating timeframe.
 
         Args:
             feature_name: Name of the feature
             param_hash: Hash of the feature parameters
+            timeframe: The timeframe of the data
 
         Returns:
             str: A unique name for the feature view including timeframe information
         """
-        return f"{feature_name}_{self.asset_data.timeframe}_{param_hash}"
+        pass
 
+    @abstractmethod
     def get_historical_features(
-        self, feature_name: str, param_hash: str, sub_feature_names: List[str]
+        self,
+        feature_name: str,
+        param_hash: str,
+        sub_feature_names: List[str],
+        asset_data: AssetPriceDataSet,
+        symbol: str,
     ) -> Optional[DataFrame]:
         """
         Retrieve historical features from the feature store if available.
@@ -84,6 +68,136 @@ class FeastService:
             feature_name: Name of the feature
             param_hash: Hash of the feature parameters
             sub_feature_names: List of sub-feature names to retrieve
+            asset_data: The asset price dataset to match timestamps with
+            symbol: The trading symbol
+
+        Returns:
+            Optional[DataFrame]: DataFrame containing the retrieved features or None if not found
+        """
+        pass
+
+    @abstractmethod
+    def store_computed_features(
+        self,
+        feature_df: DataFrame,
+        feature_name: str,
+        param_hash: str,
+        sub_feature_names: List[str],
+        asset_data: AssetPriceDataSet,
+        symbol: str,
+    ) -> None:
+        """
+        Store computed features in the feature store.
+
+        Args:
+            feature_df: DataFrame containing the computed features
+            feature_name: Name of the feature
+            param_hash: Hash of the feature parameters
+            sub_feature_names: List of sub-feature names in the feature
+            asset_data: The asset price dataset containing metadata
+            symbol: The trading symbol
+        """
+        pass
+
+    @abstractmethod
+    def is_enabled(self) -> bool:
+        """
+        Check if the feature store is enabled.
+
+        Returns:
+            bool: True if the feature store is enabled, False otherwise
+        """
+        pass
+
+
+class FeastService(FeastServiceInterface):
+    """
+    Service for interacting with the Feast feature store.
+
+    This class handles all interactions with the Feast feature store, including
+    initializing the store, creating entities and feature views, storing computed
+    features, and retrieving historical features.
+    """
+
+    def __init__(self, feature_store_config: FeatureStoreConfig) -> None:
+        """
+        Initialize the FeastService with configuration.
+
+        Args:
+            feature_store_config: Configuration for the feature store
+        """
+        self.config = feature_store_config
+        self.feature_store = None
+
+        if feature_store_config.enabled:
+            logger.info("Initializing feature store connection")
+            self.feature_store = FeatureStore(repo_path=feature_store_config.repo_path)
+
+    def _get_entity(self, symbol: str, timeframe: str) -> Entity:
+        """
+        Create an entity for the given symbol and timeframe.
+
+        This is a private helper method indicated by the underscore prefix.
+
+        Args:
+            symbol: The trading symbol
+            timeframe: The timeframe of the data
+
+        Returns:
+            Entity: Feast entity for this symbol/timeframe combination
+        """
+        return Entity(
+            name=self.config.entity_name,
+            join_keys=[self.config.entity_name],
+            description=f"Entity for {symbol}/{timeframe} asset price data",
+        )
+
+    def get_entity_value(self, symbol: str, timeframe: str) -> str:
+        """
+        Get the entity value for the given symbol and timeframe.
+
+        Args:
+            symbol: The trading symbol
+            timeframe: The timeframe of the data
+
+        Returns:
+            str: A unique identifier combining symbol and timeframe
+        """
+        return f"{symbol}_{timeframe}"
+
+    def get_feature_view_name(
+        self, feature_name: str, param_hash: str, timeframe: str
+    ) -> str:
+        """
+        Create a unique feature view name incorporating timeframe.
+
+        Args:
+            feature_name: Name of the feature
+            param_hash: Hash of the feature parameters
+            timeframe: The timeframe of the data
+
+        Returns:
+            str: A unique name for the feature view including timeframe information
+        """
+        return f"{feature_name}_{timeframe}_{param_hash}"
+
+    def get_historical_features(
+        self,
+        feature_name: str,
+        param_hash: str,
+        sub_feature_names: List[str],
+        asset_data: AssetPriceDataSet,
+        symbol: str,
+    ) -> Optional[DataFrame]:
+        """
+        Retrieve historical features from the feature store if available.
+
+        Args:
+            feature_name: Name of the feature
+            param_hash: Hash of the feature parameters
+            sub_feature_names: List of sub-feature names to retrieve
+            asset_data: The asset price dataset to match timestamps with
+            symbol: The trading symbol
 
         Returns:
             Optional[DataFrame]: DataFrame containing the retrieved features or None if not found
@@ -94,12 +208,16 @@ class FeastService:
         try:
             # Create entity DataFrame for feature retrieval
             entity_df = DataFrame()
-            entity_df["Time"] = self.asset_data.asset_price_dataset["Time"]
-            entity_df["event_timestamp"] = self.asset_data.asset_price_dataset["Time"]
-            entity_df[self.config.entity_name] = self.get_entity_value()
+            entity_df["Time"] = asset_data.asset_price_dataset["Time"]
+            entity_df["event_timestamp"] = asset_data.asset_price_dataset["Time"]
+            entity_df[self.config.entity_name] = self.get_entity_value(
+                symbol, asset_data.timeframe
+            )
 
             # Get feature view name based on feature, timeframe and params
-            feature_view_name = self.get_feature_view_name(feature_name, param_hash)
+            feature_view_name = self.get_feature_view_name(
+                feature_name, param_hash, asset_data.timeframe
+            )
             feature_refs = [f"{feature_view_name}:{name}" for name in sub_feature_names]
 
             logger.info(f"Attempting to retrieve features from store: {feature_refs}")
@@ -122,6 +240,8 @@ class FeastService:
         feature_name: str,
         param_hash: str,
         sub_feature_names: List[str],
+        asset_data: AssetPriceDataSet,
+        symbol: str,
     ) -> None:
         """
         Store computed features in the feature store.
@@ -131,6 +251,8 @@ class FeastService:
             feature_name: Name of the feature
             param_hash: Hash of the feature parameters
             sub_feature_names: List of sub-feature names in the feature
+            asset_data: The asset price dataset containing metadata
+            symbol: The trading symbol
         """
         if not self.feature_store or not self.config.enabled:
             return
@@ -141,14 +263,18 @@ class FeastService:
 
             # Add required columns for feast
             store_df["event_timestamp"] = store_df["Time"]
-            store_df[self.config.entity_name] = self.get_entity_value()
+            store_df[self.config.entity_name] = self.get_entity_value(
+                symbol, asset_data.timeframe
+            )
 
-            feature_view_name = self.get_feature_view_name(feature_name, param_hash)
+            feature_view_name = self.get_feature_view_name(
+                feature_name, param_hash, asset_data.timeframe
+            )
 
             # Create file path based on feature name, symbol and timeframe
             file_path = (
                 f"{self.config.offline_store_path}/"
-                f"{self.symbol}_{self.asset_data.timeframe}_{feature_name}_{param_hash}.parquet"
+                f"{symbol}_{asset_data.timeframe}_{feature_name}_{param_hash}.parquet"
             )
 
             logger.info(
@@ -173,17 +299,20 @@ class FeastService:
 
             # Create and apply feature view if needed
             if not feature_view_exists:
+                # Create entity for this symbol and timeframe
+                entity = self._get_entity(symbol, asset_data.timeframe)
+
                 feature_view = self._create_feature_view(
                     feature_name=feature_name,
                     param_hash=param_hash,
                     sub_feature_names=sub_feature_names,
                     source_path=file_path,
+                    entity=entity,
+                    symbol=symbol,
+                    timeframe=asset_data.timeframe,
                 )
 
-                if self.entity is not None:
-                    self.feature_store.apply([self.entity, feature_view])
-                else:
-                    logger.warning("Entity is None, skipping feature view application.")
+                self.feature_store.apply([entity, feature_view])
 
             # Materialize the feature view to make it available for online serving
             if self.config.online_enabled:
@@ -201,6 +330,9 @@ class FeastService:
         param_hash: str,
         sub_feature_names: List[str],
         source_path: str,
+        entity: Entity,
+        symbol: str,
+        timeframe: str,
     ) -> FeatureView:
         """
         Create a feature view for the given feature parameters.
@@ -210,11 +342,16 @@ class FeastService:
             param_hash: Hash of the feature parameters
             sub_feature_names: List of sub-feature names in the feature
             source_path: Path to the source data file
+            entity: The entity to associate with this feature view
+            symbol: The trading symbol
+            timeframe: The timeframe of the data
 
         Returns:
             FeatureView: The created feature view
         """
-        feature_view_name = self.get_feature_view_name(feature_name, param_hash)
+        feature_view_name = self.get_feature_view_name(
+            feature_name, param_hash, timeframe
+        )
 
         # Create a file source for the feature
         source = FileSource(
@@ -231,14 +368,14 @@ class FeastService:
         # Create and return the feature view
         return FeatureView(
             name=feature_view_name,
-            entities=[self.entity] if self.entity is not None else [],
+            entities=[entity],
             ttl=timedelta(days=self.config.ttl_days),
             schema=fields,
             online=self.config.online_enabled,
             source=source,
             tags={
-                "symbol": self.symbol,
-                "timeframe": self.asset_data.timeframe,
+                "symbol": symbol,
+                "timeframe": timeframe,
             },
         )
 

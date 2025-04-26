@@ -45,7 +45,7 @@ def mock_asset_data() -> AssetPriceDataSet:
 
 
 @pytest.fixture
-def mock_feast_service(mock_feature_store_config, mock_asset_data) -> FeastService:
+def mock_feast_service(mock_feature_store_config) -> FeastService:
     """Create a FeastService instance with mocked dependencies."""
     # Patch where FeatureStore is looked up
     with patch(
@@ -55,19 +55,14 @@ def mock_feast_service(mock_feature_store_config, mock_asset_data) -> FeastServi
         mock_feast_constructor.return_value = mock_store_instance
 
         # Instantiate the service (constructor will use the mock)
-        service = FeastService(
-            feature_store_config=mock_feature_store_config,
-            symbol="EURUSD",
-            asset_data=mock_asset_data,
-        )
+        service = FeastService(feature_store_config=mock_feature_store_config)
         # Explicitly set mocks on the instance for tests using this fixture
         service.feature_store = MagicMock()
-        service.entity = MagicMock()
         return service
 
 
 def test_init_with_enabled_config(
-    mock_feature_store_config: FeatureStoreConfig, mock_asset_data: AssetPriceDataSet
+    mock_feature_store_config: FeatureStoreConfig,
 ) -> None:
     """Test FeastService initialization with enabled config."""
     # Given
@@ -77,16 +72,11 @@ def test_init_with_enabled_config(
         mock_feast.return_value = mock_store
 
         # When
-        service = FeastService(
-            feature_store_config=mock_feature_store_config,
-            symbol="EURUSD",
-            asset_data=mock_asset_data,
-        )
+        service = FeastService(feature_store_config=mock_feature_store_config)
 
         # Then
         # Check if the service attribute holds the mock instance
         assert service.feature_store is mock_store
-        assert service.entity is not None  # Entity is still initialized normally
         # Check if the mock constructor was called correctly
         mock_feast.assert_called_once_with(
             repo_path=mock_feature_store_config.repo_path
@@ -94,7 +84,7 @@ def test_init_with_enabled_config(
 
 
 def test_init_with_disabled_config(
-    mock_feature_store_config: FeatureStoreConfig, mock_asset_data: AssetPriceDataSet
+    mock_feature_store_config: FeatureStoreConfig,
 ) -> None:
     """Test FeastService initialization with disabled config."""
     # Given
@@ -103,25 +93,22 @@ def test_init_with_disabled_config(
     # Patch where FeatureStore is looked up
     with patch("ai_trading.preprocess.feast.feast_service.FeatureStore") as mock_feast:
         # When
-        service = FeastService(
-            feature_store_config=mock_feature_store_config,
-            symbol="EURUSD",
-            asset_data=mock_asset_data,
-        )
+        service = FeastService(feature_store_config=mock_feature_store_config)
 
         # Then
         assert service.feature_store is None
-        assert service.entity is None
         mock_feast.assert_not_called()
 
 
 def test_get_entity_value(mock_feast_service):
     """Test get_entity_value returns correctly formatted entity ID."""
     # Given
+    symbol = "EURUSD"
+    timeframe = "H1"
     expected_entity_value = "EURUSD_H1"
 
     # When
-    actual_entity_value = mock_feast_service.get_entity_value()
+    actual_entity_value = mock_feast_service.get_entity_value(symbol, timeframe)
 
     # Then
     assert actual_entity_value == expected_entity_value
@@ -132,11 +119,12 @@ def test_get_feature_view_name(mock_feast_service):
     # Given
     feature_name = "TestFeature"
     param_hash = "abc123"
+    timeframe = "H1"
     expected_view_name = "TestFeature_H1_abc123"
 
     # When
     actual_view_name = mock_feast_service.get_feature_view_name(
-        feature_name, param_hash
+        feature_name, param_hash, timeframe
     )
 
     # Then
@@ -174,6 +162,7 @@ def test_get_historical_features_when_found(mock_feast_service, mock_asset_data)
     feature_name = "TestFeature"
     param_hash = "abc123"
     sub_feature_names = ["feature1", "feature2"]
+    symbol = "EURUSD"
 
     expected_df = DataFrame({"col1": [1, 2, 3]})
     mock_response = MagicMock()
@@ -188,6 +177,8 @@ def test_get_historical_features_when_found(mock_feast_service, mock_asset_data)
         feature_name=feature_name,
         param_hash=param_hash,
         sub_feature_names=sub_feature_names,
+        asset_data=mock_asset_data,
+        symbol=symbol,
     )
 
     # Then
@@ -201,6 +192,7 @@ def test_get_historical_features_when_not_found(mock_feast_service, mock_asset_d
     feature_name = "TestFeature"
     param_hash = "abc123"
     sub_feature_names = ["feature1", "feature2"]
+    symbol = "EURUSD"
 
     mock_response = MagicMock()
     mock_response.to_df.return_value = DataFrame()
@@ -214,6 +206,8 @@ def test_get_historical_features_when_not_found(mock_feast_service, mock_asset_d
         feature_name=feature_name,
         param_hash=param_hash,
         sub_feature_names=sub_feature_names,
+        asset_data=mock_asset_data,
+        symbol=symbol,
     )
 
     # Then
@@ -226,6 +220,7 @@ def test_get_historical_features_when_exception(mock_feast_service, mock_asset_d
     feature_name = "TestFeature"
     param_hash = "abc123"
     sub_feature_names = ["feature1", "feature2"]
+    symbol = "EURUSD"
 
     mock_feast_service.feature_store.get_historical_features.side_effect = Exception(
         "Test error"
@@ -236,6 +231,8 @@ def test_get_historical_features_when_exception(mock_feast_service, mock_asset_d
         feature_name=feature_name,
         param_hash=param_hash,
         sub_feature_names=sub_feature_names,
+        asset_data=mock_asset_data,
+        symbol=symbol,
     )
 
     # Then
@@ -249,9 +246,11 @@ def test_create_feature_view(mock_feast_service):
     param_hash = "abc123"
     sub_feature_names = ["feature1", "feature2"]
     source_path = "test/path/file.parquet"
+    symbol = "EURUSD"
+    timeframe = "H1"
 
     # Use a real Entity for this test as it's simple and needed by the method
-    mock_feast_service.entity = Entity(name="test_entity", join_keys=["test_entity"])
+    entity = Entity(name="test_entity", join_keys=["test_entity"])
 
     # When
     # Patch where FileSource and FeatureView are looked up
@@ -271,6 +270,9 @@ def test_create_feature_view(mock_feast_service):
                 param_hash=param_hash,
                 sub_feature_names=sub_feature_names,
                 source_path=source_path,
+                entity=entity,
+                symbol=symbol,
+                timeframe=timeframe,
             )
 
             # Then
@@ -280,7 +282,7 @@ def test_create_feature_view(mock_feast_service):
 
             # Check FileSource call
             feature_view_name = mock_feast_service.get_feature_view_name(
-                feature_name, param_hash
+                feature_name, param_hash, timeframe
             )
             mock_file_source.assert_called_once_with(
                 name=f"{feature_view_name}_source",
@@ -294,7 +296,8 @@ def test_create_feature_view(mock_feast_service):
             args, kwargs = mock_feature_view.call_args
             assert kwargs["name"] == feature_view_name
             assert kwargs["source"] is mock_source_instance
-            assert "H1" in feature_view_name  # Check timeframe inclusion remains
+            assert kwargs["tags"]["symbol"] == symbol
+            assert kwargs["tags"]["timeframe"] == timeframe
 
 
 def test_store_computed_features_success(
@@ -313,6 +316,7 @@ def test_store_computed_features_success(
     feature_name = "TestFeature"
     param_hash = "abc123"
     sub_feature_names = ["feature1", "feature2"]
+    symbol = "EURUSD"
 
     mock_feast_service.feature_store.get_feature_view.side_effect = Exception(
         "Not found"
@@ -322,17 +326,25 @@ def test_store_computed_features_success(
     with patch("pandas.DataFrame.to_parquet"):
         mock_feast_service._create_feature_view = MagicMock()
         mock_feast_service._create_feature_view.return_value = MagicMock()
+        mock_feast_service._get_entity = MagicMock()
+        mock_entity = MagicMock()
+        mock_feast_service._get_entity.return_value = mock_entity
 
         mock_feast_service.store_computed_features(
             feature_df=feature_df,
             feature_name=feature_name,
             param_hash=param_hash,
             sub_feature_names=sub_feature_names,
+            asset_data=mock_asset_data,
+            symbol=symbol,
         )
 
         # Then
         mock_feast_service.feature_store.apply.assert_called_once()
         mock_feast_service._create_feature_view.assert_called_once()
+        mock_feast_service._get_entity.assert_called_once_with(
+            symbol, mock_asset_data.timeframe
+        )
 
 
 def test_store_computed_features_with_exception(
@@ -351,10 +363,7 @@ def test_store_computed_features_with_exception(
     feature_name = "TestFeature"
     param_hash = "abc123"
     sub_feature_names = ["feature1", "feature2"]
-
-    mock_feast_service.feature_store.get_feature_view.side_effect = Exception(
-        "Not found"
-    )
+    symbol = "EURUSD"
 
     # When
     with patch("pandas.DataFrame.to_parquet") as mock_to_parquet:
@@ -366,6 +375,8 @@ def test_store_computed_features_with_exception(
             feature_name=feature_name,
             param_hash=param_hash,
             sub_feature_names=sub_feature_names,
+            asset_data=mock_asset_data,
+            symbol=symbol,
         )
 
         # Then no assertion needed as we're testing it doesn't crash

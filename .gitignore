@@ -53,3 +53,7 @@ MANIFEST
 .venv*/
 .conda*/
 .python-version
+
+# feature stores
+tests/resources/test_feature_repo/*
+tests/resources/test_feature_store_data/*

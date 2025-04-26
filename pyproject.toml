@@ -110,15 +110,14 @@ exclude = [
 module = ["pandas.*", "numpy.*", "pytest.*"]
 ignore_missing_imports = true
 
-[tool.pytest]
+[tool.pytest.ini_options]
 testpaths = [
     "tests/unit",
     "tests/it",
     "tests/benchmarks"
 ]
-python_files = "*_test.py"
+python_files = "*_test.py *_it.py"
 python_classes = "Test*"
-python_functions = "test_*"
 log_cli = true
 log_cli_level = "INFO"
 log_cli_format = "%(asctime)s %(levelname)s %(message)s"
@@ -129,7 +128,7 @@ markers = [
 addopts = [
     "--verbose",
     "-ra",
-    "-m 'not slow'",
+    "-m not slow",
     "--cov=ai_trading",
     "--cov-report=term-missing"
 ]

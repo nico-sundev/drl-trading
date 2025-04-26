@@ -13,8 +13,7 @@ from ai_trading.data_set_utils.util import (
 )
 from ai_trading.model.computed_dataset_container import ComputedDataSetContainer
 from ai_trading.model.symbol_import_container import SymbolImportContainer
-from ai_trading.preprocess.feast.feast_service import FeastService
-from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregator
+from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregatorInterface
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
 
 logger = logging.getLogger(__name__)
@@ -25,7 +24,7 @@ class PreprocessService:
         self,
         features_config: FeaturesConfig,
         feature_class_registry: FeatureClassRegistry,
-        feast_service: FeastService,
+        feature_aggregator: FeatureAggregatorInterface,
     ) -> None:
         """
         Initializes the PreprocessService with configuration and stateless dependencies.
@@ -37,7 +36,7 @@ class PreprocessService:
         """
         self.features_config = features_config
         self.feature_class_registry = feature_class_registry
-        self.feast_service = feast_service
+        self.feature_aggregator = feature_aggregator
 
     def _prepare_dataframe_for_join(
         self, df: DataFrame, dataset_info: str
@@ -91,14 +90,9 @@ class PreprocessService:
             logger.debug(
                 f"Generating feature tasks for dataset {i}: Symbol={symbol}, Timeframe={dataset.timeframe}"
             )
-            # Pass FeastService to FeatureAggregator
-            feature_aggregator = FeatureAggregator(
-                config=self.features_config,
-                class_registry=self.feature_class_registry,
-                feast_service=self.feast_service,
-            )
+
             # compute now takes asset_data and symbol parameters
-            dataset_delayed_tasks = feature_aggregator.compute(
+            dataset_delayed_tasks = self.feature_aggregator.compute(
                 asset_data=dataset, symbol=symbol
             )
 

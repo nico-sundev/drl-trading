@@ -1,5 +1,3 @@
-from typing import Optional
-
 from ai_trading.config.base_schema import BaseSchema
 from ai_trading.config.environment_config import EnvironmentConfig
 from ai_trading.config.feature_config import FeaturesConfig, FeatureStoreConfig
@@ -12,4 +10,4 @@ class ApplicationConfig(BaseSchema):
     local_data_import_config: LocalDataImportConfig
     rl_model_config: RlModelConfig
     environment_config: EnvironmentConfig
-    feature_store_config: Optional[FeatureStoreConfig] = None
+    feature_store_config: FeatureStoreConfig

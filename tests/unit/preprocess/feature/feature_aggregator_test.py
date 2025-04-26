@@ -9,7 +9,10 @@ from pandas import DataFrame
 from ai_trading.config.base_parameter_set_config import BaseParameterSetConfig
 from ai_trading.config.feature_config import FeatureDefinition, FeaturesConfig
 from ai_trading.model.asset_price_dataset import AssetPriceDataSet
-from ai_trading.preprocess.feast.feast_service import FeastService
+from ai_trading.preprocess.feast.feast_service import (
+    FeastService,
+    FeastServiceInterface,
+)
 from ai_trading.preprocess.feature.collection.base_feature import BaseFeature
 from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregator
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
@@ -136,8 +139,8 @@ def mock_class_registry() -> FeatureClassRegistry:
 
 
 @pytest.fixture
-def mock_feast_service() -> FeastService:
-    """Create a mock FeastService."""
+def mock_feast_service() -> FeastServiceInterface:
+    """Create a mock FeastService that implements FeastServiceInterface."""
     feast_service = MagicMock(spec=FeastService)
     feast_service.is_enabled.return_value = True
     feast_service.get_historical_features.return_value = None
@@ -173,7 +176,11 @@ def test_compute_single_feature_no_cache(
     # When
     # Compute feature without cache
     result_df = feature_aggregator._compute_or_get_single_feature(
-        mock_feature_definition, mock_param_set, mock_asset_df, mock_symbol
+        mock_feature_definition,
+        mock_param_set,
+        mock_asset_df,
+        mock_symbol,
+        mock_asset_data,
     )
 
     # Then
@@ -182,6 +189,8 @@ def test_compute_single_feature_no_cache(
         feature_name="MockFeature",
         param_hash="abc123hash",
         sub_feature_names=["feature1", "feature2"],
+        asset_data=mock_asset_data,
+        symbol=mock_symbol,
     )
     mock_feast_service.store_computed_features.assert_called_once()
     assert result_df is not None
@@ -224,7 +233,11 @@ def test_compute_single_feature_with_cache(
     # When
     # Retrieve feature from cache
     result_df = feature_aggregator._compute_or_get_single_feature(
-        mock_feature_definition, mock_param_set, mock_asset_df, mock_symbol
+        mock_feature_definition,
+        mock_param_set,
+        mock_asset_df,
+        mock_symbol,
+        mock_asset_data,
     )
 
     # Then
@@ -261,7 +274,11 @@ def test_compute_single_feature_disabled_feature_def(
     # When
     # Attempt to compute the feature
     result = feature_aggregator._compute_or_get_single_feature(
-        mock_feature_definition, mock_param_set, mock_asset_df, mock_symbol
+        mock_feature_definition,
+        mock_param_set,
+        mock_asset_df,
+        mock_symbol,
+        mock_asset_data,
     )
 
     # Then
@@ -285,7 +302,11 @@ def test_compute_single_feature_disabled_param_set(
     # When
     # Attempt to compute the feature
     result = feature_aggregator._compute_or_get_single_feature(
-        mock_feature_definition, mock_param_set, mock_asset_df, mock_symbol
+        mock_feature_definition,
+        mock_param_set,
+        mock_asset_df,
+        mock_symbol,
+        mock_asset_data,
     )
 
     # Then
@@ -318,7 +339,11 @@ def test_compute_single_feature_handles_computation_error(
     # When
     # Attempt to compute the feature
     result = feature_aggregator._compute_or_get_single_feature(
-        mock_feature_definition, mock_param_set, mock_asset_df, mock_symbol
+        mock_feature_definition,
+        mock_param_set,
+        mock_asset_df,
+        mock_symbol,
+        mock_asset_data,
     )
 
     # Then
@@ -344,7 +369,11 @@ def test_compute_single_feature_handles_missing_time_after_compute(
     # When
     # Attempt to compute the feature
     result = feature_aggregator._compute_or_get_single_feature(
-        mock_feature_definition, mock_param_set_drop_time, mock_asset_df, mock_symbol
+        mock_feature_definition,
+        mock_param_set_drop_time,
+        mock_asset_df,
+        mock_symbol,
+        mock_asset_data,
     )
 
     # Then
