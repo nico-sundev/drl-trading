@@ -7,7 +7,7 @@ from ai_trading.preprocess.feature.collection.base_feature import BaseFeature
 
 
 class FeatureClassRegistry:
-    def __init__(self):
+    def __init__(self) -> None:
         self._feature_class_map: Dict[str, Type[BaseFeature]] = {}
 
     def discover_feature_classes(self) -> Dict[str, Type[BaseFeature]]:

@@ -8,9 +8,9 @@ class PolicyGradientLossCallback(BaseCallback):
     This class extends BaseCallback and used to capture and store the metrics we want.
     """
 
-    def __init__(self, verbose=0):
+    def __init__(self, verbose: int = 0) -> None:
         super(PolicyGradientLossCallback, self).__init__(verbose)
-        self.losses = []
+        self.losses: list[float] = []
 
     def _on_step(self) -> bool:
         if hasattr(self.model, "logger"):
@@ -20,7 +20,7 @@ class PolicyGradientLossCallback(BaseCallback):
                 self.losses.append(loss)
         return True
 
-    def _on_training_end(self):
+    def _on_training_end(self) -> None:
         """Plot the loss after training ends"""
         name = self.model.__class__.__name__
         plt.figure(figsize=(12, 4))

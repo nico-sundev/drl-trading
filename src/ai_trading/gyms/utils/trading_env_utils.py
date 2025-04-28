@@ -1,4 +1,8 @@
+import random
 from enum import Enum
+from typing import List, Optional
+
+import numpy as np
 
 
 class TradingDirection(Enum):
@@ -151,3 +155,108 @@ class TradingEnvUtils:
             bool: True if there is an active position, False otherwise
         """
         return bool(position_state != 0)
+
+    @staticmethod
+    def calculate_dynamic_slippage(
+        direction: TradingDirection,
+        current_price: float,
+        atr: float,
+        slippage_atr_based: float,
+        slippage_against_trade_probability: float,
+    ) -> float:
+        """Calculate dynamic slippage based on ATR and trade direction.
+
+        This method calculates slippage as a percentage of the price (e.g., 0.01 = 1%).
+        The slippage is:
+        1. Based on ATR relative to current price to reflect market volatility
+        2. Works against the trade with slippage_against_trade_probability (default 60%)
+        3. Used both for position entry price adjustment and fee calculations
+
+        Args:
+            direction (TradingDirection): Direction of the trade (LONG or SHORT)
+            current_price (float): Current price of the asset
+            atr (float): Average True Range value at the current step
+            slippage_atr_based (float): Base ATR multiplier for slippage calculation
+            slippage_against_trade_probability (float): Probability (0-1) that slippage works against the trade
+
+        Returns:
+            float: Calculated slippage as a percentage of price
+        """
+        # Base slippage as a percentage (ATR relative to price)
+        base_slippage = (atr / current_price) * slippage_atr_based
+
+        # Determine if slippage works against the trade
+        against_trade = random.random() < slippage_against_trade_probability
+
+        # For long positions: negative slippage means price goes up before entry
+        # For short positions: positive slippage means price goes down before entry
+        if against_trade:
+            return float(
+                base_slippage if direction == TradingDirection.LONG else -base_slippage
+            )
+        else:
+            return float(
+                -base_slippage if direction == TradingDirection.LONG else base_slippage
+            )
+
+    @staticmethod
+    def calculate_price_std(
+        price_history: List[float],
+    ) -> float:
+        """Calculate the standard deviation of price movement during a period.
+
+        Args:
+            price_history (List[float]): List of historical prices
+
+        Returns:
+            float: Standard deviation of price returns during the period
+        """
+        if len(price_history) <= 1:
+            return 0.0
+
+        # Convert to numpy array for calculation
+        prices = np.asarray(price_history)
+
+        # Calculate returns
+        returns = np.diff(prices) / prices[:-1]
+
+        # Calculate standard deviation of returns
+        return float(np.std(returns) if len(returns) > 1 else 0.0)
+
+    @staticmethod
+    def calculate_risk_adjusted_pnl(
+        raw_pnl: float,
+        price_std: float,
+        leverage: float,
+        atr: Optional[float] = None,
+    ) -> float:
+        """Calculate a Sharpe ratio-like risk-adjusted PnL.
+
+        This method adjusts the raw PnL by the risk taken:
+        1. Adjusts PnL by risk (volatility) - higher volatility means higher risk
+        2. Incorporates leverage as an additional risk multiplier
+        3. Optionally normalizes by ATR to make it volatility-agnostic across securities
+
+        Args:
+            raw_pnl (float): Raw profit and loss value
+            price_std (float): Standard deviation of price returns
+            leverage (float): Current leverage of the position
+            atr (Optional[float]): ATR value for normalization across securities
+
+        Returns:
+            float: Risk-adjusted PnL
+        """
+        # Avoid division by zero
+        if price_std < 0.0001:
+            return raw_pnl
+
+        # Calculate risk-adjusted return (like Sharpe ratio)
+        # - For positive PnL: higher volatility = lower reward
+        # - For negative PnL: higher volatility = higher penalty
+        risk_multiplier = leverage  # Higher leverage = higher risk
+
+        # Normalize by ATR to make it volatility-agnostic across securities if provided
+        normalized_pnl = raw_pnl / atr if atr and atr > 0 else raw_pnl
+        risk_adjusted_pnl = normalized_pnl / (price_std * risk_multiplier)
+
+        return float(risk_adjusted_pnl)

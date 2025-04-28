@@ -99,15 +99,25 @@ def temp_config_file():
         },
         "environmentConfig": {
             "fee": 0.005,
-            "slippage_atr_based": 0.01,
-            "slippage_against_trade_probability": 0.6,
-            "start_balance": 10000.0,
-            "max_daily_drawdown": 0.02,
-            "max_alltime_drawdown": 0.05,
-            "max_percentage_open_position": 100.0,
-            "min_percentage_open_position": 1.0,
-            "in_money_factor": 1.0,
-            "out_of_money_factor": 1.0,
+            "slippageAtrBased": 0.01,
+            "slippageAgainstTradeProbability": 0.6,
+            "startBalance": 10000.0,
+            "maxDailyDrawdown": 0.02,
+            "maxAlltimeDrawdown": 0.05,
+            "maxPercentageOpenPosition": 100.0,
+            "minPercentageOpenPosition": 1.0,
+            "maxTimeInTrade": 10,
+            "optimalExitTime": 3,
+            "variancePenaltyWeight": 0.5,
+            "atrPenaltyWeight": 0.3,
+        },
+        "featureStoreConfig": {
+            "enabled": False,
+            "repo_path": "testrepo",
+            "offline_store_path": "test",
+            "entity_name": "symbol",
+            "ttl_days": 365,
+            "online_enabled": True,
         },
     }
 
@@ -156,3 +166,24 @@ def test_load_config_from_json(temp_config_file):
     assert isinstance(range_cfg, RangeConfig)
     assert range_cfg.lookback == 5
     assert range_cfg.wick_handle_strategy == WICK_HANDLE_STRATEGY.LAST_WICK_ONLY
+
+    # Verify environment config parameters
+    env_config = config.environment_config
+    assert env_config.fee == 0.005
+    assert env_config.slippage_atr_based == 0.01
+    assert env_config.slippage_against_trade_probability == 0.6
+    assert env_config.max_time_in_trade == 10
+    assert env_config.optimal_exit_time == 3
+    assert env_config.variance_penalty_weight == 0.5
+    assert env_config.atr_penalty_weight == 0.3
+    assert env_config.variance_penalty_weight == 0.5
+    assert env_config.optimal_exit_time == 3
+    assert env_config.max_time_in_trade == 10
+
+    features_store_config = config.feature_store_config
+    assert features_store_config.enabled is False
+    assert features_store_config.repo_path == "testrepo"
+    assert features_store_config.offline_store_path == "test"
+    assert features_store_config.entity_name == "symbol"
+    assert features_store_config.ttl_days == 365
+    assert features_store_config.online_enabled is True

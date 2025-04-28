@@ -14,6 +14,7 @@ from ai_trading.config.feature_config import (
 )
 from ai_trading.data_set_utils.util import ensure_datetime_time_column
 from ai_trading.model.asset_price_dataset import AssetPriceDataSet
+from ai_trading.model.computed_dataset_container import ComputedDataSetContainer
 from ai_trading.preprocess.feast.feast_service import FeastServiceInterface
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
 
@@ -86,7 +87,7 @@ class FeatureAggregator(FeatureAggregatorInterface):
         original_df: DataFrame,
         symbol: str,
         asset_data: AssetPriceDataSet,
-    ) -> Optional[DataFrame]:
+    ) -> Optional[ComputedDataSetContainer]:
         """
         Computes or retrieves a single feature for a given parameter set.
         Handles caching and column renaming. This method is intended to be
@@ -227,7 +228,9 @@ class FeatureAggregator(FeatureAggregatorInterface):
             )
             return None
 
-        return feature_df_renamed
+        return ComputedDataSetContainer(
+            source_dataset=asset_data, computed_dataframe=feature_df_renamed
+        )
 
     def compute(self, asset_data: AssetPriceDataSet, symbol: str) -> List[Delayed]:
         """

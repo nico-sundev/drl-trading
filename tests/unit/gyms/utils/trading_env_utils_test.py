@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 import pytest
 
@@ -232,3 +234,197 @@ class TestTradingEnvUtils:
         assert TradingEnvUtils.has_active_position(-1) is True
         assert TradingEnvUtils.has_active_position(0) is False
         assert TradingEnvUtils.has_active_position(1) is True
+
+    # Dynamic Slippage Tests
+    def test_calculate_dynamic_slippage_returns_correct_magnitude(self) -> None:
+        # Given
+        direction = TradingDirection.LONG
+        current_price = 100.0
+        atr = 2.0
+        slippage_atr_based = 0.01
+        slippage_against_trade_probability = 0.5
+        # Set seed for consistent test
+        random.seed(42)
+
+        # When
+        result = TradingEnvUtils.calculate_dynamic_slippage(
+            direction,
+            current_price,
+            atr,
+            slippage_atr_based,
+            slippage_against_trade_probability,
+        )
+
+        # Then
+        # Expected slippage magnitude = (atr / current_price) * slippage_atr_based = (2 / 100) * 0.01 = 0.0002
+        assert abs(result) == pytest.approx(0.0002, abs=1e-6)
+
+    def test_calculate_dynamic_slippage_direction_based_on_probability(self) -> None:
+        # Given
+        direction = TradingDirection.LONG
+        current_price = 100.0
+        atr = 2.0
+        slippage_atr_based = 0.01
+
+        # Test with 100% against-trade probability
+        slippage_against_trade_probability = 1.0
+
+        # When
+        result = TradingEnvUtils.calculate_dynamic_slippage(
+            direction,
+            current_price,
+            atr,
+            slippage_atr_based,
+            slippage_against_trade_probability,
+        )
+
+        # Then
+        # For LONG with 100% against-trade, slippage should be positive (price goes up before entry)
+        assert result > 0
+
+        # Given
+        # Test with 0% against-trade probability
+        slippage_against_trade_probability = 0.0
+
+        # When
+        result = TradingEnvUtils.calculate_dynamic_slippage(
+            direction,
+            current_price,
+            atr,
+            slippage_atr_based,
+            slippage_against_trade_probability,
+        )
+
+        # Then
+        # For LONG with 0% against-trade, slippage should be negative (price goes down before entry)
+        assert result < 0
+
+    def test_calculate_dynamic_slippage_opposite_for_short_positions(self) -> None:
+        # Given
+        direction = TradingDirection.SHORT
+        current_price = 100.0
+        atr = 2.0
+        slippage_atr_based = 0.01
+        slippage_against_trade_probability = 1.0
+
+        # When
+        result = TradingEnvUtils.calculate_dynamic_slippage(
+            direction,
+            current_price,
+            atr,
+            slippage_atr_based,
+            slippage_against_trade_probability,
+        )
+
+        # Then
+        # For SHORT with 100% against-trade, slippage should be negative (price goes down before entry)
+        assert result < 0
+
+    # Price Standard Deviation Tests
+    def test_calculate_price_std_with_known_values(self) -> None:
+        # Given
+        prices = [100.0, 102.0, 101.0, 104.0, 103.0]
+
+        # When
+        result = TradingEnvUtils.calculate_price_std(prices)
+
+        # Then
+        # Calculate expected standard deviation of returns manually
+        expected_returns = [
+            (102.0 - 100.0) / 100.0,
+            (101.0 - 102.0) / 102.0,
+            (104.0 - 101.0) / 101.0,
+            (103.0 - 104.0) / 104.0,
+        ]
+        expected_std = np.std(expected_returns)
+        assert result == pytest.approx(expected_std)
+
+    def test_calculate_price_std_with_single_price(self) -> None:
+        # Given
+        prices = [100.0]
+
+        # When
+        result = TradingEnvUtils.calculate_price_std(prices)
+
+        # Then
+        assert result == 0.0
+
+    def test_calculate_price_std_with_empty_list(self) -> None:
+        # Given
+        prices = []
+
+        # When
+        result = TradingEnvUtils.calculate_price_std(prices)
+
+        # Then
+        assert result == 0.0
+
+    # Risk-Adjusted PNL Tests
+    def test_calculate_risk_adjusted_pnl_with_low_volatility(self) -> None:
+        # Given
+        raw_pnl = 100.0
+        price_std = 0.01
+        leverage = 1.0
+
+        # When
+        result = TradingEnvUtils.calculate_risk_adjusted_pnl(
+            raw_pnl, price_std, leverage
+        )
+
+        # Then
+        # With low volatility, risk-adjusted PNL should be high
+        assert result > raw_pnl
+
+    def test_calculate_risk_adjusted_pnl_with_high_volatility(self) -> None:
+        # Given
+        raw_pnl = 100.0
+        price_std = 1.1
+        leverage = 1.0
+
+        # When
+        result = TradingEnvUtils.calculate_risk_adjusted_pnl(
+            raw_pnl, price_std, leverage
+        )
+
+        # Then
+        # With high volatility, risk-adjusted PNL should be lower
+        assert result < raw_pnl
+
+    def test_calculate_risk_adjusted_pnl_with_leverage(self) -> None:
+        # Given
+        raw_pnl = 100.0
+        price_std = 0.05
+        leverage_1 = 1.0
+        leverage_5 = 5.0
+
+        # When
+        result_1 = TradingEnvUtils.calculate_risk_adjusted_pnl(
+            raw_pnl, price_std, leverage_1
+        )
+        result_5 = TradingEnvUtils.calculate_risk_adjusted_pnl(
+            raw_pnl, price_std, leverage_5
+        )
+
+        # Then
+        # Higher leverage should result in lower risk-adjusted PNL
+        assert result_1 > result_5
+
+    def test_calculate_risk_adjusted_pnl_with_atr_normalization(self) -> None:
+        # Given
+        raw_pnl = 100.0
+        price_std = 0.05
+        leverage = 1.0
+        atr = 2.0
+
+        # When
+        result_without_atr = TradingEnvUtils.calculate_risk_adjusted_pnl(
+            raw_pnl, price_std, leverage
+        )
+        result_with_atr = TradingEnvUtils.calculate_risk_adjusted_pnl(
+            raw_pnl, price_std, leverage, atr
+        )
+
+        # Then
+        # With ATR normalization, risk-adjusted PNL should be different
+        assert result_without_atr != result_with_atr
+        assert result_with_atr == pytest.approx(result_without_atr / atr)

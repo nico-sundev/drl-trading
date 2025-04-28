@@ -50,7 +50,9 @@ class AgentTestingService:
 
         return metrics
 
-    def visualize_multiple_portfolio_net_worth(self, steps, net_worths_list, labels):
+    def visualize_multiple_portfolio_net_worth(
+        self, steps, net_worths_list, labels
+    ) -> None:
         """
         Visualize the net worths of multiple agents on the same chart.
 
@@ -68,7 +70,7 @@ class AgentTestingService:
         plt.legend()
         plt.show()
 
-    def test_and_visualize_agents(self, env, agents, data, n_tests=1000):
+    def test_and_visualize_agents(self, env, agents, data, n_tests=1000) -> None:
         """
         Test and visualize the performance of multiple agents.
 

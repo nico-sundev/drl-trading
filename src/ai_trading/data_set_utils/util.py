@@ -59,7 +59,9 @@ def ensure_datetime_time_column(
     return df_copy
 
 
-def separate_asset_price_datasets(datasets: List[AssetPriceDataSet]) -> tuple:
+def separate_asset_price_datasets(
+    datasets: List[AssetPriceDataSet],
+) -> tuple[AssetPriceDataSet, List[AssetPriceDataSet]]:
     """
     Separates the AssetPriceDataSet datasets into base and other datasets.
     """
@@ -72,21 +74,28 @@ def separate_asset_price_datasets(datasets: List[AssetPriceDataSet]) -> tuple:
         else:
             other_datasets.append(dataset)
 
+    if base_dataset is None:
+        raise ValueError("No base dataset found in the provided datasets.")
     return base_dataset, other_datasets
 
 
-def separate_computed_datasets(datasets: List[ComputedDataSetContainer]) -> tuple:
+def separate_computed_datasets(
+    datasets: List[ComputedDataSetContainer],
+) -> tuple[ComputedDataSetContainer, List[ComputedDataSetContainer]]:
     """
     Separates the ComputedDataSetContainer datasets into base and other datasets.
     """
     base_dataset = None
-    other_datasets = []
+    other_datasets: List[ComputedDataSetContainer] = []
 
     for dataset in datasets:
         if dataset.source_dataset.base_dataset:
             base_dataset = dataset
         else:
             other_datasets.append(dataset)
+
+    if base_dataset is None:
+        raise ValueError("No base dataset found in the provided datasets.")
 
     return base_dataset, other_datasets
 

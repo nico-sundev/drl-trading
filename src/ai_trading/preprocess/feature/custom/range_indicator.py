@@ -21,7 +21,7 @@ class SupportResistanceFinder:
         source_data_frame: pd.DataFrame,
         lookback: int,
         wick_handle_strategy: WICK_HANDLE_STRATEGY,
-    ):
+    ) -> None:
         self.lookback = lookback
         self.wick_handle_strategy = wick_handle_strategy
         self.source_data_frame = source_data_frame
@@ -59,7 +59,7 @@ class SupportResistanceFinder:
         ) & (df["Close"].iloc[last_index - 1] < df["Open"].iloc[last_index - 1])
         return [found_pivot_high, found_pivot_low]
 
-    def clean_pivot_cache(self, last_close: float):
+    def clean_pivot_cache(self, last_close: float) -> None:
         self.pivot_cache.drop(
             self.pivot_cache[
                 (self.pivot_cache["type"] == PIVOT_HIGH)
@@ -70,7 +70,7 @@ class SupportResistanceFinder:
             inplace=True,
         )
 
-    def find_next_zone(self, type: str, last_close: float):
+    def find_next_zone(self, type: str, last_close: float) -> dict[str, float]:
         """
         Iterates backward to find the nearest valid support and resistance within the lookback window.
         """

@@ -1,5 +1,4 @@
 import logging
-import random
 from typing import Any, Dict, Optional, Tuple
 
 import gymnasium as gym
@@ -18,6 +17,8 @@ class TradingEnv(gym.Env):
 
     This environment can be used directly with gymnasium or wrapped in a VecEnv.
     """
+
+    mandatory_col_names = ["Time", "High", "Low", "Close", "Atr"]
 
     def __init__(
         self,
@@ -54,6 +55,7 @@ class TradingEnv(gym.Env):
         self.liquidation_price: Optional[float] = None
         self.was_liquidated = False
         self.last_liquidation_loss = 0.0
+        self.atr_at_entry = None
 
         # Discrete actions:
         # 0 (Open Long),
@@ -86,12 +88,27 @@ class TradingEnv(gym.Env):
             )
         )
 
+        # Validate if the mandatory DataFrame columns are present
+        self._validate_columns()
+
         # Observation space calculation based on computed features only
         feature_columns = self.env_data_source.columns[feature_start_index:]
         num_features = len(feature_columns)
         low = np.full(num_features, -np.inf)
         high = np.full(num_features, np.inf)
         self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
+
+    def _validate_columns(self) -> None:
+        """Validate that the DataFrame contains the mandatory columns."""
+        missing_columns = [
+            col
+            for col in self.mandatory_col_names
+            if col not in self.env_data_source.columns
+        ]
+        if missing_columns:
+            raise ValueError(
+                f"DataFrame is missing mandatory columns: {', '.join(missing_columns)}"
+            )
 
     def reset(
         self, seed: Optional[int] = None, options: Optional[dict] = None
@@ -170,35 +187,85 @@ class TradingEnv(gym.Env):
     def _calculate_dynamic_slippage(
         self, direction: TradingDirection, current_price: float
     ) -> float:
-        """Calculate dynamic slippage based on ATR and trade direction.
-
-        This method calculates slippage as a percentage of the price (e.g., 0.01 = 1%) to match
-        TradingEnvUtils' expectation of percentage-based slippage values. The slippage is:
-        1. Based on ATR relative to current price to reflect market volatility
-        2. Works against the trade with env_config.slippage_against_trade_probability (default 60%)
-        3. Used both for position entry price adjustment and fee calculations
-        """
+        """Calculate dynamic slippage based on ATR and trade direction using utility method."""
         current_data = self.env_data_source.iloc[self.current_step]
-        atr = current_data.atr
-
-        # Base slippage as a percentage (ATR relative to price)
-        base_slippage = (atr / current_price) * self.env_config.slippage_atr_based
-
-        # Determine if slippage works against the trade
-        against_trade = (
-            random.random() < self.env_config.slippage_against_trade_probability
+        return TradingEnvUtils.calculate_dynamic_slippage(
+            direction,
+            current_price,
+            current_data.atr,
+            self.env_config.slippage_atr_based,
+            self.env_config.slippage_against_trade_probability,
         )
 
-        # For long positions: negative slippage means price goes up before entry
-        # For short positions: positive slippage means price goes down before entry
-        if against_trade:
-            return float(
-                base_slippage if direction == TradingDirection.LONG else -base_slippage
-            )
-        else:
-            return float(
-                -base_slippage if direction == TradingDirection.LONG else base_slippage
-            )
+    def _calculate_price_std(self) -> float:
+        """Calculate the standard deviation of price movement during the trade using utility method."""
+        if self.time_in_position <= 1 or self.position_open_price is None:
+            return 0.0
+
+        # Get price history for the duration of the trade
+        start_idx = max(0, self.current_step - self.time_in_position)
+        end_idx = self.current_step + 1  # inclusive
+        price_history = self.env_data_source.iloc[
+            start_idx:end_idx
+        ].price.values.tolist()
+
+        return TradingEnvUtils.calculate_price_std(price_history)
+
+    def _calculate_reward(self) -> float:
+        """Calculate reward for the current position state using an enhanced strategy.
+
+        The reward function considers:
+        1. PnL percentage (not absolute value)
+        2. Time in trade with penalties for exceeding optimal durations
+        3. Volatility penalties
+        4. ATR-based risk penalties
+
+        Returns:
+            float: The calculated reward value
+        """
+        if (
+            not TradingEnvUtils.has_active_position(self.position_state)
+            or self.position_open_price is None
+        ):
+            return 0.0
+
+        # Calculate PnL percentage instead of absolute value
+        position_value = abs(self.position_open_price * self.number_contracts_owned)
+        pnl_pct = self.pnl / position_value if position_value > 0 else 0.0
+
+        # Calculate price standard deviation during trade
+        price_std = self._calculate_price_std()
+
+        # Configuration parameters (could be moved to environment config)
+        max_time_in_trade = self.env_config.max_time_in_trade
+        optimal_exit_time = self.env_config.optimal_exit_time
+        variance_penalty_weight = self.env_config.variance_penalty_weight
+        atr_penalty_weight = self.env_config.atr_penalty_weight
+
+        # 1. Base reward on realized PnL percentage
+        reward = pnl_pct
+
+        # 2. Apply time penalty: soft linear penalty plus hard cutoff
+        time_penalty = -0.1 * self.time_in_position
+        if self.time_in_position > max_time_in_trade:
+            time_penalty -= 2.0  # Sharp penalty if held too long
+
+        reward += time_penalty
+
+        # 3. Add bonus for exiting at the "sweet spot" time
+        if pnl_pct > 0 and self.time_in_position <= optimal_exit_time:
+            reward += 1.5  # Bonus for quick profitable trades
+
+        # 4. Apply volatility (variance) penalty
+        reward -= variance_penalty_weight * price_std
+
+        # 5. Apply ATR-scaled risk penalty
+        reward -= atr_penalty_weight * self.atr_at_entry
+
+        # Scale by leverage to account for risk taken
+        reward *= self.current_leverage
+
+        return float(reward)
 
     def _take_action(
         self, action: Tuple[int, np.ndarray, np.ndarray, np.ndarray]
@@ -209,7 +276,7 @@ class TradingEnv(gym.Env):
         leverage = action[3][0]
 
         feature_set = self.env_data_source.iloc[self.current_step]
-        current_price = feature_set.price
+        current_price = feature_set["Close"]
 
         if discrete_action == 0:  # Open Long
             if self.position_state != 0:
@@ -221,6 +288,10 @@ class TradingEnv(gym.Env):
             )
             # Apply slippage to entry price
             self.position_open_price = current_price * (1 + slippage)
+
+            # Save ATR at entry for risk calculation
+            self.atr_at_entry = feature_set["Atr"]
+
             # Calculate contracts based on original price to maintain correct position size
             self.number_contracts_owned = TradingEnvUtils.calculate_number_contracts(
                 TradingDirection.LONG,
@@ -249,6 +320,10 @@ class TradingEnv(gym.Env):
             )
             # Apply slippage to entry price
             self.position_open_price = current_price * (1 + slippage)
+
+            # Save ATR at entry for risk calculation
+            self.atr_at_entry = feature_set["Atr"]
+
             # Calculate contracts based on original price to maintain correct position size
             self.number_contracts_owned = TradingEnvUtils.calculate_number_contracts(
                 TradingDirection.SHORT,
@@ -298,15 +373,45 @@ class TradingEnv(gym.Env):
             self.liquidation_price = None
             self.current_leverage = 1.0
 
+    def _calculate_risk_adjusted_pnl(self, raw_pnl: float) -> float:
+        """Calculates a Sharpe ratio-like risk-adjusted PnL using utility method."""
+        if self.time_in_position <= 1:
+            return raw_pnl
+
+        # Get volatility measure during the trade
+        price_std = self._calculate_price_std()
+
+        # Get current ATR as a scaling factor
+        current_data = self.env_data_source.iloc[self.current_step]
+
+        return TradingEnvUtils.calculate_risk_adjusted_pnl(
+            raw_pnl, price_std, self.current_leverage, current_data.atr
+        )
+
     def _update_pnl(self, current_price: float) -> None:
+        """Update the position PnL with risk adjustment.
+
+        Calculates raw PnL and then applies risk adjustment to make it comparable
+        across different securities with varying volatility profiles.
+
+        Args:
+            current_price: Current asset price
+        """
         direction = TradingEnvUtils.get_position_direction(self.position_state)
-        self.pnl = TradingEnvUtils.calculate_pnl(
+        raw_pnl = TradingEnvUtils.calculate_pnl(
             current_price,
             self.position_open_price if self.position_open_price is not None else 0.0,
             self.number_contracts_owned,
             self.env_config.fee,
             self._calculate_dynamic_slippage(direction, current_price),
         )
+
+        # For now, we store the raw PnL value for backward compatibility
+        # but we could switch to using risk-adjusted PnL if desired
+        # self.pnl = raw_pnl
+
+        # Calculate and store risk-adjusted PnL
+        self.pnl = self._calculate_risk_adjusted_pnl(raw_pnl)
 
     def _close_position(self, current_price: float) -> None:
         self._update_pnl(current_price)
@@ -328,38 +433,7 @@ class TradingEnv(gym.Env):
         self.number_contracts_owned = 0.0
         self.position_open_price = None
         self.current_leverage = 1.0
-
-    def _calculate_reward(self) -> float:
-        """Calculate reward for the current position state.
-
-        The reward function considers:
-        1. For profitable positions:
-           - Reward increases with the square root of time
-           - Reward scaled by in-money factor
-        2. For losing positions:
-           - Penalty increases more quickly with time (power of 1.5)
-           - Penalty scaled by out-of-money factor
-           - This naturally handles liquidation cases as the PnL already accounts
-             for leveraged losses
-
-        Returns:
-            float: The calculated reward value
-        """
-        if self.pnl > 0:
-            # For profitable positions, reward increases with time but at a decreasing rate
-            return float(
-                self.env_config.in_money_factor
-                * self.pnl
-                * np.sqrt(self.time_in_position)
-            )
-        else:
-            # For losing positions, penalty increases more quickly with time
-            # This also handles liquidation as PnL already accounts for leveraged losses
-            return float(
-                -self.env_config.out_of_money_factor
-                * abs(self.pnl)
-                * (self.time_in_position**1.5)
-            )
+        self.atr_at_entry = None
 
     def step(
         self, action: Tuple[int, np.ndarray, np.ndarray, np.ndarray]

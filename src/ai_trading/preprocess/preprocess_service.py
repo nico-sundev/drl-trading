@@ -1,16 +1,19 @@
 import logging
-from typing import List, Optional
+from typing import Optional
 
 import dask
-import pandas as pd
+import pandas_ta as ta
+from dask import delayed
 from pandas import DataFrame
 
 from ai_trading.config.feature_config import FeaturesConfig
 from ai_trading.data_set_utils.merge_service import MergeService
 from ai_trading.data_set_utils.util import (
     ensure_datetime_time_column,
+    separate_asset_price_datasets,
     separate_computed_datasets,
 )
+from ai_trading.model.asset_price_dataset import AssetPriceDataSet
 from ai_trading.model.computed_dataset_container import ComputedDataSetContainer
 from ai_trading.model.symbol_import_container import SymbolImportContainer
 from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregatorInterface
@@ -25,6 +28,7 @@ class PreprocessService:
         features_config: FeaturesConfig,
         feature_class_registry: FeatureClassRegistry,
         feature_aggregator: FeatureAggregatorInterface,
+        merge_service: MergeService,
     ) -> None:
         """
         Initializes the PreprocessService with configuration and stateless dependencies.
@@ -37,6 +41,7 @@ class PreprocessService:
         self.features_config = features_config
         self.feature_class_registry = feature_class_registry
         self.feature_aggregator = feature_aggregator
+        self.merge_service = merge_service
 
     def _prepare_dataframe_for_join(
         self, df: DataFrame, dataset_info: str
@@ -58,6 +63,72 @@ class PreprocessService:
             logger.error(f"Failed to set 'Time' index for {dataset_info}: {e}")
             return None
 
+    def _prepare_context_related_features(
+        self, base_dataset: AssetPriceDataSet
+    ) -> DataFrame:
+        """Prepares a DataFrame with only the essential context-related features needed by the trading environment.
+
+        This method extracts only the specific columns that are required by the gym environment
+        for proper functioning, such as price data, volume, and technical indicators like ATR.
+
+        Args:
+            base_dataset (AssetPriceDataSet): The base dataset containing OHLC data and computed indicators.
+
+        Returns:
+            DataFrame: A DataFrame containing only the columns needed for the trading environment context.
+
+        Raises:
+            ValueError: If essential columns are missing from the base dataset.
+        """
+        # Get the DataFrame from the base dataset
+        df = base_dataset.asset_price_dataset.copy()
+
+        # Define required columns for the trading environment
+        required_columns = ["Time", "Open", "High", "Low", "Close", "Volume"]
+
+        # Define optional but important columns if they exist
+        context_columns = ["Atr"]
+
+        # Verify all required columns exist
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise ValueError(
+                f"Essential columns missing from base dataset: {missing_columns}"
+            )
+
+        # Start with required columns
+        selected_columns = required_columns.copy()
+
+        # Add any optional context columns that exist in the DataFrame
+        for col in context_columns:
+            if col in df.columns:
+                selected_columns.append(col)
+
+        # Calculate ATR with a standard period
+        df["Atr"] = ta.atr(df["High"], df["Low"], df["Close"], timeperiod=14)
+        selected_columns.append("Atr")
+
+        # Return only the selected columns
+        return df[selected_columns]
+
+    def _merge_context_related_features(
+        self, computed_base_dataframe: DataFrame, context_enriched_dataframe: DataFrame
+    ) -> DataFrame:
+        """Merges context-related features into the computed base DataFrame.
+
+        Args:
+            computed_base_dataframe (DataFrame): The DataFrame containing computed features.
+            context_enriched_dataframe (DataFrame): The DataFrame containing context-related features.
+
+        Returns:
+            DataFrame: The merged DataFrame with context-related features.
+        """
+        return computed_base_dataframe.merge(
+            context_enriched_dataframe,
+            on="Time",
+            how="left",
+        )
+
     def preprocess_data(self, symbol_container: SymbolImportContainer) -> DataFrame:
         """
         Preprocesses data by computing features in parallel and merging timeframes.
@@ -74,150 +145,18 @@ class PreprocessService:
         Returns:
             DataFrame: The final merged DataFrame with all features.
         """
-        datasets = list(symbol_container.datasets)
+        datasets: list[AssetPriceDataSet] = symbol_container.datasets
+        base_dataset, _ = separate_asset_price_datasets(datasets)
         symbol = symbol_container.symbol
 
         logger.info(
             f"Starting preprocessing for symbol {symbol} with {len(datasets)} datasets."
         )
-        # 1. Create FeatureAggregator instances and get delayed tasks for each dataset
-        all_delayed_tasks = []
-        dataset_task_indices = {}  # Map dataset index to its range of tasks
-        original_datasets_map = {}  # Map dataset index to original AssetPriceDataSet
-        current_task_index = 0
 
-        for i, dataset in enumerate(datasets):
-            logger.debug(
-                f"Generating feature tasks for dataset {i}: Symbol={symbol}, Timeframe={dataset.timeframe}"
-            )
+        # 3. Aggregate results per original dataset
+        computed_dataset_containers: list[ComputedDataSetContainer] = []
 
-            # compute now takes asset_data and symbol parameters
-            dataset_delayed_tasks = self.feature_aggregator.compute(
-                asset_data=dataset, symbol=symbol
-            )
-
-            start_index = current_task_index
-            all_delayed_tasks.extend(dataset_delayed_tasks)
-            end_index = len(all_delayed_tasks)
-            dataset_task_indices[i] = (start_index, end_index)
-            original_datasets_map[i] = dataset  # Store original dataset
-            current_task_index = end_index
-            logger.debug(f"Added {len(dataset_delayed_tasks)} tasks for dataset {i}.")
-
-        computed_dataset_containers = (
-            []
-        )  # Initialize the list to avoid usage before definition
-        if not all_delayed_tasks:
-            logger.warning(
-                "No feature computation tasks were generated. Proceeding without features."
-            )
-            computed_dataset_containers = [
-                ComputedDataSetContainer(ds, ds.asset_price_dataset.copy())
-                for ds in datasets
-            ]
-        else:
-            # 2. Compute all delayed feature tasks in parallel
-            logger.info(
-                f"Executing {len(all_delayed_tasks)} feature tasks in parallel..."
-            )
-            computed_feature_dfs: List[Optional[DataFrame]] = list(
-                dask.compute(*all_delayed_tasks)[0]
-            )  # dask.compute returns a tuple
-            logger.info("Finished parallel feature computation.")
-
-            # 3. Aggregate results per original dataset
-            computed_dataset_containers.clear()
-            for i, original_dataset in original_datasets_map.items():
-                dataset_info = (
-                    f"Symbol={symbol}, Timeframe={original_dataset.timeframe}"
-                )
-                logger.debug(f"Aggregating features for dataset {i} ({dataset_info}).")
-                start_idx, end_idx = dataset_task_indices[i]
-                dataset_feature_results = [
-                    df
-                    for df in computed_feature_dfs[start_idx:end_idx]
-                    if df is not None and not df.empty
-                ]
-                logger.debug(
-                    f"Found {len(dataset_feature_results)} valid feature DataFrames for dataset {i}."
-                )
-
-                final_df_for_dataset_indexed = self._prepare_dataframe_for_join(
-                    original_dataset.asset_price_dataset,
-                    f"original data ({dataset_info})",
-                )
-
-                if final_df_for_dataset_indexed is None:
-                    logger.error(
-                        f"Could not prepare original data for dataset {i} ({dataset_info}) for joining. Skipping dataset."
-                    )
-                    continue
-
-                if dataset_feature_results:
-                    dfs_to_join: List[DataFrame] = []
-                    for idx, feat_df in enumerate(dataset_feature_results):
-                        prepared_feat_df = self._prepare_dataframe_for_join(
-                            feat_df, f"feature set {idx} ({dataset_info})"
-                        )
-                        if prepared_feat_df is not None:
-                            cols_to_add = prepared_feat_df.columns
-                            existing_cols = final_df_for_dataset_indexed.columns.union(
-                                pd.Index(
-                                    [col for df in dfs_to_join for col in df.columns]
-                                )
-                            )
-                            duplicates = cols_to_add.intersection(existing_cols)
-                            if not duplicates.empty:
-                                logger.warning(
-                                    f"Duplicate columns found for {dataset_info} in feature set {idx}: {duplicates.tolist()}. Dropping duplicates from feature set."
-                                )
-                                prepared_feat_df = prepared_feat_df.drop(
-                                    columns=duplicates
-                                )
-
-                            if not prepared_feat_df.empty:
-                                dfs_to_join.append(prepared_feat_df)
-                        else:
-                            logger.warning(
-                                f"Could not prepare feature set {idx} for dataset {i} ({dataset_info}) for joining."
-                            )
-
-                    if dfs_to_join:
-                        logger.debug(
-                            f"Joining {len(dfs_to_join)} feature sets to dataset {i}."
-                        )
-                        try:
-                            final_df_for_dataset_indexed = (
-                                final_df_for_dataset_indexed.join(
-                                    pd.concat(dfs_to_join, axis=1), how="left"
-                                )
-                            )
-                        except Exception as e:
-                            logger.error(
-                                f"Error joining features for dataset {i} ({dataset_info}): {e}",
-                                exc_info=True,
-                            )
-                            final_df_for_dataset_indexed = (
-                                self._prepare_dataframe_for_join(
-                                    original_dataset.asset_price_dataset,
-                                    f"original data ({dataset_info}) - recovery",
-                                )
-                            )
-                            if final_df_for_dataset_indexed is None:
-                                continue
-
-                final_df_for_dataset = final_df_for_dataset_indexed.reset_index()
-
-                computed_dataset_containers.append(
-                    ComputedDataSetContainer(original_dataset, final_df_for_dataset)
-                )
-                logger.debug(
-                    f"Finished aggregation for dataset {i}. Final shape: {final_df_for_dataset.shape}"
-                )
-
-        if not computed_dataset_containers:
-            logger.error("No datasets could be processed successfully.")
-            return pd.DataFrame()
+        # TODO: let agent to that
 
         # 4. Separate base and other datasets
         logger.info("Separating base and other datasets.")
@@ -225,23 +164,45 @@ class PreprocessService:
             computed_dataset_containers
         )
 
-        if base_computed_container is None:
-            logger.error(
-                "Base dataset is missing after feature computation/aggregation."
-            )
-            return pd.DataFrame()
-
         # 5. Merge timeframes
         logger.info("Starting timeframe merging.")
-        merged_result: DataFrame = base_computed_container.computed_dataframe
+        base_frame: DataFrame = base_computed_container.computed_dataframe
 
-        for i, container in enumerate(other_computed_containers):
-            logger.debug(
-                f"Merging other dataset {i} (Timeframe: {container.source_dataset.timeframe}) into base."
+        delayed_tasks = []
+
+        for _i, container in enumerate(other_computed_containers):
+            task = delayed(self.merge_service.merge_timeframes)(
+                base_frame.copy(), container.computed_dataframe.copy()
             )
-            merger = MergeService(merged_result, container.computed_dataframe)
-            merged_result = merger.merge_timeframes()
-            logger.debug(f"Shape after merging dataset {i}: {merged_result.shape}")
+            delayed_tasks.append(task)
+
+        all_timeframes_computed_features: list[DataFrame] = dask.compute(*delayed_tasks)
+
+        len_bf = len(base_frame)
+        # Validate if all dataframes have same length as base_frame
+        any_length_mismatch = False
+        for i, df in enumerate(all_timeframes_computed_features):
+            len_df = len(df)
+            if len_df != len_bf:
+                logger.error(
+                    f"DataFrame {i} has a different length ({len_df}) than the base frame ({len_bf}). Skipping merge."
+                )
+                any_length_mismatch = True
+
+        if any_length_mismatch:
+            raise ValueError(
+                "One or more DataFrames have a different length than the base frame. Merging aborted."
+            )
+
+        # Merge all timeframes into the base frame
+        merged_result: DataFrame = base_frame
+        for _i, df in enumerate(all_timeframes_computed_features):
+            merged_result = merged_result.merge(df, on="Time", how="left")
+
+        # 6. Merge context-related features
+        self._merge_context_related_features(
+            merged_result, self._prepare_context_related_features(base_dataset)
+        )
 
         logger.info("Preprocessing finished.")
         return merged_result

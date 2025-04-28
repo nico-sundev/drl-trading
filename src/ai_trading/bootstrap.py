@@ -10,6 +10,7 @@ from ai_trading.config.application_config import ApplicationConfig
 from ai_trading.config.config_loader import ConfigLoader
 from ai_trading.config.logging_config import configure_logging
 from ai_trading.data_import.local.csv_data_import_service import CsvDataImportService
+from ai_trading.data_set_utils.merge_service import MergeService
 from ai_trading.data_set_utils.split_service import SplitService
 from ai_trading.data_set_utils.strip_service import StripService
 from ai_trading.model.split_dataset_container import SplitDataSetContainer
@@ -53,11 +54,15 @@ def bootstrap(config: ApplicationConfig) -> list[DataFrame]:
     )
     logger.debug("Feature aggregator initialized")
 
+    merge_svc = MergeService()
+    logger.debug("Merge service initialized")
+
     # Preprocess the asset price datasets with feature store support
     preprocess_svc = PreprocessService(
         features_config=config.features_config,
         feature_class_registry=feature_class_registry,
         feature_aggregator=feature_aggregator,
+        merge_service=merge_svc,
     )
 
     final_datasets = []

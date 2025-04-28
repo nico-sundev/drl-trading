@@ -175,7 +175,7 @@ def test_compute_single_feature_no_cache(
 
     # When
     # Compute feature without cache
-    result_df = feature_aggregator._compute_or_get_single_feature(
+    result_container = feature_aggregator._compute_or_get_single_feature(
         mock_feature_definition,
         mock_param_set,
         mock_asset_df,
@@ -193,19 +193,21 @@ def test_compute_single_feature_no_cache(
         symbol=mock_symbol,
     )
     mock_feast_service.store_computed_features.assert_called_once()
-    assert result_df is not None
-    assert not result_df.empty
-    assert "Time" in result_df.columns
+    assert result_container is not None
+    assert not result_container.computed_dataframe.empty
+    assert "Time" in result_container.computed_dataframe.columns
     expected_col1 = f"MockFeature_{mock_param_set.hash_id()}_feature1"
     expected_col2 = f"MockFeature_{mock_param_set.hash_id()}_feature2"
-    assert expected_col1 in result_df.columns
-    assert expected_col2 in result_df.columns
-    assert "feature1" not in result_df.columns
-    assert "feature2" not in result_df.columns
-    assert "Open" not in result_df.columns
-    assert len(result_df.columns) == 3
+    assert expected_col1 in result_container.computed_dataframe.columns
+    assert expected_col2 in result_container.computed_dataframe.columns
+    assert "feature1" not in result_container.computed_dataframe.columns
+    assert "feature2" not in result_container.computed_dataframe.columns
+    assert "Open" not in result_container.computed_dataframe.columns
+    assert len(result_container.computed_dataframe.columns) == 3
     pd.testing.assert_series_equal(
-        result_df["Time"], mock_asset_df["Time"], check_names=False
+        result_container.computed_dataframe["Time"],
+        mock_asset_df["Time"],
+        check_names=False,
     )
 
 
@@ -232,7 +234,7 @@ def test_compute_single_feature_with_cache(
 
     # When
     # Retrieve feature from cache
-    result_df = feature_aggregator._compute_or_get_single_feature(
+    result_container = feature_aggregator._compute_or_get_single_feature(
         mock_feature_definition,
         mock_param_set,
         mock_asset_df,
@@ -244,7 +246,10 @@ def test_compute_single_feature_with_cache(
     # Verify feature was retrieved from cache and not computed again
     mock_feast_service.get_historical_features.assert_called_once()
     mock_feast_service.store_computed_features.assert_not_called()
-    assert result_df is not None
+    assert result_container is not None
+
+    result_df = result_container.computed_dataframe
+    assert not result_df.empty
     assert "Time" in result_df.columns
     expected_col1 = f"MockFeature_{mock_param_set.hash_id()}_feature1"
     expected_col2 = f"MockFeature_{mock_param_set.hash_id()}_feature2"

@@ -12,5 +12,9 @@ class EnvironmentConfig(BaseSchema):
     max_alltime_drawdown: float
     max_percentage_open_position: float
     min_percentage_open_position: float
-    in_money_factor: float  # Reward multiplier for profitable trades
-    out_of_money_factor: float  # Penalty multiplier for losing trades
+    max_time_in_trade: (
+        int  # Maximum optimal time in position before applying sharp penalty
+    )
+    optimal_exit_time: int  # Ideal time to exit for bonus reward
+    variance_penalty_weight: float  # Penalty weight for high volatility trades
+    atr_penalty_weight: float  # Penalty weight for high ATR at entry (risk)

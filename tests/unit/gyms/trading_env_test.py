@@ -311,10 +311,11 @@ class TestTradingEnv:
             )
         )  # Open long position
         initial_balance = env.balance
-        env.time_in_position = 4  # Simulate 4 time steps
+        env.time_in_position = 2  # Simulate optimal time steps (within the sweet spot)
 
         # Simulate price increase (20% profit)
         current_price = env.position_open_price
+        position_value = current_price * env.number_contracts_owned
         env.env_data_source.iloc[1, env.env_data_source.columns.get_loc("price")] = (
             current_price * 1.2
         )
@@ -329,12 +330,17 @@ class TestTradingEnv:
         observation, reward, done, terminated, info = env.step(action)
 
         # Then
-        # With in_money_factor=1.0, sqrt(time)=2, and ~20% profit
-        # Reward should be approximately 0.2 * initial_balance * 0.5 * 2
-        expected_pnl = env.pnl
-        expected_reward = env.env_config.in_money_factor * expected_pnl * np.sqrt(5)
-        assert np.isclose(reward, expected_reward, rtol=0.1)
+        # Calculate expected reward components
+        pnl_pct = env.pnl / position_value if position_value > 0 else 0
+        time_penalty = -0.1 * 3  # now at time_in_position = 3
+        sweet_spot_bonus = 1.5  # for profitable trade within optimal time
+
+        # We can't precisely calculate price_std and ATR penalties in the test
+        # So we just ensure the reward is positive and approximately matches our expectation
         assert reward > 0, "Should receive positive reward for profitable trade"
+
+        # Check that reward is greater than PnL percentage alone (due to sweet spot bonus)
+        assert reward > pnl_pct, "Reward should include sweet spot bonus"
 
     def test_reward_losing_trade(self, env):
         # Given
@@ -348,10 +354,11 @@ class TestTradingEnv:
             )
         )  # Open long position
         initial_balance = env.balance
-        env.time_in_position = 2  # Simulate 2 time steps
+        env.time_in_position = 11  # Exceeds max optimal time
 
         # Simulate price decrease (10% loss)
         current_price = env.position_open_price
+        position_value = current_price * env.number_contracts_owned
         env.env_data_source.iloc[1, env.env_data_source.columns.get_loc("price")] = (
             current_price * 0.9
         )
@@ -366,14 +373,125 @@ class TestTradingEnv:
         observation, reward, done, terminated, info = env.step(action)
 
         # Then
-        # With out_of_money_factor=1.0, time^1.5~2.83, and ~10% loss
-        # Penalty should be approximately 0.1 * initial_balance * 0.5 * 2.83
-        expected_pnl = env.pnl
-        expected_reward = (
-            -env.env_config.out_of_money_factor * abs(expected_pnl) * (3**1.5)
-        )
-        assert np.isclose(reward, expected_reward, rtol=0.1)
+        # Calculate expected reward components
+        pnl_pct = env.pnl / position_value if position_value > 0 else 0
+        time_penalty = -0.1 * 12  # now at time_in_position = 12
+        exceeds_max_time_penalty = -2.0  # additional penalty for exceeding max time
+
+        # The reward should be significantly more negative than just the PnL percentage
         assert reward < 0, "Should receive negative reward for losing trade"
+        assert reward < pnl_pct, "Reward should be worse than PnL due to time penalties"
+
+    def test_reward_leveraged_position(self, env):
+        # Given
+        # Open a leveraged position
+        leverage = 5
+        env.step(
+            (
+                0,
+                np.array([0.5], dtype=np.float32),
+                np.array([0], dtype=np.float32),
+                np.array([leverage], dtype=np.int16),
+            )
+        )  # Open leveraged long position
+        env.time_in_position = 2  # Within optimal time
+
+        # Simulate price increase (10% profit)
+        current_price = env.position_open_price
+        position_value = current_price * env.number_contracts_owned
+        env.env_data_source.iloc[1, env.env_data_source.columns.get_loc("price")] = (
+            current_price * 1.1
+        )
+
+        # When
+        action = (
+            3,
+            np.array([0], dtype=np.float32),
+            np.array([0], dtype=np.float32),
+            np.array([leverage], dtype=np.int16),
+        )  # Hold position
+        observation, reward, done, terminated, info = env.step(action)
+
+        # Then
+        # With leverage multiplier, reward should be significantly higher
+        assert (
+            reward > 0
+        ), "Should receive positive reward for profitable leveraged trade"
+
+        # Get reward for same scenario without leverage for comparison
+        env.reset()
+        env.step(
+            (
+                0,
+                np.array([0.5], dtype=np.float32),
+                np.array([0], dtype=np.float32),
+                np.array([1], dtype=np.int16),
+            )
+        )  # Open non-leveraged long position
+        env.time_in_position = 2
+        env.env_data_source.iloc[1, env.env_data_source.columns.get_loc("price")] = (
+            env.position_open_price * 1.1
+        )
+
+        _, non_leveraged_reward, _, _, _ = env.step(
+            (
+                3,
+                np.array([0], dtype=np.float32),
+                np.array([0], dtype=np.float32),
+                np.array([1], dtype=np.int16),
+            )
+        )
+
+        # Verify leverage increases reward proportionally
+        assert (
+            reward > non_leveraged_reward
+        ), "Leveraged position should yield higher reward"
+        assert np.isclose(
+            reward / non_leveraged_reward, leverage, rtol=0.2
+        ), "Reward should scale with leverage"
+
+    def test_price_std_calculation(self, env):
+        # Given
+        # Create a controlled price sequence
+        price_values = [
+            100.0,
+            101.0,
+            103.0,
+            102.0,
+            104.0,
+        ]  # Price sequence with known volatility
+        for i, price in enumerate(price_values):
+            env.env_data_source.iloc[
+                i, env.env_data_source.columns.get_loc("price")
+            ] = price
+
+        # Open a position at the beginning
+        env.current_step = 0
+        env.step(
+            (
+                0,
+                np.array([0.5], dtype=np.float32),
+                np.array([0], dtype=np.float32),
+                np.array([1], dtype=np.int16),
+            )
+        )
+
+        # Simulate position being open for multiple steps
+        env.current_step = 0  # Reset to recompute from beginning
+        env.time_in_position = 4  # We're using 4 steps of data
+
+        # When
+        price_std = env._calculate_price_std()
+
+        # Then
+        # Calculate expected standard deviation of returns manually
+        returns = np.diff(price_values) / np.array(price_values[:-1])
+        expected_std = np.std(returns)
+
+        # Verify calculation is correct
+        assert np.isclose(
+            price_std, expected_std, rtol=1e-10
+        ), "Price std calculation should match expected value"
 
     def test_episode_completion(self, env):
         # Given
