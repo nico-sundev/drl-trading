@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import gymnasium as gym
 import numpy as np
@@ -7,6 +7,10 @@ from gymnasium import spaces
 from pandas import DataFrame
 
 from ai_trading.config.environment_config import EnvironmentConfig
+from ai_trading.gyms.trading_constants import (
+    ALL_CONTEXT_COLUMNS,
+    PRIMARY_CONTEXT_COLUMNS,
+)
 from ai_trading.gyms.utils.trading_env_utils import TradingDirection, TradingEnvUtils
 
 logger = logging.getLogger(__name__)
@@ -18,25 +22,40 @@ class TradingEnv(gym.Env):
     This environment can be used directly with gymnasium or wrapped in a VecEnv.
     """
 
-    mandatory_col_names = ["Time", "High", "Low", "Close", "Atr"]
-
     def __init__(
         self,
         env_data_source: DataFrame,
         env_config: EnvironmentConfig,
-        feature_start_index: int,
+        context_columns: Optional[List[str]] = None,
     ):
         """Initialize the trading environment.
 
         Args:
             env_data_source: DataFrame containing price data and computed features
             env_config: Configuration for the trading environment
-            feature_start_index: Index in env_data_source columns where computed/normalized features start
+            context_columns: List of column names that are context columns (not features for the observation space)
+                             If not provided, will use ALL_CONTEXT_COLUMNS
         """
         super(TradingEnv, self).__init__()
         self.env_config = env_config
         self.env_data_source = env_data_source
-        self.feature_start_index = feature_start_index
+
+        # Determine context columns and feature columns
+        if context_columns is not None:
+            self.context_columns = context_columns
+        else:
+            # Default to all known context columns that exist in the DataFrame
+            self.context_columns = [
+                col for col in ALL_CONTEXT_COLUMNS if col in env_data_source.columns
+            ]
+
+        # Compute feature columns (all columns that are not context columns)
+        self.feature_columns = [
+            col for col in env_data_source.columns if col not in self.context_columns
+        ]
+
+        logger.debug(f"Context columns: {self.context_columns}")
+        logger.debug(f"Feature columns: {self.feature_columns}")
 
         # Initialize from environment config
         self.initial_balance = env_config.start_balance
@@ -92,22 +111,37 @@ class TradingEnv(gym.Env):
         self._validate_columns()
 
         # Observation space calculation based on computed features only
-        feature_columns = self.env_data_source.columns[feature_start_index:]
-        num_features = len(feature_columns)
+        num_features = len(self.feature_columns)
+        if num_features == 0:
+            raise ValueError("No feature columns found for observation space")
+
         low = np.full(num_features, -np.inf)
         high = np.full(num_features, np.inf)
         self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
 
     def _validate_columns(self) -> None:
-        """Validate that the DataFrame contains the mandatory columns."""
+        """
+        Validate that the DataFrame contains the mandatory columns.
+
+        Only validates primary context columns that should exist in raw data,
+        not derived columns that are computed.
+        """
         missing_columns = [
             col
-            for col in self.mandatory_col_names
+            for col in PRIMARY_CONTEXT_COLUMNS
             if col not in self.env_data_source.columns
         ]
+
         if missing_columns:
             raise ValueError(
                 f"DataFrame is missing mandatory columns: {', '.join(missing_columns)}"
+            )
+
+        # Verify ATR (derived column) is present as it's required for trading logic
+        if "Atr" not in self.env_data_source.columns:
+            raise ValueError(
+                "DataFrame is missing required derived column: Atr. "
+                "Ensure the ContextFeatureService has computed this column before creating the environment."
             )
 
     def reset(
@@ -141,15 +175,17 @@ class TradingEnv(gym.Env):
     def _next_observation(self) -> np.ndarray:
         """Get the next observation from the environment.
 
-        Returns only the computed and normalized features starting from feature_start_index,
-        excluding strategy-specific data like prices, ATR, etc.
+        Returns only the computed and normalized features, excluding strategy-specific
+        data like prices, ATR, etc.
 
         Returns:
             np.ndarray: Array of computed features in float32 format
         """
         feature_set = self.env_data_source.iloc[self.current_step]
-        # Select only computed features starting from feature_start_index
-        computed_features = feature_set.iloc[self.feature_start_index :].values
+
+        # Select only computed features using feature column names
+        computed_features = feature_set[self.feature_columns].values
+
         return computed_features.astype(np.float32)
 
     def _update_liquidation_price(self, leverage: float) -> None:

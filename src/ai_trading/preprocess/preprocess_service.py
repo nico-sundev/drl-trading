@@ -1,12 +1,12 @@
 import logging
-from typing import Optional
+from typing import List, Optional
 
 import dask
-import pandas_ta as ta
 from dask import delayed
 from pandas import DataFrame
 
 from ai_trading.config.feature_config import FeaturesConfig
+from ai_trading.data_set_utils.context_feature_service import ContextFeatureService
 from ai_trading.data_set_utils.merge_service import MergeService
 from ai_trading.data_set_utils.util import (
     ensure_datetime_time_column,
@@ -29,6 +29,7 @@ class PreprocessService:
         feature_class_registry: FeatureClassRegistry,
         feature_aggregator: FeatureAggregatorInterface,
         merge_service: MergeService,
+        context_feature_service: ContextFeatureService,
     ) -> None:
         """
         Initializes the PreprocessService with configuration and stateless dependencies.
@@ -36,12 +37,15 @@ class PreprocessService:
         Args:
             features_config: Configuration for feature computation
             feature_class_registry: Registry of available feature classes
-            feast_service: Service for feature store interaction
+            feature_aggregator: Service for feature aggregation and computation
+            merge_service: Service for merging timeframes
+            context_feature_service: Service for handling context-related features
         """
         self.features_config = features_config
         self.feature_class_registry = feature_class_registry
         self.feature_aggregator = feature_aggregator
         self.merge_service = merge_service
+        self.context_feature_service = context_feature_service
 
     def _prepare_dataframe_for_join(
         self, df: DataFrame, dataset_info: str
@@ -63,70 +67,65 @@ class PreprocessService:
             logger.error(f"Failed to set 'Time' index for {dataset_info}: {e}")
             return None
 
-    def _prepare_context_related_features(
-        self, base_dataset: AssetPriceDataSet
-    ) -> DataFrame:
-        """Prepares a DataFrame with only the essential context-related features needed by the trading environment.
-
-        This method extracts only the specific columns that are required by the gym environment
-        for proper functioning, such as price data, volume, and technical indicators like ATR.
+    def _compute_features_for_dataset(
+        self, dataset: AssetPriceDataSet, symbol: str
+    ) -> Optional[ComputedDataSetContainer]:
+        """
+        Computes features for a single dataset using the feature aggregator.
 
         Args:
-            base_dataset (AssetPriceDataSet): The base dataset containing OHLC data and computed indicators.
+            dataset: The dataset to compute features for
+            symbol: The symbol name
 
         Returns:
-            DataFrame: A DataFrame containing only the columns needed for the trading environment context.
-
-        Raises:
-            ValueError: If essential columns are missing from the base dataset.
+            ComputedDataSetContainer containing the source dataset and computed features,
+            or None if feature computation failed
         """
-        # Get the DataFrame from the base dataset
-        df = base_dataset.asset_price_dataset.copy()
+        logger.info(f"Computing features for {symbol} {dataset.timeframe}")
 
-        # Define required columns for the trading environment
-        required_columns = ["Time", "Open", "High", "Low", "Close", "Volume"]
+        # Get delayed computation tasks from feature aggregator
+        delayed_tasks = self.feature_aggregator.compute(
+            asset_data=dataset, symbol=symbol
+        )
 
-        # Define optional but important columns if they exist
-        context_columns = ["Atr"]
-
-        # Verify all required columns exist
-        missing_columns = [col for col in required_columns if col not in df.columns]
-        if missing_columns:
-            raise ValueError(
-                f"Essential columns missing from base dataset: {missing_columns}"
+        # Skip if no features to compute
+        if not delayed_tasks:
+            logger.warning(
+                f"No feature computation tasks for {symbol} {dataset.timeframe}"
             )
+            return None
 
-        # Start with required columns
-        selected_columns = required_columns.copy()
+        # Execute all tasks in parallel
+        computed_feature_dfs = dask.compute(*delayed_tasks)
 
-        # Add any optional context columns that exist in the DataFrame
-        for col in context_columns:
-            if col in df.columns:
-                selected_columns.append(col)
+        # Filter out None results
+        valid_feature_dfs = [df for df in computed_feature_dfs if df is not None]
 
-        # Calculate ATR with a standard period
-        df["Atr"] = ta.atr(df["High"], df["Low"], df["Close"], timeperiod=14)
-        selected_columns.append("Atr")
+        # Skip if no valid results
+        if not valid_feature_dfs:
+            logger.warning(
+                f"No valid features computed for {symbol} {dataset.timeframe}"
+            )
+            return None
 
-        # Return only the selected columns
-        return df[selected_columns]
+        # Start with first dataframe
+        merged_features = valid_feature_dfs[0]
 
-    def _merge_context_related_features(
-        self, computed_base_dataframe: DataFrame, context_enriched_dataframe: DataFrame
-    ) -> DataFrame:
-        """Merges context-related features into the computed base DataFrame.
+        # Merge remaining dataframes
+        for i, feature_df in enumerate(valid_feature_dfs[1:], 1):
+            try:
+                merged_features = merged_features.merge(
+                    feature_df, on="Time", how="outer"
+                )
+            except Exception as e:
+                logger.error(
+                    f"Error merging feature dataframe {i} for {symbol} {dataset.timeframe}: {e}"
+                )
+                # Continue with what we have
 
-        Args:
-            computed_base_dataframe (DataFrame): The DataFrame containing computed features.
-            context_enriched_dataframe (DataFrame): The DataFrame containing context-related features.
-
-        Returns:
-            DataFrame: The merged DataFrame with context-related features.
-        """
-        return computed_base_dataframe.merge(
-            context_enriched_dataframe,
-            on="Time",
-            how="left",
+        # Return container with source dataset and computed features
+        return ComputedDataSetContainer(
+            source_dataset=dataset, computed_dataframe=merged_features
         )
 
     def preprocess_data(self, symbol_container: SymbolImportContainer) -> DataFrame:
@@ -138,6 +137,7 @@ class PreprocessService:
         2. Execute all tasks in parallel using dask.compute.
         3. Aggregate computed features for each original dataset.
         4. Merge aggregated datasets across timeframes.
+        5. Add context-related features required by the trading environment.
 
         Args:
             symbol_container: Container holding symbol datasets to process
@@ -145,7 +145,7 @@ class PreprocessService:
         Returns:
             DataFrame: The final merged DataFrame with all features.
         """
-        datasets: list[AssetPriceDataSet] = symbol_container.datasets
+        datasets: List[AssetPriceDataSet] = symbol_container.datasets
         base_dataset, _ = separate_asset_price_datasets(datasets)
         symbol = symbol_container.symbol
 
@@ -153,10 +153,26 @@ class PreprocessService:
             f"Starting preprocessing for symbol {symbol} with {len(datasets)} datasets."
         )
 
-        # 3. Aggregate results per original dataset
-        computed_dataset_containers: list[ComputedDataSetContainer] = []
+        # 3. Aggregate results
+        computed_dataset_containers: List[ComputedDataSetContainer] = []
 
-        # TODO: let agent to that
+        # Process each dataset (timeframe) in parallel
+        delayed_processing_tasks = []
+        for dataset in datasets:
+            task = delayed(self._compute_features_for_dataset)(dataset, symbol)
+            delayed_processing_tasks.append(task)
+
+        # Execute all processing tasks
+        processed_containers = dask.compute(*delayed_processing_tasks)
+
+        # Filter out None results
+        computed_dataset_containers = [
+            container for container in processed_containers if container is not None
+        ]
+
+        # Check if we have at least one valid container
+        if not computed_dataset_containers:
+            raise ValueError("No valid computed datasets were produced")
 
         # 4. Separate base and other datasets
         logger.info("Separating base and other datasets.")
@@ -176,7 +192,7 @@ class PreprocessService:
             )
             delayed_tasks.append(task)
 
-        all_timeframes_computed_features: list[DataFrame] = dask.compute(*delayed_tasks)
+        all_timeframes_computed_features: List[DataFrame] = dask.compute(*delayed_tasks)
 
         len_bf = len(base_frame)
         # Validate if all dataframes have same length as base_frame
@@ -199,10 +215,16 @@ class PreprocessService:
         for _i, df in enumerate(all_timeframes_computed_features):
             merged_result = merged_result.merge(df, on="Time", how="left")
 
-        # 6. Merge context-related features
-        self._merge_context_related_features(
-            merged_result, self._prepare_context_related_features(base_dataset)
+        # 6. Merge context-related features using the dedicated service
+        logger.info("Preparing context-related features.")
+        context_features = self.context_feature_service.prepare_context_features(
+            base_dataset
+        )
+
+        logger.info("Merging context-related features with computed features.")
+        final_result = self.context_feature_service.merge_context_features(
+            merged_result, context_features
         )
 
         logger.info("Preprocessing finished.")
-        return merged_result
+        return final_result

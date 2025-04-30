@@ -6,6 +6,9 @@ from ai_trading.config.config_loader import ConfigLoader
 from ai_trading.config.feature_config_registry import FeatureConfigRegistry
 from ai_trading.data_import.data_import_manager import DataImportManager
 from ai_trading.data_import.local.csv_data_import_service import CsvDataImportService
+from ai_trading.data_set_utils.merge_service import MergeService
+from ai_trading.model.symbol_import_container import SymbolImportContainer
+from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregator
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
 from ai_trading.preprocess.preprocess_service import PreprocessService
 
@@ -57,30 +60,48 @@ def feast_service(config, symbol_container, init_feast_for_tests):
 
 
 @pytest.fixture
-def preprocess_service(config, class_registry, feast_service):
+def feature_aggregator(config, class_registry, feast_service) -> FeatureAggregator:
+    return FeatureAggregator(config, class_registry, feast_service)
+
+
+@pytest.fixture
+def merge_service(config, class_registry, feature_aggregator, feast_service):
+    return MergeService()
+
+
+@pytest.fixture
+def preprocess_service(config, class_registry, feature_aggregator, merge_service):
     return PreprocessService(
         features_config=config.features_config,
         feature_class_registry=class_registry,
-        feast_service=feast_service,
+        feature_aggregator=feature_aggregator,
+        merge_service=merge_service,
     )
 
 
-def test_preprocessing(preprocess_service, symbol_container):
+def test_preprocessing(
+    preprocess_service: PreprocessService, symbol_container: SymbolImportContainer
+):
     """Test that preprocessing creates the expected feature columns."""
     # Given
-    expected_columns = {
-        "Time",
+    expected_context_related_columns = ["Time", "High", "Low", "Close", "Volume", "Atr"]
+
+    expected_feature_columns = [
         "rsi_7",
         "HTF240_rsi_7",
-    }
+    ]
+
+    all_expected_columns = sorted(
+        expected_context_related_columns + expected_feature_columns
+    )
 
     # When
     result = preprocess_service.preprocess_data(symbol_container)
-    actual_columns = set(result.columns)
+    actual_columns = sorted(set(result.columns))
 
     # Then
     assert (
-        actual_columns == expected_columns
-    ), f"Column mismatch! Expected: {expected_columns}, but got: {actual_columns}"
+        actual_columns == all_expected_columns
+    ), f"Column mismatch! Expected: {all_expected_columns}, but got: {actual_columns}"
 
     # print(feature_df_merged.head())

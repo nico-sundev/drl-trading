@@ -1,18 +1,19 @@
 todo features:
-- review reward logic in custom env
 - review preprocessing service -> stopped L159
 - strip service only strips in the end -> must also in beginning
 - choose yaml over json for config
 - change project manager to UV
-- implement data provider APIs
-    - binance
-    - twelvedata
-    - implement dataset catchup module
-
+- review reward logic in custom env
 - use vecnormalize
 - check dummyvecenv vs subprocvecenv
+
+next sprint:
 - model save checkpoints
 - integrate backtrader
 - MLFlow integration -> configure to use local service
 - research for SBX for faster training
+- implement data provider APIs
+    - binance
+    - twelvedata
+    - implement dataset catchup module
 - create GNN -> see all_in_one.py -> start with: Which data to we need and how do we have to preprocess
