@@ -55,7 +55,7 @@ def mock_feast_service(mock_feature_store_config) -> FeastService:
         mock_feast_constructor.return_value = mock_store_instance
 
         # Instantiate the service (constructor will use the mock)
-        service = FeastService(feature_store_config=mock_feature_store_config)
+        service = FeastService(config=mock_feature_store_config)
         # Explicitly set mocks on the instance for tests using this fixture
         service.feature_store = MagicMock()
         return service
@@ -72,7 +72,7 @@ def test_init_with_enabled_config(
         mock_feast.return_value = mock_store
 
         # When
-        service = FeastService(feature_store_config=mock_feature_store_config)
+        service = FeastService(config=mock_feature_store_config)
 
         # Then
         # Check if the service attribute holds the mock instance
@@ -93,7 +93,7 @@ def test_init_with_disabled_config(
     # Patch where FeatureStore is looked up
     with patch("ai_trading.preprocess.feast.feast_service.FeatureStore") as mock_feast:
         # When
-        service = FeastService(feature_store_config=mock_feature_store_config)
+        service = FeastService(config=mock_feature_store_config)
 
         # Then
         assert service.feature_store is None

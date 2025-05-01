@@ -119,19 +119,19 @@ class FeastService(FeastServiceInterface):
     features, and retrieving historical features.
     """
 
-    def __init__(self, feature_store_config: FeatureStoreConfig) -> None:
+    def __init__(self, config: FeatureStoreConfig) -> None:
         """
         Initialize the FeastService with configuration.
 
         Args:
             feature_store_config: Configuration for the feature store
         """
-        self.config = feature_store_config
+        self.config = config
         self.feature_store = None
 
-        if feature_store_config.enabled:
+        if config.enabled:
             logger.info("Initializing feature store connection")
-            self.feature_store = FeatureStore(repo_path=feature_store_config.repo_path)
+            self.feature_store = FeatureStore(repo_path=config.repo_path)
 
     def _get_entity(self, symbol: str, timeframe: str) -> Entity:
         """

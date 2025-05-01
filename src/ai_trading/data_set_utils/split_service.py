@@ -8,8 +8,8 @@ from ai_trading.model.split_dataset_container import SplitDataSetContainer
 
 class SplitService:
 
-    def __init__(self, rl_model_config: RlModelConfig):
-        self.rl_model_config = rl_model_config
+    def __init__(self, config: RlModelConfig):
+        self.config = config
 
     # define config:
     # ticker
@@ -18,15 +18,15 @@ class SplitService:
 
     def split_dataset(self, df: pd.DataFrame) -> SplitDataSetContainer:
         assert math.isclose(
-            self.rl_model_config.training_split_ratio
-            + self.rl_model_config.validating_split_ratio
-            + self.rl_model_config.testing_split_ratio,
+            self.config.training_split_ratio
+            + self.config.validating_split_ratio
+            + self.config.testing_split_ratio,
             1.0,
         ), "Ratios must sum to 1.0"
 
         n = len(df)
-        train_end = round(self.rl_model_config.training_split_ratio * n)
-        val_end = train_end + round(self.rl_model_config.validating_split_ratio * n)
+        train_end = round(self.config.training_split_ratio * n)
+        val_end = train_end + round(self.config.validating_split_ratio * n)
 
         df_train = df.iloc[:train_end]
         df_val = df.iloc[train_end:val_end]

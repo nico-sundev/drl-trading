@@ -111,13 +111,13 @@ class ContextFeatureService:
         Returns:
             DataFrame: Input DataFrame with derived columns added
         """
-        # Compute ATR if it doesn't exist
-        if "Atr" not in df.columns:
-            logger.debug(f"Computing ATR with period {self.atr_period}")
+        # Compute ATR
+        logger.debug(f"Computing ATR with period {self.atr_period}")
+        # Preserve existing ATR if present
+        if "Atr" not in df.columns or df["Atr"].isna().all():
             df["Atr"] = ta.atr(
                 df["High"], df["Low"], df["Close"], timeperiod=self.atr_period
             )
-
         return df
 
     def is_context_column(self, column_name: str) -> bool:

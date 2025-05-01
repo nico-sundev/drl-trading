@@ -53,7 +53,7 @@ def feast_service(config, symbol_container, init_feast_for_tests):
     from ai_trading.preprocess.feast.feast_service import FeastService
 
     return FeastService(
-        feature_store_config=config.feature_store_config,
+        config=config.feature_store_config,
         symbol=symbol_container.symbol,
         asset_data=symbol_container.datasets[0],
     )

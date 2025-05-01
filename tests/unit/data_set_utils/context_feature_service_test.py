@@ -11,28 +11,20 @@ from ai_trading.gyms.trading_constants import (
     PRIMARY_CONTEXT_COLUMNS,
 )
 from ai_trading.model.asset_price_dataset import AssetPriceDataSet
+from tests.unit.fixture.sample_data import mock_ohlcv_data_1h
 
 
 @pytest.fixture
 def mock_ohlcv_dataframe() -> DataFrame:
-    """Create a mock OHLCV DataFrame for testing."""
-    return DataFrame(
-        {
-            "Time": pd.date_range(start="2022-01-01", periods=10, freq="H"),
-            "Open": [1.0] * 10,
-            "High": [2.0] * 10,
-            "Low": [0.5] * 10,
-            "Close": [1.5] * 10,
-            "Volume": [1000.0] * 10,
-        }
-    )
+    """Create a mock OHLCV DataFrame for testing using sample_data."""
+    return mock_ohlcv_data_1h().asset_price_dataset
 
 
 @pytest.fixture
 def mock_ohlcv_with_atr_dataframe(mock_ohlcv_dataframe) -> DataFrame:
     """Create a mock OHLCV DataFrame with ATR for testing."""
     df = mock_ohlcv_dataframe.copy()
-    df["Atr"] = [0.1] * 10
+    df["Atr"] = [0.1] * len(df)
     return df
 
 
@@ -156,7 +148,12 @@ def test_compute_derived_columns(context_feature_service, mock_ohlcv_dataframe):
     # Then
     # Should have computed ATR
     assert "Atr" in result.columns
-    assert not result["Atr"].isna().all()
+
+    # First 13 values should be NaN due to ATR lookback period of 14
+    assert result["Atr"].iloc[:13].isna().all()
+
+    # Values starting from index 14 should not be NaN
+    assert not result["Atr"].iloc[14:].isna().any()
 
 
 def test_compute_derived_columns_preserves_existing(
@@ -284,7 +281,7 @@ def test_get_context_columns_with_dataframe(
     # Given
     # Add a non-context column
     df = mock_ohlcv_dataframe.copy()
-    df["feature1"] = [1.0] * 10
+    df["feature1"] = [1.0] * len(df)
 
     # When
     result = context_feature_service.get_context_columns(df)
@@ -342,12 +339,12 @@ def test_get_feature_columns(context_feature_service):
 def test_merge_context_features(context_feature_service, mock_ohlcv_dataframe):
     """Test that merge_context_features correctly merges context features into computed features."""
     # Given
-    # Create a mock computed features DataFrame
+    # Create a mock computed features DataFrame using the same time range as mock_ohlcv_dataframe
     computed_df = DataFrame(
         {
-            "Time": pd.date_range(start="2022-01-01", periods=10, freq="H"),
-            "feature1": [1.0] * 10,
-            "feature2": [2.0] * 10,
+            "Time": mock_ohlcv_dataframe["Time"].copy(),
+            "feature1": [1.0] * len(mock_ohlcv_dataframe),
+            "feature2": [2.0] * len(mock_ohlcv_dataframe),
         }
     )
 
@@ -372,30 +369,31 @@ def test_merge_context_features(context_feature_service, mock_ohlcv_dataframe):
     pd.testing.assert_series_equal(result["Open"], context_df["Open"])
 
 
-def test_merge_context_features_with_non_matching_indices(context_feature_service):
+def test_merge_context_features_with_non_matching_indices(
+    context_feature_service, mock_ohlcv_dataframe
+):
     """Test merge_context_features with non-matching timestamps."""
     # Given
     # Create DataFrames with some non-matching timestamps
     computed_df = DataFrame(
         {
-            "Time": pd.date_range(start="2022-01-01", periods=10, freq="H"),
-            "feature1": list(range(10)),
+            "Time": pd.date_range(start="2008-10-03 13:00:00", periods=30, freq="H"),
+            "feature1": list(range(30)),
         }
     )
 
-    context_df = DataFrame(
-        {
-            "Time": pd.date_range(start="2022-01-01 02:00:00", periods=10, freq="H"),
-            "Open": [1.0] * 10,
-            "High": [2.0] * 10,
-            "Low": [0.5] * 10,
-            "Close": [1.5] * 10,
-            "Volume": [1000.0] * 10,
-        }
+    context_df = mock_ohlcv_dataframe.copy()
+
+    # Shift context data to create non-matching timestamps
+    context_df_shifted = context_df.copy()
+    context_df_shifted["Time"] = pd.date_range(
+        start="2008-10-03 15:00:00", periods=30, freq="H"
     )
 
     # When
-    result = context_feature_service.merge_context_features(computed_df, context_df)
+    result = context_feature_service.merge_context_features(
+        computed_df, context_df_shifted
+    )
 
     # Then
     # Should have all columns
@@ -412,20 +410,15 @@ def test_merge_context_features_with_non_matching_indices(context_feature_servic
     assert result["Open"].isna().sum() == 2  # First two hours don't match
 
 
-def test_handles_nan_values_in_price_data(context_feature_service):
+def test_handles_nan_values_in_price_data(
+    context_feature_service, mock_ohlcv_dataframe
+):
     """Test that context feature service handles NaN values in price data."""
     # Given
     # DataFrame with some NaN values
-    df = DataFrame(
-        {
-            "Time": pd.date_range(start="2022-01-01", periods=10, freq="H"),
-            "Open": [1.0, None, 1.0] + [1.0] * 7,
-            "High": [2.0] * 10,
-            "Low": [0.5] * 10,
-            "Close": [1.5, 1.5, None] + [1.5] * 7,
-            "Volume": [1000.0] * 10,
-        }
-    )
+    df = mock_ohlcv_dataframe.copy()
+    df.loc[1, "Open"] = None
+    df.loc[2, "Close"] = None
 
     dataset = AssetPriceDataSet(
         timeframe="H1",
@@ -440,5 +433,5 @@ def test_handles_nan_values_in_price_data(context_feature_service):
     # Should compute ATR despite NaN values
     assert "Atr" in result.columns
 
-    # ATR should contain some NaN values due to NaN inputs
+    # ATR should contain some NaN values due to NaN inputs and lookback period
     assert result["Atr"].isna().sum() > 0
