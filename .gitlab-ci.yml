@@ -26,7 +26,7 @@ cache:
     - python --version
     - pip install uv
     - uv --version
-    - uv venv --path .venv
+    - uv venv
     - source .venv/bin/activate
     - uv pip install -e ".[testing,dev]"
 
