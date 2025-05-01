@@ -113,7 +113,7 @@ class FeatureAggregator(FeatureAggregatorInterface):
         feature_instance = feature_class(source=original_df, config=param_set)
 
         feature_name = feature_instance.get_feature_name()
-        param_hash = param_set.hash_id()
+        param_hash: str = param_set.hash_id
         sub_feature_names = feature_instance.get_sub_features_names()
 
         # Try to get features from store first
