@@ -115,3 +115,7 @@ Raw Data → Loading → Stripping → Feature Computing → Merging → Splitti
 
 ## configuration
 - a file `applicationConfig.json` reflecting `application_config.py` module is necessary to bootstrap
+
+
+# Package manager
+the package manager to use is uv

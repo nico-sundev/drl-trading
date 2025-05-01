@@ -23,20 +23,15 @@ dependencies = [
     "numpy",
     "pandas",
     "pandas_ta",
-    "matplotlib",
     "gymnasium",
     "stable_baselines3",
-    "scikit-learn",
-    "torch",
-    "torch-geometric",
     "yfinance",
     # Feature storage and management
     "feast",
-    "fastparquet",
     # API and services
-    "fastapi",
-    "uvicorn",
     "click",
+    # Dependency injection framework
+    "dependency_injector",
 ]
 
 [project.urls]

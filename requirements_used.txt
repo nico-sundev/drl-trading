@@ -1,0 +1,8 @@
+dependency_injector==4.46.0
+importlib_metadata==8.5.0
+importlib_metadata==8.0.0
+pandas_ta==0.3.14b0
+scikit_learn==1.6.1
+shap==0.47.1
+torch_geometric==2.6.1
+yfinance==0.2.44

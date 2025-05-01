@@ -6,12 +6,14 @@ stages:
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.pip-cache"
+  UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
   PYTEST_ADDOPTS: "--color=yes"
   MIN_COVERAGE_THRESHOLD: "80"  # Set minimum coverage threshold to 80%
 
 cache:
   paths:
     - .pip-cache/
+    - .uv-cache/
     - .mypy_cache/
     - .ruff_cache/
 
@@ -20,14 +22,15 @@ cache:
   image: python:3.12
   before_script:
     - python --version
-    - pip install -e ".[testing,dev]"
+    - pip install uv
+    - uv pip install -e ".[testing,dev]"
 
 # Linting stage
 ruff:
   extends: .python-job
   stage: lint
   script:
-    - pip install ruff
+    - uv pip install ruff
     - ruff check src tests
   allow_failure: true
 
@@ -35,7 +38,7 @@ mypy:
   extends: .python-job
   stage: lint
   script:
-    - pip install mypy
+    - uv pip install mypy
     - mypy src
   allow_failure: true
 
@@ -69,7 +72,7 @@ coverage:
   extends: .python-job
   stage: coverage
   script:
-    - pip install pytest pytest-cov
+    # No need to install pytest and pytest-cov again as they're already part of [testing] extras
     - pytest --cov=ai_trading --cov-report=xml --cov-report=html --cov-report=term --cov-fail-under=${MIN_COVERAGE_THRESHOLD} tests/
   after_script:
     - echo "Coverage threshold set to ${MIN_COVERAGE_THRESHOLD}%"
@@ -105,7 +108,7 @@ build:
   extends: .python-job
   stage: build
   script:
-    - pip install build
+    - uv pip install build
     - python -m build
   artifacts:
     paths:
