@@ -7,6 +7,7 @@ stages:
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.pip-cache"
   UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
+  UV_VENV_PATH: "$CI_PROJECT_DIR/.venv"
   PYTEST_ADDOPTS: "--color=yes"
   MIN_COVERAGE_THRESHOLD: "80"  # Set minimum coverage threshold to 80%
 
@@ -14,6 +15,7 @@ cache:
   paths:
     - .pip-cache/
     - .uv-cache/
+    - .venv/
     - .mypy_cache/
     - .ruff_cache/
 
@@ -23,6 +25,9 @@ cache:
   before_script:
     - python --version
     - pip install uv
+    - uv --version
+    - uv venv --path .venv
+    - source .venv/bin/activate
     - uv pip install -e ".[testing,dev]"
 
 # Linting stage
