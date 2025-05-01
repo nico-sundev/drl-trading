@@ -1,42 +1,27 @@
-import os
-
+import dask
 import pytest
 
-from ai_trading.config.config_loader import ConfigLoader
-from ai_trading.config.feature_config_registry import FeatureConfigRegistry
-from ai_trading.data_import.data_import_manager import DataImportManager
-from ai_trading.data_import.local.csv_data_import_service import CsvDataImportService
-from ai_trading.preprocess.feast.feast_service import FeastService
-from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregator
-from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
-
-
-@pytest.fixture(autouse=True)
-def reset_registry():
-    FeatureConfigRegistry._instance = None
-
-
-@pytest.fixture(autouse=True)
-def config(reset_registry):
-    return ConfigLoader.get_config(
-        os.path.join(
-            os.path.dirname(__file__), "../resources/applicationConfig-test.json"
-        )
-    )
+from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregatorInterface
 
 
 @pytest.fixture
-def dataset(config):
-    all_datasets = []
+def dataset(test_container):
+    """Get a test dataset using the test container.
 
-    # Create a service with the complete config
-    repository = CsvDataImportService(config.local_data_import_config)
-    importer = DataImportManager(repository)
+    Args:
+        test_container: The test container fixture
+
+    Returns:
+        A test dataset for integration testing
+    """
+    # Given
+    importer = test_container.data_import_manager()
 
     # Get all symbol containers
     symbol_containers = importer.get_data(100)
 
     # Extract datasets from all symbols
+    all_datasets = []
     for symbol_container in symbol_containers:
         all_datasets.extend(symbol_container.datasets)
 
@@ -45,31 +30,15 @@ def dataset(config):
     return h1_datasets[0]
 
 
-@pytest.fixture(autouse=True)
-def class_registry():
-    return FeatureClassRegistry()
+def test_features(test_container, dataset):
+    """Test feature computation using the feature aggregator.
 
-
-@pytest.fixture
-def feast_service(config):
-    """Create a FeastService instance for testing."""
-    return FeastService(
-        config.feature_store_config
-    )  # Access feature_store_config directly from config
-
-
-@pytest.fixture
-def feature_aggregator(config, class_registry, feast_service):
-    """Create a FeatureAggregator instance for testing."""
-    return FeatureAggregator(
-        config=config.features_config,
-        class_registry=class_registry,
-        feast_service=feast_service,
-    )
-
-
-def test_features(feature_aggregator: FeatureAggregator, dataset):
+    Args:
+        test_container: The test container fixture
+        dataset: The test dataset fixture
+    """
     # Given
+    feature_aggregator: FeatureAggregatorInterface = test_container.feature_aggregator()
     expected_columns = ["Time", "rsi_7"]
     symbol = "EURUSD"  # Assuming this is the symbol for the test dataset
 
@@ -78,8 +47,6 @@ def test_features(feature_aggregator: FeatureAggregator, dataset):
     delayed_tasks = feature_aggregator.compute(asset_data=dataset, symbol=symbol)
 
     # Execute the delayed tasks using dask.compute
-    import dask
-
     computed_results = dask.compute(*delayed_tasks)
 
     # Filter out None results
