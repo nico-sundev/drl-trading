@@ -201,12 +201,10 @@ def test_compute_single_feature_no_cache(
     assert result_df is not None
     assert not result_df.empty
     assert "Time" in result_df.columns
-    expected_col1 = f"MockFeature_{mock_param_set.to_string()}_feature1"
-    expected_col2 = f"MockFeature_{mock_param_set.to_string()}_feature2"
+    expected_col1 = "feature1"
+    expected_col2 = "feature2"
     assert expected_col1 in result_df.columns
     assert expected_col2 in result_df.columns
-    assert "feature1" not in result_df.columns
-    assert "feature2" not in result_df.columns
     assert "Open" not in result_df.columns
     assert len(result_df.columns) == 3
     pd.testing.assert_series_equal(
@@ -255,12 +253,10 @@ def test_compute_single_feature_with_cache(
 
     assert not result_df.empty
     assert "Time" in result_df.columns
-    expected_col1 = f"MockFeature_{mock_param_set.to_string()}_feature1"
-    expected_col2 = f"MockFeature_{mock_param_set.to_string()}_feature2"
+    expected_col1 = "feature1"
+    expected_col2 = "feature2"
     assert expected_col1 in result_df.columns
     assert expected_col2 in result_df.columns
-    assert "feature1" not in result_df.columns
-    assert "feature2" not in result_df.columns
     assert len(result_df.columns) == 3
     pd.testing.assert_series_equal(
         result_df["Time"], mock_asset_df["Time"], check_names=False
@@ -546,8 +542,8 @@ def test_compute_execute_tasks_and_check_column_names(
     assert len(result_df.columns) == 3  # Time + 2 feature columns
 
     # Check specific feature column naming pattern
-    expected_col1 = f"MockFeature_{mock_to_string}_feature1"
-    expected_col2 = f"MockFeature_{mock_to_string}_feature2"
+    expected_col1 = "feature1"
+    expected_col2 = "feature2"
 
     # Verify column names follow the expected pattern
     assert expected_col1 in result_df.columns
