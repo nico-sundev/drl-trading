@@ -30,7 +30,7 @@ def dataset(test_container):
     return h1_datasets[0]
 
 
-def test_features(test_container, dataset):
+def test_feature_computation(test_container, dataset):
     """Test feature computation using the feature aggregator.
 
     Args:

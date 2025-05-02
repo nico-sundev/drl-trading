@@ -58,7 +58,7 @@ class FeatureAggregator(FeatureAggregatorInterface):
     1. Defining computation tasks for features based on configuration.
     2. Using the feature store to retrieve previously computed features within tasks.
     3. Storing newly computed features in the feature store within tasks.
-    4. Renaming feature columns according to the convention: featureName_paramHash_subFeatureName.
+    4. Renaming feature columns according to the convention: featureName_paramString_subFeatureName.
     """
 
     def __init__(
@@ -101,7 +101,7 @@ class FeatureAggregator(FeatureAggregatorInterface):
 
         Returns:
             DataFrame with the 'Time' column and the computed/retrieved feature
-            columns, renamed according to convention (featureName_paramHash_subFeatureName),
+            columns, renamed according to convention (featureName_paramString_subFeatureName),
             or None if the feature/param_set is disabled or computation fails.
         """
         if not feature_def.enabled or not param_set.enabled:
@@ -113,7 +113,8 @@ class FeatureAggregator(FeatureAggregatorInterface):
         feature_instance = feature_class(source=original_df, config=param_set)
 
         feature_name = feature_instance.get_feature_name()
-        param_hash: str = param_set.hash_id
+        # Get both hash for feast and human-readable string for dataframe columns
+        param_hash: str = param_set.hash_id()
         sub_feature_names = feature_instance.get_sub_features_names()
 
         # Try to get features from store first
@@ -121,7 +122,7 @@ class FeatureAggregator(FeatureAggregatorInterface):
         if self.feast_service.is_enabled():
             historical_features = self.feast_service.get_historical_features(
                 feature_name=feature_name,
-                param_hash=param_hash,
+                param_hash=param_hash,  # Use hash for feast lookups
                 sub_feature_names=sub_feature_names,
                 asset_data=asset_data,
                 symbol=symbol,
@@ -206,7 +207,8 @@ class FeatureAggregator(FeatureAggregatorInterface):
 
         for sub_feature in sub_feature_names:
             if sub_feature in feature_df.columns:
-                new_name = f"{feature_name}_{param_hash}_{sub_feature}"
+                # Use human-readable param string instead of hash for column names
+                new_name = f"{sub_feature}"
                 rename_map[sub_feature] = new_name
                 columns_to_keep.append(sub_feature)  # Keep original name for selection
             else:

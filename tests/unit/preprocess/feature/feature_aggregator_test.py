@@ -2,6 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
+import dask
 import pandas as pd
 import pytest
 from pandas import DataFrame
@@ -14,7 +15,10 @@ from ai_trading.preprocess.feast.feast_service import (
     FeastServiceInterface,
 )
 from ai_trading.preprocess.feature.collection.base_feature import BaseFeature
-from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregator
+from ai_trading.preprocess.feature.feature_aggregator import (
+    FeatureAggregator,
+    FeatureAggregatorInterface,
+)
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
 
 
@@ -46,6 +50,7 @@ def mock_param_set() -> BaseParameterSetConfig:
     param_set = MagicMock(spec=BaseParameterSetConfig)
     param_set.enabled = True
     param_set.hash_id.return_value = "abc123hash"
+    param_set.to_string.return_value = "7_14"
     param_set.name = "default_params"
     return param_set
 
@@ -196,8 +201,8 @@ def test_compute_single_feature_no_cache(
     assert result_df is not None
     assert not result_df.empty
     assert "Time" in result_df.columns
-    expected_col1 = f"MockFeature_{mock_param_set.hash_id()}_feature1"
-    expected_col2 = f"MockFeature_{mock_param_set.hash_id()}_feature2"
+    expected_col1 = f"MockFeature_{mock_param_set.to_string()}_feature1"
+    expected_col2 = f"MockFeature_{mock_param_set.to_string()}_feature2"
     assert expected_col1 in result_df.columns
     assert expected_col2 in result_df.columns
     assert "feature1" not in result_df.columns
@@ -250,8 +255,8 @@ def test_compute_single_feature_with_cache(
 
     assert not result_df.empty
     assert "Time" in result_df.columns
-    expected_col1 = f"MockFeature_{mock_param_set.hash_id()}_feature1"
-    expected_col2 = f"MockFeature_{mock_param_set.hash_id()}_feature2"
+    expected_col1 = f"MockFeature_{mock_param_set.to_string()}_feature1"
+    expected_col2 = f"MockFeature_{mock_param_set.to_string()}_feature2"
     assert expected_col1 in result_df.columns
     assert expected_col2 in result_df.columns
     assert "feature1" not in result_df.columns
@@ -493,3 +498,61 @@ def test_compute_skips_disabled_features_and_params(
     assert isinstance(tasks, list)
     assert len(tasks) == 0
     assert mock_delayed_patch.call_count == 0
+
+
+@patch("ai_trading.preprocess.feature.feature_aggregator.delayed")
+def test_compute_execute_tasks_and_check_column_names(
+    mock_delayed,
+    feature_aggregator: FeatureAggregatorInterface,
+    mock_feast_service,
+    mock_asset_data,
+    mock_symbol,
+    mock_asset_df,
+):
+    """Test executing the delayed tasks from compute and checking column names using real dask compute."""
+    # Given
+    # Setup feature aggregator and ensure feature is not in cache
+    mock_feast_service.get_historical_features.return_value = None
+    # Note: mock hash_id as a method, not a property
+    mock_hash = "abc123hash"
+    mock_to_string = "7_14"
+    feature_aggregator.config.feature_definitions[0].parsed_parameter_sets[
+        0
+    ].hash_id = lambda: mock_hash
+    feature_aggregator.config.feature_definitions[0].parsed_parameter_sets[
+        0
+    ].to_string = lambda: mock_to_string
+
+    # Mock delayed to return a proper task that dask can compute
+    mock_delayed.side_effect = lambda fn: lambda *args, **kwargs: fn(*args, **kwargs)
+
+    # When
+    # Get tasks from compute method
+    tasks = feature_aggregator.compute(asset_data=mock_asset_data, symbol=mock_symbol)
+
+    # Use real dask compute to execute the tasks
+    computed_results = dask.compute(*tasks)
+
+    # Filter out None results
+    computed_dfs = [df for df in computed_results if df is not None]
+
+    # Then
+    # Verify we got results
+    assert len(computed_dfs) > 0
+    result_df = computed_dfs[0]
+
+    # Verify column structure
+    assert "Time" in result_df.columns
+    assert len(result_df.columns) == 3  # Time + 2 feature columns
+
+    # Check specific feature column naming pattern
+    expected_col1 = f"MockFeature_{mock_to_string}_feature1"
+    expected_col2 = f"MockFeature_{mock_to_string}_feature2"
+
+    # Verify column names follow the expected pattern
+    assert expected_col1 in result_df.columns
+    assert expected_col2 in result_df.columns
+
+    # Verify data was passed to and from the store correctly
+    mock_feast_service.get_historical_features.assert_called_once()
+    mock_feast_service.store_computed_features.assert_called_once()

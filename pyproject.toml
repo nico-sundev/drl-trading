@@ -97,7 +97,7 @@ incremental = true
 follow_imports = "silent"
 # Exclude all test files in the tests directory and files including "TODO" in filename
 exclude = [
-    "^tests/",
+    "^tests/**/*.py",
     "(?i).*todo.*\\.py$"
 ]
 
