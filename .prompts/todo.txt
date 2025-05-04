@@ -1,5 +1,4 @@
 todo features:
-- strip service only strips in the end -> must also in beginning
 - use vecnormalize
 - check dummyvecenv vs subprocvecenv
 - review preprocessing service -> stopped L159

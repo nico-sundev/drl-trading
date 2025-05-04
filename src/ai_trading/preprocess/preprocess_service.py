@@ -7,7 +7,7 @@ from pandas import DataFrame
 
 from ai_trading.config.feature_config import FeaturesConfig
 from ai_trading.data_set_utils.context_feature_service import ContextFeatureService
-from ai_trading.data_set_utils.merge_service import MergeService
+from ai_trading.data_set_utils.merge_service import MergeServiceInterface
 from ai_trading.data_set_utils.util import (
     ensure_datetime_time_column,
     separate_asset_price_datasets,
@@ -28,7 +28,7 @@ class PreprocessService:
         features_config: FeaturesConfig,
         feature_class_registry: FeatureClassRegistry,
         feature_aggregator: FeatureAggregatorInterface,
-        merge_service: MergeService,
+        merge_service: MergeServiceInterface,
         context_feature_service: ContextFeatureService,
     ) -> None:
         """
