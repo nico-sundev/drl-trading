@@ -5,7 +5,7 @@ from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregatorIn
 
 
 @pytest.fixture
-def dataset(test_container):
+def dataset(mocked_container):
     """Get a test dataset using the test container.
 
     Args:
@@ -15,7 +15,7 @@ def dataset(test_container):
         A test dataset for integration testing
     """
     # Given
-    importer = test_container.data_import_manager()
+    importer = mocked_container.data_import_manager()
 
     # Get all symbol containers
     symbol_containers = importer.get_data(100)

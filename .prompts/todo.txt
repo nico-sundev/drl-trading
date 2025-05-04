@@ -1,16 +1,14 @@
 todo features:
-- review preprocessing service -> stopped L159
 - strip service only strips in the end -> must also in beginning
-- choose yaml over json for config
-- change project manager to UV
-- review reward logic in custom env
 - use vecnormalize
 - check dummyvecenv vs subprocvecenv
+- review preprocessing service -> stopped L159
+- review reward logic in custom env
 
 next sprint:
 - model save checkpoints
 - integrate backtrader
-- MLFlow integration -> configure to use local service
+- MLFlow integration -> investigate gitlab model -> configure to use local service
 - research for SBX for faster training
 - implement data provider APIs
     - binance

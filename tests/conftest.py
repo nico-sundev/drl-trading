@@ -10,7 +10,7 @@ from ai_trading.di.containers import ApplicationContainer
 
 
 @pytest.fixture(scope="session")
-def test_config():
+def mocked_config():
     """Load test configuration from the test resources directory."""
     config_path = os.path.join(
         os.path.dirname(__file__), "resources/applicationConfig-test.json"
@@ -19,7 +19,7 @@ def test_config():
 
 
 @pytest.fixture(scope="session")
-def test_container(test_config):
+def mocked_container(mocked_config):
     """Create a container initialized with the test configuration.
 
     This fixture provides a configured ApplicationContainer instance
@@ -31,22 +31,17 @@ def test_container(test_config):
     Returns:
         Configured ApplicationContainer instance
     """
-    container = ApplicationContainer(application_config=test_config)
+    container = ApplicationContainer(application_config=mocked_config)
     return container
 
 
 @pytest.fixture(scope="session")
-def init_feast_for_tests(request):
+def mocked_feature_store(request, mocked_config):
     """Initialize the Feast feature store for testing."""
-    # Load test config
-    config_path = os.path.join(
-        os.path.dirname(__file__), "resources/applicationConfig-test.json"
-    )
-    config = ConfigLoader.get_config(config_path)
 
     # Get paths from config
-    repo_path = config.feature_store_config.repo_path
-    store_path = config.feature_store_config.offline_store_path
+    repo_path = mocked_config.feature_store_config.repo_path
+    store_path = mocked_config.feature_store_config.offline_store_path
 
     # Create data directory within repo path if it doesn't exist
     data_dir = os.path.join(repo_path, "data")

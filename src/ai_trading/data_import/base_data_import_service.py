@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List
 
 from ai_trading.model.symbol_import_container import SymbolImportContainer
 
@@ -8,7 +8,7 @@ class BaseDataImportService(ABC):
     """Abstract interface for data import services."""
 
     @abstractmethod
-    def import_data(self, limit: Optional[int] = None) -> List[SymbolImportContainer]:
+    def import_data(self) -> List[SymbolImportContainer]:
         """
         Imports data from CSV files for all symbols.
 

@@ -48,7 +48,7 @@ def class_registry():
 
 
 @pytest.fixture
-def feast_service(config, symbol_container, init_feast_for_tests):
+def feast_service(config, symbol_container, mocked_feature_store):
     """Create a real FeastService for testing."""
     from ai_trading.preprocess.feast.feast_service import FeastService
 

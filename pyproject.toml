@@ -196,7 +196,7 @@ source = ["ai_trading"]
 branch = true
 omit = [
     "*/tests/*",
-    "*/conftest.py",
+    "*/tests/it/fixtures.py",
     "*/setup.py",
     "*/bootstrap.py",
 ]

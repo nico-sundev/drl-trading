@@ -37,7 +37,7 @@ class CsvDataImportService(BaseDataImportService):
         """
         return pd.read_csv(
             file_path,
-            usecols=["Time", "Open", "High", "Low", "Close"],
+            usecols=["Time", "Open", "High", "Low", "Close", "Volume"],
             sep="\t",
             parse_dates=["Time"],
             skipinitialspace=True,
@@ -65,7 +65,7 @@ class CsvDataImportService(BaseDataImportService):
             ),
         )
 
-    def import_data(self, limit: Optional[int] = None) -> List[SymbolImportContainer]:
+    def import_data(self) -> List[SymbolImportContainer]:
         """
         Imports data from CSV files for all symbols.
 
