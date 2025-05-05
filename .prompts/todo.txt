@@ -1,7 +1,7 @@
 todo features:
+- review preprocessing service -> stopped L159
 - use vecnormalize
 - check dummyvecenv vs subprocvecenv
-- review preprocessing service -> stopped L159
 - review reward logic in custom env
 
 next sprint:
