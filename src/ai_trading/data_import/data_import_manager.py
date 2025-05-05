@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 from ai_trading.data_import.base_data_import_service import BaseDataImportService
 from ai_trading.model.symbol_import_container import SymbolImportContainer
@@ -16,7 +16,7 @@ class DataImportManager:
         """
         self.import_service = import_service
 
-    def get_data(self, limit: Optional[int] = None) -> List[SymbolImportContainer]:
+    def get_data(self) -> List[SymbolImportContainer]:
         """
         Fetches OHLC data using the selected service.
 
@@ -26,4 +26,4 @@ class DataImportManager:
         Returns:
             List of SymbolImportContainer objects, one for each symbol
         """
-        return self.import_service.import_data(limit)
+        return self.import_service.import_data()
