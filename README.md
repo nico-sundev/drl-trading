@@ -1,3 +1,18 @@
+# About
+Here is a short explanation of why this project has been created and what it is about.
+
+# Setup
+Clone the repository and then:
+```bash
+pip install uv
+uv venv
+source .venv/Scripts/activate
+uv pip install -e .
+uv pip install pytest
+uv pip install mypy
+uv pip install ruff
+```
+
 # Feature Store Integration
 
 This directory contains the Feast feature store integration for the AI Trading project. The feature store is used to cache and serve computed features, avoiding redundant computations and enabling feature reuse.

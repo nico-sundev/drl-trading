@@ -64,6 +64,7 @@ MANIFEST
 # feature stores
 tests/resources/test_feature_repo/*
 tests/resources/test_feature_store_data/*
+tests/resources/test_feature_repo/data/registry.db
 
 # CI/CD artifacts
 .gitlab-ci-local/

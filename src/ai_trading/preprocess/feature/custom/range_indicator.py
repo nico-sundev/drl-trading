@@ -26,10 +26,10 @@ class SupportResistanceFinder:
         self.wick_handle_strategy = wick_handle_strategy
         self.source_data_frame = source_data_frame
         self.pivot_cache = pd.DataFrame(columns=["index", "top", "bottom", "type"])
-        self.prev_support = None
-        self.prev_resistance = None
+        self.prev_support: dict[str, float] | None = None
+        self.prev_resistance: dict[str, float] | None = None
 
-    def validate_dataframe(self):
+    def validate_dataframe(self) -> None:
         """Ensures required columns exist and data is valid."""
         required_cols = {"Close", "High", "Low"}
         df = self.source_data_frame
@@ -48,7 +48,7 @@ class SupportResistanceFinder:
         Identifies pivot highs and lows (local maxima/minima) in the dataset.
         """
         if last_index < 1:
-            return [False, False]
+            return False, False
 
         df = self.source_data_frame
         found_pivot_high = (
@@ -57,7 +57,7 @@ class SupportResistanceFinder:
         found_pivot_low = (
             df["Close"].iloc[last_index] > df["Open"].iloc[last_index]
         ) & (df["Close"].iloc[last_index - 1] < df["Open"].iloc[last_index - 1])
-        return [found_pivot_high, found_pivot_low]
+        return found_pivot_high, found_pivot_low
 
     def clean_pivot_cache(self, last_close: float) -> None:
         self.pivot_cache.drop(
@@ -126,7 +126,8 @@ class SupportResistanceFinder:
                 self.prev_resistance and last_close < self.prev_resistance["top"]
             )
             support_valid = (
-                self.prev_support and last_close > self.prev_support["bottom"]
+                self.prev_support is not None
+                and last_close > self.prev_support["bottom"]
             )
             [found_pivot_high, found_pivot_low] = self.find_pivot_points(index)
 
@@ -151,6 +152,8 @@ class SupportResistanceFinder:
                 # Calculate range
                 df.loc[index, "resistance_range"] = (
                     self.prev_resistance["bottom"] - last_close
+                    if self.prev_resistance
+                    else np.nan
                 )
             # resistance must be recalculated
             else:
@@ -182,7 +185,7 @@ class SupportResistanceFinder:
 
             # check if former support is still valid
             elif support_valid:
-                pivot_top = self.prev_support["top"]
+                pivot_top = self.prev_support["top"] if self.prev_support else np.nan
                 # Calculate range
                 df.loc[index, "support_range"] = pivot_top - last_close
             # support must be recalculated
