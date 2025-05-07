@@ -7,7 +7,9 @@ import pytest
 from feast import FeatureStore
 
 from ai_trading.config.config_loader import ConfigLoader
+from ai_trading.config.feature_config_factory import FeatureConfigFactory
 from ai_trading.di.containers import ApplicationContainer
+from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
 
 
 @pytest.fixture(scope="session")
@@ -19,20 +21,40 @@ def mocked_config():
     return ConfigLoader.get_config(config_path)
 
 
-@pytest.fixture(scope="session")
-def mocked_container(mocked_config):
+@pytest.fixture
+def feature_config_factory():
+    """Create a fresh feature config factory instance for testing.
+
+    Returns:
+        A new FeatureConfigFactory instance with config classes discovered
+    """
+    factory = FeatureConfigFactory()
+    factory.discover_config_classes()
+    return factory
+
+
+@pytest.fixture
+def mocked_container(mocked_config, feature_config_factory):
     """Create a container initialized with the test configuration.
 
     This fixture provides a configured ApplicationContainer instance
-    that can be used across all tests.
+    that can be used across tests.
 
     Args:
-        test_config: The test configuration fixture
+        mocked_config: The test configuration fixture
+        feature_config_factory: Initialized feature config factory
 
     Returns:
         Configured ApplicationContainer instance
     """
     container = ApplicationContainer(application_config=mocked_config)
+    # Override factory provider to use our test factory
+    container.feature_config_factory.override(feature_config_factory)
+
+    # Parse feature configurations using the test factory
+    features_config = container.features_config()
+    features_config.parse_all_parameters(feature_config_factory)
+
     return container
 
 
@@ -81,6 +103,61 @@ def mocked_feature_store(request, mocked_config):
 
     request.addfinalizer(cleanup)
     return feature_store
+
+
+@pytest.fixture(autouse=True)
+def reset_registries():
+    """
+    Reset all registries before each test to ensure test isolation.
+
+    This fixture runs automatically for all tests (autouse=True) and ensures
+    that any test creating or modifying registry state doesn't affect other tests.
+    It handles both FeatureClassRegistry and FeatureConfigFactory resetting.
+    """
+    # Reset FeatureClassRegistry
+    feature_class_registry = FeatureClassRegistry()
+    feature_class_registry.reset()
+
+    # Reset FeatureConfigFactory - create a new instance and clear it
+    feature_config_factory = FeatureConfigFactory()
+    feature_config_factory.clear()
+
+    # Let the test run
+    yield
+
+    # Reset after test for good measure
+    feature_class_registry.reset()
+    feature_config_factory.clear()
+
+
+@pytest.fixture
+def reset_registry_in_container(mocked_container):
+    """
+    Reset registries in an existing container instance.
+
+    This fixture is useful for tests that need a mocked_container
+    but also require clean registry state.
+
+    Args:
+        mocked_container: The container instance to update
+
+    Returns:
+        The same container instance with reset registries
+    """
+    # Get the feature class registry from the container and reset it
+    feature_class_registry = mocked_container.feature_class_registry()
+    feature_class_registry.reset()
+
+    # Reset the feature config factory
+    feature_config_factory = mocked_container.feature_config_factory()
+    feature_config_factory.clear()
+    feature_config_factory.discover_config_classes()
+
+    # Re-parse feature configurations
+    features_config = mocked_container.features_config()
+    features_config.parse_all_parameters(feature_config_factory)
+
+    return mocked_container
 
 
 def _clean_feature_store(repo_path: str, store_path: str) -> None:

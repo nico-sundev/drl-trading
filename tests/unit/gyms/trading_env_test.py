@@ -35,23 +35,33 @@ def mock_environment_config():
         out_of_money_factor=1.0,
         liquidation_penalty_factor=2.0,
         min_liquidation_penalty=100.0,
+        # New properties for reward calculation
+        max_time_in_trade=10,
+        optimal_exit_time=3,
+        variance_penalty_weight=0.5,
+        atr_penalty_weight=0.3,
     )
 
 
 @pytest.fixture
 def mock_train_data():
+    """Create mock data DataFrame with consistent column names.
+
+    Time information is stored in the DataFrame's index as a DatetimeIndex.
+    """
+
     def _generate_data():
         timestamps = pd.date_range(start="2025-01-01 00:00:00", periods=30, freq="H")
-        # First create metadata columns
+        # First create metadata columns - using consistent capitalization
         metadata = {
-            "price": np.random.uniform(1.0, 2.0, size=30),
-            "high": [],  # Will fill after price
-            "low": [],  # Will fill after price
-            "atr": np.full(30, 0.05),  # Constant ATR for testing
+            "Close": np.random.uniform(1.0, 2.0, size=30),
+            "High": [],  # Will fill after price
+            "Low": [],  # Will fill after price
+            "Atr": np.full(30, 0.05),  # Constant ATR for testing
         }
-        # Fill high and low based on price
-        metadata["high"] = metadata["price"] + 0.1  # High is always 0.1 above price
-        metadata["low"] = metadata["price"] - 0.1  # Low is always 0.1 below price
+        # Fill high and low based on Close price
+        metadata["High"] = metadata["Close"] + 0.1  # High is always 0.1 above price
+        metadata["Low"] = metadata["Close"] - 0.1  # Low is always 0.1 below price
 
         # Then create feature columns
         feature_data = np.random.rand(30, 10)  # 30 rows, 10 columns with random values
@@ -66,8 +76,15 @@ def mock_train_data():
 
 @pytest.fixture
 def env(mock_train_data, mock_environment_config):
-    # Feature start index is 4 since we have price, high, low, atr as metadata columns
-    return TradingEnv(mock_train_data, mock_environment_config, feature_start_index=4)
+    """Create trading environment with proper context columns setup.
+
+    Time information is in the DataFrame's index, so we don't include it in context_columns.
+    """
+    # Define context columns (non-feature columns)
+    context_columns = ["Close", "High", "Low", "Atr"]
+    return TradingEnv(
+        mock_train_data, mock_environment_config, context_columns=context_columns
+    )
 
 
 class TestTradingEnv:
@@ -105,7 +122,7 @@ class TestTradingEnv:
             np.array([1], dtype=np.int16),
         )  # Open long with 50% of balance, no partial close, 1x leverage
         initial_balance = env.balance
-        current_price = env.env_data_source.iloc[0].price
+        current_price = env.env_data_source.iloc[0].Close
 
         # When
         observation, reward, done, terminated, info = env.step(action)
@@ -117,7 +134,7 @@ class TestTradingEnv:
         price_diff = abs(env.position_open_price - current_price)
         expected_max_slippage = (
             current_price
-            * (env.env_data_source.iloc[0].atr / current_price)
+            * (env.env_data_source.iloc[0].Atr / current_price)
             * env.env_config.slippage_atr_based
             * 1.001  # This is really important, because otherwise tests will be flaky and sometimes fail
         )
@@ -241,7 +258,7 @@ class TestTradingEnv:
 
         # Simulate price movement below liquidation price
         # This is done by manipulating the dataframe's low price
-        env.env_data_source.iloc[1, env.env_data_source.columns.get_loc("low")] = (
+        env.env_data_source.iloc[1, env.env_data_source.columns.get_loc("Low")] = (
             liquidation_price - 0.01
         )
 
@@ -278,7 +295,7 @@ class TestTradingEnv:
         liquidation_price = env.liquidation_price
 
         # Simulate price movement above liquidation price
-        env.env_data_source.iloc[1, env.env_data_source.columns.get_loc("high")] = (
+        env.env_data_source.iloc[1, env.env_data_source.columns.get_loc("High")] = (
             liquidation_price + 0.01
         )
 
@@ -316,7 +333,7 @@ class TestTradingEnv:
         # Simulate price increase (20% profit)
         current_price = env.position_open_price
         position_value = current_price * env.number_contracts_owned
-        env.env_data_source.iloc[1, env.env_data_source.columns.get_loc("price")] = (
+        env.env_data_source.iloc[1, env.env_data_source.columns.get_loc("Close")] = (
             current_price * 1.2
         )
 
@@ -359,7 +376,7 @@ class TestTradingEnv:
         # Simulate price decrease (10% loss)
         current_price = env.position_open_price
         position_value = current_price * env.number_contracts_owned
-        env.env_data_source.iloc[1, env.env_data_source.columns.get_loc("price")] = (
+        env.env_data_source.iloc[1, env.env_data_source.columns.get_loc("Close")] = (
             current_price * 0.9
         )
 
@@ -399,7 +416,7 @@ class TestTradingEnv:
         # Simulate price increase (10% profit)
         current_price = env.position_open_price
         position_value = current_price * env.number_contracts_owned
-        env.env_data_source.iloc[1, env.env_data_source.columns.get_loc("price")] = (
+        env.env_data_source.iloc[1, env.env_data_source.columns.get_loc("Close")] = (
             current_price * 1.1
         )
 
@@ -429,7 +446,7 @@ class TestTradingEnv:
             )
         )  # Open non-leveraged long position
         env.time_in_position = 2
-        env.env_data_source.iloc[1, env.env_data_source.columns.get_loc("price")] = (
+        env.env_data_source.iloc[1, env.env_data_source.columns.get_loc("Close")] = (
             env.position_open_price * 1.1
         )
 
@@ -462,7 +479,7 @@ class TestTradingEnv:
         ]  # Price sequence with known volatility
         for i, price in enumerate(price_values):
             env.env_data_source.iloc[
-                i, env.env_data_source.columns.get_loc("price")
+                i, env.env_data_source.columns.get_loc("Close")
             ] = price
 
         # Open a position at the beginning
@@ -518,7 +535,7 @@ class TestTradingEnv:
         # Given
         direction = TradingDirection.LONG
         current_price = 1.0
-        env.env_data_source.iloc[0, env.env_data_source.columns.get_loc("atr")] = 0.05
+        env.env_data_source.iloc[0, env.env_data_source.columns.get_loc("Atr")] = 0.05
 
         # When
         # Test multiple times to verify probabilistic behavior
@@ -541,7 +558,7 @@ class TestTradingEnv:
     def test_dynamic_slippage_position_impact(self, env):
         # Given
         # Set a large ATR to make slippage effect more noticeable
-        env.env_data_source.iloc[0, env.env_data_source.columns.get_loc("atr")] = 0.1
+        env.env_data_source.iloc[0, env.env_data_source.columns.get_loc("Atr")] = 0.1
 
         # When
         # Open multiple positions and track their entry prices
@@ -559,22 +576,27 @@ class TestTradingEnv:
         # Given
         # Create test data with known feature columns
         data = {
-            "price": [100.0, 101.0],  # Strategy data
-            "high": [102.0, 103.0],  # Strategy data
-            "low": [99.0, 98.0],  # Strategy data
-            "atr": [2.0, 2.1],  # Strategy data
+            "Close": [100.0, 101.0],  # Context data
+            "High": [102.0, 103.0],  # Context data
+            "Low": [99.0, 98.0],  # Context data
+            "Atr": [2.0, 2.1],  # Context data
             "feature1": [0.5, 0.6],  # Computed feature
             "feature2": [-0.3, -0.2],  # Computed feature
             "feature3": [1.2, 1.3],  # Computed feature
         }
         env.env_data_source = pd.DataFrame(data)
-        env.feature_start_index = 4  # Start from 'feature1'
+        env.context_columns = ["Close", "High", "Low", "Atr"]  # Set context columns
+        env.feature_columns = [
+            "feature1",
+            "feature2",
+            "feature3",
+        ]  # Set feature columns
 
         # When
         observation = env._next_observation()
 
         # Then
-        # Should only include features starting from index 4 (feature1, feature2, feature3)
+        # Should only include features (feature1, feature2, feature3)
         expected_features = np.array([0.5, -0.3, 1.2], dtype=np.float32)
         assert observation.dtype == np.float32
         assert len(observation) == 3  # Should only have 3 computed features

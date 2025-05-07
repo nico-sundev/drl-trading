@@ -41,6 +41,16 @@ def bootstrap(
 
     logger.info("DI container configured")
 
+    # Initialize the feature config factory and discover config classes
+    feature_config_factory = container.feature_config_factory()
+    feature_config_factory.discover_config_classes()
+    logger.info("Feature configuration classes discovered")
+
+    # Parse feature parameters with the initialized factory
+    features_config = container.features_config()
+    features_config.parse_all_parameters(feature_config_factory)
+    logger.info("Feature parameters parsed successfully")
+
     # Resolve services from container
     data_import_manager = container.data_import_manager()
     strip_service = container.strip_service()

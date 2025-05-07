@@ -3,13 +3,17 @@
 from typing import List
 
 # Primary context columns that must be present in raw data
-PRIMARY_CONTEXT_COLUMNS: List[str] = ["Time", "High", "Low", "Close"]
+# Note: "Time" may be present either as a column or as the DataFrame index
+PRIMARY_CONTEXT_COLUMNS: List[str] = ["High", "Low", "Close"]
+TIME_COLUMN: str = "Time"  # Can be column or index
 
 # Additional primary context columns that might be used if available
 OPTIONAL_PRIMARY_COLUMNS: List[str] = ["Open", "Volume"]
 
 # All primary context columns combined (those that should exist in raw data)
-ALL_PRIMARY_COLUMNS: List[str] = PRIMARY_CONTEXT_COLUMNS + OPTIONAL_PRIMARY_COLUMNS
+ALL_PRIMARY_COLUMNS: List[str] = (
+    [TIME_COLUMN] + PRIMARY_CONTEXT_COLUMNS + OPTIONAL_PRIMARY_COLUMNS
+)
 
 # Derived context columns that are computed from primary columns
 DERIVED_CONTEXT_COLUMNS: List[str] = ["Atr"]

@@ -3,7 +3,7 @@ import os
 import pytest
 
 from ai_trading.config.config_loader import ConfigLoader
-from ai_trading.config.feature_config_registry import FeatureConfigRegistry
+from ai_trading.config.feature_config_factory import FeatureConfigFactory
 from ai_trading.data_import.data_import_manager import DataImportManager
 from ai_trading.data_import.local.csv_data_import_service import CsvDataImportService
 from ai_trading.data_set_utils.merge_service import MergeService
@@ -14,12 +14,15 @@ from ai_trading.preprocess.preprocess_service import PreprocessService
 
 
 @pytest.fixture
-def reset_registry():
-    FeatureConfigRegistry._instance = None
+def feature_config_factory():
+    """Create a fresh feature config factory instance for testing."""
+    factory = FeatureConfigFactory()
+    factory.discover_config_classes()
+    return factory
 
 
 @pytest.fixture
-def config(reset_registry):
+def config(feature_config_factory):
     config = ConfigLoader.get_config(
         os.path.join(
             os.path.dirname(__file__), "../resources/applicationConfig-test.json"
@@ -29,17 +32,21 @@ def config(reset_registry):
     config.features_config.feature_definitions = [
         f for f in config.features_config.feature_definitions if f.name == "rsi"
     ]
+
+    # Parse parameters using the factory
+    config.features_config.parse_all_parameters(feature_config_factory)
+
     return config
 
 
 @pytest.fixture
-def symbol_container(config):
+def symbol_container(config) -> SymbolImportContainer:
     # Create a service with the complete config
     repository = CsvDataImportService(config.local_data_import_config)
     importer = DataImportManager(repository)
 
     # Get all symbol containers
-    return importer.get_data(100)[0]
+    return importer.get_data()[0]
 
 
 @pytest.fixture

@@ -1,10 +1,10 @@
 from typing import Any, Dict, List
 
-from pydantic import model_validator
+from pydantic import Field
 
 from ai_trading.config.base_parameter_set_config import BaseParameterSetConfig
 from ai_trading.config.base_schema import BaseSchema
-from ai_trading.config.feature_config_registry import FeatureConfigRegistry
+from ai_trading.config.feature_config_factory import FeatureConfigFactoryInterface
 
 
 class FeatureStoreConfig(BaseSchema):
@@ -20,34 +20,59 @@ class FeatureDefinition(BaseSchema):
     name: str
     enabled: bool
     derivatives: List[int]
-    parameter_sets: List[Dict[str, Any]]  # raw input
-    parsed_parameter_sets: List[BaseParameterSetConfig] = (
-        []
-    )  # becomes typed after validation
+    parameter_sets: List[Dict[str, Any]]  # raw input from JSON
+    parsed_parameter_sets: List[BaseParameterSetConfig] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def parse_parameter_sets(cls, data: dict) -> dict:
-        name = data.get("name")
-        if not name:
+    def parse_parameters(self, config_factory: FeatureConfigFactoryInterface) -> None:
+        """
+        Parse raw parameter sets using the provided config factory.
+
+        This method converts the raw parameter dictionaries into properly typed
+        configuration objects using the appropriate config class for this feature.
+
+        Args:
+            config_factory: Factory for creating configuration instances
+
+        Raises:
+            ValueError: If no config class is found for this feature, or if
+                       parameter parsing fails
+        """
+        if not self.name:
             raise ValueError("Feature name is required")
 
-        raw_params = data.get("parameterSets", [])
-        config_registry = FeatureConfigRegistry()
+        # Clear any existing parsed parameters
+        self.parsed_parameter_sets = []
 
-        config_cls = config_registry.feature_config_map.get(name.lower())
-        if not config_cls:
-            raise ValueError(f"No config class found for feature name '{name}'")
+        for param_dict in self.parameter_sets:
+            if not isinstance(param_dict, dict):
+                raise ValueError(
+                    f"Invalid parameter set: Expected a dictionary but got {type(param_dict).__name__}"
+                )
 
-        # Inject type field dynamically before parsing as union
-        for param in raw_params:
-            if isinstance(param, dict):
-                param["type"] = name.lower()
+            config_instance = config_factory.create_config_instance(
+                self.name, param_dict
+            )
 
-        parsed_params = [config_cls(**p) for p in raw_params if isinstance(p, dict)]
-        data["parsed_parameter_sets"] = parsed_params
-        return data
+            if config_instance:
+                self.parsed_parameter_sets.append(config_instance)
+
+        if not self.parsed_parameter_sets and self.parameter_sets:
+            raise ValueError(
+                f"Failed to parse any parameter sets for feature '{self.name}'"
+            )
 
 
 class FeaturesConfig(BaseSchema):
     feature_definitions: List[FeatureDefinition]
+
+    def parse_all_parameters(
+        self, config_factory: FeatureConfigFactoryInterface
+    ) -> None:
+        """
+        Parse all feature definitions' parameter sets using the provided config factory.
+
+        Args:
+            config_factory: Factory for creating configuration instances
+        """
+        for feature_def in self.feature_definitions:
+            feature_def.parse_parameters(config_factory)

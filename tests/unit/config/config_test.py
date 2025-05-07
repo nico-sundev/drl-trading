@@ -1,5 +1,6 @@
 import json
 import tempfile
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -10,9 +11,47 @@ from ai_trading.config.feature_config_collection import (
     RocConfig,
     RsiConfig,
 )
+from ai_trading.config.feature_config_factory import FeatureConfigFactory
 from ai_trading.preprocess.feature.custom.enum.wick_handle_strategy_enum import (
     WICK_HANDLE_STRATEGY,
 )
+
+
+@pytest.fixture
+def mock_feature_config_factory():
+    """Creates a mock feature config factory for testing."""
+    mock_factory = MagicMock(spec=FeatureConfigFactory)
+
+    # Configure mock factory to return appropriate config classes
+    def get_config_class_side_effect(feature_name):
+        feature_name = feature_name.lower()
+        config_classes = {
+            "macd": MacdConfig,
+            "rsi": RsiConfig,
+            "roc": RocConfig,
+            "range": RangeConfig,
+            "rvi": RsiConfig,  # Add any other features used in tests
+        }
+        return config_classes.get(feature_name)
+
+    mock_factory.get_config_class.side_effect = get_config_class_side_effect
+
+    # Configure create_config_instance to return proper config objects
+    def create_config_instance_side_effect(feature_name, config_data):
+        config_class = mock_factory.get_config_class(feature_name)
+        if not config_class:
+            return None
+
+        # Add type field for discriminated unions if not present
+        instance_data = config_data.copy()
+        if "type" not in instance_data:
+            instance_data["type"] = feature_name.lower()
+
+        return config_class(**instance_data)
+
+    mock_factory.create_config_instance.side_effect = create_config_instance_side_effect
+
+    return mock_factory
 
 
 @pytest.fixture
@@ -133,9 +172,14 @@ def temp_config_file():
     os.remove(temp_file_path)
 
 
-def test_load_config_from_json(temp_config_file):
+def test_load_config_from_json(temp_config_file, mock_feature_config_factory):
     temp_file_path, expected_data = temp_config_file
+
+    # Load config with patched feature config factory
     config = ConfigLoader.get_config(temp_file_path)
+
+    # Use the mock factory for parsing parameters
+    config.features_config.parse_all_parameters(mock_feature_config_factory)
 
     # Helper to extract config by name
     def get_feature_param_set(name, index=0):

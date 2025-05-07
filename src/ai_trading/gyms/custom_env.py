@@ -3,14 +3,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import gymnasium as gym
 import numpy as np
+import pandas as pd
 from gymnasium import spaces
 from pandas import DataFrame
 
 from ai_trading.config.environment_config import EnvironmentConfig
-from ai_trading.gyms.trading_constants import (
-    ALL_CONTEXT_COLUMNS,
-    PRIMARY_CONTEXT_COLUMNS,
-)
+from ai_trading.gyms.trading_constants import ALL_CONTEXT_COLUMNS
 from ai_trading.gyms.utils.trading_env_utils import TradingDirection, TradingEnvUtils
 
 logger = logging.getLogger(__name__)
@@ -123,9 +121,29 @@ class TradingEnv(gym.Env):
         """
         Validate that the DataFrame contains the mandatory columns.
 
+        Time information can be either a column named "Time" or the DataFrame's index.
         Only validates primary context columns that should exist in raw data,
         not derived columns that are computed.
         """
+        from ai_trading.gyms.trading_constants import (
+            PRIMARY_CONTEXT_COLUMNS,
+            TIME_COLUMN,
+        )
+
+        # First check if time information is available (either as column or index)
+        has_time_information = (
+            TIME_COLUMN in self.env_data_source.columns
+            or isinstance(self.env_data_source.index, pd.DatetimeIndex)
+            or self.env_data_source.index.name == TIME_COLUMN
+        )
+
+        if not has_time_information:
+            raise ValueError(
+                f"DataFrame is missing time information. It should either have a '{TIME_COLUMN}' column "
+                f"or use a DatetimeIndex."
+            )
+
+        # Then check other required columns
         missing_columns = [
             col
             for col in PRIMARY_CONTEXT_COLUMNS
@@ -228,7 +246,7 @@ class TradingEnv(gym.Env):
         return TradingEnvUtils.calculate_dynamic_slippage(
             direction,
             current_price,
-            current_data.atr,
+            current_data.Atr,
             self.env_config.slippage_atr_based,
             self.env_config.slippage_against_trade_probability,
         )
@@ -243,7 +261,7 @@ class TradingEnv(gym.Env):
         end_idx = self.current_step + 1  # inclusive
         price_history = self.env_data_source.iloc[
             start_idx:end_idx
-        ].price.values.tolist()
+        ].Close.values.tolist()
 
         return TradingEnvUtils.calculate_price_std(price_history)
 
@@ -296,7 +314,8 @@ class TradingEnv(gym.Env):
         reward -= variance_penalty_weight * price_std
 
         # 5. Apply ATR-scaled risk penalty
-        reward -= atr_penalty_weight * self.atr_at_entry
+        if self.atr_at_entry is not None:
+            reward -= atr_penalty_weight * self.atr_at_entry
 
         # Scale by leverage to account for risk taken
         reward *= self.current_leverage
@@ -421,7 +440,7 @@ class TradingEnv(gym.Env):
         current_data = self.env_data_source.iloc[self.current_step]
 
         return TradingEnvUtils.calculate_risk_adjusted_pnl(
-            raw_pnl, price_std, self.current_leverage, current_data.atr
+            raw_pnl, price_std, self.current_leverage, current_data.Atr
         )
 
     def _update_pnl(self, current_price: float) -> None:
@@ -488,9 +507,9 @@ class TradingEnv(gym.Env):
             self.time_in_position += 1
 
         # Check for liquidation before taking action
-        if self._check_liquidation(current_data.high, current_data.low):
+        if self._check_liquidation(current_data.High, current_data.Low):
             self._handle_liquidation(
-                current_data.low if self.position_state == 1 else current_data.high
+                current_data.Low if self.position_state == 1 else current_data.High
             )
         else:
             self._take_action(action)

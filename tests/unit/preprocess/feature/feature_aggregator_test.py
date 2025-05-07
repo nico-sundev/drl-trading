@@ -9,6 +9,7 @@ from pandas import DataFrame
 
 from ai_trading.config.base_parameter_set_config import BaseParameterSetConfig
 from ai_trading.config.feature_config import FeatureDefinition, FeaturesConfig
+from ai_trading.config.feature_config_factory import FeatureConfigFactoryInterface
 from ai_trading.model.asset_price_dataset import AssetPriceDataSet
 from ai_trading.preprocess.feast.feast_service import (
     FeastService,
@@ -68,22 +69,22 @@ def mock_param_set_drop_time() -> BaseParameterSetConfig:
 @pytest.fixture
 def mock_feature_definition(mock_param_set) -> FeatureDefinition:
     """Create a mock feature definition."""
-    # Mock the FeatureConfigRegistry before creating the FeatureDefinition
+    # Mock the FeatureConfigFactory before creating the FeatureDefinition
     with patch(
-        "ai_trading.config.feature_config.FeatureConfigRegistry"
-    ) as mock_registry_class:
-        # Create mock instance with feature_config_map property
-        mock_registry_instance = MagicMock()
-        mock_registry_class.return_value = mock_registry_instance
+        "ai_trading.config.feature_config_factory.FeatureConfigFactory"
+    ) as mock_factory_class:
+        # Create mock instance with get_config_class method
+        mock_factory_instance = MagicMock(spec=FeatureConfigFactoryInterface)
+        mock_factory_class.return_value = mock_factory_instance
 
         # Mock config class for 'mockfeature'
         class MockFeatureConfig(BaseParameterSetConfig):
             pass
 
-        # Set up the mock registry to return our mock config class
-        mock_registry_instance.feature_config_map = {"mockfeature": MockFeatureConfig}
+        # Set up the mock factory to return our mock config class
+        mock_factory_instance.get_config_class.return_value = MockFeatureConfig
 
-        # Now create the FeatureDefinition which will use our mocked registry
+        # Now create the FeatureDefinition which will use our mocked factory
         mock_feature_def = FeatureDefinition(
             name="MockFeature",
             enabled=True,
@@ -459,15 +460,16 @@ def test_compute_skips_disabled_features_and_params(
 
     # Create second mock feature definition without relying on constructor validation
     with patch(
-        "ai_trading.config.feature_config.FeatureConfigRegistry"
-    ) as mock_registry_class:
-        mock_registry_instance = MagicMock()
-        mock_registry_class.return_value = mock_registry_instance
+        "ai_trading.config.feature_config_factory.FeatureConfigFactory"
+    ) as mock_factory_class:
+        mock_factory_instance = MagicMock(spec=FeatureConfigFactoryInterface)
+        mock_factory_class.return_value = mock_factory_instance
 
         class MockFeatureConfig(BaseParameterSetConfig):
             pass
 
-        mock_registry_instance.feature_config_map = {"mockfeature2": MockFeatureConfig}
+        # Set up the mock factory to return our mock config class
+        mock_factory_instance.get_config_class.return_value = MockFeatureConfig
 
         mock_feature_def2 = MagicMock(spec=FeatureDefinition)
         mock_feature_def2.name = "MockFeature2"
