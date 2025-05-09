@@ -2,7 +2,10 @@ from typing import Any
 
 import pandas as pd
 
-from ai_trading.backtesting.backtest_validator import BacktestValidator
+from ai_trading.backtesting.backtest_validator import (
+    BacktestValidator,
+    BacktestValidatorInterface,
+)
 from ai_trading.backtesting.strategy.strategy_interface import StrategyInterface
 from ai_trading.backtesting.validation.algorithms.config.ftmo_account_config import (
     AccountSize,
@@ -69,8 +72,8 @@ validations: list[dict[str, Any]] = [
 ]
 
 # Run validation against a strategy
-validator = BacktestValidator.from_registry(my_strategy, validations)
-validation_results = validator.validate()
+backtester: BacktestValidatorInterface = BacktestValidator()
+validation_results = backtester.validate(my_strategy, validations)
 
 # Take action based on results
 if validation_results.overall_status == OverallStatus.PASS:

@@ -1,4 +1,5 @@
 import logging
+from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
 from dask import compute, delayed
@@ -24,33 +25,52 @@ logger.setLevel(logging.INFO)
 console = Console()
 
 
-# --- Validator Entry Class ---
-class BacktestValidator:
-    def __init__(self, strategy: StrategyInterface) -> None:
-        self.strategy = strategy
-        self.algorithms: List[BaseValidationAlgorithm] = []
+# --- Validator Interface ---
+class BacktestValidatorInterface(ABC):
+    """Interface defining contract for backtest validation functionality."""
 
-    @classmethod
-    def from_registry(
-        cls, strategy: StrategyInterface, validations: List[Dict[str, Any]]
-    ) -> "BacktestValidator":
-        instance = cls(strategy)
-        for entry in validations:
-            name = entry["name"]
-            config_kwargs = entry.get("config", {})
+    @abstractmethod
+    def validate(
+        self, strategy: StrategyInterface, algorithms: List[Dict[str, Any]]
+    ) -> BacktestValidationSummary:
+        """
+        Validate a strategy using the provided validation algorithms.
 
-            if name not in VALIDATION_REGISTRY:
-                raise ValueError(f"Validation algorithm '{name}' is not registered.")
+        Args:
+            strategy: The trading strategy to validate
+            algorithms: List of validation algorithms to apply
 
-            alg_cls, config_cls = VALIDATION_REGISTRY[name]
-            config = config_cls(**config_kwargs)
-            algorithm_instance = alg_cls(config)  # Pass config directly to constructor
-            instance.algorithms.append(algorithm_instance)
+        Returns:
+            A summary of validation results
+        """
+        pass
 
-        return instance
 
-    def validate(self) -> BacktestValidationSummary:
-        tasks = [delayed(alg.run)(self.strategy) for alg in self.algorithms]
+# --- Validator Implementation ---
+class BacktestValidator(BacktestValidatorInterface):
+    """
+    Validates trading strategies using configurable validation algorithms.
+
+    This class implements a stateless approach to backtest validation, where
+    both the strategy and algorithms are provided at validation time rather
+    than stored as instance state.
+    """
+
+    def validate(
+        self, strategy: StrategyInterface, validators: List[Dict[str, Any]]
+    ) -> BacktestValidationSummary:
+        """
+        Run validation algorithms against the strategy and produce a summary.
+
+        Args:
+            strategy: The trading strategy to validate
+            algorithms: List of validation algorithms to apply
+
+        Returns:
+            A detailed summary of all validation results
+        """
+        algorithms: list[BaseValidationAlgorithm] = self._parse_validations(validators)
+        tasks = [delayed(alg.run)(strategy) for alg in algorithms]
         results: List[ValidationResult] = compute(*tasks, scheduler="threads")
 
         failed = [r.name for r in results if not r.passed]
@@ -60,14 +80,51 @@ class BacktestValidator:
             results=results,
             overall_status=overall_status,
             config_snapshot={
-                alg.name: getattr(alg, "config", {}) for alg in self.algorithms
+                alg.name: getattr(alg, "config", {}) for alg in algorithms
             },
         )
 
         self._log_summary(summary)
         return summary
 
+    def _parse_validations(
+        self, validations: List[Dict[str, Any]]
+    ) -> List[BaseValidationAlgorithm]:
+        """
+        Parse and instantiate validation algorithms from a list of configurations.
+
+        Args:
+            validations (List[Dict[str, Any]]): List of validation configurations.
+
+        Raises:
+            ValueError: If a validation algorithm is not registered.
+
+        Returns:
+            List[BaseValidationAlgorithm]: List of instantiated validation algorithms.
+        """
+        algorithms: List[BaseValidationAlgorithm] = []
+
+        for entry in validations:
+            name = entry["name"]
+            config_kwargs = entry.get("config", {})
+
+            if name not in VALIDATION_REGISTRY:
+                raise ValueError(f"Validation algorithm '{name}' is not registered.")
+
+            alg_cls, config_cls = VALIDATION_REGISTRY[name]
+            config = config_cls(**config_kwargs)
+            algorithm_instance = alg_cls(config)
+            algorithms.append(algorithm_instance)
+
+        return algorithms
+
     def _log_summary(self, summary: BacktestValidationSummary) -> None:
+        """
+        Log validation results in a formatted table.
+
+        Args:
+            summary: The validation summary to log
+        """
         table = Table(title="Backtest Validation Results")
         table.add_column("Check")
         table.add_column("Passed")
