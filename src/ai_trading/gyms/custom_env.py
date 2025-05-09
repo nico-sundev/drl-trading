@@ -190,7 +190,7 @@ class TradingEnv(gym.Env):
         self.last_liquidation_loss = 0.0
         return self._next_observation(), options or {}
 
-    def _next_observation(self) -> np.ndarray:
+    def _next_observation(self) -> np.ndarray[np.float32, Any]:
         """Get the next observation from the environment.
 
         Returns only the computed and normalized features, excluding strategy-specific
@@ -204,7 +204,7 @@ class TradingEnv(gym.Env):
         # Select only computed features using feature column names
         computed_features = feature_set[self.feature_columns].values
 
-        return computed_features.astype(np.float32)
+        return np.asarray(computed_features, dtype=np.float32)
 
     def _update_liquidation_price(self, leverage: float) -> None:
         """Update liquidation price for leveraged positions."""
