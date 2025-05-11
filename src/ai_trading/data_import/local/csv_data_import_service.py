@@ -26,16 +26,16 @@ class CsvDataImportService(BaseDataImportService):
 
     def _load_csv(self, file_path: str, limit: Optional[int] = None) -> pd.DataFrame:
         """
-        Loads a CSV file into a DataFrame.
+        Loads a CSV file into a DataFrame with Time as the index.
 
         Args:
             file_path: Path to the CSV file
             limit: Optional limit on number of rows to read
 
         Returns:
-            DataFrame with OHLC data
+            DataFrame with OHLC data and Time as DatetimeIndex
         """
-        return pd.read_csv(
+        df = pd.read_csv(
             file_path,
             usecols=["Time", "Open", "High", "Low", "Close", "Volume"],
             sep="\t",
@@ -43,6 +43,8 @@ class CsvDataImportService(BaseDataImportService):
             skipinitialspace=True,
             nrows=limit,
         )
+        # Set Time as the index immediately after loading
+        return df.set_index("Time")
 
     def _get_symbol_asset_price_tuple(
         self, dataset_properties: AssetPriceImportProperties, symbol: str

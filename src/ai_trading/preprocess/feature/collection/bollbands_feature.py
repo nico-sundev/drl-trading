@@ -14,11 +14,14 @@ class BollbandsFeature(BaseFeature):
         self.config: BollbandsConfig = self.config
 
     def compute(self) -> DataFrame:
-        df = DataFrame()
-        df["Time"] = self.df_source["Time"]
+        # Get source DataFrame with ensured DatetimeIndex using the base class method
+        source_df = self._prepare_source_df()
 
-        sma = self.df_source["Close"].rolling(window=self.config.length).mean()
-        std = self.df_source["Close"].rolling(window=self.config.length).std()
+        # Create a DataFrame with the same index
+        df = DataFrame(index=source_df.index)
+
+        sma = source_df["Close"].rolling(window=self.config.length).mean()
+        std = source_df["Close"].rolling(window=self.config.length).std()
 
         df[f"bb_upper{self.postfix}"] = sma + self.config.std_dev * std
         df[f"bb_middle{self.postfix}"] = sma

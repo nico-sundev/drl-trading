@@ -15,14 +15,18 @@ class RviFeature(BaseFeature):
         self.config: RviConfig = self.config
 
     def compute(self) -> DataFrame:
-        df = DataFrame()
-        df["Time"] = self.df_source["Time"]
+        # Get source DataFrame with ensured DatetimeIndex using the base class method
+        source_df = self._prepare_source_df()
+
+        # Create result DataFrame with the same index
+        df = DataFrame(index=source_df.index)
         df[f"rvi_{self.config.length}{self.postfix}"] = ta.rvi(
-            self.df_source["Close"],
-            self.df_source["High"],
-            self.df_source["Low"],
+            source_df["Close"],
+            source_df["High"],
+            source_df["Low"],
             length=self.config.length,
         )
+
         return df
 
     def get_sub_features_names(self) -> list[str]:

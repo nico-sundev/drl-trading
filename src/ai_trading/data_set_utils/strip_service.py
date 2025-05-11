@@ -6,6 +6,7 @@ import pandas as pd
 
 from ai_trading.data_set_utils.util import (
     detect_timeframe,
+    ensure_datetime_index,
     separate_asset_price_datasets,
 )
 from ai_trading.model.asset_price_dataset import AssetPriceDataSet
@@ -96,14 +97,19 @@ class StripService(StripServiceInterface):
         Args:
             base_start_timestamp: The start timestamp of the base dataset
             base_end_timestamp: The end timestamp of the base dataset
-            higher_timeframe_df: The dataframe of the higher timeframe
+            higher_timeframe_df: The dataframe of the higher timeframe, either with DatetimeIndex or 'Time' column
 
         Returns:
-            DataFrame: The stripped dataframe
+            DataFrame: The stripped dataframe with DatetimeIndex
 
         Raises:
             ValueError: If the dataframe cannot be properly processed or if timeframe detection fails
         """
+        # Ensure the dataframe has a DatetimeIndex
+        higher_timeframe_df = ensure_datetime_index(
+            higher_timeframe_df, "higher timeframe dataframe"
+        )
+
         # Calculate the timeframe duration
         timeframe_duration = detect_timeframe(higher_timeframe_df)
 
@@ -117,10 +123,10 @@ class StripService(StripServiceInterface):
             f"End threshold: {end_threshold_timestamp}"
         )
 
-        # Filter the dataframe to include only rows between the thresholds
+        # Filter the dataframe using index slicing for better performance
         stripped_df: pd.DataFrame = higher_timeframe_df[
-            (higher_timeframe_df["Time"] >= begin_threshold_timestamp)
-            & (higher_timeframe_df["Time"] < end_threshold_timestamp)
+            (higher_timeframe_df.index >= begin_threshold_timestamp)
+            & (higher_timeframe_df.index < end_threshold_timestamp)
         ]
 
         # Log results
@@ -128,11 +134,11 @@ class StripService(StripServiceInterface):
         stripped_count = len(stripped_df)
 
         if stripped_count > 0:
-            first_row = stripped_df.iloc[0]
-            last_row = stripped_df.iloc[-1]
+            first_timestamp = stripped_df.index[0]
+            last_timestamp = stripped_df.index[-1]
             self._logger.info(
                 f"Stripping complete. Removed {original_count - stripped_count} rows. "
-                f"First row after strip: {first_row['Time']}, Last row after strip: {last_row['Time']}"
+                f"First timestamp after strip: {first_timestamp}, Last timestamp after strip: {last_timestamp}"
             )
         else:
             self._logger.warning("Stripping resulted in an empty dataframe.")
@@ -155,11 +161,14 @@ class StripService(StripServiceInterface):
         Raises:
             ValueError: If no base dataset is found in the input datasets
         """
-        base_dataset, other_datasets = separate_asset_price_datasets(datasets)
-
-        # Get base dataset time boundaries
-        base_start_timestamp = base_dataset.asset_price_dataset["Time"].iloc[0]
-        base_end_timestamp = base_dataset.asset_price_dataset["Time"].iloc[-1]
+        base_dataset, other_datasets = separate_asset_price_datasets(
+            datasets
+        )  # Get base dataset time boundaries
+        base_df = ensure_datetime_index(
+            base_dataset.asset_price_dataset, "base dataset"
+        )
+        base_start_timestamp = base_df.index[0]
+        base_end_timestamp = base_df.index[-1]
 
         stripped_other_datasets = [
             AssetPriceDataSet(

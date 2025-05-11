@@ -15,11 +15,16 @@ class RsiFeature(BaseFeature):
         self.config: RsiConfig = self.config
 
     def compute(self) -> DataFrame:
-        df = DataFrame()
-        df["Time"] = self.df_source["Time"]
-        df[f"rsi_{self.config.length}{self.postfix}"] = ta.rsi(
-            self.df_source["Close"], length=self.config.length
-        )
+        # Get source DataFrame with ensured DatetimeIndex using the base class method
+        source_df = self._prepare_source_df()
+
+        # Create a DataFrame with the same index as the source
+        rsi_values = ta.rsi(source_df["Close"], length=self.config.length)
+
+        # Create result DataFrame with both Time column and feature values
+        df = DataFrame(index=source_df.index)
+        df[f"rsi_{self.config.length}{self.postfix}"] = rsi_values
+
         return df
 
     def get_sub_features_names(self) -> list[str]:

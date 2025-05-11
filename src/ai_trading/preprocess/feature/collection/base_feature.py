@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from pandas import DataFrame
 
 from ai_trading.config.base_parameter_set_config import BaseParameterSetConfig
+from ai_trading.data_set_utils.util import ensure_datetime_index
 
 
 class BaseFeature(ABC):
@@ -13,6 +15,19 @@ class BaseFeature(ABC):
         self.df_source = source
         self.config = config
         self.postfix = postfix
+
+    def _prepare_source_df(self, description: Optional[str] = None) -> DataFrame:
+        """
+        Prepares the source DataFrame for feature computation by ensuring it has a DatetimeIndex.
+
+        Args:
+            description: Optional description to use in logs instead of the default class name
+
+        Returns:
+            DataFrame: Source DataFrame with DatetimeIndex
+        """
+        feature_name = description or self.get_feature_name()
+        return ensure_datetime_index(self.df_source, f"{feature_name} source data")
 
     @abstractmethod
     def compute(self) -> DataFrame:

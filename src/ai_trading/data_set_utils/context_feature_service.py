@@ -6,6 +6,7 @@ from typing import List, Optional
 import pandas_ta as ta
 from pandas import DataFrame
 
+from ai_trading.data_set_utils.util import ensure_datetime_index
 from ai_trading.gyms.trading_constants import (
     ALL_CONTEXT_COLUMNS,
     DERIVED_CONTEXT_COLUMNS,
@@ -198,14 +199,18 @@ class ContextFeatureService:
         Merges context-related features into a DataFrame with computed features.
 
         Args:
-            computed_dataframe: DataFrame containing computed features
-            context_features: DataFrame containing context-related features
+            computed_dataframe: DataFrame containing computed features with DatetimeIndex
+            context_features: DataFrame containing context-related features with DatetimeIndex
 
         Returns:
             DataFrame: The merged DataFrame with context-related features
         """
-        return computed_dataframe.merge(
-            context_features,
-            on="Time",
-            how="left",
+
+        # Ensure both DataFrames have DateTimeIndex
+        computed_dataframe = ensure_datetime_index(
+            computed_dataframe, "computed dataframe"
         )
+        context_features = ensure_datetime_index(context_features, "context features")
+
+        # Join on DatetimeIndex for better performance
+        return computed_dataframe.join(context_features, how="left")

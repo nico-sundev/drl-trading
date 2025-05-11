@@ -15,18 +15,25 @@ class RangeFeature(BaseFeature):
         self.config: RangeConfig = self.config
 
     def compute(self) -> DataFrame:
-        df = DataFrame()
-        df["Time"] = self.df_source["Time"]
+        # Get source DataFrame with ensured DatetimeIndex using the base class method
+        source_df = self._prepare_source_df()
+
+        # Create result DataFrame with the same index
+        df = DataFrame(index=source_df.index)
+
+        # Create the SupportResistanceFinder with the prepared source DataFrame
         finder = SupportResistanceFinder(
-            self.df_source, self.config.lookback, self.config.wick_handle_strategy
+            source_df, self.config.lookback, self.config.wick_handle_strategy
         )
         ranges = finder.find_support_resistance_zones()
+
         df[f"resistance_range{self.config.lookback}{self.postfix}"] = ranges[
             "resistance_range"
         ]
         df[f"support_range{self.config.lookback}{self.postfix}"] = ranges[
             "support_range"
         ]
+
         return df
 
     def get_sub_features_names(self) -> list[str]:

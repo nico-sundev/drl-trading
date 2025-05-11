@@ -16,11 +16,14 @@ class MacdFeature(BaseFeature):
         self.config: MacdConfig = self.config
 
     def compute(self) -> DataFrame:
-        df = DataFrame()
-        df["Time"] = self.df_source["Time"]
+        # Get source DataFrame with ensured DatetimeIndex using the base class method
+        source_df = self._prepare_source_df()
+
+        # Create a DataFrame with the same index
+        df = DataFrame(index=source_df.index)
 
         macd = ta.macd(
-            self.df_source["Close"],
+            source_df["Close"],
             fast=self.config.fast_length,
             slow=self.config.slow_length,
             signal=self.config.signal_length,
@@ -37,6 +40,7 @@ class MacdFeature(BaseFeature):
         df["macd_trend" + self.postfix] = macd[
             f"MACD_{self.config.fast_length}_{self.config.slow_length}_{self.config.signal_length}_A_0"
         ]
+
         return df
 
     def get_sub_features_names(self) -> list[str]:

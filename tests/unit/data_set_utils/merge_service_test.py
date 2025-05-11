@@ -27,7 +27,6 @@ def base_timeframe_data() -> pd.DataFrame:
     ]
 
     data = {
-        "Time": times,
         "Open": [100, 105, 110, 115, 120, 125, 130],
         "High": [105, 110, 115, 120, 125, 130, 135],
         "Low": [95, 100, 105, 110, 115, 120, 125],
@@ -35,7 +34,10 @@ def base_timeframe_data() -> pd.DataFrame:
         "Volume": [1000, 1100, 1200, 1300, 1400, 1500, 1600],
     }
 
-    return pd.DataFrame(data)
+    # Create DataFrame with DatetimeIndex
+    df = pd.DataFrame(data, index=times)
+    df.index.name = "Time"
+    return df
 
 
 @pytest.fixture
@@ -48,7 +50,6 @@ def higher_timeframe_data() -> pd.DataFrame:
     ]
 
     data = {
-        "Time": times,
         "Open": [90, 110],
         "High": [110, 130],
         "Low": [85, 105],
@@ -60,7 +61,10 @@ def higher_timeframe_data() -> pd.DataFrame:
         "Bollinger_Lower": [95, 105],
     }
 
-    return pd.DataFrame(data)
+    # Create DataFrame with DatetimeIndex
+    df = pd.DataFrame(data, index=times)
+    df.index.name = "Time"
+    return df
 
 
 def test_merge_timeframes_basic(
@@ -83,11 +87,14 @@ def test_merge_timeframes_basic(
         len(result_df) == expected_row_count
     ), "Merged dataframe should have same number of rows as base dataframe"
 
-    # Verify the Time column is preserved
-    assert "Time" in result_df.columns, "Time column should be preserved"
-    assert list(result_df["Time"]) == list(
-        base_df["Time"]
-    ), "Time values should be preserved"
+    # Verify the index is preserved
+    assert isinstance(
+        result_df.index, pd.DatetimeIndex
+    ), "Index should be a DatetimeIndex"
+    assert result_df.index.name == "Time", "Index name should be 'Time'"
+    assert list(result_df.index) == list(
+        base_df.index
+    ), "Index values should be preserved"
 
     # Check that higher timeframe columns are properly prefixed
     assert (
@@ -120,32 +127,35 @@ def test_merge_timeframes_data_alignment(
     result_df = merge_service.merge_timeframes(base_df, higher_df)
 
     # Then
+    # Get timestamps for easier assertions
+    timestamps = list(base_df.index)
+
     # For timestamps before the first higher timeframe candle closes, values should be NaN
     # First H4 candle closes at 12:00, so rows before that should have NaN
     assert pd.isna(
-        result_df.loc[0, "HTF-240_RSI"]
+        result_df.loc[timestamps[0], "HTF-240_RSI"]
     ), "Data before first higher timeframe candle closes should be NaN"
     assert pd.isna(
-        result_df.loc[1, "HTF-240_RSI"]
+        result_df.loc[timestamps[1], "HTF-240_RSI"]
     ), "Data before first higher timeframe candle closes should be NaN"
 
     # At 12:00 and later until 16:00, should have first higher timeframe candle data
     assert (
-        result_df.loc[2, "HTF-240_RSI"] == 55
+        result_df.loc[timestamps[2], "HTF-240_RSI"] == 55
     ), "Should use first higher timeframe candle data at 12:00"
     assert (
-        result_df.loc[3, "HTF-240_RSI"] == 55
+        result_df.loc[timestamps[3], "HTF-240_RSI"] == 55
     ), "Should use first higher timeframe candle data at 13:00"
     assert (
-        result_df.loc[4, "HTF-240_RSI"] == 55
+        result_df.loc[timestamps[4], "HTF-240_RSI"] == 55
     ), "Should use first higher timeframe candle data at 14:00"
     assert (
-        result_df.loc[5, "HTF-240_RSI"] == 55
+        result_df.loc[timestamps[5], "HTF-240_RSI"] == 55
     ), "Should use first higher timeframe candle data at 15:00"
 
     # At 16:00 and later, should have second higher timeframe candle data
     assert (
-        result_df.loc[6, "HTF-240_RSI"] == 65
+        result_df.loc[timestamps[6], "HTF-240_RSI"] == 65
     ), "Should use second higher timeframe candle data at 16:00"
 
 
@@ -157,8 +167,8 @@ def test_merge_timeframes_unsorted_data(
     """Test that the merge works correctly with unsorted input data."""
     # Given
     # Create unsorted versions of the dataframes
-    unsorted_base_df = base_timeframe_data.sample(frac=1).reset_index(drop=True)
-    unsorted_higher_df = higher_timeframe_data.sample(frac=1).reset_index(drop=True)
+    unsorted_base_df = base_timeframe_data.sample(frac=1)
+    unsorted_higher_df = higher_timeframe_data.sample(frac=1)
 
     # When
     result_unsorted = merge_service.merge_timeframes(
@@ -169,9 +179,9 @@ def test_merge_timeframes_unsorted_data(
     )
 
     # Then
-    # Sort both results by Time to ensure we can compare them properly
-    result_unsorted = result_unsorted.sort_values("Time").reset_index(drop=True)
-    result_sorted = result_sorted.sort_values("Time").reset_index(drop=True)
+    # Sort both results by index to ensure we can compare them properly
+    result_unsorted = result_unsorted.sort_index()
+    result_sorted = result_sorted.sort_index()
 
     # The results should be identical regardless of the input sorting
     pd.testing.assert_frame_equal(
@@ -187,8 +197,9 @@ def test_merge_timeframes_empty_higher_data(
     """Test merging with empty higher timeframe data."""
     # Given
     base_df = base_timeframe_data
+    # Create an empty DataFrame with DatetimeIndex
     empty_higher_df = pd.DataFrame(
-        columns=["Time", "Open", "High", "Low", "Close", "Volume", "RSI"]
+        columns=["Open", "High", "Low", "Close", "Volume", "RSI"]
     )
 
     # When
@@ -196,14 +207,14 @@ def test_merge_timeframes_empty_higher_data(
     result_df = merge_service.merge_timeframes(base_df, empty_higher_df)
 
     # Then
-    # Should return a dataframe with just the Time column from the base dataframe
+    # Should return a dataframe with the same index as base_df but no columns
     assert len(result_df) == len(base_df), "Should preserve base DataFrame row count"
-    assert "Time" in result_df.columns, "Should preserve Time column"
-    assert list(result_df["Time"]) == list(
-        base_df["Time"]
-    ), "Time values should be preserved"
+    assert isinstance(
+        result_df.index, pd.DatetimeIndex
+    ), "Result should have DatetimeIndex"
+    assert list(result_df.index) == list(
+        base_df.index
+    ), "Index values should be preserved"
 
     # No higher timeframe columns should be added
-    assert list(result_df.columns) == [
-        "Time"
-    ], "Should only have Time column in the result"
+    assert len(result_df.columns) == 0, "Result should have no columns"

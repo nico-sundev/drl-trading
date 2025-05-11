@@ -13,6 +13,7 @@ Maintain a constructive, but rigorous, approach. Your role is not to argue for t
 - Whole src/ path to follow SOLID principles
 - Always use type hints for arguments and return types both
 - Use dependency injection where it makes sense
+- Always take care of proper error handling
 - Code should be cleaned by `ruff check <file_path> --fix`
 - Code should be validated by running `mypy <file_path>`
 - Extend existing config classes rather than hardcoding something, like: `src/ai_trading/config/application_config.py` and all config classes recursively referenced

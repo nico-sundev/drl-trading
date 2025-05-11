@@ -9,7 +9,7 @@ from ai_trading.config.feature_config import FeaturesConfig
 from ai_trading.data_set_utils.context_feature_service import ContextFeatureService
 from ai_trading.data_set_utils.merge_service import MergeServiceInterface
 from ai_trading.data_set_utils.util import (
-    ensure_datetime_time_column,
+    ensure_datetime_index,
     separate_asset_price_datasets,
     separate_computed_datasets,
 )
@@ -50,21 +50,19 @@ class PreprocessService:
     def _prepare_dataframe_for_join(
         self, df: DataFrame, dataset_info: str
     ) -> Optional[DataFrame]:
-        """Ensures DataFrame has a valid 'Time' column and sets it as index."""
+        """Ensures DataFrame has a DatetimeIndex for efficient joining operations."""
         if df is None or df.empty:
             return None
         try:
-            # First, ensure the 'Time' column is valid using the utility function
-            df_with_time = ensure_datetime_time_column(df, dataset_info)
-            # Now, set the validated 'Time' column as index
-            return df_with_time.set_index("Time")
-        except ValueError as ve:  # Catch errors from ensure_datetime_time_column
-            logger.error(
-                f"Failed to ensure valid 'Time' column for {dataset_info}: {ve}"
-            )
+            # Use the ensure_datetime_index utility function
+            return ensure_datetime_index(df, dataset_info)
+        except ValueError as ve:
+            logger.error(f"Failed to ensure DatetimeIndex for {dataset_info}: {ve}")
             return None
-        except Exception as e:  # Catch errors from set_index
-            logger.error(f"Failed to set 'Time' index for {dataset_info}: {e}")
+        except Exception as e:
+            logger.error(
+                f"Unexpected error creating DatetimeIndex for {dataset_info}: {e}"
+            )
             return None
 
     def _compute_features_for_dataset(
@@ -108,15 +106,19 @@ class PreprocessService:
             )
             return None
 
+        # Ensure all DataFrames have a DatetimeIndex
+        valid_feature_dfs = [
+            ensure_datetime_index(df, f"feature dataset {i} for {symbol}")
+            for i, df in enumerate(valid_feature_dfs)
+        ]
+
         # Start with first dataframe
         merged_features = valid_feature_dfs[0]
 
-        # Merge remaining dataframes
+        # Merge remaining dataframes - use index-based merge for better performance
         for i, feature_df in enumerate(valid_feature_dfs[1:], 1):
             try:
-                merged_features = merged_features.merge(
-                    feature_df, on="Time", how="outer"
-                )
+                merged_features = merged_features.join(feature_df, how="outer")
             except Exception as e:
                 logger.error(
                     f"Error merging feature dataframe {i} for {symbol} {dataset.timeframe}: {e}"
@@ -143,7 +145,7 @@ class PreprocessService:
             symbol_container: Container holding symbol datasets to process
 
         Returns:
-            DataFrame: The final merged DataFrame with all features.
+            DataFrame: The final merged DataFrame with all features and a DatetimeIndex.
         """
         datasets: List[AssetPriceDataSet] = symbol_container.datasets
         base_dataset, _ = separate_asset_price_datasets(datasets)
@@ -183,12 +185,19 @@ class PreprocessService:
         # 5. Merge timeframes
         logger.info("Starting timeframe merging.")
         base_frame: DataFrame = base_computed_container.computed_dataframe
+        # Ensure base_frame has a DatetimeIndex
+        base_frame = ensure_datetime_index(base_frame, "base frame for merging")
 
         delayed_tasks = []
 
         for _i, container in enumerate(other_computed_containers):
+            # Ensure higher timeframe dataframe has a DatetimeIndex
+            higher_df = ensure_datetime_index(
+                container.computed_dataframe,
+                f"higher timeframe for {container.source_dataset.timeframe}",
+            )
             task = delayed(self.merge_service.merge_timeframes)(
-                base_frame.copy(), container.computed_dataframe.copy()
+                base_frame.copy(), higher_df.copy()
             )
             delayed_tasks.append(task)
 
@@ -210,10 +219,17 @@ class PreprocessService:
                 "One or more DataFrames have a different length than the base frame. Merging aborted."
             )
 
-        # Merge all timeframes into the base frame
+        # Merge all timeframes into the base frame using index-based operations
         merged_result: DataFrame = base_frame
-        for _i, df in enumerate(all_timeframes_computed_features):
-            merged_result = merged_result.merge(df, on="Time", how="left")
+        for i, df in enumerate(all_timeframes_computed_features):
+            try:
+                # Ensure the higher timeframe result has a DatetimeIndex
+                df = ensure_datetime_index(df, f"higher timeframe result {i}")
+                # Join on index rather than using a column
+                merged_result = merged_result.join(df, how="left")
+            except Exception as e:
+                logger.error(f"Error merging timeframe {i}: {e}")
+                raise
 
         # 6. Merge context-related features using the dedicated service
         logger.info("Preparing context-related features.")

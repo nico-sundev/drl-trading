@@ -15,11 +15,15 @@ class RocFeature(BaseFeature):
         self.config: RocConfig = self.config
 
     def compute(self) -> DataFrame:
-        df = DataFrame()
-        df["Time"] = self.df_source["Time"]
+        # Get source DataFrame with ensured DatetimeIndex using the base class method
+        source_df = self._prepare_source_df()
+
+        # Create result DataFrame with the same index
+        df = DataFrame(index=source_df.index)
         df[f"roc_{self.config.length}{self.postfix}"] = ta.roc(
-            self.df_source["Close"], length=self.config.length
+            source_df["Close"], length=self.config.length
         )
+
         return df
 
     def get_sub_features_names(self) -> list[str]:

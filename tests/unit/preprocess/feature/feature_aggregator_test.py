@@ -28,11 +28,14 @@ class MockFeature(BaseFeature):
 
     def compute(self) -> DataFrame:
         """Generate mock feature data."""
+        # Make a copy preserving the index
         df = self.df_source.copy()
         df["feature1"] = 1.0
         df["feature2"] = 2.0
         if self.config.name == "drop_time":
-            return df.drop(columns=["Time"])
+            # Return a DataFrame without index name
+            df.index.name = None
+            return df
         else:
             return df
 
@@ -106,16 +109,17 @@ def mock_features_config(mock_feature_definition: FeatureDefinition) -> Features
 @pytest.fixture
 def mock_asset_df() -> DataFrame:
     """Create a mock DataFrame for asset price data."""
-    return DataFrame(
-        {
-            "Time": pd.date_range(start="2022-01-01", periods=10, freq="H"),
-            "Open": [1.0] * 10,
-            "High": [2.0] * 10,
-            "Low": [0.5] * 10,
-            "Close": [1.5] * 10,
-            "Volume": [1000.0] * 10,
-        }
-    )
+    dates = pd.date_range(start="2022-01-01", periods=10, freq="H")
+    data = {
+        "Open": [1.0] * 10,
+        "High": [2.0] * 10,
+        "Low": [0.5] * 10,
+        "Close": [1.5] * 10,
+        "Volume": [1000.0] * 10,
+    }
+    df = DataFrame(data, index=dates)
+    df.index.name = "Time"
+    return df
 
 
 @pytest.fixture
@@ -201,17 +205,17 @@ def test_compute_single_feature_no_cache(
     mock_feast_service.store_computed_features.assert_called_once()
     assert result_df is not None
     assert not result_df.empty
-    assert "Time" in result_df.columns
+    assert isinstance(result_df.index, pd.DatetimeIndex)
+    assert result_df.index.name == "Time"
     expected_col1 = "feature1"
     expected_col2 = "feature2"
     assert expected_col1 in result_df.columns
     assert expected_col2 in result_df.columns
     assert "Open" not in result_df.columns
-    assert len(result_df.columns) == 3
-    pd.testing.assert_series_equal(
-        result_df["Time"],
-        mock_asset_df["Time"],
-        check_names=False,
+    assert len(result_df.columns) == 2
+    pd.testing.assert_index_equal(
+        result_df.index,
+        mock_asset_df.index,
     )
 
 
@@ -226,14 +230,15 @@ def test_compute_single_feature_with_cache(
 ):
     """Test _compute_or_get_single_feature when feature is cached."""
     # Given
-    # Feature exists in cache
+    # Feature exists in cache with DatetimeIndex
     cached_features = DataFrame(
         {
             "feature1": [1.0] * 10,
             "feature2": [2.0] * 10,
-            "Time": mock_asset_df["Time"],
-        }
+        },
+        index=mock_asset_df.index.copy(),
     )
+    cached_features.index.name = "Time"
     mock_feast_service.get_historical_features.return_value = cached_features
 
     # When
@@ -253,15 +258,14 @@ def test_compute_single_feature_with_cache(
     assert result_df is not None
 
     assert not result_df.empty
-    assert "Time" in result_df.columns
+    assert isinstance(result_df.index, pd.DatetimeIndex)
+    assert result_df.index.name == "Time"
     expected_col1 = "feature1"
     expected_col2 = "feature2"
     assert expected_col1 in result_df.columns
     assert expected_col2 in result_df.columns
-    assert len(result_df.columns) == 3
-    pd.testing.assert_series_equal(
-        result_df["Time"], mock_asset_df["Time"], check_names=False
-    )
+    assert len(result_df.columns) == 2
+    pd.testing.assert_index_equal(result_df.index, mock_asset_df.index)
 
 
 def test_compute_single_feature_disabled_feature_def(
@@ -358,7 +362,7 @@ def test_compute_single_feature_handles_computation_error(
     mock_feature_instance.compute.assert_called_once()
 
 
-def test_compute_single_feature_handles_missing_time_after_compute(
+def test_compute_single_feature_handles_missing_time_index_after_compute(
     feature_aggregator,
     mock_feature_definition,
     mock_param_set_drop_time,
@@ -367,9 +371,9 @@ def test_compute_single_feature_handles_missing_time_after_compute(
     mock_asset_data,
     mock_symbol,
 ):
-    """Test _compute_or_get_single_feature returns None if 'Time' is missing after compute."""
+    """Test _compute_or_get_single_feature returns None if 'Time' index name is missing after compute."""
     # Given
-    # Feature not in cache and will drop Time column when computed
+    # Feature not in cache and will drop Time index name when computed
     mock_feast_service.get_historical_features.return_value = None
 
     # When
@@ -383,7 +387,7 @@ def test_compute_single_feature_handles_missing_time_after_compute(
     )
 
     # Then
-    # Verify None is returned
+    # Verify None is returned because the index name was removed
     assert result is None
     mock_feast_service.get_historical_features.assert_called_once()
 
@@ -540,8 +544,8 @@ def test_compute_execute_tasks_and_check_column_names(
     result_df = computed_dfs[0]
 
     # Verify column structure
-    assert "Time" in result_df.columns
-    assert len(result_df.columns) == 3  # Time + 2 feature columns
+    assert isinstance(result_df.index, pd.DatetimeIndex)
+    assert len(result_df.columns) == 2  # 2 feature columns
 
     # Check specific feature column naming pattern
     expected_col1 = "feature1"

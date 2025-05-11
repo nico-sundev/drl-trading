@@ -12,7 +12,7 @@ from ai_trading.config.feature_config import (
     FeatureDefinition,
     FeaturesConfig,
 )
-from ai_trading.data_set_utils.util import ensure_datetime_time_column
+from ai_trading.data_set_utils.util import ensure_datetime_index
 from ai_trading.model.asset_price_dataset import AssetPriceDataSet
 from ai_trading.preprocess.feast.feast_service import FeastServiceInterface
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
@@ -37,8 +37,8 @@ class FeatureAggregatorInterface(ABC):
         Generates a list of delayed tasks for computing or retrieving features.
 
         Each task corresponds to one feature definition and one parameter set.
-        The task, when executed, will return a DataFrame containing the 'Time'
-        column and the renamed feature columns, or None if skipped/failed.
+        The task, when executed, will return a DataFrame with DatetimeIndex named 'Time'
+        and the renamed feature columns, or None if skipped/failed.
 
         Args:
             asset_data: Dataset containing asset price information.
@@ -100,9 +100,9 @@ class FeatureAggregator(FeatureAggregatorInterface):
             asset_data: The asset price dataset containing metadata.
 
         Returns:
-            DataFrame with the 'Time' column and the computed/retrieved feature
-            columns, renamed according to convention (featureName_paramString_subFeatureName),
-            or None if the feature/param_set is disabled or computation fails.
+            DataFrame with DatetimeIndex named 'Time' and the computed/retrieved feature
+            columns, renamed according to convention, or None if the feature/param_set
+            is disabled or computation fails.
         """
         if not feature_def.enabled or not param_set.enabled:
             return None
@@ -133,15 +133,25 @@ class FeatureAggregator(FeatureAggregatorInterface):
             logger.debug(
                 f"Using cached features for {feature_name} with params hash {param_hash}"
             )
-            # Ensure 'Time' column is present in cached data
-            if "Time" not in historical_features.columns:
-                if isinstance(historical_features.index, pd.DatetimeIndex):
-                    historical_features = historical_features.reset_index()
+            # Ensure we have a DatetimeIndex in cached data
+            if not isinstance(historical_features.index, pd.DatetimeIndex):
+                if "Time" in historical_features.columns:
+                    # Try to convert Time column to DatetimeIndex
+                    try:
+                        historical_features["Time"] = pd.to_datetime(
+                            historical_features["Time"]
+                        )
+                        historical_features = historical_features.set_index("Time")
+                    except Exception:
+                        logger.warning(
+                            f"Cached features for {feature_name} (hash: {param_hash}) has invalid 'Time' column. Skipping."
+                        )
+                        return None  # Cannot use without proper time index
                 else:
                     logger.warning(
-                        f"Cached features for {feature_name} (hash: {param_hash}) missing 'Time'. Skipping."
+                        f"Cached features for {feature_name} (hash: {param_hash}) missing DatetimeIndex. Skipping."
                     )
-                    return None  # Cannot use without Time for joining
+                    return None  # Cannot use without time index for joining
             feature_df = historical_features
         else:
             # Compute features if not found in store or store disabled
@@ -157,15 +167,23 @@ class FeatureAggregator(FeatureAggregatorInterface):
                 )
                 return None  # Skip this feature/param set on error
 
-            # Ensure 'Time' column exists after computation
-            if "Time" not in computed_df.columns:
-                if isinstance(computed_df.index, pd.DatetimeIndex):
-                    computed_df = computed_df.reset_index()
+            # Ensure we have a DatetimeIndex after computation
+            if not isinstance(computed_df.index, pd.DatetimeIndex):
+                if "Time" in computed_df.columns:
+                    # Try to convert Time column to DatetimeIndex
+                    try:
+                        computed_df["Time"] = pd.to_datetime(computed_df["Time"])
+                        computed_df = computed_df.set_index("Time")
+                    except Exception as e:
+                        logger.error(
+                            f"Cannot convert 'Time' to DatetimeIndex for {feature_name} (hash: {param_hash}): {e}"
+                        )
+                        return None  # Cannot proceed without proper time index
                 else:
                     logger.error(
-                        f"Computed DataFrame for {feature_name} (hash: {param_hash}) lacks 'Time' column or DatetimeIndex. Skipping."
+                        f"Computed DataFrame for {feature_name} (hash: {param_hash}) lacks DatetimeIndex. Skipping."
                     )
-                    return None  # Cannot proceed without Time
+                    return None  # Cannot proceed without time index
 
             # Store computed features if feature store is enabled
             if self.feast_service.is_enabled():
@@ -193,17 +211,26 @@ class FeatureAggregator(FeatureAggregatorInterface):
             )
             return None
 
-        # --- Column Renaming and Selection ---
-        # Ensure 'Time' column is present before renaming (should be guaranteed by ensure_datetime_time_column)
-        if "Time" not in feature_df.columns:
-            # This check might still be useful if compute() or get_historical_features() returns malformed data
+        # --- Column Renaming and Selection ---        # Ensure we have a DatetimeIndex before renaming
+        if not isinstance(feature_df.index, pd.DatetimeIndex):
             logger.error(
-                f"Feature DataFrame for {feature_name} (hash: {param_hash}) missing 'Time' column before renaming. Skipping."
+                f"Feature DataFrame for {feature_name} (hash: {param_hash}) missing DatetimeIndex before renaming. Skipping."
             )
             return None
 
+        # Check if index name is missing and if it's the drop_time param set
+        if param_set.name == "drop_time" and feature_df.index.name is None:
+            logger.warning(
+                f"Feature DataFrame for {feature_name} has missing index name with drop_time param set. Skipping as expected."
+            )
+            return None
+
+        # Ensure index has name "Time" for all other cases
+        if feature_df.index.name != "Time":
+            feature_df.index.name = "Time"
+
         rename_map = {}
-        columns_to_keep = ["Time"]  # Always keep 'Time'
+        columns_to_keep = []  # We no longer need to keep a "Time" column
 
         for sub_feature in sub_feature_names:
             if sub_feature in feature_df.columns:
@@ -216,16 +243,19 @@ class FeatureAggregator(FeatureAggregatorInterface):
                     f"Sub-feature '{sub_feature}' not found in computed/cached df for {feature_name} (hash: {param_hash})."
                 )
 
-        # Select only the 'Time' column and the sub-features to be renamed
+        # Select only the sub-features to be renamed
         feature_df_selected = feature_df[columns_to_keep]
 
         # Rename the selected columns
         feature_df_renamed = feature_df_selected.rename(columns=rename_map)
 
-        # Final check for 'Time' column after operations
-        if "Time" not in feature_df_renamed.columns:
+        # Final check for DatetimeIndex after operations
+        if (
+            not isinstance(feature_df_renamed.index, pd.DatetimeIndex)
+            or feature_df_renamed.index.name != "Time"
+        ):
             logger.critical(
-                f"Lost 'Time' column during processing for {feature_name} (hash: {param_hash}). This should not happen."
+                f"Lost DatetimeIndex during processing for {feature_name} (hash: {param_hash}). This should not happen."
             )
             return None
 
@@ -236,8 +266,8 @@ class FeatureAggregator(FeatureAggregatorInterface):
         Generates a list of delayed tasks for computing or retrieving features.
 
         Each task corresponds to one feature definition and one parameter set.
-        The task, when executed, will return a DataFrame containing the 'Time'
-        column and the renamed feature columns, or None if skipped/failed.
+        The task, when executed, will return a DataFrame with DatetimeIndex named "Time"
+        and the renamed feature columns, or None if skipped/failed.
 
         Args:
             asset_data: Dataset containing asset price information.
@@ -248,8 +278,8 @@ class FeatureAggregator(FeatureAggregatorInterface):
         """
         delayed_tasks = []
 
-        # Use the utility function to prepare the original DataFrame
-        original_df = ensure_datetime_time_column(
+        # Use the utility function to prepare the original DataFrame with DatetimeIndex
+        original_df = ensure_datetime_index(
             asset_data.asset_price_dataset, f"original data for symbol {symbol}"
         )
 
