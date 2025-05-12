@@ -5,16 +5,24 @@ from pandas import DataFrame
 
 from ai_trading.config.base_parameter_set_config import BaseParameterSetConfig
 from ai_trading.data_set_utils.util import ensure_datetime_index
+from ai_trading.preprocess.metrics.technical_metrics_service import (
+    TechnicalMetricsServiceInterface,
+)
 
 
 class BaseFeature(ABC):
 
     def __init__(
-        self, source: DataFrame, config: BaseParameterSetConfig, postfix: str = ""
+        self,
+        source: DataFrame,
+        config: BaseParameterSetConfig,
+        postfix: str = "",
+        metrics_service: Optional[TechnicalMetricsServiceInterface] = None,
     ) -> None:
         self.df_source = source
         self.config = config
         self.postfix = postfix
+        self.metrics_service = metrics_service
 
     def _prepare_source_df(self, description: Optional[str] = None) -> DataFrame:
         """

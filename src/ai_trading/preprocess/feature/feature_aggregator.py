@@ -16,6 +16,9 @@ from ai_trading.data_set_utils.util import ensure_datetime_index
 from ai_trading.model.asset_price_dataset import AssetPriceDataSet
 from ai_trading.preprocess.feast.feast_service import FeastServiceInterface
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
+from ai_trading.preprocess.metrics.technical_metrics_service import (
+    TechnicalMetricsServiceFactory,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -107,10 +110,15 @@ class FeatureAggregator(FeatureAggregatorInterface):
         if not feature_def.enabled or not param_set.enabled:
             return None
 
+        # Create metrics service for this asset_data timeframe
+        metrics_service = TechnicalMetricsServiceFactory.create(asset_data)
+
         # Create feature instance
         feature_class = self.class_registry.feature_class_map[feature_def.name]
-        # Pass the prepared original DataFrame copy to the feature instance
-        feature_instance = feature_class(source=original_df, config=param_set)
+        # Pass the prepared original DataFrame copy and metrics service to the feature instance
+        feature_instance = feature_class(
+            source=original_df, config=param_set, metrics_service=metrics_service
+        )
 
         feature_name = feature_instance.get_feature_name()
         # Get both hash for feast and human-readable string for dataframe columns
@@ -219,11 +227,11 @@ class FeatureAggregator(FeatureAggregatorInterface):
             return None
 
         # Check if index name is missing and if it's the drop_time param set
-        if param_set.name == "drop_time" and feature_df.index.name is None:
-            logger.warning(
-                f"Feature DataFrame for {feature_name} has missing index name with drop_time param set. Skipping as expected."
-            )
-            return None
+        # if param_set.name == "drop_time" and feature_df.index.name is None:
+        #     logger.warning(
+        #         f"Feature DataFrame for {feature_name} has missing index name with drop_time param set. Skipping as expected."
+        #     )
+        #     return None
 
         # Ensure index has name "Time" for all other cases
         if feature_df.index.name != "Time":
