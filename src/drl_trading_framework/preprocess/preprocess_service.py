@@ -2,6 +2,7 @@ import logging
 from typing import List, Optional
 
 import dask
+import pandas as pd
 from dask import delayed
 from pandas import DataFrame
 
@@ -144,20 +145,16 @@ class PreprocessService:
 
     def preprocess_data(self, symbol_container: SymbolImportContainer) -> DataFrame:
         """
-        Preprocesses data by computing features in parallel and merging timeframes.
-
-        Steps:
-        1. Generate delayed feature computation tasks for all datasets.
-        2. Execute all tasks in parallel using dask.compute.
-        3. Aggregate computed features for each original dataset.
-        4. Merge aggregated datasets across timeframes.
-        5. Add context-related features required by the trading environment.
+        Preprocesses the data for a given symbol by computing features and merging datasets.
 
         Args:
-            symbol_container: Container holding symbol datasets to process
+            symbol_container (SymbolImportContainer): Container with symbol and datasets
+
+        Raises:
+            ValueError: If no valid computed datasets were produced
 
         Returns:
-            DataFrame: The final merged DataFrame with all features and a DatetimeIndex.
+            DataFrame: The final DataFrame with all computed features and context-related features
         """
         datasets: List[AssetPriceDataSet] = symbol_container.datasets
         base_dataset, _ = separate_asset_price_datasets(datasets)
@@ -167,35 +164,56 @@ class PreprocessService:
             f"Starting preprocessing for symbol {symbol} with {len(datasets)} datasets."
         )
 
-        # 3. Aggregate results
-        computed_dataset_containers: List[ComputedDataSetContainer] = []
-
-        # Process each dataset (timeframe) in parallel
-        delayed_processing_tasks = []
-        for dataset in datasets:
-            task = delayed(self._compute_features_for_dataset)(dataset, symbol)
-            delayed_processing_tasks.append(task)
-
-        # Execute all processing tasks
-        processed_containers = dask.compute(*delayed_processing_tasks)
-
-        # Filter out None results
-        computed_dataset_containers = [
-            container for container in processed_containers if container is not None
-        ]
+        # 1. Aggregate results
+        logger.info(f"Computing features for all timeframes for {symbol}.")
+        computed_dataset_containers: List[ComputedDataSetContainer] = (
+            self._compute_features_for_all_timeframes(datasets, symbol)
+        )
 
         # Check if we have at least one valid container
         if not computed_dataset_containers:
             raise ValueError("No valid computed datasets were produced")
-
         # 4. Separate base and other datasets
-        logger.info("Separating base and other datasets.")
+        logger.info("2. Separating base and other datasets.")
         base_computed_container, other_computed_containers = separate_computed_datasets(
             computed_dataset_containers
         )
 
+        # Check if base_computed_container was found
+        if base_computed_container is None:
+            raise ValueError("No base dataset found after feature computation")
+
         # 5. Merge timeframes
-        logger.info("Starting timeframe merging.")
+        logger.info("3. Starting feature merging across all timeframes.")
+        merged_result = self._merge_all_timeframes_features_together(
+            base_computed_container, other_computed_containers
+        )
+
+        # 6. Merge context-related features using the dedicated service
+        logger.info("4. Preparing context-related features.")
+        context_features = self.context_feature_service.prepare_context_features(
+            base_dataset
+        )
+
+        logger.info("5. Merging context-related features with computed features.")
+        final_result = self.context_feature_service.merge_context_features(
+            merged_result, context_features
+        )
+
+        logger.info("6. Preprocessing finished.")
+        return final_result
+
+    def _merge_all_timeframes_features_together(
+        self,
+        base_computed_container: ComputedDataSetContainer,
+        other_computed_containers: list[ComputedDataSetContainer],
+    ) -> DataFrame:
+        """
+        Merges all computed features across different timeframes into a single DataFrame.
+
+        Returns:
+            DataFrame: The merged DataFrame with all features.
+        """
         base_frame: DataFrame = base_computed_container.computed_dataframe
         # Ensure base_frame has a DatetimeIndex
         base_frame = ensure_datetime_index(base_frame, "base frame for merging")
@@ -214,7 +232,6 @@ class PreprocessService:
             delayed_tasks.append(task)
 
         all_timeframes_computed_features: List[DataFrame] = dask.compute(*delayed_tasks)
-
         len_bf = len(base_frame)
         # Validate if all dataframes have same length as base_frame
         any_length_mismatch = False
@@ -231,28 +248,57 @@ class PreprocessService:
                 "One or more DataFrames have a different length than the base frame. Merging aborted."
             )
 
-        # Merge all timeframes into the base frame using index-based operations
-        merged_result: DataFrame = base_frame
-        for i, df in enumerate(all_timeframes_computed_features):
-            try:
-                # Ensure the higher timeframe result has a DatetimeIndex
-                df = ensure_datetime_index(df, f"higher timeframe result {i}")
-                # Join on index rather than using a column
-                merged_result = merged_result.join(df, how="left")
-            except Exception as e:
-                logger.error(f"Error merging timeframe {i}: {e}")
-                raise
+        # Merge all timeframes into the base frame using pd.concat
+        try:
+            # Ensure all DataFrames have DatetimeIndex before concatenation
+            all_dfs = [base_frame] + [
+                ensure_datetime_index(df, f"higher timeframe result {i}")
+                for i, df in enumerate(all_timeframes_computed_features)
+            ]
+            # Use pd.concat to merge all dataframes at once along the column axis (axis=1)
+            merged_result = pd.concat(all_dfs, axis=1)
 
-        # 6. Merge context-related features using the dedicated service
-        logger.info("Preparing context-related features.")
-        context_features = self.context_feature_service.prepare_context_features(
-            base_dataset
+            # Ensure we don't have duplicate columns after concat
+            if len(merged_result.columns) != sum(len(df.columns) for df in all_dfs):
+                logger.warning(
+                    "Detected duplicate column names during concatenation. Some data may be overwritten."
+                )
+        except Exception as e:
+            logger.error(f"Error merging timeframes with pd.concat: {e}")
+            raise
+
+        return merged_result
+
+    def _compute_features_for_all_timeframes(
+        self,
+        datasets: List[AssetPriceDataSet],
+        symbol: str,
+    ) -> List[ComputedDataSetContainer]:
+        """
+        Computes features for all datasets in parallel.
+
+        Args:
+            datasets: List of AssetPriceDataSet to compute features for
+            symbol: The symbol name
+
+        Returns:
+            List of ComputedDataSetContainer with computed features
+        """
+
+        # Process each dataset (timeframe) in parallel
+        delayed_timeframe_computation = []
+        for dataset in datasets:
+            task = delayed(self._compute_features_for_dataset)(dataset, symbol)
+            delayed_timeframe_computation.append(task)
+
+        # Execute all processing tasks
+        processed_timeframe_containers: list[Optional[ComputedDataSetContainer]] = (
+            dask.compute(*delayed_timeframe_computation)
         )
 
-        logger.info("Merging context-related features with computed features.")
-        final_result = self.context_feature_service.merge_context_features(
-            merged_result, context_features
-        )
-
-        logger.info("Preprocessing finished.")
-        return final_result
+        # Filter out None results
+        return [
+            container
+            for container in processed_timeframe_containers
+            if container is not None
+        ]

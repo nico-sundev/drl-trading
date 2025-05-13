@@ -59,16 +59,12 @@ class ContextFeatureService:
         """
         # Get the DataFrame from the base dataset
         df = base_dataset.asset_price_dataset.copy()
-
         # Step 1: Validate primary columns exist
         self._validate_primary_columns(df)
 
-        # Step 2: Start with all available primary columns
-        selected_columns = [
-            col
-            for col in ALL_CONTEXT_COLUMNS
-            if col in df.columns and col not in DERIVED_CONTEXT_COLUMNS
-        ]
+        # Step 2: Start with only required primary columns
+        # (excluding optional ones like Open and Volume)
+        selected_columns = [col for col in PRIMARY_CONTEXT_COLUMNS if col in df.columns]
 
         # Step 3: Add/compute derived columns
         df = self._compute_derived_columns(df)
