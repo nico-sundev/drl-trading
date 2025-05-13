@@ -227,11 +227,11 @@ class FeatureAggregator(FeatureAggregatorInterface):
             return None
 
         # Check if index name is missing and if it's the drop_time param set
-        # if param_set.name == "drop_time" and feature_df.index.name is None:
-        #     logger.warning(
-        #         f"Feature DataFrame for {feature_name} has missing index name with drop_time param set. Skipping as expected."
-        #     )
-        #     return None
+        if feature_df.index.name is None:
+            logger.warning(
+                f"Feature DataFrame for {feature_name} has missing index name with drop_time param set. Skipping as expected."
+            )
+            return None
 
         # Ensure index has name "Time" for all other cases
         if feature_df.index.name != "Time":
