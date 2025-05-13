@@ -26,7 +26,7 @@ def higher_timeframe_dataset():
 def extended_higher_timeframe_dataset(higher_timeframe_dataset):
     """Higher timeframe dataset with extended range before and after base dataset."""
     # Original dataset with index reset to get Time as a column
-    df = higher_timeframe_dataset.reset_index("Time")
+    df = higher_timeframe_dataset.reset_index(names=["Time"])
 
     # Add rows with earlier timestamps (before base dataset starts)
     first_time = df["Time"].min()
@@ -40,9 +40,9 @@ def extended_higher_timeframe_dataset(higher_timeframe_dataset):
         row = df.iloc[0].copy()
         row["Time"] = t
         early_data.append(row)
-    early_df = pd.DataFrame(early_data)
-
-    # Add rows with later timestamps (after base dataset ends)
+    early_df = pd.DataFrame(
+        early_data
+    )  # Add rows with later timestamps (after base dataset ends)
     last_time = df["Time"].max()
     late_times = [
         last_time + timedelta(hours=4),
