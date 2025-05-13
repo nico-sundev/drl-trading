@@ -7,22 +7,29 @@ import pandas as pd
 import pytest
 from pandas import DataFrame
 
-from ai_trading.common.config.base_parameter_set_config import BaseParameterSetConfig
-from ai_trading.common.config.feature_config import FeatureDefinition, FeaturesConfig
-from ai_trading.common.config.feature_config_factory import (
+from drl_trading_framework.common.config.base_parameter_set_config import (
+    BaseParameterSetConfig,
+)
+from drl_trading_framework.common.config.feature_config import (
+    FeatureDefinition,
+    FeaturesConfig,
+)
+from drl_trading_framework.common.config.feature_config_factory import (
     FeatureConfigFactoryInterface,
 )
-from ai_trading.common.model.asset_price_dataset import AssetPriceDataSet
-from ai_trading.preprocess.feast.feast_service import (
+from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
+from drl_trading_framework.preprocess.feast.feast_service import (
     FeastService,
     FeastServiceInterface,
 )
-from ai_trading.preprocess.feature.collection.base_feature import BaseFeature
-from ai_trading.preprocess.feature.feature_aggregator import (
+from drl_trading_framework.preprocess.feature.collection.base_feature import BaseFeature
+from drl_trading_framework.preprocess.feature.feature_aggregator import (
     FeatureAggregator,
     FeatureAggregatorInterface,
 )
-from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
+from drl_trading_framework.preprocess.feature.feature_class_registry import (
+    FeatureClassRegistry,
+)
 
 
 class MockFeature(BaseFeature):
@@ -76,7 +83,7 @@ def mock_feature_definition(mock_param_set) -> FeatureDefinition:
     """Create a mock feature definition."""
     # Mock the FeatureConfigFactory before creating the FeatureDefinition
     with patch(
-        "ai_trading.common.config.feature_config_factory.FeatureConfigFactory"
+        "drl_trading_framework.common.config.feature_config_factory.FeatureConfigFactory"
     ) as mock_factory_class:
         # Create mock instance with get_config_class method
         mock_factory_instance = MagicMock(spec=FeatureConfigFactoryInterface)
@@ -395,7 +402,7 @@ def test_compute_single_feature_handles_missing_time_index_after_compute(
 
 
 @patch(
-    "ai_trading.preprocess.feature.feature_aggregator.delayed",
+    "drl_trading_framework.preprocess.feature.feature_aggregator.delayed",
     side_effect=lambda fn: fn,
 )
 def test_compute_returns_callable_tasks(
@@ -421,7 +428,7 @@ def test_compute_returns_callable_tasks(
 
 
 @patch(
-    "ai_trading.preprocess.feature.feature_aggregator.delayed",
+    "drl_trading_framework.preprocess.feature.feature_aggregator.delayed",
     side_effect=lambda fn: fn,
 )
 def test_compute_handles_multiple_param_sets(
@@ -450,7 +457,7 @@ def test_compute_handles_multiple_param_sets(
 
 
 @patch(
-    "ai_trading.preprocess.feature.feature_aggregator.delayed",
+    "drl_trading_framework.preprocess.feature.feature_aggregator.delayed",
     side_effect=lambda fn: fn,
 )
 def test_compute_skips_disabled_features_and_params(
@@ -466,7 +473,7 @@ def test_compute_skips_disabled_features_and_params(
 
     # Create second mock feature definition without relying on constructor validation
     with patch(
-        "ai_trading.common.config.feature_config_factory.FeatureConfigFactory"
+        "drl_trading_framework.common.config.feature_config_factory.FeatureConfigFactory"
     ) as mock_factory_class:
         mock_factory_instance = MagicMock(spec=FeatureConfigFactoryInterface)
         mock_factory_class.return_value = mock_factory_instance
@@ -504,7 +511,7 @@ def test_compute_skips_disabled_features_and_params(
     assert mock_delayed_patch.call_count == 0
 
 
-@patch("ai_trading.preprocess.feature.feature_aggregator.delayed")
+@patch("drl_trading_framework.preprocess.feature.feature_aggregator.delayed")
 def test_compute_execute_tasks_and_check_column_names(
     mock_delayed,
     feature_aggregator: FeatureAggregatorInterface,

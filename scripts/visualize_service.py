@@ -3,7 +3,9 @@ import numpy as np
 import pandas as pd
 from IPython.display import display
 
-from ai_trading.training.services.agent_testing_service import AgentTestingService
+from drl_trading_framework.training.services.agent_testing_service import (
+    AgentTestingService,
+)
 
 
 class TestAndVisualize:

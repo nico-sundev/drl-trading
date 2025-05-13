@@ -3,7 +3,7 @@ import random
 import numpy as np
 import pytest
 
-from ai_trading.training.gyms.utils.trading_env_utils import (
+from drl_trading_framework.training.gyms.utils.trading_env_utils import (
     TradingDirection,
     TradingEnvUtils,
 )

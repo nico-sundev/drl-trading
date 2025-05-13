@@ -5,9 +5,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from ai_trading.common.config.environment_config import EnvironmentConfig
-from ai_trading.training.gyms.custom_env import TradingEnv
-from ai_trading.training.gyms.utils.trading_env_utils import TradingDirection
+from drl_trading_framework.common.config.environment_config import EnvironmentConfig
+from drl_trading_framework.training.gyms.custom_env import TradingEnv
+from drl_trading_framework.training.gyms.utils.trading_env_utils import TradingDirection
 
 
 @pytest.fixture(autouse=True)

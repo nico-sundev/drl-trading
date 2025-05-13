@@ -1,12 +1,19 @@
 """Unit tests for the dependency injection mocked_container."""
 
-from ai_trading.common.config.application_config import ApplicationConfig
-from ai_trading.common.config.environment_config import EnvironmentConfig
-from ai_trading.common.config.feature_config import FeaturesConfig, FeatureStoreConfig
-from ai_trading.common.config.local_data_import_config import LocalDataImportConfig
-from ai_trading.common.config.rl_model_config import RlModelConfig
-from ai_trading.common.data_import.base_data_import_service import BaseDataImportService
-from ai_trading.common.data_import.local.csv_data_import_service import (
+from drl_trading_framework.common.config.application_config import ApplicationConfig
+from drl_trading_framework.common.config.environment_config import EnvironmentConfig
+from drl_trading_framework.common.config.feature_config import (
+    FeaturesConfig,
+    FeatureStoreConfig,
+)
+from drl_trading_framework.common.config.local_data_import_config import (
+    LocalDataImportConfig,
+)
+from drl_trading_framework.common.config.rl_model_config import RlModelConfig
+from drl_trading_framework.common.data_import.base_data_import_service import (
+    BaseDataImportService,
+)
+from drl_trading_framework.common.data_import.local.csv_data_import_service import (
     CsvDataImportService,
 )
 

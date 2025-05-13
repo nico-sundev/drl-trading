@@ -8,9 +8,11 @@ import pandas as pd
 import pytest
 from pytest_benchmark.fixture import BenchmarkFixture
 
-from ai_trading.common.di.containers import ApplicationContainer
-from ai_trading.common.model.asset_price_dataset import AssetPriceDataSet
-from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregatorInterface
+from drl_trading_framework.common.di.containers import ApplicationContainer
+from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
+from drl_trading_framework.preprocess.feature.feature_aggregator import (
+    FeatureAggregatorInterface,
+)
 
 logger = logging.getLogger(__name__)
 

@@ -3,8 +3,8 @@ from unittest.mock import Mock, patch
 import pandas as pd
 import pytest
 
-from ai_trading.common.model.asset_price_dataset import AssetPriceDataSet
-from ai_trading.preprocess.metrics.technical_metrics_service import (
+from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
+from drl_trading_framework.preprocess.metrics.technical_metrics_service import (
     TechnicalMetricsService,
     TechnicalMetricsServiceFactory,
 )

@@ -5,10 +5,12 @@ import pandas as pd
 import pytest
 from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv
 
-from ai_trading.common.agents.agent_factory import AgentFactory
-from ai_trading.common.agents.base_agent import BaseAgent
-from ai_trading.common.config.environment_config import EnvironmentConfig
-from ai_trading.training.services.agent_training_service import AgentTrainingService
+from drl_trading_framework.common.agents.agent_factory import AgentFactory
+from drl_trading_framework.common.agents.base_agent import BaseAgent
+from drl_trading_framework.common.config.environment_config import EnvironmentConfig
+from drl_trading_framework.training.services.agent_training_service import (
+    AgentTrainingService,
+)
 
 
 # Mock implementation of AbstractBaseAgent for testing

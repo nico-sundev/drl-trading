@@ -3,20 +3,30 @@ import os
 import pytest
 from pandas import DatetimeIndex
 
-from ai_trading.common.config.config_loader import ConfigLoader
-from ai_trading.common.config.feature_config_factory import FeatureConfigFactory
-from ai_trading.common.data_import.data_import_manager import DataImportManager
-from ai_trading.common.data_import.local.csv_data_import_service import (
+from drl_trading_framework.common.config.config_loader import ConfigLoader
+from drl_trading_framework.common.config.feature_config_factory import (
+    FeatureConfigFactory,
+)
+from drl_trading_framework.common.data_import.data_import_manager import (
+    DataImportManager,
+)
+from drl_trading_framework.common.data_import.local.csv_data_import_service import (
     CsvDataImportService,
 )
-from ai_trading.common.model.symbol_import_container import SymbolImportContainer
-from ai_trading.preprocess.data_set_utils.context_feature_service import (
+from drl_trading_framework.common.model.symbol_import_container import (
+    SymbolImportContainer,
+)
+from drl_trading_framework.preprocess.data_set_utils.context_feature_service import (
     ContextFeatureService,
 )
-from ai_trading.preprocess.data_set_utils.merge_service import MergeService
-from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregator
-from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
-from ai_trading.preprocess.preprocess_service import PreprocessService
+from drl_trading_framework.preprocess.data_set_utils.merge_service import MergeService
+from drl_trading_framework.preprocess.feature.feature_aggregator import (
+    FeatureAggregator,
+)
+from drl_trading_framework.preprocess.feature.feature_class_registry import (
+    FeatureClassRegistry,
+)
+from drl_trading_framework.preprocess.preprocess_service import PreprocessService
 
 
 @pytest.fixture
@@ -63,7 +73,7 @@ def class_registry():
 @pytest.fixture
 def feast_service(config):
     """Create a real FeastService for testing."""
-    from ai_trading.preprocess.feast.feast_service import FeastService
+    from drl_trading_framework.preprocess.feast.feast_service import FeastService
 
     return FeastService(config=config.feature_store_config)
 

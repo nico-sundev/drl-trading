@@ -1,5 +1,5 @@
 """
-    Setup file for ai_trading.
+    Setup file for drl_trading_framework.
     Use setup.cfg to configure your project.
 
     This file was generated with PyScaffold 4.6.

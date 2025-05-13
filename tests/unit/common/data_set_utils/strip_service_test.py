@@ -3,8 +3,8 @@ from datetime import timedelta
 import pandas as pd
 import pytest
 
-from ai_trading.common.model.asset_price_dataset import AssetPriceDataSet
-from ai_trading.preprocess.data_set_utils.strip_service import StripService
+from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
+from drl_trading_framework.preprocess.data_set_utils.strip_service import StripService
 from tests.unit.fixture.sample_data import mock_ohlcv_data_1h, mock_ohlcv_data_4h
 
 

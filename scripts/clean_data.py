@@ -1,15 +1,17 @@
 import os
 from typing import List
 
-from ai_trading.common.config.local_data_import_config import (
+from drl_trading_framework.common.config.local_data_import_config import (
     LocalDataImportConfig,
     SymbolConfig,
 )
-from ai_trading.common.data_import.data_import_manager import DataImportManager
-from ai_trading.common.data_import.local.csv_data_import_service import (
+from drl_trading_framework.common.data_import.data_import_manager import (
+    DataImportManager,
+)
+from drl_trading_framework.common.data_import.local.csv_data_import_service import (
     CsvDataImportService,
 )
-from ai_trading.common.model.asset_price_import_properties import (
+from drl_trading_framework.common.model.asset_price_import_properties import (
     AssetPriceImportProperties,
 )
 

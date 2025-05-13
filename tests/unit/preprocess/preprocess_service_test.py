@@ -5,14 +5,20 @@ import pandas as pd
 import pytest
 from pandas import DataFrame
 
-from ai_trading.common.config.feature_config import FeaturesConfig
-from ai_trading.common.model.asset_price_dataset import AssetPriceDataSet
-from ai_trading.common.model.symbol_import_container import SymbolImportContainer
-from ai_trading.preprocess.data_set_utils.merge_service import MergeService
-from ai_trading.preprocess.feast.feast_service import FeastService
-from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregator
-from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
-from ai_trading.preprocess.preprocess_service import PreprocessService
+from drl_trading_framework.common.config.feature_config import FeaturesConfig
+from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
+from drl_trading_framework.common.model.symbol_import_container import (
+    SymbolImportContainer,
+)
+from drl_trading_framework.preprocess.data_set_utils.merge_service import MergeService
+from drl_trading_framework.preprocess.feast.feast_service import FeastService
+from drl_trading_framework.preprocess.feature.feature_aggregator import (
+    FeatureAggregator,
+)
+from drl_trading_framework.preprocess.feature.feature_class_registry import (
+    FeatureClassRegistry,
+)
+from drl_trading_framework.preprocess.preprocess_service import PreprocessService
 
 
 @pytest.fixture
@@ -190,7 +196,7 @@ class TestPreprocessService:
 
         # Mock FeatureAggregator creation and usage
         with patch(
-            "ai_trading.preprocess.feature.feature_aggregator.FeatureAggregator"
+            "drl_trading_framework.preprocess.feature.feature_aggregator.FeatureAggregator"
         ) as mock_feature_agg_cls:
             mock_feature_agg = MagicMock()
             mock_feature_agg.compute.return_value = [MagicMock()]
@@ -201,7 +207,7 @@ class TestPreprocessService:
 
                 # Mock MergeService
                 with patch(
-                    "ai_trading.preprocess.preprocess_service.MergeService"
+                    "drl_trading_framework.preprocess.preprocess_service.MergeService"
                 ) as mock_merge_service_cls:
                     mock_merge_service_cls.return_value = mock_merge_service
 
@@ -264,7 +270,7 @@ class TestPreprocessService:
 
         # Mock FeatureAggregator to return empty list of tasks
         with patch(
-            "ai_trading.preprocess.feature.feature_aggregator.FeatureAggregator"
+            "drl_trading_framework.preprocess.feature.feature_aggregator.FeatureAggregator"
         ) as mock_feature_agg_cls:
             mock_feature_agg = MagicMock()
             mock_feature_agg.compute.return_value = []  # No tasks!
@@ -272,7 +278,7 @@ class TestPreprocessService:
 
             # Mock MergeService
             with patch(
-                "ai_trading.preprocess.preprocess_service.MergeService"
+                "drl_trading_framework.preprocess.preprocess_service.MergeService"
             ) as mock_merge_service_cls:
                 mock_merge_service_cls.return_value = mock_merge_service
 
@@ -320,7 +326,7 @@ class TestPreprocessService:
         ):
             # Mock FeatureAggregator
             with patch(
-                "ai_trading.preprocess.feature.feature_aggregator.FeatureAggregator"
+                "drl_trading_framework.preprocess.feature.feature_aggregator.FeatureAggregator"
             ) as mock_feature_agg_cls:
                 mock_feature_agg = MagicMock()
                 mock_feature_agg.compute.return_value = [MagicMock()]
@@ -328,7 +334,7 @@ class TestPreprocessService:
 
                 # Mock separate_computed_datasets to return (None, [])
                 with patch(
-                    "ai_trading.preprocess.preprocess_service.separate_computed_datasets",
+                    "drl_trading_framework.preprocess.preprocess_service.separate_computed_datasets",
                     return_value=(None, []),
                 ):
 
@@ -364,7 +370,7 @@ class TestPreprocessService:
         with patch("dask.compute", return_value=([None, None],)):
             # Mock FeatureAggregator
             with patch(
-                "ai_trading.preprocess.feature.feature_aggregator.FeatureAggregator"
+                "drl_trading_framework.preprocess.feature.feature_aggregator.FeatureAggregator"
             ) as mock_feature_agg_cls:
                 mock_feature_agg = MagicMock()
                 mock_feature_agg.compute.return_value = [MagicMock(), MagicMock()]

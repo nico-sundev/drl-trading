@@ -5,10 +5,10 @@ import pandas as pd
 import pytest
 from pandas import DataFrame
 
-from ai_trading.preprocess.feature.custom.enum.wick_handle_strategy_enum import (
+from drl_trading_framework.preprocess.feature.custom.enum.wick_handle_strategy_enum import (
     WICK_HANDLE_STRATEGY,
 )
-from ai_trading.preprocess.feature.custom.range_indicator import (
+from drl_trading_framework.preprocess.feature.custom.range_indicator import (
     PIVOT_HIGH,
     PIVOT_LOW,
     SupportResistanceFinder,

@@ -4,7 +4,7 @@ from string import Template
 
 # ==== CONFIGURATION ====
 
-FEATURE_PACKAGE = "../src/ai_trading/preprocess/feature/collection"
+FEATURE_PACKAGE = "../src/drl_trading_framework/preprocess/feature/collection"
 TEST_PACKAGE = "../tests/preprocess/feature/collection"
 TEMPLATE_DIR = "../src/resources/templates"  # Folder where your templates live
 

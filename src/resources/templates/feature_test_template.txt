@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from pandas import DataFrame, DatetimeIndex, Series, to_datetime
 
-from ai_trading.preprocess.feature.collection.${feature_name}_feature import ${FeatureName}Feature
+from drl_trading_framework.preprocess.feature.collection.${feature_name}_feature import ${FeatureName}Feature
 
 
 @pytest.fixture

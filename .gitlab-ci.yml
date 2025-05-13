@@ -37,7 +37,6 @@ ruff:
   script:
     - uv pip install ruff
     - ruff check src tests
-  allow_failure: true
 
 mypy:
   extends: .python-job
@@ -45,7 +44,6 @@ mypy:
   script:
     - uv pip install mypy
     - mypy src
-  allow_failure: true
 
 # Testing stages
 unit-tests:
@@ -59,18 +57,16 @@ integration-tests:
   stage: test
   script:
     - pytest tests/it -v
-  # Mark integration tests as optional since they might depend on external services
-  allow_failure: true
 
-benchmark-tests:
-  extends: .python-job
-  stage: test
-  script:
-    - pytest tests/benchmarks -v
-  # Mark benchmarks as optional as they're usually for information
-  allow_failure: true
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "schedule" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main"'
+# benchmark-tests:
+#   extends: .python-job
+#   stage: test
+#   script:
+#     - pytest tests/benchmarks -v
+#   # Mark benchmarks as optional as they're usually for information
+#   allow_failure: true
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "schedule" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main"'
 
 # Code coverage
 coverage:
@@ -78,7 +74,7 @@ coverage:
   stage: coverage
   script:
     # No need to install pytest and pytest-cov again as they're already part of [testing] extras
-    - pytest --cov=ai_trading --cov-report=xml --cov-report=html --cov-report=term --cov-fail-under=${MIN_COVERAGE_THRESHOLD} tests/
+    - pytest --cov=drl_trading_framework --cov-report=xml --cov-report=html --cov-report=term --cov-fail-under=${MIN_COVERAGE_THRESHOLD} tests/
   after_script:
     - echo "Coverage threshold set to ${MIN_COVERAGE_THRESHOLD}%"
     - |

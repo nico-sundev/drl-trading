@@ -5,8 +5,8 @@ import numpy as np
 import pytest
 from stable_baselines3.common.vec_env import VecEnv
 
-from ai_trading.common.agents.agent_factory import AgentFactory
-from ai_trading.common.agents.ppo_agent import PPOAgent
+from drl_trading_framework.common.agents.agent_factory import AgentFactory
+from drl_trading_framework.common.agents.ppo_agent import PPOAgent
 
 
 @pytest.fixture

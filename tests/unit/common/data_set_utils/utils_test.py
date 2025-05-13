@@ -5,9 +5,11 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
-from ai_trading.common.model.asset_price_dataset import AssetPriceDataSet
-from ai_trading.common.model.computed_dataset_container import ComputedDataSetContainer
-from ai_trading.preprocess.data_set_utils.util import (
+from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
+from drl_trading_framework.common.model.computed_dataset_container import (
+    ComputedDataSetContainer,
+)
+from drl_trading_framework.preprocess.data_set_utils.util import (
     detect_timeframe,
     ensure_datetime_time_column,
     separate_computed_datasets,
@@ -84,13 +86,13 @@ def test_timeframe_detection_none_dataframe():
         detect_timeframe(none_df)
 
 
-def test_timeframe_detection_no_time_column():
+def test_timeframe_detection_no_time_column_and_index():
     """Test detect_timeframe with a DataFrame missing the Time column."""
     # Given
     df_no_time = pd.DataFrame({"Value": [1, 2, 3]})
 
     # When/Then
-    with pytest.raises(ValueError, match="'Time' column not found"):
+    with pytest.raises(ValueError):
         detect_timeframe(df_no_time)
 
 

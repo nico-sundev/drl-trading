@@ -5,9 +5,13 @@ import pandas as pd
 import pytest
 from pandas import DataFrame
 
-from ai_trading.common.config.feature_config_collection import BollbandsConfig
-from ai_trading.preprocess.feature.collection.bollbands_feature import BollbandsFeature
-from ai_trading.preprocess.metrics.technical_metrics_service import (
+from drl_trading_framework.common.config.feature_config_collection import (
+    BollbandsConfig,
+)
+from drl_trading_framework.preprocess.feature.collection.bollbands_feature import (
+    BollbandsFeature,
+)
+from drl_trading_framework.preprocess.metrics.technical_metrics_service import (
     TechnicalMetricsServiceInterface,
 )
 

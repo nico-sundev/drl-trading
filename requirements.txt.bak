@@ -1,4 +1,4 @@
--e git+https://gitlab.com/ai1473543/tradingbot3.0.git@10a246299dc855c978502c658d8d9de0d59ac7d1#egg=ai_trading
+-e git+https://gitlab.com/ai1473543/tradingbot3.0.git@10a246299dc855c978502c658d8d9de0d59ac7d1#egg=drl_trading_framework
 alabaster==1.0.0
 asttokens==2.4.1
 babel==2.16.0

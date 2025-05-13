@@ -6,10 +6,14 @@ from pathlib import Path
 import pytest
 from feast import FeatureStore
 
-from ai_trading.common.config.config_loader import ConfigLoader
-from ai_trading.common.config.feature_config_factory import FeatureConfigFactory
-from ai_trading.common.di.containers import ApplicationContainer
-from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
+from drl_trading_framework.common.config.config_loader import ConfigLoader
+from drl_trading_framework.common.config.feature_config_factory import (
+    FeatureConfigFactory,
+)
+from drl_trading_framework.common.di.containers import ApplicationContainer
+from drl_trading_framework.preprocess.feature.feature_class_registry import (
+    FeatureClassRegistry,
+)
 
 
 @pytest.fixture(scope="session")

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 # Project metadata
 [project]
-name = "ai_trading"
+name = "drl_trading_framework"
 description = "AI-powered trading system with reinforcement learning capabilities"
 authors = [
     {name = "sonntagnico", email = "nico-tor@hotmail.com"},
@@ -71,10 +71,10 @@ ignore = ["E501"]  # Line length is handled by black
 [tool.ruff.lint.per-file-ignores]
 "notebooks/*.ipynb" = ["E402", "F403"]
 "tests/**/*" = ["F841"]  # Allow unused variables in tests
-"src/ai_trading/preprocess/feature/todo_*.py" = ["B019"]  # Allow lru_cache in development files
+"src/drl_trading_framework/preprocess/feature/todo_*.py" = ["B019"]  # Allow lru_cache in development files
 
 [tool.ruff.lint.isort]
-known-first-party = ["ai_trading"]
+known-first-party = ["drl_trading_framework"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -121,7 +121,7 @@ addopts = [
     # "--verbose",
     "-ra",
     "-m not slow"
-    # "--cov=ai_trading",
+    # "--cov=drl_trading_framework",
     # "--cov-report=term-missing"
 ]
 
@@ -189,7 +189,7 @@ exclude = ["tests"]
 
 # Coverage configuration (migrated from .coveragerc)
 [tool.coverage.run]
-source = ["ai_trading"]
+source = ["drl_trading_framework"]
 branch = true
 omit = [
     "*/tests/*",

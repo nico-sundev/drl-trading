@@ -5,9 +5,9 @@ import pytest
 from feast import Entity
 from pandas import DataFrame
 
-from ai_trading.common.config.feature_config import FeatureStoreConfig
-from ai_trading.common.model.asset_price_dataset import AssetPriceDataSet
-from ai_trading.preprocess.feast.feast_service import FeastService
+from drl_trading_framework.common.config.feature_config import FeatureStoreConfig
+from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
+from drl_trading_framework.preprocess.feast.feast_service import FeastService
 
 
 @pytest.fixture
@@ -49,7 +49,7 @@ def mock_feast_service(mock_feature_store_config) -> FeastService:
     """Create a FeastService instance with mocked dependencies."""
     # Patch where FeatureStore is looked up
     with patch(
-        "ai_trading.preprocess.feast.feast_service.FeatureStore"
+        "drl_trading_framework.preprocess.feast.feast_service.FeatureStore"
     ) as mock_feast_constructor:
         mock_store_instance = MagicMock()
         mock_feast_constructor.return_value = mock_store_instance
@@ -67,7 +67,9 @@ def test_init_with_enabled_config(
     """Test FeastService initialization with enabled config."""
     # Given
     # Patch where FeatureStore is looked up
-    with patch("ai_trading.preprocess.feast.feast_service.FeatureStore") as mock_feast:
+    with patch(
+        "drl_trading_framework.preprocess.feast.feast_service.FeatureStore"
+    ) as mock_feast:
         mock_store = MagicMock()
         mock_feast.return_value = mock_store
 
@@ -91,7 +93,9 @@ def test_init_with_disabled_config(
     mock_feature_store_config.enabled = False
 
     # Patch where FeatureStore is looked up
-    with patch("ai_trading.preprocess.feast.feast_service.FeatureStore") as mock_feast:
+    with patch(
+        "drl_trading_framework.preprocess.feast.feast_service.FeatureStore"
+    ) as mock_feast:
         # When
         service = FeastService(config=mock_feature_store_config)
 
@@ -255,10 +259,10 @@ def test_create_feature_view(mock_feast_service):
     # When
     # Patch where FileSource and FeatureView are looked up
     with patch(
-        "ai_trading.preprocess.feast.feast_service.FileSource"
+        "drl_trading_framework.preprocess.feast.feast_service.FileSource"
     ) as mock_file_source:
         with patch(
-            "ai_trading.preprocess.feast.feast_service.FeatureView"
+            "drl_trading_framework.preprocess.feast.feast_service.FeatureView"
         ) as mock_feature_view:
             mock_source_instance = MagicMock()
             mock_view_instance = MagicMock()

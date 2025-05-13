@@ -2,10 +2,10 @@ import copy
 
 import pytest
 
-from ai_trading.common.data_import.local.csv_data_import_service import (
+from drl_trading_framework.common.data_import.local.csv_data_import_service import (
     CsvDataImportService,
 )
-from ai_trading.common.di.containers import ApplicationContainer
+from drl_trading_framework.common.di.containers import ApplicationContainer
 
 
 @pytest.fixture

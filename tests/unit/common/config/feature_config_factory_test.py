@@ -9,8 +9,12 @@ from unittest import mock
 
 import pytest
 
-from ai_trading.common.config.base_parameter_set_config import BaseParameterSetConfig
-from ai_trading.common.config.feature_config_factory import FeatureConfigFactory
+from drl_trading_framework.common.config.base_parameter_set_config import (
+    BaseParameterSetConfig,
+)
+from drl_trading_framework.common.config.feature_config_factory import (
+    FeatureConfigFactory,
+)
 
 
 class TestFeatureConfigFactory:

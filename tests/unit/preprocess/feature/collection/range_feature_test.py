@@ -3,8 +3,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 from pandas import DataFrame, DatetimeIndex, date_range
 
-from ai_trading.preprocess.feature.collection.range_feature import RangeFeature
-from ai_trading.preprocess.feature.custom.enum.wick_handle_strategy_enum import (
+from drl_trading_framework.preprocess.feature.collection.range_feature import (
+    RangeFeature,
+)
+from drl_trading_framework.preprocess.feature.custom.enum.wick_handle_strategy_enum import (
     WICK_HANDLE_STRATEGY,
 )
 
@@ -49,7 +51,9 @@ def prepared_source_df(feature):
         yield mock_df
 
 
-@patch("ai_trading.preprocess.feature.collection.range_feature.SupportResistanceFinder")
+@patch(
+    "drl_trading_framework.preprocess.feature.collection.range_feature.SupportResistanceFinder"
+)
 def test_compute_range_feature(mock_finder_class, feature, config, prepared_source_df):
     # Given
     mock_finder = MagicMock()

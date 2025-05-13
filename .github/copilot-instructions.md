@@ -16,7 +16,7 @@ Maintain a constructive, but rigorous, approach. Your role is not to argue for t
 - Always take care of proper error handling
 - Code should be cleaned by `ruff check <file_path> --fix`
 - Code should be validated by running `mypy <file_path>`
-- Extend existing config classes rather than hardcoding something, like: `src/ai_trading/config/application_config.py` and all config classes recursively referenced
+- Extend existing config classes rather than hardcoding something, like: `src/drl_trading_framework/config/application_config.py` and all config classes recursively referenced
 - update `applicationConfig.json` and its test implementation `applicationConfig-test.json` if any config class changes
 - Always keep an eye of overall project architecture
 - Clean up unreferenced code, config left-overs and always think about things if they are actually in use and needed
@@ -24,7 +24,7 @@ Maintain a constructive, but rigorous, approach. Your role is not to argue for t
 - Testing:
     - as a general rule, a test is located in same parent directories like the class/module it is implemented for.
       Example:
-      class/model to be tested: `src/ai_trading/data_set_utils/merge_service.py`
+      class/model to be tested: `src/drl_trading_framework/data_set_utils/merge_service.py`
       test location: `tests/<unit or it>/data_set_utils/merge_service_test.py`
 
     - unit tests below `tests/unit/` directory

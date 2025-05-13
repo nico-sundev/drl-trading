@@ -3,8 +3,10 @@ from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 
-from ai_trading.common.model.split_dataset_container import SplitDataSetContainer
-from ai_trading.preprocess.data_set_utils.split_service import SplitService
+from drl_trading_framework.common.model.split_dataset_container import (
+    SplitDataSetContainer,
+)
+from drl_trading_framework.preprocess.data_set_utils.split_service import SplitService
 
 
 @pytest.fixture

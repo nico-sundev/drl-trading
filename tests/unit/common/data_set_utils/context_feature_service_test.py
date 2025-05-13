@@ -4,13 +4,13 @@ import pandas as pd
 import pytest
 from pandas import DataFrame
 
-from ai_trading.common.model.asset_price_dataset import AssetPriceDataSet
-from ai_trading.common.trading_constants import (
+from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
+from drl_trading_framework.common.trading_constants import (
     ALL_CONTEXT_COLUMNS,
     DERIVED_CONTEXT_COLUMNS,
     PRIMARY_CONTEXT_COLUMNS,
 )
-from ai_trading.preprocess.data_set_utils.context_feature_service import (
+from drl_trading_framework.preprocess.data_set_utils.context_feature_service import (
     ContextFeatureService,
 )
 from tests.unit.fixture.sample_data import mock_ohlcv_data_1h

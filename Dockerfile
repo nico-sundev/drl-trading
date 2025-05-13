@@ -7,7 +7,7 @@
 #  - optionally execute provided console_script in ENTRYPOINT
 #
 # Alternatively, remove builder steps, take `environment.docker.yml` from your repo
-# and `pip install ai_trading` using an artifact store. Faster and more robust.
+# and `pip install drl_trading_framework` using an artifact store. Faster and more robust.
 
 FROM condaforge/mambaforge AS builder
 WORKDIR /root
@@ -17,11 +17,11 @@ RUN rm -rf dist build
 
 RUN mamba env create -f environment.yml
 # RUN pip install -e . # not needed since it's in environment.yml
-SHELL ["mamba", "run", "-n", "ai_trading", "/bin/bash", "-c"]
+SHELL ["mamba", "run", "-n", "drl_trading_framework", "/bin/bash", "-c"]
 
 # Build package
 RUN tox -e build
-RUN mamba env export -n ai_trading -f environment.docker.yml
+RUN mamba env export -n drl_trading_framework -f environment.docker.yml
 
 
 FROM  condaforge/mambaforge AS runner
@@ -52,7 +52,7 @@ RUN mamba clean --packages --yes
 RUN rm -rf /home/app/.cache/pip
 
 # Make RUN commands use the conda environment
-SHELL ["conda", "run", "-n", "ai_trading", "/bin/bash", "-c"]
+SHELL ["conda", "run", "-n", "drl_trading_framework", "/bin/bash", "-c"]
 
 RUN pip install ./*.whl
 
@@ -61,4 +61,4 @@ RUN pip install ./*.whl
 
 # Code to run when container is started. Replace `YOUR_CONSOLE_SCRIPT` with the
 # value of `console_scripts` in section `[options.entry_points]` of `setup.cfg`.
-# ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "ai_trading", "YOUR_CONSOLE_SCRIPT"]
+# ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "drl_trading_framework", "YOUR_CONSOLE_SCRIPT"]

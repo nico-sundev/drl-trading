@@ -3,7 +3,7 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from ai_trading.preprocess.data_set_utils.merge_service import (
+from drl_trading_framework.preprocess.data_set_utils.merge_service import (
     MergeService,
     MergeServiceInterface,
 )

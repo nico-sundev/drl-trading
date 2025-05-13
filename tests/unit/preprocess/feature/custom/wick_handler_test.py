@@ -1,10 +1,10 @@
 import pandas as pd
 import pytest
 
-from ai_trading.preprocess.feature.custom.enum.wick_handle_strategy_enum import (
+from drl_trading_framework.preprocess.feature.custom.enum.wick_handle_strategy_enum import (
     WICK_HANDLE_STRATEGY,
 )
-from ai_trading.preprocess.feature.custom.wick_handler import WickHandler
+from drl_trading_framework.preprocess.feature.custom.wick_handler import WickHandler
 
 
 def test_empty_dataframe():

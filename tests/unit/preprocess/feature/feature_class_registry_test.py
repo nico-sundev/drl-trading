@@ -4,8 +4,10 @@ from unittest import mock
 
 import pytest
 
-from ai_trading.preprocess.feature.collection.base_feature import BaseFeature
-from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
+from drl_trading_framework.preprocess.feature.collection.base_feature import BaseFeature
+from drl_trading_framework.preprocess.feature.feature_class_registry import (
+    FeatureClassRegistry,
+)
 
 
 # Mocked Feature classes for testing
@@ -38,7 +40,7 @@ def test_discover_feature_classes(registry: FeatureClassRegistry) -> None:
         mock_feature_module.RsiFeature = RsiFeature
 
         def import_module_side_effect(name: str) -> mock.Mock:
-            if name == "ai_trading.preprocess.feature.collection":
+            if name == "drl_trading_framework.preprocess.feature.collection":
                 return mock_base_package
             else:
                 return mock_feature_module

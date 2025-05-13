@@ -4,15 +4,17 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from ai_trading.common.config.config_loader import ConfigLoader
-from ai_trading.common.config.feature_config_collection import (
+from drl_trading_framework.common.config.config_loader import ConfigLoader
+from drl_trading_framework.common.config.feature_config_collection import (
     MacdConfig,
     RangeConfig,
     RocConfig,
     RsiConfig,
 )
-from ai_trading.common.config.feature_config_factory import FeatureConfigFactory
-from ai_trading.preprocess.feature.custom.enum.wick_handle_strategy_enum import (
+from drl_trading_framework.common.config.feature_config_factory import (
+    FeatureConfigFactory,
+)
+from drl_trading_framework.preprocess.feature.custom.enum.wick_handle_strategy_enum import (
     WICK_HANDLE_STRATEGY,
 )
 
@@ -128,7 +130,7 @@ def temp_config_file():
             ]
         },
         "rlModelConfig": {
-            "agentRegistryPackage": "ai_trading.common.agents",
+            "agentRegistryPackage": "drl_trading_framework.common.agents",
             "agents": ["PPO", "A2C", "DDPG", "SAC", "TD3", "Ensemble"],
             "trainingSplitRatio": 0.8,
             "validatingSplitRatio": 0.1,
