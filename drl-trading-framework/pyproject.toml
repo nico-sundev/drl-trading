@@ -1,6 +1,6 @@
 [build-system]
-# AVOID CHANGING REQUIRES: IT WILL BE UPDATED BY PYSCAFFOLD!
-requires = ["setuptools>=46.1.0", "setuptools_scm[toml]>=5"]
+# Modified to remove setuptools_scm dependency
+requires = ["setuptools>=46.1.0"]
 build-backend = "setuptools.build_meta"
 
 # Project metadata
@@ -17,7 +17,9 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python",
 ]
-dynamic = ["version"]
+version = "0.1.0"
+# Comment out dynamic version for now
+# dynamic = ["version"]
 dependencies = [
     # Core dependencies for runtime
     "numpy",
@@ -32,6 +34,7 @@ dependencies = [
     "click",
     # Dependency injection framework
     "dependency_injector",
+    "feast"
 ]
 
 [project.urls]
@@ -49,11 +52,11 @@ dev = [
     "ipython",
 ]
 
-# Keep existing setuptools_scm configuration
-[tool.setuptools_scm]
+# Disable setuptools_scm configuration for now
+# [tool.setuptools_scm]
 # For smarter version schemes and other configuration options,
 # check out https://github.com/pypa/setuptools_scm
-version_scheme = "no-guess-dev"
+# version_scheme = "no-guess-dev"
 
 [tool.ruff]
 target-version = "py38"
@@ -211,5 +214,5 @@ exclude_lines = [
 
 [tool.uv.workspace]
 members = [
-    "drl-trading-impl-example",
+    "../drl-trading-impl-example",
 ]
