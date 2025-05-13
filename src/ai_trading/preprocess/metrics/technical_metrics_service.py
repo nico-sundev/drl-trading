@@ -5,8 +5,8 @@ from typing import Dict, Optional
 import pandas as pd
 from pandas import DataFrame
 
-from ai_trading.data_set_utils.util import ensure_datetime_index
-from ai_trading.model.asset_price_dataset import AssetPriceDataSet
+from ai_trading.common.model.asset_price_dataset import AssetPriceDataSet
+from ai_trading.preprocess.data_set_utils.util import ensure_datetime_index
 
 logger = logging.getLogger(__name__)
 

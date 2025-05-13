@@ -98,7 +98,7 @@
     ]
   },
   "rlModelConfig": {
-    "agentRegistryPackage": "ai_trading.agents",
+    "agentRegistryPackage": "ai_trading.common.agents",
     "agents": ["PPO", "A2C", "DDPG", "SAC", "TD3", "Ensemble"],
     "trainingSplitRatio": 0.8,
     "validatingSplitRatio": 0.1,

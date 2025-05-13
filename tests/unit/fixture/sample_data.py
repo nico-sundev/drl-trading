@@ -1,6 +1,6 @@
 import pandas as pd
 
-from ai_trading.model.asset_price_dataset import AssetPriceDataSet
+from ai_trading.common.model.asset_price_dataset import AssetPriceDataSet
 
 
 def mock_ohlcv_data_1h(base_dataset=True):

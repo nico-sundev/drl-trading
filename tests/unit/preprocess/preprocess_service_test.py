@@ -5,10 +5,10 @@ import pandas as pd
 import pytest
 from pandas import DataFrame
 
-from ai_trading.config.feature_config import FeaturesConfig
-from ai_trading.data_set_utils.merge_service import MergeService
-from ai_trading.model.asset_price_dataset import AssetPriceDataSet
-from ai_trading.model.symbol_import_container import SymbolImportContainer
+from ai_trading.common.config.feature_config import FeaturesConfig
+from ai_trading.common.model.asset_price_dataset import AssetPriceDataSet
+from ai_trading.common.model.symbol_import_container import SymbolImportContainer
+from ai_trading.preprocess.data_set_utils.merge_service import MergeService
 from ai_trading.preprocess.feast.feast_service import FeastService
 from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregator
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry

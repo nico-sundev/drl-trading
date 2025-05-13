@@ -7,13 +7,13 @@ from dask import delayed
 from dask.delayed import Delayed
 from pandas import DataFrame
 
-from ai_trading.config.feature_config import (
+from ai_trading.common.config.feature_config import (
     BaseParameterSetConfig,
     FeatureDefinition,
     FeaturesConfig,
 )
-from ai_trading.data_set_utils.util import ensure_datetime_index
-from ai_trading.model.asset_price_dataset import AssetPriceDataSet
+from ai_trading.common.model.asset_price_dataset import AssetPriceDataSet
+from ai_trading.preprocess.data_set_utils.util import ensure_datetime_index
 from ai_trading.preprocess.feast.feast_service import FeastServiceInterface
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
 from ai_trading.preprocess.metrics.technical_metrics_service import (

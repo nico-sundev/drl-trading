@@ -3,13 +3,17 @@ import os
 import pytest
 from pandas import DatetimeIndex
 
-from ai_trading.config.config_loader import ConfigLoader
-from ai_trading.config.feature_config_factory import FeatureConfigFactory
-from ai_trading.data_import.data_import_manager import DataImportManager
-from ai_trading.data_import.local.csv_data_import_service import CsvDataImportService
-from ai_trading.data_set_utils.context_feature_service import ContextFeatureService
-from ai_trading.data_set_utils.merge_service import MergeService
-from ai_trading.model.symbol_import_container import SymbolImportContainer
+from ai_trading.common.config.config_loader import ConfigLoader
+from ai_trading.common.config.feature_config_factory import FeatureConfigFactory
+from ai_trading.common.data_import.data_import_manager import DataImportManager
+from ai_trading.common.data_import.local.csv_data_import_service import (
+    CsvDataImportService,
+)
+from ai_trading.common.model.symbol_import_container import SymbolImportContainer
+from ai_trading.preprocess.data_set_utils.context_feature_service import (
+    ContextFeatureService,
+)
+from ai_trading.preprocess.data_set_utils.merge_service import MergeService
 from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregator
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
 from ai_trading.preprocess.preprocess_service import PreprocessService

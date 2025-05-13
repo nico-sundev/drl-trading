@@ -1,13 +1,17 @@
 import os
 from typing import List
 
-from ai_trading.config.local_data_import_config import (
+from ai_trading.common.config.local_data_import_config import (
     LocalDataImportConfig,
     SymbolConfig,
 )
-from ai_trading.data_import.data_import_manager import DataImportManager
-from ai_trading.data_import.local.csv_data_import_service import CsvDataImportService
-from ai_trading.model.asset_price_import_properties import AssetPriceImportProperties
+from ai_trading.common.data_import.data_import_manager import DataImportManager
+from ai_trading.common.data_import.local.csv_data_import_service import (
+    CsvDataImportService,
+)
+from ai_trading.common.model.asset_price_import_properties import (
+    AssetPriceImportProperties,
+)
 
 ticker = "EURUSD"
 

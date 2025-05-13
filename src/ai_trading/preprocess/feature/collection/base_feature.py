@@ -3,8 +3,8 @@ from typing import Optional
 
 from pandas import DataFrame
 
-from ai_trading.config.base_parameter_set_config import BaseParameterSetConfig
-from ai_trading.data_set_utils.util import ensure_datetime_index
+from ai_trading.common.config.base_parameter_set_config import BaseParameterSetConfig
+from ai_trading.preprocess.data_set_utils.util import ensure_datetime_index
 from ai_trading.preprocess.metrics.technical_metrics_service import (
     TechnicalMetricsServiceInterface,
 )

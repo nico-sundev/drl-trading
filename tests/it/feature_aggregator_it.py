@@ -6,8 +6,8 @@ import dask
 import pandas as pd
 import pytest
 
-from ai_trading.di.containers import ApplicationContainer
-from ai_trading.model.asset_price_dataset import AssetPriceDataSet
+from ai_trading.common.di.containers import ApplicationContainer
+from ai_trading.common.model.asset_price_dataset import AssetPriceDataSet
 from ai_trading.preprocess.feast.feast_service import FeastServiceInterface
 from ai_trading.preprocess.feature.feature_aggregator import FeatureAggregatorInterface
 

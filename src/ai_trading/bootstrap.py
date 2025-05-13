@@ -5,9 +5,9 @@ from typing import Dict, List, Optional, Tuple
 from pandas import DataFrame
 from stable_baselines3.common.vec_env import DummyVecEnv
 
-from ai_trading.agents.base_agent import BaseAgent
-from ai_trading.config.logging_config import configure_logging
-from ai_trading.di.containers import ApplicationContainer
+from ai_trading.common.agents.base_agent import BaseAgent
+from ai_trading.common.config.logging_config import configure_logging
+from ai_trading.common.di.containers import ApplicationContainer
 
 logger = logging.getLogger(__name__)
 

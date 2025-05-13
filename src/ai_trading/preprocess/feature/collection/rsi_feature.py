@@ -3,8 +3,8 @@ from typing import Optional
 import pandas_ta as ta
 from pandas import DataFrame
 
-from ai_trading.config.base_parameter_set_config import BaseParameterSetConfig
-from ai_trading.config.feature_config_collection import RsiConfig
+from ai_trading.common.config.base_parameter_set_config import BaseParameterSetConfig
+from ai_trading.common.config.feature_config_collection import RsiConfig
 from ai_trading.preprocess.feature.collection.base_feature import BaseFeature
 from ai_trading.preprocess.metrics.technical_metrics_service import (
     TechnicalMetricsServiceInterface,

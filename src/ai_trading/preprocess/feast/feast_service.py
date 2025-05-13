@@ -7,8 +7,8 @@ from feast import Entity, FeatureStore, FeatureView, Field, FileSource
 from feast.types import Float32
 from pandas import DataFrame
 
-from ai_trading.config.feature_config import FeatureStoreConfig
-from ai_trading.model.asset_price_dataset import AssetPriceDataSet
+from ai_trading.common.config.feature_config import FeatureStoreConfig
+from ai_trading.common.model.asset_price_dataset import AssetPriceDataSet
 
 logger = logging.getLogger(__name__)
 

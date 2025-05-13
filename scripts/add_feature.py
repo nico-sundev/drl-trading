@@ -6,7 +6,7 @@ from string import Template
 
 FEATURE_PACKAGE = "../src/ai_trading/preprocess/feature/collection"
 TEST_PACKAGE = "../tests/preprocess/feature/collection"
-TEMPLATE_DIR = "../templates"  # Folder where your templates live
+TEMPLATE_DIR = "../src/resources/templates"  # Folder where your templates live
 
 # Template filenames (you'll provide these)
 FEATURE_TEMPLATE_FILE = "feature_template.txt"

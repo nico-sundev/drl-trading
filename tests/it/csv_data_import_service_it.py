@@ -2,8 +2,10 @@ import copy
 
 import pytest
 
-from ai_trading.data_import.local.csv_data_import_service import CsvDataImportService
-from ai_trading.di.containers import ApplicationContainer
+from ai_trading.common.data_import.local.csv_data_import_service import (
+    CsvDataImportService,
+)
+from ai_trading.common.di.containers import ApplicationContainer
 
 
 @pytest.fixture

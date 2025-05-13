@@ -7,7 +7,7 @@ import click
 from IPython.core import ultratb
 
 import ai_trading
-from ai_trading.data_import.import_data import test
+from ai_trading.common.data_import.import_data import test
 
 # fallback to debugger on error
 sys.excepthook = ultratb.FormattedTB(mode="Verbose", color_scheme="Linux", call_pdb=1)
@@ -39,7 +39,7 @@ def main(cfg_path: Path, log_level: int):
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
     # YOUR CODE GOES HERE! Keep the main functionality in src/ai_trading
-    # est = ai_trading.models.Estimator()
+    # est = ai_trading.common.models.Estimator()
     test()
 
 

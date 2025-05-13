@@ -6,9 +6,9 @@ from pathlib import Path
 import pytest
 from feast import FeatureStore
 
-from ai_trading.config.config_loader import ConfigLoader
-from ai_trading.config.feature_config_factory import FeatureConfigFactory
-from ai_trading.di.containers import ApplicationContainer
+from ai_trading.common.config.config_loader import ConfigLoader
+from ai_trading.common.config.feature_config_factory import FeatureConfigFactory
+from ai_trading.common.di.containers import ApplicationContainer
 from ai_trading.preprocess.feature.feature_class_registry import FeatureClassRegistry
 
 
