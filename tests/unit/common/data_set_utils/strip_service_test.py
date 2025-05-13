@@ -12,10 +12,6 @@ from tests.unit.fixture.sample_data import mock_ohlcv_data_1h, mock_ohlcv_data_4
 def base_dataset():
     """Base dataset fixture with 1-hour timeframe."""
     df = mock_ohlcv_data_1h().asset_price_dataset
-    # Convert Time to datetime
-    df["Time"] = pd.to_datetime(df["Time"])
-    # Ensure datetime index
-    df = df.set_index("Time")
     return df
 
 
@@ -23,10 +19,6 @@ def base_dataset():
 def higher_timeframe_dataset():
     """Higher timeframe dataset fixture with 4-hour timeframe."""
     df = mock_ohlcv_data_4h().asset_price_dataset
-    # Convert Time to datetime
-    df["Time"] = pd.to_datetime(df["Time"])
-    # Ensure datetime index
-    df = df.set_index("Time")
     return df
 
 
@@ -34,7 +26,7 @@ def higher_timeframe_dataset():
 def extended_higher_timeframe_dataset(higher_timeframe_dataset):
     """Higher timeframe dataset with extended range before and after base dataset."""
     # Original dataset with index reset to get Time as a column
-    df = higher_timeframe_dataset.reset_index()
+    df = higher_timeframe_dataset.reset_index("Time")
 
     # Add rows with earlier timestamps (before base dataset starts)
     first_time = df["Time"].min()

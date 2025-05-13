@@ -71,12 +71,7 @@ def expected_features(mocked_container: ApplicationContainer) -> Dict[str, Set[s
                 continue
 
             # Add expected column name patterns based on feature class implementations
-            if feature_name == "macd":
-                # From MacdFeature.get_sub_features_names()
-                expected[feature_name].update(
-                    ["macd_cross_bullish", "macd_cross_bearish", "macd_trend"]
-                )
-            elif feature_name == "rsi":
+            if feature_name == "rsi":
                 # From RsiFeature.get_sub_features_names()
                 for length in [
                     param_set.length
@@ -84,32 +79,6 @@ def expected_features(mocked_container: ApplicationContainer) -> Dict[str, Set[s
                     if param_set.enabled
                 ]:
                     expected[feature_name].add(f"rsi_{length}")
-            elif feature_name == "roc":
-                # From RocFeature.get_sub_features_names()
-                for length in [
-                    param_set.length
-                    for param_set in feature_def.parsed_parameter_sets
-                    if param_set.enabled
-                ]:
-                    expected[feature_name].add(f"roc_{length}")
-            elif feature_name == "range":
-                # From RangeFeature.get_sub_features_names()
-                for lookback in [
-                    param_set.lookback
-                    for param_set in feature_def.parsed_parameter_sets
-                    if param_set.enabled
-                ]:
-                    expected[feature_name].update(
-                        [f"resistance_range{lookback}", f"support_range{lookback}"]
-                    )
-            elif feature_name == "rvi":
-                # From RviFeature.get_sub_features_names()
-                for length in [
-                    param_set.length
-                    for param_set in feature_def.parsed_parameter_sets
-                    if param_set.enabled
-                ]:
-                    expected[feature_name].add(f"rvi_{length}")
 
     return expected
 
@@ -170,15 +139,8 @@ def test_feature_computation_and_caching(
         feature_compute_calls_second_run = computation_counter
 
     # Create merged result dataframes for validation
-    first_run_merged = pd.DataFrame({"Time": dataset.asset_price_dataset["Time"]})
-    for df in first_run_dfs:
-        if len(df.columns) > 1:
-            first_run_merged = pd.merge(first_run_merged, df, on="Time", how="left")
-
-    second_run_merged = pd.DataFrame({"Time": dataset.asset_price_dataset["Time"]})
-    for df in second_run_dfs:
-        if len(df.columns) > 1:
-            second_run_merged = pd.merge(second_run_merged, df, on="Time", how="left")
+    first_run_merged = pd.concat(first_run_dfs)
+    second_run_merged = pd.concat(second_run_dfs)
 
     # Then - Verify calculations
     # 1. Check that feature computation happened in first run

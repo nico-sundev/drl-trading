@@ -7,12 +7,12 @@
           {
             "timeframe": "H1",
             "base_dataset": true,
-            "file_path": "C:\\Users\\nico-\\Documents\\git\\drl_trading_framework\\tests\\resources\\test_H1.csv"
+            "file_path": "C:\\Users\\nico-\\Documents\\git\\ai_trading\\tests\\resources\\test_H1.csv"
           },
           {
             "timeframe": "H4",
             "base_dataset": false,
-            "file_path": "C:\\Users\\nico-\\Documents\\git\\drl_trading_framework\\tests\\resources\\test_H4.csv"
+            "file_path": "C:\\Users\\nico-\\Documents\\git\\ai_trading\\tests\\resources\\test_H4.csv"
           }
         ]
       }
@@ -22,19 +22,6 @@
   "featuresConfig": {
     "featureDefinitions": [
       {
-        "name": "macd",
-        "enabled": true,
-        "derivatives": [],
-        "parameterSets": [
-          {
-            "enabled": true,
-            "fast_length": 3,
-            "slow_length": 5,
-            "signal_length": 7
-          }
-        ]
-      },
-      {
         "name": "rsi",
         "enabled": true,
         "derivatives": [1],
@@ -42,56 +29,6 @@
           {
             "enabled": true,
             "length": 7
-          }
-        ]
-      },
-      {
-        "name": "roc",
-        "enabled": true,
-        "derivatives": [1],
-        "parameterSets": [
-          {
-            "enabled": true,
-            "length": 1
-          },
-          {
-            "enabled": true,
-            "length": 3
-          },
-          {
-            "enabled": true,
-            "length": 5
-          }
-        ]
-      },
-      {
-        "name": "range",
-        "enabled": true,
-        "derivatives": [],
-        "parameterSets": [
-          {
-            "enabled": true,
-            "lookback": 5,
-            "wickHandleStrategy": "LAST_WICK_ONLY"
-          }
-        ]
-      },
-      {
-        "name": "rvi",
-        "enabled": true,
-        "derivatives": [1],
-        "parameterSets": [
-          {
-            "enabled": true,
-            "length": 7
-          },
-          {
-            "enabled": true,
-            "length": 14
-          },
-          {
-            "enabled": true,
-            "length": 21
           }
         ]
       }

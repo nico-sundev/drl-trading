@@ -1,0 +1,24 @@
+{
+  "macd": [
+    "macd_cross_bearish",
+    "macd_trend",
+    "macd_cross_bullish"
+  ],
+  "rsi": [
+    "rsi_7"
+  ],
+  "roc": [
+    "roc_3",
+    "roc_1",
+    "roc_5"
+  ],
+  "range": [
+    "support_range5",
+    "resistance_range5"
+  ],
+  "rvi": [
+    "rvi_7",
+    "rvi_21",
+    "rvi_14"
+  ]
+}

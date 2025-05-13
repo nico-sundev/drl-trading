@@ -5,8 +5,8 @@ from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDat
 
 def mock_ohlcv_data_1h(base_dataset=True):
     """Fixture to provide mock OHLCV data wrapped in AssetPriceDataSet."""
-    data = {
-        "Time": [
+    dates = pd.to_datetime(
+        [
             "2008-10-03 13:00:00",
             "2008-10-03 14:00:00",
             "2008-10-03 15:00:00",
@@ -37,7 +37,9 @@ def mock_ohlcv_data_1h(base_dataset=True):
             "2008-10-04 16:00:00",
             "2008-10-04 17:00:00",
             "2008-10-04 18:00:00",
-        ],
+        ]
+    )
+    data = {
         "Open": [
             1.37475,
             1.3748,
@@ -199,16 +201,15 @@ def mock_ohlcv_data_1h(base_dataset=True):
             98000,
         ],
     }
-    df = pd.DataFrame(data)
-    df["Time"] = pd.to_datetime(df["Time"])
+    df = pd.DataFrame(data, dates)
 
     return AssetPriceDataSet("H1", base_dataset, asset_price_dataset=df)
 
 
 def mock_ohlcv_data_4h(base_dataset=True):
     """Fixture to provide mock OHLCV data for 4H timeframe wrapped in AssetPriceDataSet."""
-    data = {
-        "Time": [
+    dates = pd.to_datetime(
+        [
             "2008-10-03 00:00:00",
             "2008-10-03 04:00:00",
             "2008-10-03 08:00:00",
@@ -239,7 +240,10 @@ def mock_ohlcv_data_4h(base_dataset=True):
             "2008-10-07 12:00:00",
             "2008-10-07 16:00:00",
             "2008-10-07 20:00:00",
-        ],
+        ]
+    )
+
+    data = {
         "Open": [
             1.3700,
             1.3740,
@@ -401,7 +405,6 @@ def mock_ohlcv_data_4h(base_dataset=True):
             10000,
         ],
     }
-    df = pd.DataFrame(data)
-    df["Time"] = pd.to_datetime(df["Time"])
+    df = pd.DataFrame(data, dates)
 
     return AssetPriceDataSet("H4", base_dataset, asset_price_dataset=df)

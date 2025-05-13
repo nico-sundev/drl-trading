@@ -344,10 +344,10 @@ def test_merge_context_features(context_feature_service, mock_ohlcv_dataframe):
     # Create a mock computed features DataFrame using the same time range as mock_ohlcv_dataframe
     computed_df = DataFrame(
         {
-            "Time": mock_ohlcv_dataframe["Time"].copy(),
             "feature1": [1.0] * len(mock_ohlcv_dataframe),
             "feature2": [2.0] * len(mock_ohlcv_dataframe),
-        }
+        },
+        index=mock_ohlcv_dataframe.index,
     )
 
     context_df = mock_ohlcv_dataframe.copy()
@@ -379,9 +379,11 @@ def test_merge_context_features_with_non_matching_indices(
     # Create DataFrames with some non-matching timestamps
     computed_df = DataFrame(
         {
-            "Time": pd.date_range(start="2008-10-03 13:00:00", periods=30, freq="H"),
             "feature1": list(range(30)),
-        }
+        },
+        pd.to_datetime(
+            pd.date_range(start="2008-10-03 13:00:00", periods=30, freq="H")
+        ),
     )
 
     context_df = mock_ohlcv_dataframe.copy()
@@ -391,6 +393,8 @@ def test_merge_context_features_with_non_matching_indices(
     context_df_shifted["Time"] = pd.date_range(
         start="2008-10-03 15:00:00", periods=30, freq="H"
     )
+    context_df_shifted["Time"] = pd.to_datetime(context_df_shifted["Time"])
+    context_df_shifted = context_df_shifted.set_index("Time")
 
     # When
     result = context_feature_service.merge_context_features(
@@ -406,7 +410,7 @@ def test_merge_context_features_with_non_matching_indices(
     assert len(result) == len(computed_df)
 
     # Timestamps from computed_df should be preserved
-    pd.testing.assert_series_equal(result["Time"], computed_df["Time"])
+    pd.testing.assert_index_equal(result.index, computed_df.index)
 
     # NaN values should exist for timestamps not in context_df
     assert result["Open"].isna().sum() == 2  # First two hours don't match
