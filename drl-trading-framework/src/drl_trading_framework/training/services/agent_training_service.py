@@ -1,20 +1,23 @@
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Type, TypeVar
 
 from stable_baselines3.common.vec_env import DummyVecEnv
 
 from drl_trading_framework.common.agents.agent_factory import AgentFactory
 from drl_trading_framework.common.agents.base_agent import BaseAgent
 from drl_trading_framework.common.config.application_config import ApplicationConfig
+from drl_trading_framework.common.gym import BaseTradingEnv
 from drl_trading_framework.common.model.split_dataset_container import (
     SplitDataSetContainer,
 )
-from drl_trading_framework.training.gyms.custom_env import TradingEnv
 
 
 class AgentTrainingService:
     """
     Service to handle the creation of environments and training of agents.
     """
+
+    # Define a type variable for environments that extend BaseTradingEnv
+    T = TypeVar("T", bound=BaseTradingEnv)
 
     def __init__(self, config: ApplicationConfig) -> None:
         """
@@ -27,8 +30,7 @@ class AgentTrainingService:
         self.agent_factory = AgentFactory()
 
     def create_env_and_train_agents(
-        self,
-        final_datasets: list[SplitDataSetContainer],
+        self, final_datasets: list[SplitDataSetContainer], env_class: Type[T]
     ) -> Tuple[DummyVecEnv, DummyVecEnv, Dict[str, BaseAgent]]:
         """
         Create environments and train agents dynamically based on the configuration.
@@ -43,18 +45,16 @@ class AgentTrainingService:
         Returns:
             tuple: Training environment, validation environment, and trained agents.
         """
-        # Assume feature columns start from index 5 (you might need to adjust this based on your data structure)
-        feature_start_index = 5
 
         # Create environments for training and validation
         train_env = DummyVecEnv(
             [
                 *(
                     (
-                        lambda dataset=dataset: TradingEnv(
+                        lambda dataset=dataset: env_class(
                             dataset.training_data,
                             self.config.environment_config,
-                            feature_start_index,
+                            self.config.context_feature_config.get_all_context_columns(),
                         )
                     )
                     for dataset in final_datasets
@@ -65,10 +65,10 @@ class AgentTrainingService:
             [
                 *(
                     (
-                        lambda dataset=dataset: TradingEnv(
-                            dataset.validation_data,
+                        lambda dataset=dataset: env_class(
+                            dataset.training_data,
                             self.config.environment_config,
-                            feature_start_index,
+                            self.config.context_feature_config.get_all_context_columns(),
                         )
                     )
                     for dataset in final_datasets

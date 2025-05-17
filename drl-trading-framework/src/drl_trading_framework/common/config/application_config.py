@@ -1,4 +1,7 @@
 from drl_trading_framework.common.config.base_schema import BaseSchema
+from drl_trading_framework.common.config.context_feature_config import (
+    ContextFeatureConfig,
+)
 from drl_trading_framework.common.config.environment_config import EnvironmentConfig
 from drl_trading_framework.common.config.feature_config import (
     FeaturesConfig,
@@ -16,3 +19,4 @@ class ApplicationConfig(BaseSchema):
     rl_model_config: RlModelConfig
     environment_config: EnvironmentConfig
     feature_store_config: FeatureStoreConfig
+    context_feature_config: ContextFeatureConfig

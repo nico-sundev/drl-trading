@@ -34,7 +34,8 @@ dependencies = [
     "click",
     # Dependency injection framework
     "dependency_injector",
-    "feast"
+    "feast",
+    "pandas-stubs"
 ]
 
 [project.urls]

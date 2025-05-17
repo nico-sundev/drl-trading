@@ -4,12 +4,10 @@ import pandas as pd
 import pytest
 from pandas import DataFrame
 
-from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
-from drl_trading_framework.common.trading_constants import (
-    ALL_CONTEXT_COLUMNS,
-    DERIVED_CONTEXT_COLUMNS,
-    PRIMARY_CONTEXT_COLUMNS,
+from drl_trading_framework.common.config.context_feature_config import (
+    ContextFeatureConfig,
 )
+from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_framework.preprocess.data_set_utils.context_feature_service import (
     ContextFeatureService,
 )
@@ -53,13 +51,28 @@ def mock_asset_price_dataset_with_atr(
 
 
 @pytest.fixture
-def context_feature_service() -> ContextFeatureService:
+def context_feature_config() -> ContextFeatureConfig:
+    """Create a ContextFeatureConfig instance for testing."""
+    return ContextFeatureConfig(
+        primary_context_columns=["High", "Low", "Close"],
+        optional_context_columns=["Open", "Volume"],
+        derived_context_columns=["Atr"],
+        time_column="Time",
+    )
+
+
+@pytest.fixture
+def context_feature_service(
+    context_feature_config: ContextFeatureConfig,
+) -> ContextFeatureService:
     """Create a ContextFeatureService instance for testing."""
-    return ContextFeatureService(atr_period=14)
+    return ContextFeatureService(context_feature_config, atr_period=14)
 
 
 def test_prepare_context_features_computes_atr_when_missing(
-    context_feature_service, mock_asset_price_dataset
+    context_feature_service,
+    mock_asset_price_dataset,
+    context_feature_config: ContextFeatureConfig,
 ):
     """Test that prepare_context_features computes ATR when it's missing."""
     # Given
@@ -71,15 +84,17 @@ def test_prepare_context_features_computes_atr_when_missing(
 
     # Then
     assert "Atr" in result.columns
-    assert len(result) == len(mock_asset_price_dataset.asset_price_dataset)
-
-    # Verify all required columns are present
-    for col in PRIMARY_CONTEXT_COLUMNS:
+    assert len(result) == len(
+        mock_asset_price_dataset.asset_price_dataset
+    )  # Verify all required columns are present
+    for col in context_feature_config.primary_context_columns:
         assert col in result.columns
 
 
 def test_prepare_context_features_uses_existing_atr(
-    context_feature_service, mock_asset_price_dataset_with_atr
+    context_feature_service,
+    mock_asset_price_dataset_with_atr,
+    context_feature_config: ContextFeatureConfig,
 ):
     """Test that prepare_context_features uses existing ATR when available."""
     # Given
@@ -96,10 +111,10 @@ def test_prepare_context_features_uses_existing_atr(
 
     # Then
     # Verify ATR values were preserved
-    pd.testing.assert_series_equal(result["Atr"], original_atr_values)
-
-    # Verify all primary columns are present
-    for col in PRIMARY_CONTEXT_COLUMNS:
+    pd.testing.assert_series_equal(
+        result["Atr"], original_atr_values
+    )  # Verify all primary columns are present
+    for col in context_feature_config.primary_context_columns:
         assert col in result.columns
 
 
@@ -228,10 +243,12 @@ def test_prepare_context_features_handles_empty_dataset(context_feature_service)
     assert "Atr" in result.columns
 
 
-def test_is_context_column_identifies_correctly(context_feature_service):
+def test_is_context_column_identifies_correctly(
+    context_feature_service, context_feature_config: ContextFeatureConfig
+):
     """Test that is_context_column correctly identifies context columns."""
     # Given
-    context_columns = ALL_CONTEXT_COLUMNS
+    context_columns = context_feature_config.get_all_context_columns()
     non_context_columns = ["feature1", "feature2", "indicator3"]
 
     # When/Then
@@ -244,11 +261,13 @@ def test_is_context_column_identifies_correctly(context_feature_service):
         assert context_feature_service.is_context_column(col) is False
 
 
-def test_is_primary_column_identifies_correctly(context_feature_service):
+def test_is_primary_column_identifies_correctly(
+    context_feature_service, context_feature_config: ContextFeatureConfig
+):
     """Test that is_primary_column correctly identifies primary columns."""
     # Given
-    primary_columns = PRIMARY_CONTEXT_COLUMNS
-    derived_columns = DERIVED_CONTEXT_COLUMNS
+    primary_columns = context_feature_config.primary_context_columns
+    derived_columns = context_feature_config.derived_context_columns
 
     # When/Then
     # Should identify primary columns
@@ -260,11 +279,13 @@ def test_is_primary_column_identifies_correctly(context_feature_service):
         assert context_feature_service.is_primary_column(col) is False
 
 
-def test_is_derived_column_identifies_correctly(context_feature_service):
+def test_is_derived_column_identifies_correctly(
+    context_feature_service, context_feature_config: ContextFeatureConfig
+):
     """Test that is_derived_column correctly identifies derived columns."""
     # Given
-    primary_columns = PRIMARY_CONTEXT_COLUMNS
-    derived_columns = DERIVED_CONTEXT_COLUMNS
+    primary_columns = context_feature_config.primary_context_columns
+    derived_columns = context_feature_config.derived_context_columns
 
     # When/Then
     # Should identify derived columns
@@ -277,7 +298,9 @@ def test_is_derived_column_identifies_correctly(context_feature_service):
 
 
 def test_get_context_columns_with_dataframe(
-    context_feature_service, mock_ohlcv_dataframe
+    context_feature_service,
+    mock_ohlcv_dataframe,
+    context_feature_config: ContextFeatureConfig,
 ):
     """Test that get_context_columns returns correct columns when DataFrame is provided."""
     # Given
@@ -288,24 +311,23 @@ def test_get_context_columns_with_dataframe(
     # When
     result = context_feature_service.get_context_columns(df)
 
-    # Then
-    # Should return only context columns that exist in the DataFrame
-    assert set(result).issubset(set(ALL_CONTEXT_COLUMNS))
+    # Then    # Should return only context columns that exist in the DataFrame
+    assert set(result).issubset(set(context_feature_config.get_all_context_columns()))
     assert "feature1" not in result
     assert all(col in df.columns for col in result)
 
 
-def test_get_context_columns_without_dataframe(context_feature_service):
+def test_get_context_columns_without_dataframe(
+    context_feature_service, context_feature_config: ContextFeatureConfig
+):
     """Test that get_context_columns returns all context columns when no DataFrame is provided."""
     # Given
     # No DataFrame provided
 
     # When
-    result = context_feature_service.get_context_columns()
-
-    # Then
+    result = context_feature_service.get_context_columns()  # Then
     # Should return all context columns
-    assert set(result) == set(ALL_CONTEXT_COLUMNS)
+    assert set(result) == set(context_feature_config.get_all_context_columns())
 
 
 def test_get_feature_columns(context_feature_service):

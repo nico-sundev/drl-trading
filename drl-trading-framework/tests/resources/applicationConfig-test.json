@@ -68,5 +68,11 @@
     "entity_name": "symbol",
     "ttl_days": 1,
     "online_enabled": false
+  },
+  "contextFeatureConfig": {
+    "primaryContextColumns": ["High", "Low", "Close"],
+    "derivedContextColumns": ["Open", "Volume"],
+    "optionalContextColumns": ["Atr"],
+    "timeColumn": "Time"
   }
 }

@@ -6,12 +6,10 @@ from typing import List, Optional
 import pandas_ta as ta
 from pandas import DataFrame
 
-from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
-from drl_trading_framework.common.trading_constants import (
-    ALL_CONTEXT_COLUMNS,
-    DERIVED_CONTEXT_COLUMNS,
-    PRIMARY_CONTEXT_COLUMNS,
+from drl_trading_framework.common.config.context_feature_config import (
+    ContextFeatureConfig,
 )
+from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_framework.preprocess.data_set_utils.util import ensure_datetime_index
 
 logger = logging.getLogger(__name__)
@@ -30,7 +28,7 @@ class ContextFeatureService:
     2. Derived columns: Computed from primary columns (e.g., ATR)
     """
 
-    def __init__(self, atr_period: int = 14):
+    def __init__(self, config: ContextFeatureConfig, atr_period: int = 14):
         """
         Initialize the ContextFeatureService.
 
@@ -38,6 +36,7 @@ class ContextFeatureService:
             atr_period: Period to use for ATR calculation (default: 14)
         """
         self.atr_period = atr_period
+        self.config = config
 
     def prepare_context_features(self, base_dataset: AssetPriceDataSet) -> DataFrame:
         """
@@ -61,17 +60,19 @@ class ContextFeatureService:
         df = base_dataset.asset_price_dataset.copy()
         # Step 1: Validate primary columns exist
         self._validate_primary_columns(df)
-
         # Step 2: Start with only required primary columns
         # (excluding optional ones like Open and Volume)
-        selected_columns = [col for col in PRIMARY_CONTEXT_COLUMNS if col in df.columns]
+        selected_columns = [
+            col for col in self.config.primary_context_columns if col in df.columns
+        ]
 
         # Step 3: Add/compute derived columns
         df = self._compute_derived_columns(df)
 
         # Add derived columns to selected columns
-        for derived_col in DERIVED_CONTEXT_COLUMNS:
-            selected_columns.append(derived_col)
+        if self.config.derived_context_columns:
+            for derived_col in self.config.derived_context_columns:
+                selected_columns.append(derived_col)
 
         # Return only the selected columns
         result_df = df[selected_columns]
@@ -91,7 +92,7 @@ class ContextFeatureService:
             ValueError: If any required primary columns are missing
         """
         missing_columns = [
-            col for col in PRIMARY_CONTEXT_COLUMNS if col not in df.columns
+            col for col in self.config.primary_context_columns if col not in df.columns
         ]
         if missing_columns:
             raise ValueError(
@@ -127,7 +128,7 @@ class ContextFeatureService:
         Returns:
             bool: True if the column is a context column, False otherwise
         """
-        return column_name in ALL_CONTEXT_COLUMNS
+        return column_name in self.config.get_all_context_columns()
 
     def is_primary_column(self, column_name: str) -> bool:
         """
@@ -142,7 +143,7 @@ class ContextFeatureService:
         Returns:
             bool: True if the column is a primary context column, False otherwise
         """
-        return column_name in PRIMARY_CONTEXT_COLUMNS
+        return column_name in self.config.primary_context_columns
 
     def is_derived_column(self, column_name: str) -> bool:
         """
@@ -157,7 +158,9 @@ class ContextFeatureService:
         Returns:
             bool: True if the column is a derived context column, False otherwise
         """
-        return column_name in DERIVED_CONTEXT_COLUMNS
+        return self.config.derived_context_columns is not None and (
+            column_name in self.config.derived_context_columns
+        )
 
     def get_context_columns(self, df: Optional[DataFrame] = None) -> List[str]:
         """
@@ -172,9 +175,10 @@ class ContextFeatureService:
         Returns:
             List[str]: List of context column names
         """
+        all_columns = self.config.get_all_context_columns()
         if df is not None:
-            return [col for col in ALL_CONTEXT_COLUMNS if col in df.columns]
-        return list(ALL_CONTEXT_COLUMNS)
+            return [col for col in all_columns if col in df.columns]
+        return list(all_columns)
 
     def get_feature_columns(self, df: DataFrame) -> List[str]:
         """

@@ -160,6 +160,12 @@ def temp_config_file():
             "ttl_days": 365,
             "online_enabled": True,
         },
+        "contextFeatureConfig": {
+            "primaryContextColumns": ["High", "Low", "Close"],
+            "derivedContextColumns": ["Open", "Volume"],
+            "optionalContextColumns": ["Atr"],
+            "timeColumn": "Time",
+        },
     }
 
     with tempfile.NamedTemporaryFile(mode="w+", delete=False) as temp_file:
@@ -233,3 +239,9 @@ def test_load_config_from_json(temp_config_file, mock_feature_config_factory):
     assert features_store_config.entity_name == "symbol"
     assert features_store_config.ttl_days == 365
     assert features_store_config.online_enabled is True
+
+    context_config = config.context_feature_config
+    assert context_config.primary_context_columns == ["High", "Low", "Close"]
+    assert context_config.derived_context_columns == ["Open", "Volume"]
+    assert context_config.optional_context_columns == ["Atr"]
+    assert context_config.time_column == "Time"

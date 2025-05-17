@@ -1,5 +1,4 @@
 import logging
-import os
 from typing import Dict, List, Optional, Tuple
 
 from pandas import DataFrame
@@ -8,11 +7,12 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 from drl_trading_framework.common.agents.base_agent import BaseAgent
 from drl_trading_framework.common.config.logging_config import configure_logging
 from drl_trading_framework.common.di.containers import ApplicationContainer
+from drl_trading_framework.common.gym import BaseTradingEnv
 
 logger = logging.getLogger(__name__)
 
 
-def bootstrap(
+def _preprocess(
     config_path: Optional[str] = None,
 ) -> Tuple[ApplicationContainer, List[DataFrame]]:
     """Bootstrap the application using dependency injection.
@@ -83,8 +83,10 @@ def bootstrap(
     return container, final_datasets
 
 
-def create_environments_and_train(
-    container: ApplicationContainer, final_datasets: List[DataFrame]
+def _create_environments_and_train(
+    container: ApplicationContainer,
+    final_datasets: List[DataFrame],
+    environment: BaseTradingEnv,
 ) -> Tuple[DummyVecEnv, DummyVecEnv, Dict[str, BaseAgent]]:
     """
     Create environments and train agents using injected services.
@@ -112,20 +114,20 @@ def create_environments_and_train(
     logger.info(
         f"Creating environments and training agents with {len(split_datasets)} datasets"
     )
-    return agent_training_service.create_env_and_train_agents(split_datasets)
-
-
-# Application entry point
-if __name__ == "__main__":
-    # Path is optional - default will be used from container configuration
-    config_path = os.path.join(
-        os.path.dirname(__file__), "../../configs/applicationConfig.json"
+    return agent_training_service.create_env_and_train_agents(
+        split_datasets, environment
     )
 
+
+def bootstrap(environment: BaseTradingEnv, config_path: Optional[str] = None) -> None:
+
+    if config_path is None:
+        raise ValueError("Config path must be provided. Please specify a valid path.")
+
     # Bootstrap application with DI
-    container, final_datasets = bootstrap(config_path)
+    container, final_datasets = _preprocess(config_path)
 
     # Create environments and train agents
-    train_env, val_env, agents = create_environments_and_train(
-        container, final_datasets
+    train_env, val_env, agents = _create_environments_and_train(
+        container, final_datasets, environment
     )
