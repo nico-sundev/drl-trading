@@ -1,3 +1,4 @@
+import os
 from typing import List, Optional, Tuple
 
 import dask
@@ -24,25 +25,37 @@ class CsvDataImportService(BaseDataImportService):
     def __init__(self, config: LocalDataImportConfig):
         """
         Initializes with local data import configuration.
+        It dynamically determines the project root.
 
         Args:
             config: Configuration containing symbols with their datasets
         """
         self.config = config
+        # Determine project root dynamically.
+        # Assumes this file is at <project_root>/src/drl_trading_framework/common/data_import/local/csv_data_import_service.py
+        # So, project_root is 5 levels up from this file's directory.
+        self.project_root = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..")
+        )
 
     def _load_csv(self, file_path: str, limit: Optional[int] = None) -> pd.DataFrame:
         """
         Loads a CSV file into a DataFrame with Time as the index.
 
         Args:
-            file_path: Path to the CSV file
+            file_path: Path to the CSV file (can be relative to project root)
             limit: Optional limit on number of rows to read
 
         Returns:
             DataFrame with OHLC data and Time as DatetimeIndex
         """
+        if not os.path.isabs(file_path):
+            abs_file_path = os.path.join(self.project_root, file_path)
+        else:
+            abs_file_path = file_path
+
         df = pd.read_csv(
-            file_path,
+            abs_file_path,
             usecols=["Time", "Open", "High", "Low", "Close", "Volume"],
             sep="\t",
             parse_dates=["Time"],

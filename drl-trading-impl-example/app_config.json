@@ -2,17 +2,17 @@
   "localDataImportConfig": {
     "symbols": [
       {
-        "symbol": "EURUSD",
+        "symbol": "MYSYMBOL",
         "datasets": [
           {
             "timeframe": "H1",
             "base_dataset": true,
-            "file_path": "tests/resources/test_H1.csv"
+            "file_path": "path/to/your/data_H1.csv"
           },
           {
-            "timeframe": "H4",
+            "timeframe": "D1",
             "base_dataset": false,
-            "file_path": "tests/resources/test_H4.csv"
+            "file_path": "path/to/your/data_D1.csv"
           }
         ]
       }
@@ -28,50 +28,50 @@
         "parameterSets": [
           {
             "enabled": true,
-            "length": 7
+            "length": 14
           }
         ]
       }
     ]
   },
   "rlModelConfig": {
-    "agents": ["PPO", "A2C", "DDPG", "SAC", "TD3", "Ensemble"],
+    "agents": ["PPO"],
     "trainingSplitRatio": 0.8,
     "validatingSplitRatio": 0.1,
     "testingSplitRatio": 0.1,
     "agent_threshold": 0.1,
-    "total_timesteps": 10000
+    "total_timesteps": 5000
   },
   "environmentConfig": {
-    "fee": 0.005,
+    "fee": 0.001,
     "slippageAtrBased": 0.01,
-    "slippageAgainstTradeProbability": 0.6,
+    "slippageAgainstTradeProbability": 0.5,
     "startBalance": 10000.0,
-    "maxDailyDrawdown": 0.02,
-    "maxAlltimeDrawdown": 0.05,
-    "maxPercentageOpenPosition": 100.0,
+    "maxDailyDrawdown": 0.03,
+    "maxAlltimeDrawdown": 0.1,
+    "maxPercentageOpenPosition": 50.0,
     "minPercentageOpenPosition": 1.0,
     "inMoneyFactor": 1.0,
     "outOfMoneyFactor": 1.0,
     "liquidationPenaltyFactor": 2.0,
-    "minLiquidationPenalty": 100.0,
-    "maxTimeInTrade": 10,
-    "optimalExitTime": 3,
+    "minLiquidationPenalty": 50.0,
+    "maxTimeInTrade": 20,
+    "optimalExitTime": 5,
     "variancePenaltyWeight": 0.5,
     "atrPenaltyWeight": 0.3
   },
   "featureStoreConfig": {
-    "enabled": true,
-    "repo_path": "tests/resources/test_feature_repo",
-    "offline_store_path": "tests/resources/test_feature_store_data",
+    "enabled": false,
+    "repo_path": "path/to/your/feature_repo",
+    "offline_store_path": "path/to/your/feature_store_data",
     "entity_name": "symbol",
     "ttl_days": 1,
     "online_enabled": false
   },
   "contextFeatureConfig": {
     "primaryContextColumns": ["High", "Low", "Close"],
-    "derivedContextColumns": ["Atr"],
-    "optionalContextColumns": ["Open", "Volume"],
+    "derivedContextColumns": ["Open", "Volume"],
+    "optionalContextColumns": ["Atr"],
     "timeColumn": "Time"
   }
 }

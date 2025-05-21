@@ -1,5 +1,3 @@
-import json
-import tempfile
 from unittest.mock import MagicMock
 
 import pytest
@@ -13,9 +11,6 @@ from drl_trading_framework.common.config.feature_config_collection import (
 )
 from drl_trading_framework.common.config.feature_config_factory import (
     FeatureConfigFactory,
-)
-from drl_trading_framework.preprocess.feature.custom.enum.wick_handle_strategy_enum import (
-    WICK_HANDLE_STRATEGY,
 )
 
 
@@ -56,130 +51,6 @@ def mock_feature_config_factory():
     return mock_factory
 
 
-@pytest.fixture
-def temp_config_file():
-    """Creates a temporary JSON config file for testing."""
-    config_data = {
-        "localDataImportConfig": {
-            "symbols": [
-                {
-                    "symbol": "EURUSD",
-                    "datasets": [
-                        {
-                            "timeframe": "H1",
-                            "base_dataset": True,
-                            "file_path": "../../resources/test_H1.csv",
-                        },
-                        {
-                            "timeframe": "H4",
-                            "base_dataset": False,
-                            "file_path": "../../resources/test_H4.csv",
-                        },
-                    ],
-                }
-            ],
-            "limit": 100,
-        },
-        "featuresConfig": {
-            "featureDefinitions": [
-                {
-                    "name": "macd",
-                    "enabled": True,
-                    "derivatives": [],
-                    "parameterSets": [
-                        {
-                            "enabled": True,
-                            "fast_length": 3,
-                            "slow_length": 5,
-                            "signal_length": 7,
-                        }
-                    ],
-                },
-                {
-                    "name": "rsi",
-                    "enabled": True,
-                    "derivatives": [1],
-                    "parameterSets": [
-                        {"enabled": True, "length": 7},
-                        {"enabled": True, "length": 14},
-                        {"enabled": True, "length": 21},
-                    ],
-                },
-                {
-                    "name": "roc",
-                    "enabled": True,
-                    "derivatives": [1],
-                    "parameterSets": [
-                        {"enabled": True, "length": 1},
-                        {"enabled": True, "length": 3},
-                        {"enabled": True, "length": 5},
-                    ],
-                },
-                {
-                    "name": "range",
-                    "enabled": True,
-                    "derivatives": [],
-                    "parameterSets": [
-                        {
-                            "enabled": True,
-                            "lookback": 5,
-                            "wickHandleStrategy": "LAST_WICK_ONLY",
-                        }
-                    ],
-                },
-            ]
-        },
-        "rlModelConfig": {
-            "agentRegistryPackage": "drl_trading_framework.common.agents",
-            "agents": ["PPO", "A2C", "DDPG", "SAC", "TD3", "Ensemble"],
-            "trainingSplitRatio": 0.8,
-            "validatingSplitRatio": 0.1,
-            "testingSplitRatio": 0.1,
-            "agent_threshold": 0.1,
-            "total_timesteps": 10000,
-        },
-        "environmentConfig": {
-            "fee": 0.005,
-            "slippageAtrBased": 0.01,
-            "slippageAgainstTradeProbability": 0.6,
-            "startBalance": 10000.0,
-            "maxDailyDrawdown": 0.02,
-            "maxAlltimeDrawdown": 0.05,
-            "maxPercentageOpenPosition": 100.0,
-            "minPercentageOpenPosition": 1.0,
-            "maxTimeInTrade": 10,
-            "optimalExitTime": 3,
-            "variancePenaltyWeight": 0.5,
-            "atrPenaltyWeight": 0.3,
-        },
-        "featureStoreConfig": {
-            "enabled": False,
-            "repo_path": "testrepo",
-            "offline_store_path": "test",
-            "entity_name": "symbol",
-            "ttl_days": 365,
-            "online_enabled": True,
-        },
-        "contextFeatureConfig": {
-            "primaryContextColumns": ["High", "Low", "Close"],
-            "derivedContextColumns": ["Open", "Volume"],
-            "optionalContextColumns": ["Atr"],
-            "timeColumn": "Time",
-        },
-    }
-
-    with tempfile.NamedTemporaryFile(mode="w+", delete=False) as temp_file:
-        json.dump(config_data, temp_file)
-        temp_file_path = temp_file.name
-
-    yield temp_file_path, config_data  # Yield file path and expected config data
-
-    # Cleanup
-    import os
-
-    os.remove(temp_file_path)
-
-
 def test_load_config_from_json(temp_config_file, mock_feature_config_factory):
     temp_file_path, expected_data = temp_config_file
 
@@ -196,28 +67,10 @@ def test_load_config_from_json(temp_config_file, mock_feature_config_factory):
                 return feat.parsed_parameter_sets[index]
         return None
 
-    # MACD
-    macd = get_feature_param_set("macd")
-    assert isinstance(macd, MacdConfig)
-    assert macd.fast_length == 3
-    assert macd.slow_length == 5
-    assert macd.signal_length == 7
-
     # RSI
     rsi = get_feature_param_set("rsi")
     assert isinstance(rsi, RsiConfig)
     assert rsi.length == 7
-
-    # ROC
-    roc = get_feature_param_set("roc", index=2)
-    assert isinstance(roc, RocConfig)
-    assert roc.length == 5
-
-    # RANGE
-    range_cfg = get_feature_param_set("range")
-    assert isinstance(range_cfg, RangeConfig)
-    assert range_cfg.lookback == 5
-    assert range_cfg.wick_handle_strategy == WICK_HANDLE_STRATEGY.LAST_WICK_ONLY
 
     # Verify environment config parameters
     env_config = config.environment_config

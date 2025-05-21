@@ -1,6 +1,8 @@
+import json
 import os
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -26,6 +28,94 @@ def mocked_config():
 
 
 @pytest.fixture
+def temp_config_file():
+    """Creates a temporary JSON config file for testing."""
+    config_data = {
+        "localDataImportConfig": {
+            "symbols": [
+                {
+                    "symbol": "EURUSD",
+                    "datasets": [
+                        {
+                            "timeframe": "H1",
+                            "base_dataset": True,
+                            "file_path": "../../resources/test_H1.csv",
+                        },
+                        {
+                            "timeframe": "H4",
+                            "base_dataset": False,
+                            "file_path": "../../resources/test_H4.csv",
+                        },
+                    ],
+                }
+            ],
+            "limit": 100,
+        },
+        "featuresConfig": {
+            "featureDefinitions": [
+                {
+                    "name": "rsi",
+                    "enabled": True,
+                    "derivatives": [1],
+                    "parameterSets": [
+                        {"enabled": True, "length": 7},
+                        {"enabled": True, "length": 14},
+                        {"enabled": True, "length": 21},
+                    ],
+                }
+            ]
+        },
+        "rlModelConfig": {
+            "agents": ["PPO", "A2C", "DDPG", "SAC", "TD3", "Ensemble"],
+            "trainingSplitRatio": 0.8,
+            "validatingSplitRatio": 0.1,
+            "testingSplitRatio": 0.1,
+            "agent_threshold": 0.1,
+            "total_timesteps": 10000,
+        },
+        "environmentConfig": {
+            "fee": 0.005,
+            "slippageAtrBased": 0.01,
+            "slippageAgainstTradeProbability": 0.6,
+            "startBalance": 10000.0,
+            "maxDailyDrawdown": 0.02,
+            "maxAlltimeDrawdown": 0.05,
+            "maxPercentageOpenPosition": 100.0,
+            "minPercentageOpenPosition": 1.0,
+            "maxTimeInTrade": 10,
+            "optimalExitTime": 3,
+            "variancePenaltyWeight": 0.5,
+            "atrPenaltyWeight": 0.3,
+        },
+        "featureStoreConfig": {
+            "enabled": False,
+            "repo_path": "testrepo",
+            "offline_store_path": "test",
+            "entity_name": "symbol",
+            "ttl_days": 365,
+            "online_enabled": True,
+        },
+        "contextFeatureConfig": {
+            "primaryContextColumns": ["High", "Low", "Close"],
+            "derivedContextColumns": ["Open", "Volume"],
+            "optionalContextColumns": ["Atr"],
+            "timeColumn": "Time",
+        },
+    }
+
+    with tempfile.NamedTemporaryFile(mode="w+", delete=False) as temp_file:
+        json.dump(config_data, temp_file)
+        temp_file_path = temp_file.name
+
+    yield temp_file_path, config_data  # Yield file path and expected config data
+
+    # Cleanup
+    import os
+
+    os.remove(temp_file_path)
+
+
+@pytest.fixture
 def feature_config_factory():
     """Create a fresh feature config factory instance for testing.
 
@@ -45,17 +135,31 @@ def mocked_container(mocked_config, feature_config_factory):
     that can be used across tests.
 
     Args:
-        mocked_config: The test configuration fixture
+        mocked_config: The test configuration fixture (ApplicationConfig object)
         feature_config_factory: Initialized feature config factory
 
     Returns:
         Configured ApplicationContainer instance
     """
-    container = ApplicationContainer(application_config=mocked_config)
+    # Get the path from which the mocked_config was loaded
+    # This assumes mocked_config has a way to know its source path or we use the known test path
+    test_config_path = os.path.join(
+        os.path.dirname(__file__), "resources/applicationConfig-test.json"
+    )
+
+    container = ApplicationContainer()
+    # Override the config_path_cfg provider to point to the test config file
+    container.config_path_cfg.override(test_config_path)
+
+    # Ensure the application_config provider is reset if it was already initialized
+    # This might be needed if the container was somehow initialized before override
+    container.application_config.reset()
+
     # Override factory provider to use our test factory
     container.feature_config_factory.override(feature_config_factory)
 
     # Parse feature configurations using the test factory
+    # This will now use the application_config loaded from test_config_path
     features_config = container.features_config()
     features_config.parse_all_parameters(feature_config_factory)
 
@@ -80,29 +184,40 @@ def mocked_feature_store(request, mocked_config):
     repo_path = mocked_config.feature_store_config.repo_path
     store_path = mocked_config.feature_store_config.offline_store_path
 
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    if not os.path.isabs(repo_path):
+        abs_repo_path = os.path.join(project_root, repo_path)
+    else:
+        abs_repo_path = repo_path
+
+    if not os.path.isabs(store_path):
+        abs_store_path = os.path.join(project_root, store_path)
+    else:
+        abs_store_path = store_path
+
     # Clean up any existing feature store data before starting
-    _clean_feature_store(repo_path, store_path)
+    _clean_feature_store(abs_repo_path, abs_store_path)
 
     # Create data directory within repo path
-    data_dir = os.path.join(repo_path, "data")
+    data_dir = os.path.join(abs_repo_path, "data")
     Path(data_dir).mkdir(exist_ok=True)
 
     # Initialize the repository
     try:
         subprocess.run(
-            ["feast", "apply"], cwd=repo_path, check=True, capture_output=True
+            ["feast", "apply"], cwd=abs_repo_path, check=True, capture_output=True
         )
     except subprocess.CalledProcessError as e:
         print(f"Error initializing feast: {e.stderr.decode()}")
         raise
 
     # Return the FeatureStore instance
-    feature_store = FeatureStore(repo_path=repo_path)
+    feature_store = FeatureStore(repo_path=abs_repo_path)
 
     # Clean up function for after the session
     def cleanup():
         """Remove feature store data after test session completes."""
-        _clean_feature_store(repo_path, store_path)
+        _clean_feature_store(abs_repo_path, abs_store_path)
         print("Feature store cleaned up successfully after test session.")
 
     request.addfinalizer(cleanup)

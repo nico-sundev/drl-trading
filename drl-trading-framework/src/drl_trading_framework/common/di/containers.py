@@ -2,10 +2,13 @@
 
 import logging
 import os
+from typing import Optional
 
 from dependency_injector import containers, providers
+from feast import FeatureStore
 
 from drl_trading_framework.common.config.config_loader import ConfigLoader
+from drl_trading_framework.common.config.feature_config import FeatureStoreConfig
 from drl_trading_framework.common.config.feature_config_factory import (
     FeatureConfigFactory,
 )
@@ -36,6 +39,23 @@ from drl_trading_framework.training.services.agent_training_service import (
 logger = logging.getLogger(__name__)
 
 
+def _resolve_feature_store_path(
+    feature_store_config: FeatureStoreConfig,
+) -> Optional[str]:
+
+    if not feature_store_config.enabled:
+        return None
+
+    project_root = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
+    )
+    if not os.path.isabs(feature_store_config.repo_path):
+        abs_file_path = os.path.join(project_root, feature_store_config.repo_path)
+    else:
+        abs_file_path = feature_store_config.repo_path
+    return abs_file_path
+
+
 class ApplicationContainer(containers.DeclarativeContainer):
     """Application container for dependency injection.
 
@@ -44,12 +64,17 @@ class ApplicationContainer(containers.DeclarativeContainer):
     config classes as separate injectable components.
     """
 
+    # Configuration provider for the application config path
+    # It will first try to get the path from the DRL_TRADING_CONFIG_PATH environment variable.
+    # If the environment variable is not set, it will use the DEFAULT_CONFIG_PATH.
+    config_path_cfg = providers.Configuration(
+        name="application_config_path", default=os.getenv("DRL_TRADING_CONFIG_PATH")
+    )
+
     # Register full ApplicationConfig as a singleton
     application_config = providers.Singleton(
         ConfigLoader.get_config,
-        path=os.path.join(
-            os.path.dirname(__file__), "../../../configs/applicationConfig.json"
-        ),
+        path=config_path_cfg,  # Use the configuration provider for the path
     )
 
     # Register individual config sections as separately injectable components
@@ -74,6 +99,10 @@ class ApplicationContainer(containers.DeclarativeContainer):
         lambda config: config.feature_store_config, config=application_config
     )
 
+    context_feature_config = providers.Callable(
+        lambda config: config.context_feature_config, config=application_config
+    )
+
     # Feature configuration factory - replaces FeatureConfigRegistry singleton
     feature_config_factory = providers.Singleton(
         FeatureConfigFactory,
@@ -85,6 +114,7 @@ class ApplicationContainer(containers.DeclarativeContainer):
     strip_service = providers.Singleton(StripService)
     context_feature_service = providers.Singleton(
         ContextFeatureService,
+        context_feature_config,
         atr_period=14,
     )
 
@@ -99,10 +129,19 @@ class ApplicationContainer(containers.DeclarativeContainer):
         import_service=csv_data_import_service,
     )
 
+    feature_store_path = providers.Callable(
+        _resolve_feature_store_path, feature_store_config
+    )
+
+    # Only create a FeatureStore instance if a valid path is provided, else return None
+    feature_store = providers.Singleton(
+        lambda repo_path: FeatureStore(repo_path=repo_path) if repo_path else None,
+        feature_store_path,
+    )
+
     # Feast and feature related services - direct config injection
     feast_service = providers.Singleton(
-        FeastService,
-        config=feature_store_config,
+        FeastService, config=feature_store_config, feature_store=feature_store
     )
 
     feature_aggregator = providers.Singleton(

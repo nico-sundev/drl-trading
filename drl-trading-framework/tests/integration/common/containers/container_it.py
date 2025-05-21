@@ -16,6 +16,7 @@ from drl_trading_framework.common.data_import.base_data_import_service import (
 from drl_trading_framework.common.data_import.local.csv_data_import_service import (
     CsvDataImportService,
 )
+from drl_trading_framework.common.di.containers import ApplicationContainer
 
 
 def test_application_config_loads_successfully(mocked_container):
@@ -146,3 +147,20 @@ def test_config_sections_are_reused(mocked_container):
 
     # Then
     assert features_config1 is features_config2  # Same instance, not just equal
+
+
+def test_application_config_path_override_works(temp_config_file):
+    """Test that overriding the config_path_cfg provider loads a different config file."""
+
+    temp_file_path, expected_data = temp_config_file
+    container = ApplicationContainer()
+
+    # Override the config path
+    container.config_path_cfg.override(temp_file_path)
+
+    # When
+    loaded_app_config = container.application_config()
+
+    # Then
+    # Check if the loaded config could be parsed successfully
+    assert isinstance(loaded_app_config, ApplicationConfig)

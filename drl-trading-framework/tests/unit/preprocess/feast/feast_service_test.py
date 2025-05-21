@@ -61,30 +61,6 @@ def mock_feast_service(mock_feature_store_config) -> FeastService:
         return service
 
 
-def test_init_with_enabled_config(
-    mock_feature_store_config: FeatureStoreConfig,
-) -> None:
-    """Test FeastService initialization with enabled config."""
-    # Given
-    # Patch where FeatureStore is looked up
-    with patch(
-        "drl_trading_framework.preprocess.feast.feast_service.FeatureStore"
-    ) as mock_feast:
-        mock_store = MagicMock()
-        mock_feast.return_value = mock_store
-
-        # When
-        service = FeastService(config=mock_feature_store_config)
-
-        # Then
-        # Check if the service attribute holds the mock instance
-        assert service.feature_store is mock_store
-        # Check if the mock constructor was called correctly
-        mock_feast.assert_called_once_with(
-            repo_path=mock_feature_store_config.repo_path
-        )
-
-
 def test_init_with_disabled_config(
     mock_feature_store_config: FeatureStoreConfig,
 ) -> None:

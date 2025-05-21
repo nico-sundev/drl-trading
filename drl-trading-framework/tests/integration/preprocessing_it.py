@@ -89,9 +89,8 @@ def merge_service():
 
 
 @pytest.fixture
-def context_service():
-
-    return ContextFeatureService()
+def context_service(config):
+    return ContextFeatureService(config.context_feature_config)
 
 
 @pytest.fixture

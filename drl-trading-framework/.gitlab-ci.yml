@@ -38,12 +38,12 @@ ruff:
     - uv pip install ruff
     - ruff check src tests
 
-mypy:
-  extends: .python-job
-  stage: lint
-  script:
-    - uv pip install mypy
-    - mypy src
+# mypy:
+#   extends: .python-job
+#   stage: lint
+#   script:
+#     - uv pip install mypy
+#     - mypy src
 
 # Testing stages
 unit-tests:

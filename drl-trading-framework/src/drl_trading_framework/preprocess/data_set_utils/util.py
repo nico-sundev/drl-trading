@@ -179,7 +179,7 @@ def detect_timeframe(df: Optional[DataFrame]) -> pd.Timedelta:
         time_diffs = df.index.to_series().diff().dropna()
     # Handle 'Time' column
     elif "Time" in df.columns:
-        time_diffs = df["Time"].diff().dropna()
+        time_diffs = pd.to_datetime(df["Time"]).diff().dropna()
     else:
         msg = "Cannot detect timeframe: No DatetimeIndex or 'Time' column found in DataFrame"
         logger.error(msg)

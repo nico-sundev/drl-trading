@@ -1,6 +1,31 @@
-def main():
-    print("Hello from drl-trading-impl-example!")
+from src.drl_trading_impl import MyCustomTradingEnv
+
+from drl_trading_framework import bootstrap_agent_training, bootstrap_inference
+
+CONFIG_PATH = (
+    "c:/Users/nico-/Documents/git/ai_trading/drl-trading-impl-example/app_config.json"
+)
+
+
+def run_training():
+    print("Starting agent training...")
+    bootstrap_agent_training(env_class=MyCustomTradingEnv, config_path=CONFIG_PATH)
+    print("Agent training finished.")
+
+
+def run_inference():
+    print("Starting inference...")
+    # Note: bootstrap_inference() is not fully implemented in the framework yet
+    try:
+        bootstrap_inference()  # This will currently raise NotImplementedError
+    except NotImplementedError as e:
+        print(f"Inference Error: {e}")
+    print("Inference finished.")
 
 
 if __name__ == "__main__":
-    main()
+    # Example: Run training
+    run_training()
+
+    # Example: Run inference (will show NotImplementedError)
+    # run_inference()
