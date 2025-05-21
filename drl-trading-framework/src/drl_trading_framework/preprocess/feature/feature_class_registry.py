@@ -10,20 +10,27 @@ logger = logging.getLogger(__name__)
 
 
 class FeatureClassRegistry:
-    def __init__(self) -> None:
+    def __init__(
+        self, package_name: str = "drl_trading_framework.preprocess.feature.collection"
+    ) -> None:
         self._feature_class_map: Dict[str, Type[BaseFeature]] = {}
+        self.package_name = package_name
 
-    def discover_feature_classes(self) -> Dict[str, Type[BaseFeature]]:
+    def discover_feature_classes(
+        self,
+    ) -> Dict[str, Type[BaseFeature]]:
         feature_map = {}
-        package_name = "drl_trading_framework.preprocess.feature.collection"
-        logger.info(f"Starting feature class discovery from package: {package_name}")
+
+        logger.info(
+            f"Starting feature class discovery from package: {self.package_name}"
+        )
         discovered_count = 0
-        package = importlib.import_module(package_name)
+        package = importlib.import_module(self.package_name)
 
         for _, module_name, is_pkg in pkgutil.iter_modules(package.__path__):
             if is_pkg:
                 continue
-            full_module_name = f"{package_name}.{module_name}"
+            full_module_name = f"{self.package_name}.{module_name}"
             module = importlib.import_module(full_module_name)
             module_features_found = 0
 

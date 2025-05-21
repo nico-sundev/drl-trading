@@ -1,0 +1,77 @@
+{
+  "localDataImportConfig": {
+    "symbols": [
+      {
+        "symbol": "EURUSD",
+        "datasets": [
+          {
+            "timeframe": "H1",
+            "base_dataset": true,
+            "file_path": "data/raw/test_H1.csv"
+          },
+          {
+            "timeframe": "H4",
+            "base_dataset": false,
+            "file_path": "data/raw/test_H4.csv"
+          }
+        ]
+      }
+    ],
+    "limit": 100
+  },
+  "featuresConfig": {
+    "featureDefinitions": [
+      {
+        "name": "rsi",
+        "enabled": true,
+        "derivatives": [1],
+        "parameterSets": [
+          {
+            "enabled": true,
+            "length": 7
+          }
+        ]
+      }
+    ]
+  },
+  "rlModelConfig": {
+    "agents": ["PPO", "A2C", "DDPG", "SAC", "TD3", "Ensemble"],
+    "trainingSplitRatio": 0.8,
+    "validatingSplitRatio": 0.1,
+    "testingSplitRatio": 0.1,
+    "agent_threshold": 0.1,
+    "total_timesteps": 10000
+  },
+  "environmentConfig": {
+    "fee": 0.005,
+    "slippageAtrBased": 0.01,
+    "slippageAgainstTradeProbability": 0.6,
+    "startBalance": 10000.0,
+    "maxDailyDrawdown": 0.02,
+    "maxAlltimeDrawdown": 0.05,
+    "maxPercentageOpenPosition": 100.0,
+    "minPercentageOpenPosition": 1.0,
+    "inMoneyFactor": 1.0,
+    "outOfMoneyFactor": 1.0,
+    "liquidationPenaltyFactor": 2.0,
+    "minLiquidationPenalty": 100.0,
+    "maxTimeInTrade": 10,
+    "optimalExitTime": 3,
+    "variancePenaltyWeight": 0.5,
+    "atrPenaltyWeight": 0.3
+  },
+  "featureStoreConfig": {
+    "enabled": true,
+    "repo_path": "tests/resources/test_feature_repo",
+    "offline_store_path": "tests/resources/test_feature_store_data",
+    "entity_name": "symbol",
+    "ttl_days": 1,
+    "online_enabled": false
+  },
+  "contextFeatureConfig": {
+    "primaryContextColumns": ["High", "Low", "Close"],
+    "derivedContextColumns": ["Atr"],
+    "optionalContextColumns": ["Open", "Volume"],
+    "timeColumn": "Time"
+  }
+}

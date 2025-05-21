@@ -1,8 +1,13 @@
 import os
+from typing import Literal, Optional
 
+import pandas_ta as ta
 import pytest
-from pandas import DatetimeIndex
+from pandas import DataFrame, DatetimeIndex
 
+from drl_trading_framework.common.config.base_parameter_set_config import (
+    BaseParameterSetConfig,
+)
 from drl_trading_framework.common.config.config_loader import ConfigLoader
 from drl_trading_framework.common.config.feature_config_factory import (
     FeatureConfigFactory,
@@ -13,6 +18,7 @@ from drl_trading_framework.common.data_import.data_import_manager import (
 from drl_trading_framework.common.data_import.local.csv_data_import_service import (
     CsvDataImportService,
 )
+from drl_trading_framework.common.model.preprocessing_result import PreprocessingResult
 from drl_trading_framework.common.model.symbol_import_container import (
     SymbolImportContainer,
 )
@@ -20,20 +26,58 @@ from drl_trading_framework.preprocess.data_set_utils.context_feature_service imp
     ContextFeatureService,
 )
 from drl_trading_framework.preprocess.data_set_utils.merge_service import MergeService
+from drl_trading_framework.preprocess.feature.collection.base_feature import BaseFeature
 from drl_trading_framework.preprocess.feature.feature_aggregator import (
     FeatureAggregator,
 )
 from drl_trading_framework.preprocess.feature.feature_class_registry import (
     FeatureClassRegistry,
 )
+from drl_trading_framework.preprocess.metrics.technical_metrics_service import (
+    TechnicalMetricsServiceInterface,
+)
 from drl_trading_framework.preprocess.preprocess_service import PreprocessService
+
+
+class RsiConfig(BaseParameterSetConfig):
+    type: Literal["rsi"]
+    length: int
+
+
+class RsiFeature(BaseFeature):
+
+    def __init__(
+        self,
+        source: DataFrame,
+        config: BaseParameterSetConfig,
+        postfix: str = "",
+        metrics_service: Optional[TechnicalMetricsServiceInterface] = None,
+    ) -> None:
+        super().__init__(source, config, postfix, metrics_service)
+        self.config: RsiConfig = self.config
+
+    def compute(self) -> DataFrame:
+        # Get source DataFrame with ensured DatetimeIndex using the base class method
+        source_df = self._prepare_source_df()
+
+        # Create a DataFrame with the same index as the source
+        rsi_values = ta.rsi(source_df["Close"], length=self.config.length)
+
+        # Create result DataFrame with both Time column and feature values
+        df = DataFrame(index=source_df.index)
+        df[f"rsi_{self.config.length}{self.postfix}"] = rsi_values
+
+        return df
+
+    def get_sub_features_names(self) -> list[str]:
+        return [f"rsi_{self.config.length}{self.postfix}"]
 
 
 @pytest.fixture
 def feature_config_factory():
     """Create a fresh feature config factory instance for testing."""
     factory = FeatureConfigFactory()
-    factory.discover_config_classes()
+    factory.discover_config_classes(package_name="tests.integration")
     return factory
 
 
@@ -67,7 +111,8 @@ def symbol_container(config) -> SymbolImportContainer:
 
 @pytest.fixture
 def class_registry():
-    return FeatureClassRegistry()
+    reg = FeatureClassRegistry(package_name="tests.integration")
+    return reg
 
 
 @pytest.fixture
@@ -124,15 +169,20 @@ def test_preprocessing(
     )
 
     # When
-    result = preprocess_service.preprocess_data(symbol_container)
-    actual_columns = sorted(set(result.columns))
+    preproc_result = preprocess_service.preprocess_data(symbol_container)
+    # Should return a PreprocessingResult object
+    assert isinstance(
+        preproc_result, PreprocessingResult
+    ), f"Expected PreprocessingResult, got {type(preproc_result)}"
+    df = preproc_result.final_result
+    actual_columns = sorted(set(df.columns))
 
     # Then
     assert (
         actual_columns == all_expected_columns
     ), f"Column mismatch! Expected: {all_expected_columns}, but got: {actual_columns}"
 
-    # Verify that we have a DatetimeIndex
-    assert isinstance(result.index, DatetimeIndex), "Result should have a DatetimeIndex"
+    # Verify that we have a DatetimeIndex on the final result
+    assert isinstance(df.index, DatetimeIndex), "Result should have a DatetimeIndex"
 
     # print(feature_df_merged.head())

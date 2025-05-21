@@ -11,6 +11,7 @@ from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDat
 from drl_trading_framework.common.model.computed_dataset_container import (
     ComputedDataSetContainer,
 )
+from drl_trading_framework.common.model.preprocessing_result import PreprocessingResult
 from drl_trading_framework.common.model.symbol_import_container import (
     SymbolImportContainer,
 )
@@ -143,7 +144,9 @@ class PreprocessService:
             source_dataset=dataset, computed_dataframe=merged_features
         )
 
-    def preprocess_data(self, symbol_container: SymbolImportContainer) -> DataFrame:
+    def preprocess_data(
+        self, symbol_container: SymbolImportContainer
+    ) -> PreprocessingResult:
         """
         Preprocesses the data for a given symbol by computing features and merging datasets.
 
@@ -154,7 +157,7 @@ class PreprocessService:
             ValueError: If no valid computed datasets were produced
 
         Returns:
-            DataFrame: The final DataFrame with all computed features and context-related features
+            PreprocessingResult: Object containing all intermediate and final preprocessing results
         """
         datasets: List[AssetPriceDataSet] = symbol_container.datasets
         base_dataset, _ = separate_asset_price_datasets(datasets)
@@ -201,7 +204,15 @@ class PreprocessService:
         )
 
         logger.info("6. Preprocessing finished.")
-        return final_result
+        return PreprocessingResult(
+            symbol_container=symbol_container,
+            computed_dataset_containers=computed_dataset_containers,
+            base_computed_container=base_computed_container,
+            other_computed_containers=other_computed_containers,
+            merged_result=merged_result,
+            context_features=context_features,
+            final_result=final_result,
+        )
 
     def _merge_all_timeframes_features_together(
         self,

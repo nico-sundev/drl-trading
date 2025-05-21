@@ -1,17 +1,20 @@
+from typing import Literal
 from unittest.mock import MagicMock
 
 import pytest
 
-from drl_trading_framework.common.config.config_loader import ConfigLoader
-from drl_trading_framework.common.config.feature_config_collection import (
-    MacdConfig,
-    RangeConfig,
-    RocConfig,
-    RsiConfig,
+from drl_trading_framework.common.config.base_parameter_set_config import (
+    BaseParameterSetConfig,
 )
+from drl_trading_framework.common.config.config_loader import ConfigLoader
 from drl_trading_framework.common.config.feature_config_factory import (
     FeatureConfigFactory,
 )
+
+
+class RsiConfig(BaseParameterSetConfig):
+    type: Literal["rsi"]
+    length: int
 
 
 @pytest.fixture
@@ -23,11 +26,7 @@ def mock_feature_config_factory():
     def get_config_class_side_effect(feature_name):
         feature_name = feature_name.lower()
         config_classes = {
-            "macd": MacdConfig,
             "rsi": RsiConfig,
-            "roc": RocConfig,
-            "range": RangeConfig,
-            "rvi": RsiConfig,  # Add any other features used in tests
         }
         return config_classes.get(feature_name)
 

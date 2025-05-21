@@ -1,8 +1,0 @@
-from enum import Enum
-
-
-class WICK_HANDLE_STRATEGY(Enum):
-    LAST_WICK_ONLY = "LAST_WICK_ONLY"
-    PREVIOUS_WICK_ONLY = "PREVIOUS_WICK_ONLY"
-    MEAN = "MEAN"
-    MAX_BELOW_ATR = "MAX_BELOW_ATR"
