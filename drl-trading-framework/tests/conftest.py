@@ -4,18 +4,76 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import Literal, Optional
 
+import pandas_ta as ta
 import pytest
 from feast import FeatureStore
+from pandas import DataFrame
 
+from drl_trading_framework.common.config.base_parameter_set_config import (
+    BaseParameterSetConfig,
+)
 from drl_trading_framework.common.config.config_loader import ConfigLoader
 from drl_trading_framework.common.config.feature_config_factory import (
     FeatureConfigFactory,
 )
 from drl_trading_framework.common.di.containers import ApplicationContainer
+from drl_trading_framework.preprocess.feature.collection.base_feature import BaseFeature
 from drl_trading_framework.preprocess.feature.feature_class_registry import (
     FeatureClassRegistry,
 )
+from drl_trading_framework.preprocess.metrics.technical_metrics_service import (
+    TechnicalMetricsServiceInterface,
+)
+
+
+class RsiConfig(BaseParameterSetConfig):
+    type: Literal["rsi"]
+    length: int
+
+
+class RsiFeature(BaseFeature):
+
+    def __init__(
+        self,
+        source: DataFrame,
+        config: BaseParameterSetConfig,
+        postfix: str = "",
+        metrics_service: Optional[TechnicalMetricsServiceInterface] = None,
+    ) -> None:
+        super().__init__(source, config, postfix, metrics_service)
+        self.config: RsiConfig = self.config
+
+    def compute(self) -> DataFrame:
+        # Get source DataFrame with ensured DatetimeIndex using the base class method
+        source_df = self._prepare_source_df()
+
+        # Create a DataFrame with the same index as the source
+        rsi_values = ta.rsi(source_df["Close"], length=self.config.length)
+
+        # Create result DataFrame with both Time column and feature values
+        df = DataFrame(index=source_df.index)
+        df[f"rsi_{self.config.length}{self.postfix}"] = rsi_values
+
+        return df
+
+    def get_sub_features_names(self) -> list[str]:
+        return [f"rsi_{self.config.length}{self.postfix}"]
+
+
+@pytest.fixture
+def feature_config_factory():
+    """Create a fresh feature config factory instance for testing."""
+    factory = FeatureConfigFactory()
+    factory.discover_config_classes(package_name="tests")
+    return factory
+
+
+@pytest.fixture
+def feature_class_registry():
+    reg = FeatureClassRegistry(package_name="tests")
+    return reg
 
 
 @pytest.fixture(scope="session")
@@ -50,6 +108,7 @@ def temp_config_file():
                 }
             ],
             "limit": 100,
+            "strategy": "csv",
         },
         "featuresConfig": {
             "featureDefinitions": [
@@ -116,19 +175,7 @@ def temp_config_file():
 
 
 @pytest.fixture
-def feature_config_factory():
-    """Create a fresh feature config factory instance for testing.
-
-    Returns:
-        A new FeatureConfigFactory instance with config classes discovered
-    """
-    factory = FeatureConfigFactory()
-    factory.discover_config_classes()
-    return factory
-
-
-@pytest.fixture
-def mocked_container(mocked_config, feature_config_factory):
+def mocked_container(mocked_config, feature_config_factory, feature_class_registry):
     """Create a container initialized with the test configuration.
 
     This fixture provides a configured ApplicationContainer instance
@@ -162,6 +209,8 @@ def mocked_container(mocked_config, feature_config_factory):
     # This will now use the application_config loaded from test_config_path
     features_config = container.features_config()
     features_config.parse_all_parameters(feature_config_factory)
+
+    container.feature_class_registry.override(feature_class_registry)
 
     return container
 
@@ -222,31 +271,6 @@ def mocked_feature_store(request, mocked_config):
 
     request.addfinalizer(cleanup)
     return feature_store
-
-
-@pytest.fixture(autouse=True)
-def reset_registries():
-    """
-    Reset all registries before each test to ensure test isolation.
-
-    This fixture runs automatically for all tests (autouse=True) and ensures
-    that any test creating or modifying registry state doesn't affect other tests.
-    It handles both FeatureClassRegistry and FeatureConfigFactory resetting.
-    """
-    # Reset FeatureClassRegistry
-    feature_class_registry = FeatureClassRegistry()
-    feature_class_registry.reset()
-
-    # Reset FeatureConfigFactory - create a new instance and clear it
-    feature_config_factory = FeatureConfigFactory()
-    feature_config_factory.clear()
-
-    # Let the test run
-    yield
-
-    # Reset after test for good measure
-    feature_class_registry.reset()
-    feature_config_factory.clear()
 
 
 @pytest.fixture

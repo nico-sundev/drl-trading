@@ -106,9 +106,7 @@ class ApplicationContainer(containers.DeclarativeContainer):
     # Feature configuration factory - replaces FeatureConfigRegistry singleton
     feature_config_factory = providers.Singleton(
         FeatureConfigFactory,
-    )
-
-    # Core utilities and stateless services
+    )  # Core utilities and stateless services
     feature_class_registry = providers.Singleton(FeatureClassRegistry)
     merge_service = providers.Singleton(MergeService)
     strip_service = providers.Singleton(StripService)
@@ -116,7 +114,9 @@ class ApplicationContainer(containers.DeclarativeContainer):
         ContextFeatureService,
         context_feature_config,
         atr_period=14,
-    )  # Data import strategy factory
+    )
+
+    # Data import strategy factory
     data_import_strategy_factory = providers.Singleton(
         DataImportStrategyFactory,
     )
