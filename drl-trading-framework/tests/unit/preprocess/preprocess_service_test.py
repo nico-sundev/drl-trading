@@ -3,13 +3,13 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 from dask import delayed
-from pandas import DataFrame
 
 from drl_trading_framework.common.config.feature_config import FeaturesConfig
 from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_framework.common.model.computed_dataset_container import (
     ComputedDataSetContainer,
 )
+from drl_trading_framework.common.model.preprocessing_result import PreprocessingResult
 from drl_trading_framework.common.model.symbol_import_container import (
     SymbolImportContainer,
 )
@@ -26,7 +26,10 @@ from drl_trading_framework.preprocess.feature.feature_aggregator import (
 from drl_trading_framework.preprocess.feature.feature_class_registry import (
     FeatureClassRegistry,
 )
-from drl_trading_framework.preprocess.preprocess_service import PreprocessService
+from drl_trading_framework.preprocess.preprocess_service import (
+    PreprocessService,
+    PreprocessServiceInterface,
+)
 
 
 @pytest.fixture
@@ -239,7 +242,7 @@ def preprocess_service(
     mock_merge_service: MagicMock,
     mock_context_feature_service: ContextFeatureService,
     mock_base_dataset_computed_container: ComputedDataSetContainer,
-):
+) -> PreprocessServiceInterface:
     """Create a PreprocessService instance with patched compute_features_for_dataset method."""
     service = PreprocessService(
         features_config=mock_feature_config,
@@ -261,7 +264,7 @@ def preprocess_service(
 
 def test_preprocess_data_successful_execution(
     mock_symbol_container: SymbolImportContainer,
-    preprocess_service: PreprocessService,
+    preprocess_service: PreprocessServiceInterface,
     mock_merge_service: MergeServiceInterface,
     mock_base_dataset_computed_container: ComputedDataSetContainer,
     mock_context_feature_service: ContextFeatureService,
@@ -287,7 +290,7 @@ def test_preprocess_data_successful_execution(
         # Then
         # Assert the expected outcomes
         assert result is not None
-        assert isinstance(result, DataFrame)
+        assert isinstance(result, PreprocessingResult)
 
         # Verify context feature service methods were called
         mock_context_feature_service.prepare_context_features.assert_called_once()
@@ -296,7 +299,7 @@ def test_preprocess_data_successful_execution(
 
 def test_preprocess_data_no_features(
     mock_symbol_container: SymbolImportContainer,
-    preprocess_service: PreprocessService,
+    preprocess_service: PreprocessServiceInterface,
     mock_context_feature_service: ContextFeatureService,
 ) -> None:
     """Test preprocessing when no feature tasks are generated."""
@@ -317,7 +320,7 @@ def test_preprocess_data_no_features(
 
 def test_preprocess_data_no_base_dataset(
     mock_symbol_container: SymbolImportContainer,
-    preprocess_service: PreprocessService,
+    preprocess_service: PreprocessServiceInterface,
     mock_other_dataset_computed_container: ComputedDataSetContainer,
 ) -> None:
     """Test handling when no base dataset is found after feature computation."""
@@ -336,7 +339,7 @@ def test_preprocess_data_no_base_dataset(
 
 
 def test_compute_features_for_dataset_no_tasks(
-    preprocess_service: PreprocessService,
+    preprocess_service: PreprocessServiceInterface,
     mock_base_dataset: AssetPriceDataSet,
     mock_feature_aggregator: MagicMock,
 ) -> None:
@@ -366,7 +369,7 @@ def test_compute_features_for_dataset_no_tasks(
 
 
 def test_prepare_dataframe_for_join_success(
-    preprocess_service: PreprocessService,
+    preprocess_service: PreprocessServiceInterface,
     mock_context_feature_service: ContextFeatureService,
 ) -> None:
     """Test that _prepare_dataframe_for_join correctly prepares a DataFrame for joining."""
@@ -391,7 +394,7 @@ def test_prepare_dataframe_for_join_success(
 
 
 def test_prepare_dataframe_for_join_empty_df(
-    preprocess_service: PreprocessService,
+    preprocess_service: PreprocessServiceInterface,
     mock_context_feature_service: ContextFeatureService,
 ) -> None:
     """Test that _prepare_dataframe_for_join handles empty DataFrames correctly."""
@@ -409,7 +412,7 @@ def test_prepare_dataframe_for_join_empty_df(
 
 
 def test_merge_all_timeframes_features_together_length_mismatch(
-    preprocess_service: PreprocessService,
+    preprocess_service: PreprocessServiceInterface,
     mock_base_dataset_computed_container: ComputedDataSetContainer,
     mock_other_dataset_computed_container: ComputedDataSetContainer,
     mock_merge_service: MagicMock,
@@ -432,7 +435,7 @@ def test_merge_all_timeframes_features_together_length_mismatch(
 
 
 def test_compute_features_for_dataset_with_valid_tasks(
-    preprocess_service: PreprocessService,
+    preprocess_service: PreprocessServiceInterface,
     mock_base_dataset: AssetPriceDataSet,
     mock_feature_aggregator: MagicMock,
 ) -> None:

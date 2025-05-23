@@ -1,4 +1,5 @@
 import logging
+from abc import ABC, abstractmethod
 from typing import List, Optional
 
 import dask
@@ -36,7 +37,29 @@ from drl_trading_framework.preprocess.feature.feature_class_registry import (
 logger = logging.getLogger(__name__)
 
 
-class PreprocessService:
+# Define interface for preprocessing service
+class PreprocessServiceInterface(ABC):
+    """
+    Interface defining the contract for preprocessing services.
+    """
+
+    @abstractmethod
+    def preprocess_data(
+        self, symbol_container: SymbolImportContainer
+    ) -> PreprocessingResult:
+        """
+        Preprocesses the data for a given symbol by computing features and merging datasets.
+
+        Args:
+            symbol_container (SymbolImportContainer): Container with symbol and datasets
+
+        Returns:
+            PreprocessingResult: Final preprocessing results with computed features.
+        """
+        ...
+
+
+class PreprocessService(PreprocessServiceInterface):
     def __init__(
         self,
         features_config: FeaturesConfig,

@@ -36,7 +36,10 @@ from drl_trading_framework.preprocess.feature.feature_class_registry import (
 from drl_trading_framework.preprocess.metrics.technical_metrics_service import (
     TechnicalMetricsServiceInterface,
 )
-from drl_trading_framework.preprocess.preprocess_service import PreprocessService
+from drl_trading_framework.preprocess.preprocess_service import (
+    PreprocessService,
+    PreprocessServiceInterface,
+)
 
 
 class RsiConfig(BaseParameterSetConfig):
@@ -141,7 +144,7 @@ def context_service(config):
 @pytest.fixture
 def preprocess_service(
     config, class_registry, feature_aggregator, merge_service, context_service
-):
+) -> PreprocessServiceInterface:
     return PreprocessService(
         features_config=config.features_config,
         feature_class_registry=class_registry,
@@ -152,7 +155,8 @@ def preprocess_service(
 
 
 def test_preprocessing(
-    preprocess_service: PreprocessService, symbol_container: SymbolImportContainer
+    preprocess_service: PreprocessServiceInterface,
+    symbol_container: SymbolImportContainer,
 ):
     """Test that preprocessing creates the expected feature columns."""
     # Given
