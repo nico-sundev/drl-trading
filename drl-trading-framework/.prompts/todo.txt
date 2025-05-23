@@ -1,8 +1,4 @@
 todo features:
-- control import strategy through application config
-    - add string property "strategy" to LocalDataImportConfig class
-    - instantiate preferred import strategy extending BaseDataImportService dynamically based on the config property "strategy" using a factory pattern
-    - update containers.py so factory class is creating import strategy class and include in DI
 - normalize features before training
     - call vecnormalize before training starts
     - investigate which scope it belongs to at the best
@@ -11,7 +7,6 @@ todo features:
 
 next sprint:
 - model save checkpoints
-- integrate backtrader
 - MLFlow integration -> investigate gitlab model -> configure to use local service
 - research for SBX for faster training
 - implement data provider APIs

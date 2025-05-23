@@ -14,3 +14,4 @@ class SymbolConfig(BaseSchema):
 class LocalDataImportConfig(BaseSchema):
     symbols: List[SymbolConfig]
     limit: Optional[int] = None
+    strategy: str = "csv"  # Default to csv strategy

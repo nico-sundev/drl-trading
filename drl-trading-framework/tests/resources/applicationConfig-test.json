@@ -1,5 +1,4 @@
-{
-  "localDataImportConfig": {
+{  "localDataImportConfig": {
     "symbols": [
       {
         "symbol": "EURUSD",
@@ -17,7 +16,8 @@
         ]
       }
     ],
-    "limit": 100
+    "limit": 100,
+    "strategy": "csv"
   },
   "featuresConfig": {
     "featureDefinitions": [

@@ -15,8 +15,8 @@ from drl_trading_framework.common.config.feature_config_factory import (
 from drl_trading_framework.common.data_import.data_import_manager import (
     DataImportManager,
 )
-from drl_trading_framework.common.data_import.local.csv_data_import_service import (
-    CsvDataImportService,
+from drl_trading_framework.common.data_import.data_import_strategy_factory import (
+    DataImportStrategyFactory,
 )
 from drl_trading_framework.preprocess.data_set_utils.context_feature_service import (
     ContextFeatureService,
@@ -116,18 +116,25 @@ class ApplicationContainer(containers.DeclarativeContainer):
         ContextFeatureService,
         context_feature_config,
         atr_period=14,
+    )  # Data import strategy factory
+    data_import_strategy_factory = providers.Singleton(
+        DataImportStrategyFactory,
     )
 
-    # Data import services - using directly injected config sections
-    csv_data_import_service = providers.Singleton(
-        CsvDataImportService,
+    # Data import service - created dynamically based on strategy
+    data_import_service = providers.Singleton(
+        lambda factory, config: factory.create_import_service(config),
+        factory=data_import_strategy_factory,
         config=local_data_import_config,
     )
 
     data_import_manager = providers.Singleton(
         DataImportManager,
-        import_service=csv_data_import_service,
+        import_service=data_import_service,
     )
+
+    # Backward compatibility - alias for existing code
+    csv_data_import_service = data_import_service
 
     feature_store_path = providers.Callable(
         _resolve_feature_store_path, feature_store_config
