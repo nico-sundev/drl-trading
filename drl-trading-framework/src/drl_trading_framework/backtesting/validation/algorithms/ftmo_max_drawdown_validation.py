@@ -149,12 +149,18 @@ class FTMOMaxDrawdownValidation(BaseValidationAlgorithm[FTMOAccountConfig]):
             equity.index[recovery_mask][0] if any(recovery_mask) else None
         )
 
-        # Format dates as strings
-        dd_start_str = dd_start_date.strftime("%Y-%m-%d %H:%M:%S")
-        dd_end_str = dd_end_date.strftime("%Y-%m-%d %H:%M:%S")
+        # Ensure dates are pandas Timestamps before formatting
+        import pandas as pd
+
+        dd_start_ts = pd.Timestamp(dd_start_date)
+        dd_end_ts = pd.Timestamp(dd_end_date)
+        dd_recovery_ts = pd.Timestamp(dd_recovery_date) if dd_recovery_date is not None else None
+
+        dd_start_str = dd_start_ts.strftime("%Y-%m-%d %H:%M:%S")
+        dd_end_str = dd_end_ts.strftime("%Y-%m-%d %H:%M:%S")
         dd_recovery_str = (
-            dd_recovery_date.strftime("%Y-%m-%d %H:%M:%S")
-            if dd_recovery_date is not None
+            dd_recovery_ts.strftime("%Y-%m-%d %H:%M:%S")
+            if dd_recovery_ts is not None
             else None
         )
 
