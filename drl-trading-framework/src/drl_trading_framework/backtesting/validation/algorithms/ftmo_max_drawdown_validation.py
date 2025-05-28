@@ -154,7 +154,9 @@ class FTMOMaxDrawdownValidation(BaseValidationAlgorithm[FTMOAccountConfig]):
 
         dd_start_ts = pd.Timestamp(dd_start_date)
         dd_end_ts = pd.Timestamp(dd_end_date)
-        dd_recovery_ts = pd.Timestamp(dd_recovery_date) if dd_recovery_date is not None else None
+        dd_recovery_ts = (
+            pd.Timestamp(dd_recovery_date) if dd_recovery_date is not None else None
+        )
 
         dd_start_str = dd_start_ts.strftime("%Y-%m-%d %H:%M:%S")
         dd_end_str = dd_end_ts.strftime("%Y-%m-%d %H:%M:%S")

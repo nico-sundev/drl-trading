@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Main bootstrap script that adapts to deployment mode."""
-# Added a comment for testing pre-commit hooks
+# Added another comment for testing pre-commit hooks workflow
 
 import os
 import sys
