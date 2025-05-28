@@ -4,11 +4,10 @@ import logging
 from typing import List, Optional
 
 import pandas_ta as ta
+from drl_trading_common.config.context_feature_config import ContextFeatureConfig
+from injector import inject
 from pandas import DataFrame
 
-from drl_trading_framework.common.config.context_feature_config import (
-    ContextFeatureConfig,
-)
 from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_framework.preprocess.data_set_utils.util import ensure_datetime_index
 
@@ -28,6 +27,7 @@ class ContextFeatureService:
     2. Derived columns: Computed from primary columns (e.g., ATR)
     """
 
+    @inject
     def __init__(self, config: ContextFeatureConfig, atr_period: int = 14):
         """
         Initialize the ContextFeatureService.

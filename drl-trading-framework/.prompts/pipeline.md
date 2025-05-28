@@ -28,7 +28,7 @@
 - At the very first call, a feature store for the given symbol and timeframe dataset is created
 - A feature view for every feature is created, if not yet existing
 - A feature is computed if not found in the store
-- Responsible classes: FeatureClassRegistry, FeatureConfigRegistry and mostly FeatureAggregator
+- Responsible classes: FeatureClassFactoryInterface, FeatureConfigRegistry and mostly FeatureAggregator
 
 ### Merging the timeframes
 - Every timeframes dataset is then compared to the base dataset

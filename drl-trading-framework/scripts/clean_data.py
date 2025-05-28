@@ -1,18 +1,14 @@
 import os
 from typing import List
 
-from drl_trading_framework.common.config.local_data_import_config import (
-    LocalDataImportConfig,
-    SymbolConfig,
-)
+from drl_trading_common.config import LocalDataImportConfig, SymbolConfig
+from drl_trading_common.models import AssetPriceImportProperties
+
 from drl_trading_framework.common.data_import.data_import_manager import (
     DataImportManager,
 )
 from drl_trading_framework.common.data_import.local.csv_data_import_service import (
     CsvDataImportService,
-)
-from drl_trading_framework.common.model.asset_price_import_properties import (
-    AssetPriceImportProperties,
 )
 
 ticker = "EURUSD"

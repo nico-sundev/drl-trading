@@ -6,8 +6,9 @@ from abc import ABC, abstractmethod
 from typing import Optional, Tuple, cast
 
 import pandas as pd
+from drl_trading_common.config.rl_model_config import RlModelConfig
+from injector import inject
 
-from drl_trading_framework.common.config.rl_model_config import RlModelConfig
 from drl_trading_framework.common.model.split_dataset_container import (
     SplitDataSetContainer,
 )
@@ -57,6 +58,7 @@ class SplitService(SplitServiceInterface):
     which is critical for financial datasets where sequence matters.
     """
 
+    @inject
     def __init__(self, config: Optional[RlModelConfig] = None):
         """
         Initialize the split service.

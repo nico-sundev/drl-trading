@@ -1,5 +1,5 @@
-from drl_trading_framework.common.config.application_config import ApplicationConfig
-from drl_trading_framework.common.config.feature_config import FeaturesConfig
+from .application_config import ApplicationConfig
+from .feature_config import FeaturesConfig
 
 
 class ConfigLoader:

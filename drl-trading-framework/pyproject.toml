@@ -11,7 +11,7 @@ authors = [
     {name = "sonntagnico", email = "nico-tor@hotmail.com"},
 ]
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = {text = "MIT"}
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -21,6 +21,8 @@ version = "0.1.0"
 # Comment out dynamic version for now
 # dynamic = ["version"]
 dependencies = [
+    # Common library
+    "drl-trading-common",
     # Core dependencies for runtime
     "numpy",
     "pandas",
@@ -30,22 +32,28 @@ dependencies = [
     "yfinance",
     # Feature storage and management
     "feast",
+    "protobuf>=5.26.0,<6.0.0",  # Pin protobuf to compatible version with feast
     # API and services
     "click",
     # Dependency injection framework
-    "dependency_injector",
-    "feast",
+    "injector",
     "pandas-stubs"
 ]
 
 [project.urls]
 Documentation = "https://pyscaffold.org/"
 
+[tool.uv.sources]
+drl-trading-common = { workspace = true }
+
 [project.optional-dependencies]
 testing = [
     "pytest",
     "pytest-cov",
     "pytest-benchmark",
+]
+production = [
+    "pika",  # RabbitMQ client
 ]
 dev = [
     "mypy",
@@ -128,59 +136,6 @@ addopts = [
     # "--cov-report=term-missing"
 ]
 
-# Add tox configuration
-[tool.tox]
-legacy_tox_ini = """
-[tox]
-minversion = 3.24
-envlist = default
-isolated_build = True
-
-[testenv]
-description = Invoke pytest to run automated tests
-setenv =
-    TOXINIDIR = {toxinidir}
-passenv =
-    HOME
-    SETUPTOOLS_*
-extras =
-    testing
-commands =
-    pytest {posargs}
-
-[testenv:{build,clean}]
-description =
-    build: Build the package in isolation according to PEP517, see https://github.com/pypa/build
-    clean: Remove old distribution files and temporary build artifacts (./build and ./dist)
-skip_install = True
-changedir = {toxinidir}
-deps =
-    build: build[virtualenv]
-passenv =
-    SETUPTOOLS_*
-commands =
-    clean: python -c 'import shutil; [shutil.rmtree(p, True) for p in ("build", "dist")]'
-    clean: python -c 'import pathlib, shutil; [shutil.rmtree(p, True) for p in pathlib.Path("src").glob("*.egg-info")]'
-    build: python -m build {posargs}
-
-[testenv:publish]
-description =
-    Publish the package you have been developing to a package index server.
-    By default, it uses testpypi. If you really want to publish your package
-    to be publicly accessible in PyPI, use the `-- --repository pypi` option.
-skip_install = True
-changedir = {toxinidir}
-passenv =
-    TWINE_USERNAME
-    TWINE_PASSWORD
-    TWINE_REPOSITORY
-    TWINE_REPOSITORY_URL
-deps = twine
-commands =
-    python -m twine check dist/*
-    python -m twine upload {posargs:--repository {env:TWINE_REPOSITORY:testpypi}} dist/*
-"""
-
 # Package discovery configuration
 [tool.setuptools]
 zip-safe = false
@@ -212,7 +167,18 @@ exclude_lines = [
     "if False:",
 ]
 
+[dependency-groups]
+dev = [
+    "injector>=0.22.0",
+    "pytest>=8.3.5",
+    "pytest-cov>=6.1.1",
+]
+
 [tool.uv.workspace]
 members = [
+    "../drl-trading-common",
     "../drl-trading-impl-example",
 ]
+
+[project.scripts]
+add-feature = "drl_trading_framework.scripts.add_feature:main"

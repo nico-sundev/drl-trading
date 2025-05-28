@@ -142,7 +142,7 @@ Raw Data → Loading → Stripping → Feature Computing → Merging → Splitti
   1. Create feature store for symbol/timeframe if first call
   2. Create feature view per feature if not existing
   3. Compute feature if not in store
-- **Core Classes**: FeatureClassRegistry, FeatureConfigRegistry, FeatureAggregator
+- **Core Classes**: FeatureClassFactoryInterface, FeatureConfigRegistry, FeatureAggregator
 - **Key Interfaces**: BaseFeature (all features must extend this)
 - **Cache Strategy**: Uses feast to avoid recomputing features
 

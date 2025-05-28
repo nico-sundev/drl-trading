@@ -3,11 +3,12 @@ from abc import ABC, abstractmethod
 from datetime import timedelta
 from typing import List, Optional
 
+from drl_trading_common.config.feature_config import FeatureStoreConfig
 from feast import Entity, FeatureStore, FeatureView, Field, FileSource
 from feast.types import Float32
+from injector import inject
 from pandas import DataFrame
 
-from drl_trading_framework.common.config.feature_config import FeatureStoreConfig
 from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
 
 logger = logging.getLogger(__name__)
@@ -109,6 +110,24 @@ class FeastServiceInterface(ABC):
         """
         pass
 
+    @abstractmethod
+    def get_online_features(
+        self,
+        entity_df: DataFrame,
+        feature_refs: List[str],
+    ) -> Optional[DataFrame]:
+        """
+        Retrieve features from the online feature store.
+
+        Args:
+            entity_df: DataFrame containing entity information with timestamps
+            feature_refs: List of feature references in format "feature_view:feature_name"
+
+        Returns:
+            Optional[DataFrame]: DataFrame containing the retrieved features or None if not available
+        """
+        pass
+
 
 class FeastService(FeastServiceInterface):
     """
@@ -119,6 +138,7 @@ class FeastService(FeastServiceInterface):
     features, and retrieving historical features.
     """
 
+    @inject
     def __init__(
         self, config: FeatureStoreConfig, feature_store: Optional[FeatureStore] = None
     ) -> None:
@@ -385,3 +405,53 @@ class FeastService(FeastServiceInterface):
             bool: True if the feature store is enabled, False otherwise
         """
         return self.config.enabled and self.feature_store is not None
+
+    def get_online_features(
+        self,
+        entity_df: DataFrame,
+        feature_refs: List[str],
+    ) -> Optional[DataFrame]:
+        """
+        Retrieve features from the online feature store.
+
+        This method leverages Feast's online serving capabilities to retrieve
+        pre-computed features for real-time inference.
+
+        Args:
+            entity_df: DataFrame containing entity information with timestamps
+            feature_refs: List of feature references in format "feature_view:feature_name"
+
+        Returns:
+            Optional[DataFrame]: DataFrame containing the retrieved features or None if not available
+        """
+        if (
+            not self.feature_store
+            or not self.config.enabled
+            or not self.config.online_enabled
+        ):
+            logger.debug("Online feature serving not enabled or available")
+            return None
+
+        try:
+            logger.debug(f"Retrieving online features: {feature_refs}")
+
+            # Use Feast's get_online_features method
+            online_response = self.feature_store.get_online_features(
+                entity_rows=entity_df.to_dict("records"), features=feature_refs
+            )
+
+            # Convert response to DataFrame
+            online_df = online_response.to_df()
+
+            if online_df.empty:
+                logger.debug("No online features retrieved")
+                return None
+
+            logger.debug(
+                f"Successfully retrieved {len(online_df)} online feature records"
+            )
+            return online_df
+
+        except Exception as e:
+            logger.warning(f"Failed to retrieve online features: {str(e)}")
+            return None

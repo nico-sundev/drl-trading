@@ -1,9 +1,7 @@
 from typing import List, Optional
 
-from drl_trading_framework.common.config.base_schema import BaseSchema
-from drl_trading_framework.common.model.asset_price_import_properties import (
-    AssetPriceImportProperties,
-)
+from ..models import AssetPriceImportProperties
+from .base_schema import BaseSchema
 
 
 class SymbolConfig(BaseSchema):

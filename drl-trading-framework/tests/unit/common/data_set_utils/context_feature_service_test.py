@@ -2,11 +2,9 @@
 
 import pandas as pd
 import pytest
+from drl_trading_common.config.context_feature_config import ContextFeatureConfig
 from pandas import DataFrame
 
-from drl_trading_framework.common.config.context_feature_config import (
-    ContextFeatureConfig,
-)
 from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_framework.preprocess.data_set_utils.context_feature_service import (
     ContextFeatureService,

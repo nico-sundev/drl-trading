@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 from dask import delayed
+from drl_trading_common.config.feature_config import FeaturesConfig
 
-from drl_trading_framework.common.config.feature_config import FeaturesConfig
 from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_framework.common.model.computed_dataset_container import (
     ComputedDataSetContainer,
@@ -23,8 +23,8 @@ from drl_trading_framework.preprocess.feast.feast_service import FeastService
 from drl_trading_framework.preprocess.feature.feature_aggregator import (
     FeatureAggregatorInterface,
 )
-from drl_trading_framework.preprocess.feature.feature_class_registry import (
-    FeatureClassRegistry,
+from drl_trading_framework.preprocess.feature.feature_class_factory import (
+    FeatureClassFactoryInterface,
 )
 from drl_trading_framework.preprocess.preprocess_service import (
     PreprocessService,
@@ -42,9 +42,9 @@ def mock_feature_config() -> FeaturesConfig:
 
 
 @pytest.fixture
-def mock_feature_class_registry() -> FeatureClassRegistry:
+def mock_feature_class_registry() -> FeatureClassFactoryInterface:
     """Create a mock feature class registry."""
-    return MagicMock(spec=FeatureClassRegistry)
+    return MagicMock(spec=FeatureClassFactoryInterface)
 
 
 @pytest.fixture
@@ -237,7 +237,7 @@ def mock_context_feature_service() -> ContextFeatureService:
 @pytest.fixture
 def preprocess_service(
     mock_feature_config: FeaturesConfig,
-    mock_feature_class_registry: FeatureClassRegistry,
+    mock_feature_class_registry: FeatureClassFactoryInterface,
     mock_feature_aggregator: MagicMock,
     mock_merge_service: MagicMock,
     mock_context_feature_service: ContextFeatureService,
@@ -246,7 +246,7 @@ def preprocess_service(
     """Create a PreprocessService instance with patched compute_features_for_dataset method."""
     service = PreprocessService(
         features_config=mock_feature_config,
-        feature_class_registry=mock_feature_class_registry,
+        feature_class_factory=mock_feature_class_registry,
         feature_aggregator=mock_feature_aggregator,
         merge_service=mock_merge_service,
         context_feature_service=mock_context_feature_service,

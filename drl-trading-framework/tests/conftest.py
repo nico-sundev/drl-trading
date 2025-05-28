@@ -8,20 +8,18 @@ from typing import Literal, Optional
 
 import pandas_ta as ta
 import pytest
+from drl_trading_common.config.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_common.config.config_loader import ConfigLoader
 from feast import FeatureStore
 from pandas import DataFrame
 
-from drl_trading_framework.common.config.base_parameter_set_config import (
-    BaseParameterSetConfig,
-)
-from drl_trading_framework.common.config.config_loader import ConfigLoader
 from drl_trading_framework.common.config.feature_config_factory import (
     FeatureConfigFactory,
 )
 from drl_trading_framework.common.di.containers import ApplicationContainer
 from drl_trading_framework.preprocess.feature.collection.base_feature import BaseFeature
-from drl_trading_framework.preprocess.feature.feature_class_registry import (
-    FeatureClassRegistry,
+from drl_trading_framework.preprocess.feature.feature_class_factory import (
+    FeatureClassFactory,
 )
 from drl_trading_framework.preprocess.metrics.technical_metrics_service import (
     TechnicalMetricsServiceInterface,
@@ -72,7 +70,8 @@ def feature_config_factory():
 
 @pytest.fixture
 def feature_class_registry():
-    reg = FeatureClassRegistry(package_name="tests")
+    reg = FeatureClassFactory()
+    reg.discover_feature_classes(package_name="tests")
     return reg
 
 

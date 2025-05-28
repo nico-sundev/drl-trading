@@ -1,16 +1,14 @@
 from typing import Optional
 
 import pandas_ta as ta
-from pandas import DataFrame
-
-from drl_trading_framework.common.config.base_parameter_set_config import (
-    BaseParameterSetConfig,
-)
-from drl_trading_framework.common.config.feature_config_collection import RsiConfig
 from drl_trading_framework.preprocess.feature.collection.base_feature import BaseFeature
 from drl_trading_framework.preprocess.metrics.technical_metrics_service import (
     TechnicalMetricsServiceInterface,
 )
+from pandas import DataFrame
+
+from drl_trading_common.config.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_common.config.feature_config_collection import RsiConfig
 
 
 class RsiFeature(BaseFeature):

@@ -5,9 +5,10 @@ from typing import List, Optional
 import dask
 import pandas as pd
 from dask import delayed
+from drl_trading_common.config.feature_config import FeaturesConfig
+from injector import inject
 from pandas import DataFrame
 
-from drl_trading_framework.common.config.feature_config import FeaturesConfig
 from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_framework.common.model.computed_dataset_container import (
     ComputedDataSetContainer,
@@ -30,8 +31,8 @@ from drl_trading_framework.preprocess.data_set_utils.util import (
 from drl_trading_framework.preprocess.feature.feature_aggregator import (
     FeatureAggregatorInterface,
 )
-from drl_trading_framework.preprocess.feature.feature_class_registry import (
-    FeatureClassRegistry,
+from drl_trading_framework.preprocess.feature.feature_class_factory import (
+    FeatureClassFactoryInterface,
 )
 
 logger = logging.getLogger(__name__)
@@ -60,10 +61,11 @@ class PreprocessServiceInterface(ABC):
 
 
 class PreprocessService(PreprocessServiceInterface):
+    @inject
     def __init__(
         self,
         features_config: FeaturesConfig,
-        feature_class_registry: FeatureClassRegistry,
+        feature_class_factory: FeatureClassFactoryInterface,
         feature_aggregator: FeatureAggregatorInterface,
         merge_service: MergeServiceInterface,
         context_feature_service: ContextFeatureService,
@@ -79,7 +81,7 @@ class PreprocessService(PreprocessServiceInterface):
             context_feature_service: Service for handling context-related features
         """
         self.features_config = features_config
-        self.feature_class_registry = feature_class_registry
+        self.feature_class_registry = feature_class_factory
         self.feature_aggregator = feature_aggregator
         self.merge_service = merge_service
         self.context_feature_service = context_feature_service

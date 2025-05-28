@@ -1,6 +1,6 @@
 from typing import List
 
-from drl_trading_framework.common.config.base_schema import BaseSchema
+from .base_schema import BaseSchema
 
 
 class RlModelConfig(BaseSchema):

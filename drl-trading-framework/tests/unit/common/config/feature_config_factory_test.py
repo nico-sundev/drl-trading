@@ -8,10 +8,8 @@ registration, and creation of feature configuration instances.
 from unittest import mock
 
 import pytest
+from drl_trading_common.config.base_parameter_set_config import BaseParameterSetConfig
 
-from drl_trading_framework.common.config.base_parameter_set_config import (
-    BaseParameterSetConfig,
-)
 from drl_trading_framework.common.config.feature_config_factory import (
     FeatureConfigFactory,
 )

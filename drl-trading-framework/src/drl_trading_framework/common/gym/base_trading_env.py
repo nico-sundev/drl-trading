@@ -1,9 +1,8 @@
 from typing import List, Optional
 
 import gymnasium as gym
+from drl_trading_common.config.environment_config import EnvironmentConfig
 from pandas import DataFrame
-
-from drl_trading_framework.common.config.environment_config import EnvironmentConfig
 
 
 class BaseTradingEnv(gym.Env):

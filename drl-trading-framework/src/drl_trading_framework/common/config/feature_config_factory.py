@@ -9,13 +9,11 @@ explicit and testable factory approach.
 import importlib
 import inspect
 import logging
-import pkgutil  # Added missing pkgutil import
+import pkgutil
 from abc import ABC, abstractmethod
 from typing import Dict, Optional, Type
 
-from drl_trading_framework.common.config.base_parameter_set_config import (
-    BaseParameterSetConfig,
-)
+from drl_trading_common.config.base_parameter_set_config import BaseParameterSetConfig
 
 logger = logging.getLogger(__name__)
 
@@ -58,9 +56,7 @@ class FeatureConfigFactoryInterface(ABC):
         pass
 
     @abstractmethod
-    def discover_config_classes(
-        self, package_name: str = "drl_trading_framework.common.config"
-    ) -> None:
+    def discover_config_classes(self, package_name: str) -> None:
         """
         Discover and register all config classes in the specified package.
 
@@ -152,9 +148,7 @@ class FeatureConfigFactory(FeatureConfigFactoryInterface):
             f"Registered config class {config_class.__name__} for feature '{normalized_name}'"
         )
 
-    def discover_config_classes(
-        self, package_name: str = "drl_trading_framework.common.config"
-    ) -> None:
+    def discover_config_classes(self, package_name: str) -> None:
         """
         Discover and register all config classes in the specified package.
 

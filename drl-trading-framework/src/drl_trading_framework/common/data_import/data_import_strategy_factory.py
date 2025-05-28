@@ -3,9 +3,8 @@
 import logging
 from typing import Dict, Type
 
-from drl_trading_framework.common.config.local_data_import_config import (
-    LocalDataImportConfig,
-)
+from drl_trading_common.config.local_data_import_config import LocalDataImportConfig
+
 from drl_trading_framework.common.data_import.base_data_import_service import (
     BaseDataImportService,
 )

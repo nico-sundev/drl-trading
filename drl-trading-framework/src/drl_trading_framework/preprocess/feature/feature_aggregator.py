@@ -5,18 +5,19 @@ from typing import List, Optional
 import pandas as pd
 from dask import delayed
 from dask.delayed import Delayed
-from pandas import DataFrame
-
-from drl_trading_framework.common.config.feature_config import (
+from drl_trading_common.config.feature_config import (
     BaseParameterSetConfig,
     FeatureDefinition,
     FeaturesConfig,
 )
+from injector import inject
+from pandas import DataFrame
+
 from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_framework.preprocess.data_set_utils.util import ensure_datetime_index
 from drl_trading_framework.preprocess.feast.feast_service import FeastServiceInterface
-from drl_trading_framework.preprocess.feature.feature_class_registry import (
-    FeatureClassRegistry,
+from drl_trading_framework.preprocess.feature.feature_class_factory import (
+    FeatureClassFactoryInterface,
 )
 from drl_trading_framework.preprocess.metrics.technical_metrics_service import (
     TechnicalMetricsServiceFactory,
@@ -66,10 +67,11 @@ class FeatureAggregator(FeatureAggregatorInterface):
     4. Renaming feature columns according to the convention: featureName_paramString_subFeatureName.
     """
 
+    @inject
     def __init__(
         self,
         config: FeaturesConfig,
-        class_registry: FeatureClassRegistry,
+        class_registry: FeatureClassFactoryInterface,
         feast_service: FeastServiceInterface,
     ) -> None:
         """
@@ -77,7 +79,7 @@ class FeatureAggregator(FeatureAggregatorInterface):
 
         Args:
             config: Configuration for feature definitions.
-            class_registry: Registry of feature classes.
+            class_registry: Factory interface for feature classes.
             feast_service: Service for interacting with the Feast feature store.
         """
         self.config = config
@@ -115,15 +117,18 @@ class FeatureAggregator(FeatureAggregatorInterface):
         # Create metrics service for this asset_data timeframe
         metrics_service = TechnicalMetricsServiceFactory.create(asset_data)
 
-        # Create feature instance
-        feature_class = self.class_registry.feature_class_map[feature_def.name]
-        # Pass the prepared original DataFrame copy and metrics service to the feature instance
+        # Create feature instance using the factory interface
+        feature_class = self.class_registry.get_feature_class(feature_def.name)
+        if feature_class is None:
+            logger.error(
+                f"Feature class for '{feature_def.name}' not found in registry. Skipping."
+            )
+            return None
         feature_instance = feature_class(
             source=original_df, config=param_set, metrics_service=metrics_service
         )
 
         feature_name = feature_instance.get_feature_name()
-        # Get both hash for feast and human-readable string for dataframe columns
         param_hash: str = param_set.hash_id()
         sub_feature_names = feature_instance.get_sub_features_names()
 
@@ -132,7 +137,7 @@ class FeatureAggregator(FeatureAggregatorInterface):
         if self.feast_service.is_enabled():
             historical_features = self.feast_service.get_historical_features(
                 feature_name=feature_name,
-                param_hash=param_hash,  # Use hash for feast lookups
+                param_hash=param_hash,
                 sub_feature_names=sub_feature_names,
                 asset_data=asset_data,
                 symbol=symbol,

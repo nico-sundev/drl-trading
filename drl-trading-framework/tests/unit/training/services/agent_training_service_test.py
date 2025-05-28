@@ -3,11 +3,11 @@ from unittest import mock
 import numpy as np
 import pandas as pd
 import pytest
+from drl_trading_common.config.environment_config import EnvironmentConfig
 from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv
 
 from drl_trading_framework.common.agents.agent_factory import AgentFactory
 from drl_trading_framework.common.agents.base_agent import BaseAgent
-from drl_trading_framework.common.config.environment_config import EnvironmentConfig
 from drl_trading_framework.training.services.agent_training_service import (
     AgentTrainingService,
 )

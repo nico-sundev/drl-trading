@@ -1,11 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
+from drl_trading_common.config.base_parameter_set_config import BaseParameterSetConfig
 from pandas import DataFrame
 
-from drl_trading_framework.common.config.base_parameter_set_config import (
-    BaseParameterSetConfig,
-)
 from drl_trading_framework.preprocess.data_set_utils.util import ensure_datetime_index
 from drl_trading_framework.preprocess.metrics.technical_metrics_service import (
     TechnicalMetricsServiceInterface,

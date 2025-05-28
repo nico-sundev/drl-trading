@@ -5,13 +5,10 @@ import os
 from typing import Optional
 
 from dependency_injector import containers, providers
+from drl_trading_common.config.config_loader import ConfigLoader
+from drl_trading_common.config.feature_config import FeatureStoreConfig
 from feast import FeatureStore
 
-from drl_trading_framework.common.config.config_loader import ConfigLoader
-from drl_trading_framework.common.config.feature_config import FeatureStoreConfig
-from drl_trading_framework.common.config.feature_config_factory import (
-    FeatureConfigFactory,
-)
 from drl_trading_framework.common.data_import.data_import_manager import (
     DataImportManager,
 )
@@ -28,10 +25,13 @@ from drl_trading_framework.preprocess.feast.feast_service import FeastService
 from drl_trading_framework.preprocess.feature.feature_aggregator import (
     FeatureAggregator,
 )
-from drl_trading_framework.preprocess.feature.feature_class_registry import (
-    FeatureClassRegistry,
+from drl_trading_framework.preprocess.feature.real_time_feature_aggregator import (
+    RealTimeFeatureAggregator,
 )
 from drl_trading_framework.preprocess.preprocess_service import PreprocessService
+from drl_trading_framework.preprocess.real_time_preprocess_service import (
+    RealTimePreprocessService,
+)
 from drl_trading_framework.training.services.agent_training_service import (
     AgentTrainingService,
 )
@@ -103,11 +103,11 @@ class ApplicationContainer(containers.DeclarativeContainer):
         lambda config: config.context_feature_config, config=application_config
     )
 
-    # Feature configuration factory - replaces FeatureConfigRegistry singleton
-    feature_config_factory = providers.Singleton(
-        FeatureConfigFactory,
-    )  # Core utilities and stateless services
-    feature_class_registry = providers.Singleton(FeatureClassRegistry)
+    # Feature configuration factory and class registry - injected externally
+    feature_config_factory = providers.Dependency()
+    feature_class_factory = providers.Dependency()
+
+    # Core utilities and stateless services
     merge_service = providers.Singleton(MergeService)
     strip_service = providers.Singleton(StripService)
     context_feature_service = providers.Singleton(
@@ -154,7 +154,7 @@ class ApplicationContainer(containers.DeclarativeContainer):
     feature_aggregator = providers.Singleton(
         FeatureAggregator,
         config=features_config,
-        class_registry=feature_class_registry,
+        class_registry=feature_class_factory,
         feast_service=feast_service,
     )
 
@@ -162,7 +162,7 @@ class ApplicationContainer(containers.DeclarativeContainer):
     preprocess_service = providers.Singleton(
         PreprocessService,
         features_config=features_config,
-        feature_class_registry=feature_class_registry,
+        feature_class_registry=feature_class_factory,
         feature_aggregator=feature_aggregator,
         merge_service=merge_service,
         context_feature_service=context_feature_service,
@@ -178,4 +178,38 @@ class ApplicationContainer(containers.DeclarativeContainer):
     agent_training_service = providers.Singleton(
         AgentTrainingService,
         config=application_config,
+    )
+
+    # Real-time processing services - direct config injection
+    real_time_feature_aggregator = providers.Singleton(
+        RealTimeFeatureAggregator,
+        config=features_config,
+        class_registry=feature_class_factory,
+        feast_service=feast_service,
+    )
+
+    real_time_preprocess_service = providers.Singleton(
+        RealTimePreprocessService,
+        features_config=features_config,
+        real_time_aggregator=real_time_feature_aggregator,
+        feast_service=feast_service,
+    )
+
+    # Deployment mode configuration
+    deployment_mode = providers.Configuration(
+        name="deployment_mode",
+        default=os.getenv("DEPLOYMENT_MODE", "training"),  # Default to training mode
+    )
+
+    # Message bus configuration - will use appropriate transport based on mode
+    message_bus = providers.Singleton(
+        lambda mode: __import__(
+            "drl_trading_framework.common.messaging",
+            fromlist=["TradingMessageBusFactory"],
+        ).TradingMessageBusFactory.create_message_bus(
+            mode=__import__(
+                "drl_trading_framework.common.messaging", fromlist=["DeploymentMode"]
+            ).DeploymentMode(mode)
+        ),
+        deployment_mode,
     )

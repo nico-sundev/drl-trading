@@ -1,5 +1,7 @@
 from typing import List
 
+from injector import inject
+
 from drl_trading_framework.common.data_import.base_data_import_service import (
     BaseDataImportService,
 )
@@ -11,6 +13,7 @@ from drl_trading_framework.common.model.symbol_import_container import (
 class DataImportManager:
     """Manages data import from different sources."""
 
+    @inject
     def __init__(self, import_service: BaseDataImportService):
         """
         Initializes with a data import service.

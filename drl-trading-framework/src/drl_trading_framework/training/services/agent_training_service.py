@@ -1,10 +1,11 @@
 from typing import Dict, Tuple, Type
 
+from drl_trading_common.config.application_config import ApplicationConfig
+from injector import inject
 from stable_baselines3.common.vec_env import DummyVecEnv
 
 from drl_trading_framework.common.agents.agent_factory import AgentFactory
 from drl_trading_framework.common.agents.base_agent import BaseAgent
-from drl_trading_framework.common.config.application_config import ApplicationConfig
 from drl_trading_framework.common.gym import T
 from drl_trading_framework.common.model.split_dataset_container import (
     SplitDataSetContainer,
@@ -16,6 +17,7 @@ class AgentTrainingService:
     Service to handle the creation of environments and training of agents.
     """
 
+    @inject
     def __init__(self, config: ApplicationConfig) -> None:
         """
         Initialize the training service with configuration and agent factory.

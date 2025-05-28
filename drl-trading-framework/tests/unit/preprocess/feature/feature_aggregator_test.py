@@ -5,15 +5,10 @@ from unittest.mock import MagicMock, patch
 import dask
 import pandas as pd
 import pytest
+from drl_trading_common.config.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_common.config.feature_config import FeatureDefinition, FeaturesConfig
 from pandas import DataFrame
 
-from drl_trading_framework.common.config.base_parameter_set_config import (
-    BaseParameterSetConfig,
-)
-from drl_trading_framework.common.config.feature_config import (
-    FeatureDefinition,
-    FeaturesConfig,
-)
 from drl_trading_framework.common.config.feature_config_factory import (
     FeatureConfigFactoryInterface,
 )
@@ -27,8 +22,8 @@ from drl_trading_framework.preprocess.feature.feature_aggregator import (
     FeatureAggregator,
     FeatureAggregatorInterface,
 )
-from drl_trading_framework.preprocess.feature.feature_class_registry import (
-    FeatureClassRegistry,
+from drl_trading_framework.preprocess.feature.feature_class_factory import (
+    FeatureClassFactoryInterface,
 )
 
 
@@ -55,58 +50,6 @@ class MockFeature(BaseFeature):
     def get_feature_name(self) -> str:
         """Return the base name of the feature."""
         return "MockFeature"
-
-
-@pytest.fixture
-def mock_param_set() -> BaseParameterSetConfig:
-    """Create a mock parameter set for features."""
-    param_set = MagicMock(spec=BaseParameterSetConfig)
-    param_set.enabled = True
-    param_set.hash_id.return_value = "abc123hash"
-    param_set.to_string.return_value = "7_14"
-    param_set.name = "default_params"
-    return param_set
-
-
-@pytest.fixture
-def mock_param_set_drop_time() -> BaseParameterSetConfig:
-    """Create a mock parameter set that causes MockFeature to drop Time."""
-    param_set = MagicMock(spec=BaseParameterSetConfig)
-    param_set.enabled = True
-    param_set.hash_id.return_value = "droptimehash"
-    param_set.name = "drop_time"
-    return param_set
-
-
-@pytest.fixture
-def mock_feature_definition(mock_param_set) -> FeatureDefinition:
-    """Create a mock feature definition."""
-    # Mock the FeatureConfigFactory before creating the FeatureDefinition
-    with patch(
-        "drl_trading_framework.common.config.feature_config_factory.FeatureConfigFactory"
-    ) as mock_factory_class:
-        # Create mock instance with get_config_class method
-        mock_factory_instance = MagicMock(spec=FeatureConfigFactoryInterface)
-        mock_factory_class.return_value = mock_factory_instance
-
-        # Mock config class for 'mockfeature'
-        class MockFeatureConfig(BaseParameterSetConfig):
-            pass
-
-        # Set up the mock factory to return our mock config class
-        mock_factory_instance.get_config_class.return_value = MockFeatureConfig
-
-        # Now create the FeatureDefinition which will use our mocked factory
-        mock_feature_def = FeatureDefinition(
-            name="MockFeature",
-            enabled=True,
-            derivatives=[],
-            parameter_sets=[],  # Empty raw params
-        )
-
-        # Manually set the parsed_parameter_sets since we're bypassing the validator
-        mock_feature_def.parsed_parameter_sets = [mock_param_set]
-        return mock_feature_def
 
 
 @pytest.fixture
@@ -150,11 +93,11 @@ def mock_symbol() -> str:
 
 
 @pytest.fixture
-def mock_class_registry() -> FeatureClassRegistry:
-    """Create a mock feature class registry."""
-    registry = MagicMock(spec=FeatureClassRegistry)
-    registry.feature_class_map = {"MockFeature": MockFeature}
-    return registry
+def mock_class_registry() -> FeatureClassFactoryInterface:
+    """Create a mock feature class factory interface."""
+    factory = MagicMock(spec=FeatureClassFactoryInterface)
+    factory.get_feature_class.return_value = MockFeature
+    return factory
 
 
 @pytest.fixture
@@ -473,7 +416,7 @@ def test_compute_skips_disabled_features_and_params(
 
     # Create second mock feature definition without relying on constructor validation
     with patch(
-        "drl_trading_framework.common.config.feature_config_factory.FeatureConfigFactory"
+        "drl_trading_common.config.feature_config_factory.FeatureConfigFactory"
     ) as mock_factory_class:
         mock_factory_instance = MagicMock(spec=FeatureConfigFactoryInterface)
         mock_factory_class.return_value = mock_factory_instance

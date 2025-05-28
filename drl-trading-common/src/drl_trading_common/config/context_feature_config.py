@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from drl_trading_framework.common.config.base_schema import BaseSchema
+from .base_schema import BaseSchema
 
 
 class ContextFeatureConfig(BaseSchema):

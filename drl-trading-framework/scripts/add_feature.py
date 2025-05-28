@@ -38,7 +38,9 @@ def create_file_from_template(
 
 def main():
     if len(sys.argv) != 2:
-        print("Usage: python add_feature.py <feature_name>")
+        print(
+            "Usage: python -m drl_trading_framework.scripts.add_feature <feature_name>"
+        )
         sys.exit(1)
 
     feature_name = sys.argv[1].lower()
@@ -51,16 +53,22 @@ def main():
     feature_template = os.path.join(TEMPLATE_DIR, FEATURE_TEMPLATE_FILE)
     create_file_from_template(feature_path, feature_template, substitutions)
 
-    # 2. Create Unit Test
+    # 2. Create Config class
+    config_path = os.path.join(FEATURE_PACKAGE, f"{feature_name}_config.py")
+    config_template = os.path.join(TEMPLATE_DIR, CONFIG_TEMPLATE_FILE)
+    create_file_from_template(config_path, config_template, substitutions)
+
+    # 3. Create Unit Test
     test_path = os.path.join(TEST_PACKAGE, f"{feature_name}_feature_test.py")
     test_template = os.path.join(TEMPLATE_DIR, TEST_TEMPLATE_FILE)
     create_file_from_template(test_path, test_template, substitutions)
 
-    # 3. Print Config to terminal
-    config_template = os.path.join(TEMPLATE_DIR, CONFIG_TEMPLATE_FILE)
-    config_code = render_template(config_template, substitutions)
-    print("\n=== Suggested Config Class ===")
-    print(config_code)
+    # 4. Register Feature and Config
+    registry_path = os.path.join(FEATURE_PACKAGE, "__init__.py")
+    with open(registry_path, "a") as f:
+        f.write(f"from .{feature_name}_feature import {class_prefix}Feature\n")
+        f.write(f"from .{feature_name}_config import {class_prefix}Config\n")
+    print(f"Updated registry: {registry_path}")
 
 
 if __name__ == "__main__":

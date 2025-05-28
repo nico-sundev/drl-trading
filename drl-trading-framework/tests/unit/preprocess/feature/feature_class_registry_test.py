@@ -1,12 +1,12 @@
+# filepath: c:\Users\nico-\Documents\git\ai_trading\drl-trading-framework\tests\unit\preprocess\feature\feature_class_factory_test.py
 import types
-from typing import Dict, Type
 from unittest import mock
 
 import pytest
 
 from drl_trading_framework.preprocess.feature.collection.base_feature import BaseFeature
-from drl_trading_framework.preprocess.feature.feature_class_registry import (
-    FeatureClassRegistry,
+from drl_trading_framework.preprocess.feature.feature_class_factory import (
+    FeatureClassFactory,
 )
 
 
@@ -20,11 +20,28 @@ class RsiFeature(BaseFeature):
 
 
 @pytest.fixture(autouse=True)
-def registry() -> FeatureClassRegistry:
-    return FeatureClassRegistry()
+def factory() -> FeatureClassFactory:
+    return FeatureClassFactory()
 
 
-def test_discover_feature_classes(registry: FeatureClassRegistry) -> None:
+def test_register_feature_class(factory: FeatureClassFactory) -> None:
+    """Test that feature classes can be manually registered."""
+    # Given
+    # Clean state
+    factory.reset()
+
+    # When
+    factory.register_feature_class("macd", MacdFeature)
+    factory.register_feature_class("RSI", RsiFeature)  # Testing case normalization
+
+    # Then
+    assert factory.get_feature_class("macd") == MacdFeature
+    assert factory.get_feature_class("rsi") == RsiFeature
+    assert factory.get_feature_class("MACD") == MacdFeature  # Case insensitivity
+    assert factory.get_feature_class("nonexistent") is None
+
+
+def test_discover_feature_classes(factory: FeatureClassFactory) -> None:
     """Test that feature classes are correctly discovered and mapped."""
     with mock.patch("pkgutil.iter_modules") as mock_iter_modules, mock.patch(
         "importlib.import_module"
@@ -51,10 +68,12 @@ def test_discover_feature_classes(registry: FeatureClassRegistry) -> None:
         mock_iter_modules.return_value = [("", "macd_feature", False)]
 
         # When
-        feature_map: Dict[str, Type[BaseFeature]] = registry.feature_class_map
+        package_name = "tests.unit.preprocess.feature"
+        feature_map = factory.discover_feature_classes(package_name)
 
         # Then
         assert "macd" in feature_map
-        assert "rsi" in feature_map
-        assert issubclass(feature_map["macd"], BaseFeature)
-        assert issubclass(feature_map["rsi"], BaseFeature)
+        assert feature_map == factory._feature_class_map
+        assert "macd" in factory._feature_class_map
+        assert factory.get_feature_class("macd") == MacdFeature
+        assert issubclass(factory.get_feature_class("macd"), BaseFeature)

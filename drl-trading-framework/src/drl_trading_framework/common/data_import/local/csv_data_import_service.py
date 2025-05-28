@@ -4,10 +4,8 @@ from typing import List, Optional, Tuple
 import dask
 import pandas as pd
 from dask import delayed
+from drl_trading_common.config.local_data_import_config import LocalDataImportConfig
 
-from drl_trading_framework.common.config.local_data_import_config import (
-    LocalDataImportConfig,
-)
 from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_framework.common.model.asset_price_import_properties import (
     AssetPriceImportProperties,

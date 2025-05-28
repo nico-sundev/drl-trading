@@ -2,10 +2,10 @@ from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
+from drl_trading_common.config.feature_config import FeatureStoreConfig
 from feast import Entity
 from pandas import DataFrame
 
-from drl_trading_framework.common.config.feature_config import FeatureStoreConfig
 from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_framework.preprocess.feast.feast_service import FeastService
 
