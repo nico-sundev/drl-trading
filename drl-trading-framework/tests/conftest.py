@@ -16,7 +16,7 @@ from pandas import DataFrame
 from drl_trading_framework.common.config.feature_config_factory import (
     FeatureConfigFactory,
 )
-from drl_trading_framework.common.di.containers import ApplicationContainer
+from drl_trading_framework.common.config.utils import parse_all_parameters
 from drl_trading_framework.preprocess.feature.collection.base_feature import BaseFeature
 from drl_trading_framework.preprocess.feature.feature_class_factory import (
     FeatureClassFactory,
@@ -174,44 +174,55 @@ def temp_config_file():
 
 
 @pytest.fixture
-def mocked_container(mocked_config, feature_config_factory, feature_class_registry):
-    """Create a container initialized with the test configuration.
+def mocked_container(feature_config_factory, feature_class_registry):
+    """Create a mocked dependency injection container using the injector library.
 
-    This fixture provides a configured ApplicationContainer instance
-    that can be used across tests.
-
-    Args:
-        mocked_config: The test configuration fixture (ApplicationConfig object)
-        feature_config_factory: Initialized feature config factory
-
-    Returns:
-        Configured ApplicationContainer instance
+    This fixture provides a configured injector instance with test dependencies
+    for integration testing, replacing the legacy dependency-injector approach.
     """
-    # Get the path from which the mocked_config was loaded
-    # This assumes mocked_config has a way to know its source path or we use the known test path
+    # Import necessary types for the injector setup
+    from injector import Injector, Module, provider, singleton
+
+    from drl_trading_framework.common.config.feature_config_factory import (
+        FeatureConfigFactoryInterface,
+    )
+    from drl_trading_framework.preprocess.feature.feature_class_factory import (
+        FeatureClassFactoryInterface,
+    )
+
+    # Use the test config path
     test_config_path = os.path.join(
         os.path.dirname(__file__), "resources/applicationConfig-test.json"
     )
 
-    container = ApplicationContainer()
-    # Override the config_path_cfg provider to point to the test config file
-    container.config_path_cfg.override(test_config_path)
+    class TestModule(Module):
+        """Test module that provides factory instances and config path."""
 
-    # Ensure the application_config provider is reset if it was already initialized
-    # This might be needed if the container was somehow initialized before override
-    container.application_config.reset()
+        @provider
+        @singleton
+        def provide_config_path(self) -> str:
+            return test_config_path
 
-    # Override factory provider to use our test factory
-    container.feature_config_factory.override(feature_config_factory)
+        @provider
+        @singleton
+        def provide_feature_config_factory(self) -> FeatureConfigFactoryInterface:
+            return feature_config_factory
 
-    # Parse feature configurations using the test factory
-    # This will now use the application_config loaded from test_config_path
-    features_config = container.features_config()
-    features_config.parse_all_parameters(feature_config_factory)
+        @provider
+        @singleton
+        def provide_feature_class_factory(self) -> FeatureClassFactoryInterface:
+            return feature_class_registry
 
-    container.feature_class_registry.override(feature_class_registry)
+    # Import and create the application module
+    from drl_trading_framework.common.di.application_container import DomainModule
 
-    return container
+    # Create injector with both modules - TestModule provides the factories,
+    # ApplicationModule provides the rest of the configuration
+    app_module = DomainModule(config_path=test_config_path)
+    test_module = TestModule()
+    injector = Injector([test_module, app_module])
+
+    return injector
 
 
 @pytest.fixture(scope="session")
@@ -281,23 +292,29 @@ def reset_registry_in_container(mocked_container):
     but also require clean registry state.
 
     Args:
-        mocked_container: The container instance to update
+        mocked_container: The injector instance to update
 
     Returns:
-        The same container instance with reset registries
-    """
-    # Get the feature class registry from the container and reset it
-    feature_class_registry = mocked_container.feature_class_registry()
+        The same injector instance with reset registries
+    """    # Import needed classes and interfaces
+    from drl_trading_common.config.application_config import ApplicationConfig
+
+    from drl_trading_framework.common.config.feature_config_factory import (
+        FeatureConfigFactoryInterface,
+    )
+    from drl_trading_framework.preprocess.feature.feature_class_factory import (
+        FeatureClassFactoryInterface,
+    )
+
+    feature_class_registry = mocked_container.get(FeatureClassFactoryInterface)
     feature_class_registry.reset()
 
     # Reset the feature config factory
-    feature_config_factory = mocked_container.feature_config_factory()
+    feature_config_factory = mocked_container.get(FeatureConfigFactoryInterface)
     feature_config_factory.clear()
-    feature_config_factory.discover_config_classes()
-
-    # Re-parse feature configurations
-    features_config = mocked_container.features_config()
-    features_config.parse_all_parameters(feature_config_factory)
+    feature_config_factory.discover_config_classes()# Re-parse feature configurations
+    app_config = mocked_container.get(ApplicationConfig)
+    parse_all_parameters(app_config.features_config, feature_config_factory)
 
     return mocked_container
 

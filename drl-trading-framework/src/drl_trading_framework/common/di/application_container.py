@@ -11,11 +11,6 @@ from drl_trading_common.config.environment_config import EnvironmentConfig
 from drl_trading_common.config.feature_config import FeaturesConfig, FeatureStoreConfig
 from drl_trading_common.config.local_data_import_config import LocalDataImportConfig
 from drl_trading_common.config.rl_model_config import RlModelConfig
-from drl_trading_common.messaging import (
-    DeploymentMode,
-    TradingMessageBus,
-    TradingMessageBusFactory,
-)
 from feast import FeatureStore
 from injector import Injector, Module, provider, singleton
 
@@ -44,11 +39,10 @@ def _resolve_feature_store_path(
     return abs_file_path
 
 
-class TradingApplicationModule(Module):
+class DomainModule(Module):
     """Main application module for dependency injection.
 
     This module only provides configuration values and complex factory logic.
-    Services are auto-wired using @inject decorators on their constructors.
     """
 
     def __init__(self, config_path: Optional[str] = None):
@@ -143,18 +137,12 @@ class TradingApplicationModule(Module):
         repo_path = _resolve_feature_store_path(feature_store_config)
         return FeatureStore(repo_path=repo_path) if repo_path else None
 
-    @provider
-    @singleton
-    def provide_deployment_mode(self) -> DeploymentMode:
-        """Provide deployment mode from environment."""
-        mode_str = os.getenv("DEPLOYMENT_MODE", "training")
-        return DeploymentMode(mode_str)
-
-    @provider
-    @singleton
-    def provide_message_bus(self, deployment_mode: DeploymentMode) -> TradingMessageBus:
-        """Provide message bus based on deployment mode."""
-        return TradingMessageBusFactory.create_message_bus(deployment_mode)
+    # Need in "drl-trading-training" or "drl-trading-inference"
+    # @provider
+    # @singleton
+    # def provide_message_bus(self) -> TradingMessageBus:
+    #     """Provide message bus based on deployment mode."""
+    #     return TradingMessageBusFactory.create_message_bus()
 
 
 # Global injector instance
@@ -166,7 +154,7 @@ def get_trading_injector(config_path: Optional[str] = None) -> Injector:
     global _trading_injector
 
     if _trading_injector is None:
-        module = TradingApplicationModule(config_path)
+        module = DomainModule(config_path)
         _trading_injector = Injector([module])
         logger.info("Trading injector initialized")
 

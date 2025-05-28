@@ -14,7 +14,7 @@ from drl_trading_framework.common.agents.base_agent import BaseAgent
 from drl_trading_framework.common.data_import.data_import_manager import (
     DataImportManager,
 )
-from drl_trading_framework.common.di.modern_container import get_trading_injector
+from drl_trading_framework.common.di.application_container import get_trading_injector
 from drl_trading_framework.common.gym import T
 from drl_trading_framework.common.model.preprocessing_result import PreprocessingResult
 from drl_trading_framework.inference.inference_service import InferenceService
