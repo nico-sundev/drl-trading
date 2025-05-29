@@ -3,11 +3,11 @@ import logging
 from typing import List
 
 import pandas as pd
+from drl_trading_common.utils import ensure_datetime_index
 
 from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_framework.preprocess.data_set_utils.util import (
     detect_timeframe,
-    ensure_datetime_index,
     separate_asset_price_datasets,
 )
 

@@ -6,6 +6,7 @@ import dask
 import pandas as pd
 from dask import delayed
 from drl_trading_common.config.feature_config import FeaturesConfig
+from drl_trading_common.utils import ensure_datetime_index
 from injector import inject
 from pandas import DataFrame
 
@@ -18,21 +19,20 @@ from drl_trading_framework.common.model.symbol_import_container import (
     SymbolImportContainer,
 )
 from drl_trading_framework.preprocess.data_set_utils.context_feature_service import (
-    ContextFeatureService,
+    ContextFeatureServiceInterface,
 )
 from drl_trading_framework.preprocess.data_set_utils.merge_service import (
     MergeServiceInterface,
 )
 from drl_trading_framework.preprocess.data_set_utils.util import (
-    ensure_datetime_index,
     separate_asset_price_datasets,
     separate_computed_datasets,
 )
 from drl_trading_framework.preprocess.feature.feature_aggregator import (
     FeatureAggregatorInterface,
 )
-from drl_trading_framework.preprocess.feature.feature_class_factory import (
-    FeatureClassFactoryInterface,
+from drl_trading_framework.preprocess.feature.feature_factory import (
+    FeatureFactoryInterface,
 )
 
 logger = logging.getLogger(__name__)
@@ -61,14 +61,15 @@ class PreprocessServiceInterface(ABC):
 
 
 class PreprocessService(PreprocessServiceInterface):
+
     @inject
     def __init__(
         self,
         features_config: FeaturesConfig,
-        feature_class_factory: FeatureClassFactoryInterface,
+        feature_factory: FeatureFactoryInterface,
         feature_aggregator: FeatureAggregatorInterface,
         merge_service: MergeServiceInterface,
-        context_feature_service: ContextFeatureService,
+        context_feature_service: ContextFeatureServiceInterface,
     ) -> None:
         """
         Initializes the PreprocessService with configuration and stateless dependencies.
@@ -81,7 +82,7 @@ class PreprocessService(PreprocessServiceInterface):
             context_feature_service: Service for handling context-related features
         """
         self.features_config = features_config
-        self.feature_class_registry = feature_class_factory
+        self.feature_class_registry = feature_factory
         self.feature_aggregator = feature_aggregator
         self.merge_service = merge_service
         self.context_feature_service = context_feature_service

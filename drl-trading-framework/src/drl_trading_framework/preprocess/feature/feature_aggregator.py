@@ -10,14 +10,14 @@ from drl_trading_common.config.feature_config import (
     FeatureDefinition,
     FeaturesConfig,
 )
+from drl_trading_common.utils import ensure_datetime_index
 from injector import inject
 from pandas import DataFrame
 
 from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
-from drl_trading_framework.preprocess.data_set_utils.util import ensure_datetime_index
 from drl_trading_framework.preprocess.feast.feast_service import FeastServiceInterface
-from drl_trading_framework.preprocess.feature.feature_class_factory import (
-    FeatureClassFactoryInterface,
+from drl_trading_framework.preprocess.feature.feature_factory import (
+    FeatureFactoryInterface,
 )
 from drl_trading_framework.preprocess.metrics.technical_metrics_service import (
     TechnicalMetricsServiceFactory,
@@ -67,11 +67,12 @@ class FeatureAggregator(FeatureAggregatorInterface):
     4. Renaming feature columns according to the convention: featureName_paramString_subFeatureName.
     """
 
+
     @inject
     def __init__(
         self,
         config: FeaturesConfig,
-        class_registry: FeatureClassFactoryInterface,
+        feature_factory: FeatureFactoryInterface,
         feast_service: FeastServiceInterface,
     ) -> None:
         """
@@ -79,11 +80,11 @@ class FeatureAggregator(FeatureAggregatorInterface):
 
         Args:
             config: Configuration for feature definitions.
-            class_registry: Factory interface for feature classes.
+            feature_factory: Factory interface for creating feature instances.
             feast_service: Service for interacting with the Feast feature store.
         """
         self.config = config
-        self.class_registry = class_registry
+        self.feature_factory = feature_factory
         self.feast_service = feast_service
 
     def _compute_or_get_single_feature(
@@ -105,8 +106,7 @@ class FeatureAggregator(FeatureAggregatorInterface):
             original_df: The dataset to compute features on.
             symbol: The trading symbol being processed.
             asset_data: The asset price dataset containing metadata.
-
-        Returns:
+            Returns:
             DataFrame with DatetimeIndex named 'Time' and the computed/retrieved feature
             columns, renamed according to convention, or None if the feature/param_set
             is disabled or computation fails.
@@ -117,16 +117,19 @@ class FeatureAggregator(FeatureAggregatorInterface):
         # Create metrics service for this asset_data timeframe
         metrics_service = TechnicalMetricsServiceFactory.create(asset_data)
 
-        # Create feature instance using the factory interface
-        feature_class = self.class_registry.get_feature_class(feature_def.name)
-        if feature_class is None:
+        # Create feature instance using the factory
+        feature_instance = self.feature_factory.create_feature(
+            feature_name=feature_def.name,
+            source_data=original_df,
+            config=param_set,
+            metrics_service=metrics_service,
+        )
+
+        if feature_instance is None:
             logger.error(
-                f"Feature class for '{feature_def.name}' not found in registry. Skipping."
+                f"Failed to create feature instance for '{feature_def.name}'. Skipping."
             )
             return None
-        feature_instance = feature_class(
-            source=original_df, config=param_set, metrics_service=metrics_service
-        )
 
         feature_name = feature_instance.get_feature_name()
         param_hash: str = param_set.hash_id()

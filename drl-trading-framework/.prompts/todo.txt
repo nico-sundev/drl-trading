@@ -1,10 +1,5 @@
 todo features:
-- change featureconfigfactory and featureclassregistry implementation
-    - introduce interfaces for both which return config/classes
-    - concrete classes should maintain state of the instantiations and reuse them
-    - every feature implementation is unique by the config object it accepted
-    - only use factory pattern
-    - concrete implementations will reside in drl-trading-impl-example
+- cleanup tests/*/conftest.py
 - normalize features before training
     - call vecnormalize before training starts
     - investigate which scope it belongs to at the best
@@ -12,6 +7,7 @@ todo features:
     - check if whether dummyvecenv or subprocvecenv is better for training performance in class AgentTrainingService
 
 next sprint:
+- impl opentelemetry, jaeger, grafana
 - model save checkpoints
 - MLFlow integration -> investigate gitlab model -> configure to use local service
 - research for SBX for faster training

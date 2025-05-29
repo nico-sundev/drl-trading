@@ -2,11 +2,12 @@ from typing import Literal
 from unittest.mock import MagicMock
 
 import pytest
-from drl_trading_common.config.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_common import BaseParameterSetConfig
 from drl_trading_common.config.config_loader import ConfigLoader
 
-from drl_trading_framework.common.config.feature_config_factory import (
-    FeatureConfigFactory,
+from drl_trading_framework.common.config.utils import parse_all_parameters
+from drl_trading_framework.preprocess.feature.feature_factory import (
+    FeatureFactoryInterface,
 )
 
 
@@ -16,9 +17,9 @@ class RsiConfig(BaseParameterSetConfig):
 
 
 @pytest.fixture
-def mock_feature_config_factory():
-    """Creates a mock feature config factory for testing."""
-    mock_factory = MagicMock(spec=FeatureConfigFactory)
+def mock_feature_factory():
+    """Creates a mock feature factory for testing."""
+    mock_factory = MagicMock(spec=FeatureFactoryInterface)
 
     # Configure mock factory to return appropriate config classes
     def get_config_class_side_effect(feature_name):
@@ -48,14 +49,14 @@ def mock_feature_config_factory():
     return mock_factory
 
 
-def test_load_config_from_json(temp_config_file, mock_feature_config_factory):
+def test_load_config_from_json(temp_config_file, mock_feature_factory):
     temp_file_path, expected_data = temp_config_file
 
-    # Load config with patched feature config factory
+    # Load config with patched feature factory
     config = ConfigLoader.get_config(temp_file_path)
 
-    # Use the mock factory for parsing parameters
-    config.features_config.parse_all_parameters(mock_feature_config_factory)
+    # Use the utils.parse_all_parameters function with our mock factory
+    parse_all_parameters(config.features_config.feature_definitions, mock_feature_factory)
 
     # Helper to extract config by name
     def get_feature_param_set(name, index=0):

@@ -3,12 +3,10 @@ name = "drl-trading-impl-example"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
-    "drl-trading-framework",
     "drl-trading-common",
 ]
 
 [tool.uv.sources]
-drl-trading-framework = { path = "../drl-trading-framework" }
 drl-trading-common = { path = "../drl-trading-common" }

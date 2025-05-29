@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from .base_schema import BaseSchema
+from ..base.base_schema import BaseSchema
 
 
 class ContextFeatureConfig(BaseSchema):

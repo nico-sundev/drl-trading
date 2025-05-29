@@ -1,15 +1,14 @@
 from typing import Optional
 
 import pandas_ta as ta
-from drl_trading_framework.preprocess.feature.collection.base_feature import BaseFeature
+from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_framework.preprocess.metrics.technical_metrics_service import (
     TechnicalMetricsServiceInterface,
 )
 from pandas import DataFrame
+from drl_trading_impl.feature.config import RsiConfig
 
-from drl_trading_common.config.base_parameter_set_config import BaseParameterSetConfig
-from drl_trading_common.config.feature_config_collection import RsiConfig
-
+from drl_trading_common import BaseParameterSetConfig
 
 class RsiFeature(BaseFeature):
 
@@ -22,6 +21,7 @@ class RsiFeature(BaseFeature):
     ) -> None:
         super().__init__(source, config, postfix, metrics_service)
         self.config: RsiConfig = self.config
+
 
     def compute(self) -> DataFrame:
         # Get source DataFrame with ensured DatetimeIndex using the base class method

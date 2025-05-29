@@ -8,14 +8,14 @@ import logging
 import os
 from typing import Dict, List, Optional, Tuple, Type
 
+from drl_trading_common.base.base_trading_env import BaseTradingEnv
 from drl_trading_common.config.logging_config import configure_logging
 
 from drl_trading_framework.common.agents.base_agent import BaseAgent
 from drl_trading_framework.common.data_import.data_import_manager import (
     DataImportManager,
 )
-from drl_trading_framework.common.di.application_container import get_trading_injector
-from drl_trading_framework.common.gym import T
+from drl_trading_framework.common.di.domain_module import get_trading_injector
 from drl_trading_framework.common.model.preprocessing_result import PreprocessingResult
 from drl_trading_framework.inference.inference_service import InferenceService
 from drl_trading_framework.preprocess.data_set_utils.split_service import SplitService
@@ -116,7 +116,7 @@ def _preprocess(
 def _create_environments_and_train(
     injector,
     final_datasets: List[PreprocessingResult],
-    env_class: Type[T],
+    env_class: Type[BaseTradingEnv],
 ) -> Tuple[Dict[str, BaseAgent]]:
     """
     Create environments and train agents using injected services.
@@ -151,7 +151,7 @@ def _create_environments_and_train(
 
 
 def bootstrap_agent_training(
-    env_class: Type[T],
+    env_class: Type[BaseTradingEnv],
     config_path: Optional[str] = None,
     feature_class_discovery_package: Optional[str] = None,
     feature_config_discovery_package: Optional[str] = None,

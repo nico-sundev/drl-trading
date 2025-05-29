@@ -9,13 +9,12 @@ from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDat
 from drl_trading_framework.preprocess.data_set_utils.context_feature_service import (
     ContextFeatureService,
 )
-from tests.unit.fixture.sample_data import mock_ohlcv_data_1h
 
 
 @pytest.fixture
-def mock_ohlcv_dataframe() -> DataFrame:
+def mock_ohlcv_dataframe(mock_ohlcv_data_1h) -> DataFrame:
     """Create a mock OHLCV DataFrame for testing using sample_data."""
-    return mock_ohlcv_data_1h().asset_price_dataset
+    return mock_ohlcv_data_1h.asset_price_dataset
 
 
 @pytest.fixture

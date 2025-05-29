@@ -1,50 +1,14 @@
 import logging
-from abc import ABC, abstractmethod
 from typing import Dict, Optional
 
 import pandas as pd
+from drl_trading_common import TechnicalMetricsServiceInterface
+from drl_trading_common.utils import ensure_datetime_index
 from pandas import DataFrame
 
 from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
-from drl_trading_framework.preprocess.data_set_utils.util import ensure_datetime_index
 
 logger = logging.getLogger(__name__)
-
-
-class TechnicalMetricsServiceInterface(ABC):
-    """
-    Interface defining the contract for technical metrics service operations.
-
-    Implementations of this interface are responsible for:
-    1. Computing common technical indicators/metrics that may be used by multiple features
-    2. Providing efficient access to these metrics to avoid redundant calculations
-    3. Supporting various timeframes through separate instances
-    """
-
-    @abstractmethod
-    def get_atr(self, period: int = 14) -> Optional[DataFrame]:
-        """
-        Get Average True Range (ATR) values for the current timeframe.
-
-        Args:
-            period: The period for ATR calculation, default is 14
-
-        Returns:
-            DataFrame: DataFrame with DatetimeIndex and ATR values, or None if calculation fails
-        """
-        pass
-
-    @property
-    @abstractmethod
-    def timeframe(self) -> str:
-        """
-        Get the timeframe this metrics service is associated with.
-
-        Returns:
-            str: The timeframe identifier (e.g., "H1", "D1")
-        """
-        pass
-
 
 class TechnicalMetricsService(TechnicalMetricsServiceInterface):
     """

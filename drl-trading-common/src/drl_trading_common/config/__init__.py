@@ -2,8 +2,8 @@
 
 # Temporarily simplified imports to avoid circular dependencies
 from .application_config import ApplicationConfig
-from .base_parameter_set_config import BaseParameterSetConfig
-from .base_schema import BaseSchema
+from ..base.base_parameter_set_config import BaseParameterSetConfig
+from ..base.base_schema import BaseSchema
 from .config_loader import ConfigLoader
 from .context_feature_config import ContextFeatureConfig
 from .environment_config import EnvironmentConfig

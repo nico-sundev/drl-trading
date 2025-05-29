@@ -2,8 +2,8 @@ from typing import Any, Dict, List
 
 from pydantic import Field
 
-from .base_parameter_set_config import BaseParameterSetConfig
-from .base_schema import BaseSchema
+from ..base.base_parameter_set_config import BaseParameterSetConfig
+from ..base.base_schema import BaseSchema
 
 
 class FeatureStoreConfig(BaseSchema):

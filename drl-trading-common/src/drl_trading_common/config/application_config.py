@@ -1,4 +1,4 @@
-from .base_schema import BaseSchema
+from ..base.base_schema import BaseSchema
 from .context_feature_config import ContextFeatureConfig
 from .environment_config import EnvironmentConfig
 from .feature_config import FeaturesConfig, FeatureStoreConfig

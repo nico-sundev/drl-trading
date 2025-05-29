@@ -5,21 +5,18 @@ from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
-from drl_trading_common.config.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_common import BaseParameterSetConfig
+from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.config.feature_config import FeatureDefinition, FeaturesConfig
 from pandas import DataFrame, Series
 
-from drl_trading_framework.common.config.feature_config_factory import (
-    FeatureConfigFactoryInterface,
-)
 from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_framework.preprocess.feast.feast_service import (
     FeastService,
     FeastServiceInterface,
 )
-from drl_trading_framework.preprocess.feature.collection.base_feature import BaseFeature
-from drl_trading_framework.preprocess.feature.feature_class_factory import (
-    FeatureClassFactoryInterface,
+from drl_trading_framework.preprocess.feature.feature_factory import (
+    FeatureFactoryInterface,
 )
 from drl_trading_framework.preprocess.feature.real_time_feature_aggregator import (
     RealTimeFeatureAggregator,
@@ -85,23 +82,17 @@ def mock_disabled_param_set() -> BaseParameterSetConfig:
 @pytest.fixture
 def mock_feature_definition(mock_param_set) -> FeatureDefinition:
     """Create a mock feature definition for real-time testing."""
-    with patch(
-        "drl_trading_common.config.feature_config_factory.FeatureConfigFactory"
-    ) as mock_factory_class:
-        mock_factory_instance = MagicMock(spec=FeatureConfigFactoryInterface)
-        mock_factory_class.return_value = mock_factory_instance
-        mock_factory_instance.get_config_class.return_value = MockParameterSetConfig
 
-        mock_feature_def = FeatureDefinition(
-            name="MockRealTimeFeature",
-            enabled=True,
-            derivatives=[],
-            parameter_sets=[],
-        )
+    mock_feature_def = FeatureDefinition(
+        name="MockRealTimeFeature",
+        enabled=True,
+        derivatives=[],
+        parameter_sets=[],
+    )
 
-        # Set parsed parameter sets manually
-        mock_feature_def.parsed_parameter_sets = [mock_param_set]
-        return mock_feature_def
+    # Set parsed parameter sets manually
+    mock_feature_def.parsed_parameter_sets = [mock_param_set]
+    return mock_feature_def
 
 
 @pytest.fixture
@@ -110,7 +101,7 @@ def mock_disabled_feature_definition(mock_param_set) -> FeatureDefinition:
     with patch(
         "drl_trading_common.config.feature_config_factory.FeatureConfigFactory"
     ) as mock_factory_class:
-        mock_factory_instance = MagicMock(spec=FeatureConfigFactoryInterface)
+        mock_factory_instance = MagicMock(spec=FeatureFactoryInterface)
         mock_factory_class.return_value = mock_factory_instance
         mock_factory_instance.get_config_class.return_value = MockParameterSetConfig
 
@@ -198,14 +189,20 @@ def mock_timeframe() -> str:
 
 
 @pytest.fixture
-def mock_class_registry() -> FeatureClassFactoryInterface:
-    """Create a mock feature class registry."""
-    registry = MagicMock(spec=FeatureClassFactoryInterface)
-    registry.feature_class_map = {
-        "MockRealTimeFeature": MockRealTimeFeature,
-        "DisabledFeature": MockRealTimeFeature,  # Same class for simplicity
-    }
-    return registry
+def mock_feature_factory() -> FeatureFactoryInterface:
+    """Create a mock feature factory."""
+    factory = MagicMock(spec=FeatureFactoryInterface)
+
+    # Mock the create_feature method to return appropriate instances
+    def create_feature_side_effect(feature_name, *args, **kwargs):
+        if feature_name == "MockRealTimeFeature":
+            return MockRealTimeFeature(*args, **kwargs)
+        elif feature_name == "DisabledFeature":
+            return MockRealTimeFeature(*args, **kwargs)
+        return None
+
+    factory.create_feature.side_effect = create_feature_side_effect
+    return factory
 
 
 @pytest.fixture
@@ -220,12 +217,12 @@ def mock_feast_service() -> FeastServiceInterface:
 
 @pytest.fixture
 def real_time_aggregator(
-    mock_features_config, mock_class_registry, mock_feast_service
+    mock_features_config, mock_feature_factory, mock_feast_service
 ) -> RealTimeFeatureAggregator:
     """Create a RealTimeFeatureAggregator instance with mocked dependencies."""
     return RealTimeFeatureAggregator(
         config=mock_features_config,
-        class_registry=mock_class_registry,
+        feature_factory=mock_feature_factory,
         feast_service=mock_feast_service,
     )
 
@@ -287,12 +284,12 @@ class TestGetRequiredLookbackPeriods:
         lookback2 = real_time_aggregator.get_required_lookback_periods()
         assert lookback1 == lookback2
 
-    def test_lookback_with_empty_config(self, mock_class_registry, mock_feast_service):
+    def test_lookback_with_empty_config(self, mock_feature_factory, mock_feast_service):
         """Test lookback periods with empty feature configuration."""
         empty_config = FeaturesConfig(feature_definitions=[])
         aggregator = RealTimeFeatureAggregator(
             config=empty_config,
-            class_registry=mock_class_registry,
+            feature_factory=mock_feature_factory,
             feast_service=mock_feast_service,
         )
         lookback = aggregator.get_required_lookback_periods()
@@ -456,7 +453,7 @@ class TestComputeFeaturesForSingleRecord:
     def test_compute_features_with_disabled_features(
         self,
         mock_mixed_features_config,
-        mock_class_registry,
+        mock_feature_factory,
         mock_feast_service,
         mock_current_record,
         mock_historical_data,
@@ -466,7 +463,7 @@ class TestComputeFeaturesForSingleRecord:
         """Test that disabled features are skipped."""
         aggregator = RealTimeFeatureAggregator(
             config=mock_mixed_features_config,
-            class_registry=mock_class_registry,
+            feature_factory=mock_feature_factory,
             feast_service=mock_feast_service,
         )
 
@@ -565,15 +562,14 @@ class TestErrorHandling:
         mock_current_record,
         mock_historical_data,
         mock_symbol,
-        mock_timeframe,
-    ):
+        mock_timeframe,    ):
         """Test behavior when feature class is missing from registry."""
-        empty_registry = MagicMock(spec=FeatureClassFactoryInterface)
-        empty_registry.feature_class_map = {}  # No feature classes
+        empty_factory = MagicMock(spec=FeatureFactoryInterface)
+        empty_factory.create_feature.return_value = None  # No feature instances
 
         aggregator = RealTimeFeatureAggregator(
             config=mock_features_config,
-            class_registry=empty_registry,
+            feature_factory=empty_factory,
             feast_service=mock_feast_service,
         )
 
@@ -618,11 +614,10 @@ class TestErrorHandling:
 
 class TestIntegrationWithFeastService:
     """Test integration with Feast service."""
-
     def test_feast_service_disabled(
         self,
         mock_features_config,
-        mock_class_registry,
+        mock_feature_factory,
         mock_current_record,
         mock_historical_data,
         mock_symbol,
@@ -634,7 +629,7 @@ class TestIntegrationWithFeastService:
 
         aggregator = RealTimeFeatureAggregator(
             config=mock_features_config,
-            class_registry=mock_class_registry,
+            feature_factory=mock_feature_factory,
             feast_service=disabled_feast,
         )
 

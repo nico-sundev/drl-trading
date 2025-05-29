@@ -23,8 +23,8 @@ from drl_trading_framework.preprocess.feast.feast_service import FeastService
 from drl_trading_framework.preprocess.feature.feature_aggregator import (
     FeatureAggregatorInterface,
 )
-from drl_trading_framework.preprocess.feature.feature_class_factory import (
-    FeatureClassFactoryInterface,
+from drl_trading_framework.preprocess.feature.feature_factory import (
+    FeatureFactoryInterface,
 )
 from drl_trading_framework.preprocess.preprocess_service import (
     PreprocessService,
@@ -42,9 +42,9 @@ def mock_feature_config() -> FeaturesConfig:
 
 
 @pytest.fixture
-def mock_feature_class_registry() -> FeatureClassFactoryInterface:
+def mock_feature_class_registry() -> FeatureFactoryInterface:
     """Create a mock feature class registry."""
-    return MagicMock(spec=FeatureClassFactoryInterface)
+    return MagicMock(spec=FeatureFactoryInterface)
 
 
 @pytest.fixture
@@ -237,7 +237,7 @@ def mock_context_feature_service() -> ContextFeatureService:
 @pytest.fixture
 def preprocess_service(
     mock_feature_config: FeaturesConfig,
-    mock_feature_class_registry: FeatureClassFactoryInterface,
+    mock_feature_class_registry: FeatureFactoryInterface,
     mock_feature_aggregator: MagicMock,
     mock_merge_service: MagicMock,
     mock_context_feature_service: ContextFeatureService,
@@ -246,7 +246,7 @@ def preprocess_service(
     """Create a PreprocessService instance with patched compute_features_for_dataset method."""
     service = PreprocessService(
         features_config=mock_feature_config,
-        feature_class_factory=mock_feature_class_registry,
+        feature_factory=mock_feature_class_registry,
         feature_aggregator=mock_feature_aggregator,
         merge_service=mock_merge_service,
         context_feature_service=mock_context_feature_service,

@@ -8,15 +8,7 @@ from .transport_interface import DeploymentMode, Message, TransportInterface
 try:
     from .rabbitmq_transport import RabbitMQTransport
 
-    __all__ = [
-        "DeploymentMode",
-        "TransportInterface",
-        "Message",
-        "TradingMessageBus",
-        "TradingMessageBusFactory",
-        "InMemoryTransport",
-        "RabbitMQTransport",
-    ]
+
 except ImportError:
     __all__ = [
         "DeploymentMode",
@@ -25,4 +17,5 @@ except ImportError:
         "TradingMessageBus",
         "TradingMessageBusFactory",
         "InMemoryTransport",
+        "RabbitMQTransport"
     ]

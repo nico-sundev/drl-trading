@@ -5,25 +5,21 @@ from unittest.mock import MagicMock, patch
 import dask
 import pandas as pd
 import pytest
-from drl_trading_common.config.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_common import BaseParameterSetConfig
+from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.config.feature_config import FeatureDefinition, FeaturesConfig
 from pandas import DataFrame
 
-from drl_trading_framework.common.config.feature_config_factory import (
-    FeatureConfigFactoryInterface,
-)
-from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_framework.preprocess.feast.feast_service import (
     FeastService,
     FeastServiceInterface,
 )
-from drl_trading_framework.preprocess.feature.collection.base_feature import BaseFeature
 from drl_trading_framework.preprocess.feature.feature_aggregator import (
     FeatureAggregator,
     FeatureAggregatorInterface,
 )
-from drl_trading_framework.preprocess.feature.feature_class_factory import (
-    FeatureClassFactoryInterface,
+from drl_trading_framework.preprocess.feature.feature_factory import (
+    FeatureFactoryInterface,
 )
 
 
@@ -33,15 +29,10 @@ class MockFeature(BaseFeature):
     def compute(self) -> DataFrame:
         """Generate mock feature data."""
         # Make a copy preserving the index
-        df = self.df_source.copy()
+        df = self._prepare_source_df()
         df["feature1"] = 1.0
         df["feature2"] = 2.0
-        if self.config.name == "drop_time":
-            # Return a DataFrame without index name
-            df.index.name = None
-            return df
-        else:
-            return df
+        return df
 
     def get_sub_features_names(self) -> list[str]:
         """Return mock sub-feature names."""
@@ -58,45 +49,22 @@ def mock_features_config(mock_feature_definition: FeatureDefinition) -> Features
     return FeaturesConfig(feature_definitions=[mock_feature_definition])
 
 
-@pytest.fixture
-def mock_asset_df() -> DataFrame:
-    """Create a mock DataFrame for asset price data."""
-    dates = pd.date_range(start="2022-01-01", periods=10, freq="H")
-    data = {
-        "Open": [1.0] * 10,
-        "High": [2.0] * 10,
-        "Low": [0.5] * 10,
-        "Close": [1.5] * 10,
-        "Volume": [1000.0] * 10,
-    }
-    df = DataFrame(data, index=dates)
-    df.index.name = "Time"
-    return df
+# Note: These fixtures are now defined in conftest.py and can be removed:
+# - feature_test_asset_df -> use feature_test_asset_df
+# - feature_test_asset_data -> use feature_test_asset_data
+# - feature_test_symbol -> use feature_test_symbol
 
 
 @pytest.fixture
-def mock_asset_data(mock_asset_df) -> AssetPriceDataSet:
-    """Create a mock asset price dataset."""
-    asset_data = AssetPriceDataSet(
-        timeframe="H1",
-        base_dataset=True,
-        asset_price_dataset=mock_asset_df,
+def mock_feature_factory() -> FeatureFactoryInterface:
+    """Create a mock feature factory interface."""
+    factory = MagicMock(spec=FeatureFactoryInterface)
+    factory.create_feature.return_value = MockFeature(
+        source=pd.DataFrame(),
+        config=MagicMock(),
+        postfix="",
+        metrics_service=MagicMock(),
     )
-    # Add symbol as an attribute after initialization
-    return asset_data
-
-
-@pytest.fixture
-def mock_symbol() -> str:
-    """Create a mock symbol for testing."""
-    return "EURUSD"
-
-
-@pytest.fixture
-def mock_class_registry() -> FeatureClassFactoryInterface:
-    """Create a mock feature class factory interface."""
-    factory = MagicMock(spec=FeatureClassFactoryInterface)
-    factory.get_feature_class.return_value = MockFeature
     return factory
 
 
@@ -111,12 +79,12 @@ def mock_feast_service() -> FeastServiceInterface:
 
 @pytest.fixture
 def feature_aggregator(
-    mock_features_config, mock_class_registry, mock_feast_service
+    mock_features_config, mock_feature_factory, mock_feast_service
 ) -> FeatureAggregator:
     """Create a FeatureAggregator instance with mocked dependencies."""
     return FeatureAggregator(
         config=mock_features_config,
-        class_registry=mock_class_registry,
+        feature_factory=mock_feature_factory,
         feast_service=mock_feast_service,
     )
 
@@ -126,9 +94,9 @@ def test_compute_single_feature_no_cache(
     mock_feature_definition,
     mock_param_set,
     mock_feast_service,
-    mock_asset_df,
-    mock_asset_data,
-    mock_symbol,
+    feature_test_asset_df,
+    feature_test_asset_data,
+    feature_test_symbol,
 ):
     """Test _compute_or_get_single_feature when feature is not cached."""
     # Given
@@ -140,9 +108,9 @@ def test_compute_single_feature_no_cache(
     result_df = feature_aggregator._compute_or_get_single_feature(
         mock_feature_definition,
         mock_param_set,
-        mock_asset_df,
-        mock_symbol,
-        mock_asset_data,
+        feature_test_asset_df,
+        feature_test_symbol,
+        feature_test_asset_data,
     )
 
     # Then
@@ -151,8 +119,8 @@ def test_compute_single_feature_no_cache(
         feature_name="MockFeature",
         param_hash="abc123hash",
         sub_feature_names=["feature1", "feature2"],
-        asset_data=mock_asset_data,
-        symbol=mock_symbol,
+        asset_data=feature_test_asset_data,
+        symbol=feature_test_symbol,
     )
     mock_feast_service.store_computed_features.assert_called_once()
     assert result_df is not None
@@ -167,7 +135,7 @@ def test_compute_single_feature_no_cache(
     assert len(result_df.columns) == 2
     pd.testing.assert_index_equal(
         result_df.index,
-        mock_asset_df.index,
+        feature_test_asset_df.index,
     )
 
 
@@ -176,9 +144,9 @@ def test_compute_single_feature_with_cache(
     mock_feature_definition,
     mock_param_set,
     mock_feast_service,
-    mock_asset_df,
-    mock_asset_data,
-    mock_symbol,
+    feature_test_asset_df,
+    feature_test_asset_data,
+    feature_test_symbol,
 ):
     """Test _compute_or_get_single_feature when feature is cached."""
     # Given
@@ -188,7 +156,7 @@ def test_compute_single_feature_with_cache(
             "feature1": [1.0] * 10,
             "feature2": [2.0] * 10,
         },
-        index=mock_asset_df.index.copy(),
+        index=feature_test_asset_df.index.copy(),
     )
     cached_features.index.name = "Time"
     mock_feast_service.get_historical_features.return_value = cached_features
@@ -198,9 +166,9 @@ def test_compute_single_feature_with_cache(
     result_df = feature_aggregator._compute_or_get_single_feature(
         mock_feature_definition,
         mock_param_set,
-        mock_asset_df,
-        mock_symbol,
-        mock_asset_data,
+        feature_test_asset_df,
+        feature_test_symbol,
+        feature_test_asset_data,
     )
 
     # Then
@@ -217,16 +185,16 @@ def test_compute_single_feature_with_cache(
     assert expected_col1 in result_df.columns
     assert expected_col2 in result_df.columns
     assert len(result_df.columns) == 2
-    pd.testing.assert_index_equal(result_df.index, mock_asset_df.index)
+    pd.testing.assert_index_equal(result_df.index, feature_test_asset_df.index)
 
 
 def test_compute_single_feature_disabled_feature_def(
     feature_aggregator,
     mock_feature_definition,
     mock_param_set,
-    mock_asset_df,
-    mock_asset_data,
-    mock_symbol,
+    feature_test_asset_df,
+    feature_test_asset_data,
+    feature_test_symbol,
 ):
     """Test _compute_or_get_single_feature returns None if feature def is disabled."""
     # Given
@@ -238,9 +206,9 @@ def test_compute_single_feature_disabled_feature_def(
     result = feature_aggregator._compute_or_get_single_feature(
         mock_feature_definition,
         mock_param_set,
-        mock_asset_df,
-        mock_symbol,
-        mock_asset_data,
+        feature_test_asset_df,
+        feature_test_symbol,
+        feature_test_asset_data,
     )
 
     # Then
@@ -252,9 +220,9 @@ def test_compute_single_feature_disabled_param_set(
     feature_aggregator,
     mock_feature_definition,
     mock_param_set,
-    mock_asset_df,
-    mock_asset_data,
-    mock_symbol,
+    feature_test_asset_df,
+    feature_test_asset_data,
+    feature_test_symbol,
 ):
     """Test _compute_or_get_single_feature returns None if param set is disabled."""
     # Given
@@ -266,9 +234,9 @@ def test_compute_single_feature_disabled_param_set(
     result = feature_aggregator._compute_or_get_single_feature(
         mock_feature_definition,
         mock_param_set,
-        mock_asset_df,
-        mock_symbol,
-        mock_asset_data,
+        feature_test_asset_df,
+        feature_test_symbol,
+        feature_test_asset_data,
     )
 
     # Then
@@ -280,10 +248,10 @@ def test_compute_single_feature_handles_computation_error(
     feature_aggregator,
     mock_feature_definition,
     mock_param_set,
-    mock_class_registry,
-    mock_asset_df,
-    mock_asset_data,
-    mock_symbol,
+    mock_feature_factory,
+    feature_test_asset_df,
+    feature_test_asset_data,
+    feature_test_symbol,
 ):
     """Test _compute_or_get_single_feature returns None if computation fails."""
     # Given
@@ -293,9 +261,9 @@ def test_compute_single_feature_handles_computation_error(
     mock_feature_instance.get_feature_name.return_value = "MockFeature"
     mock_feature_instance.get_sub_features_names.return_value = ["f1"]
 
-    mock_feature_class = MagicMock(return_value=mock_feature_instance)
-    feature_aggregator.class_registry.feature_class_map["MockFeature"] = (
-        mock_feature_class
+    # Configure the factory to return the failing feature instance
+    feature_aggregator.feature_factory.create_feature.return_value = (
+        mock_feature_instance
     )
 
     # When
@@ -303,9 +271,9 @@ def test_compute_single_feature_handles_computation_error(
     result = feature_aggregator._compute_or_get_single_feature(
         mock_feature_definition,
         mock_param_set,
-        mock_asset_df,
-        mock_symbol,
-        mock_asset_data,
+        feature_test_asset_df,
+        feature_test_symbol,
+        feature_test_asset_data,
     )
 
     # Then
@@ -319,9 +287,9 @@ def test_compute_single_feature_handles_missing_time_index_after_compute(
     mock_feature_definition,
     mock_param_set_drop_time,
     mock_feast_service,
-    mock_asset_df,
-    mock_asset_data,
-    mock_symbol,
+    feature_test_asset_df,
+    feature_test_asset_data,
+    feature_test_symbol,
 ):
     """Test _compute_or_get_single_feature returns None if 'Time' index name is missing after compute."""
     # Given
@@ -333,9 +301,9 @@ def test_compute_single_feature_handles_missing_time_index_after_compute(
     result = feature_aggregator._compute_or_get_single_feature(
         mock_feature_definition,
         mock_param_set_drop_time,
-        mock_asset_df,
-        mock_symbol,
-        mock_asset_data,
+        feature_test_asset_df,
+        feature_test_symbol,
+        feature_test_asset_data,
     )
 
     # Then
@@ -349,7 +317,7 @@ def test_compute_single_feature_handles_missing_time_index_after_compute(
     side_effect=lambda fn: fn,
 )
 def test_compute_returns_callable_tasks(
-    mock_delayed_patch, feature_aggregator, mock_asset_data, mock_symbol
+    mock_delayed_patch, feature_aggregator, feature_test_asset_data, feature_test_symbol
 ):
     """Test that compute returns a list of callable tasks wrapping the correct method."""
     # Given
@@ -357,7 +325,7 @@ def test_compute_returns_callable_tasks(
 
     # When
     # Call compute() method with asset data and symbol
-    tasks = feature_aggregator.compute(asset_data=mock_asset_data, symbol=mock_symbol)
+    tasks = feature_aggregator.compute(asset_data=feature_test_asset_data, symbol=feature_test_symbol)
 
     # Then
     # Verify tasks are created correctly
@@ -375,7 +343,7 @@ def test_compute_returns_callable_tasks(
     side_effect=lambda fn: fn,
 )
 def test_compute_handles_multiple_param_sets(
-    mock_delayed_patch, feature_aggregator, mock_asset_data, mock_symbol
+    mock_delayed_patch, feature_aggregator, feature_test_asset_data, feature_test_symbol
 ):
     """Test compute creates tasks for multiple parameter sets."""
     # Given
@@ -390,7 +358,7 @@ def test_compute_handles_multiple_param_sets(
 
     # When
     # Call compute() method with asset data and symbol
-    tasks = feature_aggregator.compute(asset_data=mock_asset_data, symbol=mock_symbol)
+    tasks = feature_aggregator.compute(asset_data=feature_test_asset_data, symbol=feature_test_symbol)
 
     # Then
     # Verify correct number of tasks are created
@@ -404,7 +372,7 @@ def test_compute_handles_multiple_param_sets(
     side_effect=lambda fn: fn,
 )
 def test_compute_skips_disabled_features_and_params(
-    mock_delayed_patch, feature_aggregator, mock_asset_data, mock_symbol
+    mock_delayed_patch, feature_aggregator, feature_test_asset_data, feature_test_symbol
 ):
     """Test compute skips disabled features and parameter sets."""
     # Given
@@ -412,13 +380,11 @@ def test_compute_skips_disabled_features_and_params(
     mock_param_set2 = MagicMock(spec=BaseParameterSetConfig)
     mock_param_set2.enabled = True
     mock_param_set2.hash_id.return_value = "p2"
-    mock_param_set2.name = "p2"
-
-    # Create second mock feature definition without relying on constructor validation
+    mock_param_set2.name = "p2"    # Create second mock feature definition without relying on constructor validation
     with patch(
         "drl_trading_common.config.feature_config_factory.FeatureConfigFactory"
     ) as mock_factory_class:
-        mock_factory_instance = MagicMock(spec=FeatureConfigFactoryInterface)
+        mock_factory_instance = MagicMock(spec=FeatureFactoryInterface)
         mock_factory_class.return_value = mock_factory_instance
 
         class MockFeatureConfig(BaseParameterSetConfig):
@@ -445,7 +411,7 @@ def test_compute_skips_disabled_features_and_params(
 
     # When
     # Call compute() method with asset data and symbol
-    tasks = feature_aggregator.compute(asset_data=mock_asset_data, symbol=mock_symbol)
+    tasks = feature_aggregator.compute(asset_data=feature_test_asset_data, symbol=feature_test_symbol)
 
     # Then
     # Verify no tasks are created for disabled features/parameters
@@ -459,9 +425,9 @@ def test_compute_execute_tasks_and_check_column_names(
     mock_delayed,
     feature_aggregator: FeatureAggregatorInterface,
     mock_feast_service,
-    mock_asset_data,
-    mock_symbol,
-    mock_asset_df,
+    feature_test_asset_data,
+    feature_test_symbol,
+    feature_test_asset_df,
 ):
     """Test executing the delayed tasks from compute and checking column names using real dask compute."""
     # Given
@@ -482,7 +448,7 @@ def test_compute_execute_tasks_and_check_column_names(
 
     # When
     # Get tasks from compute method
-    tasks = feature_aggregator.compute(asset_data=mock_asset_data, symbol=mock_symbol)
+    tasks = feature_aggregator.compute(asset_data=feature_test_asset_data, symbol=feature_test_symbol)
 
     # Use real dask compute to execute the tasks
     computed_results = dask.compute(*tasks)

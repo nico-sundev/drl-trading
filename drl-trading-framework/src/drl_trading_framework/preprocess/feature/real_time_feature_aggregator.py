@@ -15,8 +15,8 @@ from pandas import DataFrame, Series
 
 from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_framework.preprocess.feast.feast_service import FeastServiceInterface
-from drl_trading_framework.preprocess.feature.feature_class_factory import (
-    FeatureClassFactoryInterface,
+from drl_trading_framework.preprocess.feature.feature_factory import (
+    FeatureFactoryInterface,
 )
 
 logger = logging.getLogger(__name__)
@@ -87,7 +87,7 @@ class RealTimeFeatureAggregator(RealTimeFeatureAggregatorInterface):
     def __init__(
         self,
         config: FeaturesConfig,
-        class_registry: FeatureClassFactoryInterface,
+        class_registry: FeatureFactoryInterface,
         feast_service: FeastServiceInterface,
     ) -> None:
         """

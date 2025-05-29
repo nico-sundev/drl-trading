@@ -5,20 +5,19 @@ import pytest
 
 from drl_trading_framework.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_framework.preprocess.data_set_utils.strip_service import StripService
-from tests.unit.fixture.sample_data import mock_ohlcv_data_1h, mock_ohlcv_data_4h
 
 
 @pytest.fixture
-def base_dataset():
+def base_dataset(mock_ohlcv_data_1h):
     """Base dataset fixture with 1-hour timeframe."""
-    df = mock_ohlcv_data_1h().asset_price_dataset
+    df = mock_ohlcv_data_1h.asset_price_dataset
     return df
 
 
 @pytest.fixture
-def higher_timeframe_dataset():
+def higher_timeframe_dataset(mock_ohlcv_data_4h):
     """Higher timeframe dataset fixture with 4-hour timeframe."""
-    df = mock_ohlcv_data_4h().asset_price_dataset
+    df = mock_ohlcv_data_4h.asset_price_dataset
     return df
 
 

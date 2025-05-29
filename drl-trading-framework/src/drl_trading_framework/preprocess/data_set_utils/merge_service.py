@@ -3,10 +3,10 @@ import logging
 from typing import Dict, Optional
 
 import pandas as pd
+from drl_trading_common.utils import ensure_datetime_index
 
 from drl_trading_framework.preprocess.data_set_utils.util import (
     detect_timeframe,
-    ensure_datetime_index,
 )
 
 

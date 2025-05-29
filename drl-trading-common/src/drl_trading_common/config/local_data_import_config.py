@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from ..models import AssetPriceImportProperties
-from .base_schema import BaseSchema
+from ..base.base_schema import BaseSchema
 
 
 class SymbolConfig(BaseSchema):

@@ -1,4 +1,4 @@
-from .base_schema import BaseSchema
+from ..base.base_schema import BaseSchema
 
 
 class EnvironmentConfig(BaseSchema):
