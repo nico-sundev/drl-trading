@@ -6,9 +6,8 @@ a Spring-like annotation-based dependency injection system.
 
 import logging
 import os
-from typing import Dict, List, Optional, Tuple, Type
+from typing import Dict, List, Optional, Tuple
 
-from drl_trading_common.base.base_trading_env import BaseTradingEnv
 from drl_trading_common.config.logging_config import configure_logging
 from injector import Injector
 
@@ -102,7 +101,6 @@ def _preprocess(
 def _create_environments_and_train(
     injector,
     final_datasets: List[PreprocessingResult],
-    env_class: Type[BaseTradingEnv],
 ) -> Tuple[Dict[str, BaseAgent]]:
     """
     Create environments and train agents using injected services.
@@ -131,13 +129,12 @@ def _create_environments_and_train(
         f"Creating environments and training agents with {len(split_datasets)} datasets"
     )
     train_env, val_env, agents = agent_training_service.create_env_and_train_agents(
-        split_datasets, env_class
+        split_datasets
     )
     return agents
 
 
 def bootstrap_agent_training(
-    env_class: Type[BaseTradingEnv],
     config_path: Optional[str] = None,
 ) -> None:
     """
@@ -179,7 +176,7 @@ def bootstrap_agent_training(
     injector = get_trading_injector(config_path)
 
     # Create environments and train agents
-    agents = _create_environments_and_train(injector, final_datasets, env_class)
+    agents = _create_environments_and_train(injector, final_datasets)
 
     logger.info(f"Training completed for {len(agents)} agents")
     logger.info("Agent training bootstrap completed successfully")

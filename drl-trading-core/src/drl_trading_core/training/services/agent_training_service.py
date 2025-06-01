@@ -23,7 +23,7 @@ class AgentTrainingServiceInterface(ABC):
 
     @abstractmethod
     def create_env_and_train_agents(
-        self, final_datasets: list[SplitDataSetContainer], env_class: Type[BaseTradingEnv]
+        self, final_datasets: list[SplitDataSetContainer]
     ) -> Tuple[DummyVecEnv, DummyVecEnv, Dict[str, BaseAgent]]:
         """
         Create environments and train agents dynamically based on the configuration.
@@ -42,36 +42,32 @@ class AgentTrainingService(AgentTrainingServiceInterface):
     """
     Service to handle the creation of environments and training of agents.
     """
-
     @inject
-    def __init__(self, config: ApplicationConfig) -> None:
+    def __init__(self, config: ApplicationConfig, env_class: Type[BaseTradingEnv]) -> None:
         """
         Initialize the training service with configuration and agent factory.
 
         Args:
-            env_config: Environment configuration settings
+            config: Application configuration settings
+            env_class: The trading environment class to use
         """
         self.config = config
         self.agent_factory = AgentFactory()
+        self.env_class = env_class
 
     def create_env_and_train_agents(
-        self, final_datasets: list[SplitDataSetContainer], env_class: Type[BaseTradingEnv]
+        self, final_datasets: list[SplitDataSetContainer]
     ) -> Tuple[DummyVecEnv, DummyVecEnv, Dict[str, BaseAgent]]:
         """
         Create environments and train agents dynamically based on the configuration.
 
         Args:
-            train_data (pd.DataFrame): Training data.
-            val_data (pd.DataFrame): Validation data.
-            total_timesteps (int): Total timesteps for training.
-            threshold (float): Threshold for agent validation.
-            agent_config (List[str]): List of agent names to train.
+            final_datasets: List of split dataset containers for training
 
         Returns:
             tuple: Training environment, validation environment, and trained agents.
-        """
-
-        # Create environments for training and validation
+        """        # Create environments for training and validation
+        env_class = self.env_class
         train_env = DummyVecEnv(
             [
                 *(

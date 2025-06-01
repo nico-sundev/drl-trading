@@ -13,7 +13,12 @@ from drl_trading_common.interfaces.feature.feature_class_registry_interface impo
 from drl_trading_common.interfaces.feature.feature_config_registry_interface import (
     FeatureConfigRegistryInterface,
 )
+from drl_trading_common.interfaces.indicator_backend_registry_interface import (
+    IndicatorBackendRegistryInterface,
+)
 from injector import Module, provider, singleton
+
+from drl_trading_strategy.feature.indicator_backend_registry import talipp_registry
 
 from ..custom_env import MyCustomTradingEnv
 from ..feature.feature_class_registry import FeatureClassRegistry
@@ -51,3 +56,9 @@ class StrategyModule(Module):
     def provide_trading_environment_class(self) -> Type[BaseTradingEnv]:
         """Provide the custom trading environment class."""
         return MyCustomTradingEnv
+
+    @provider
+    @singleton
+    def provide_indicator_backend_registry(self) -> IndicatorBackendRegistryInterface:
+        """Provide the indicator backend registry implementation."""
+        return talipp_registry()

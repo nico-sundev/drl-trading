@@ -1,10 +1,9 @@
-from typing import Optional
 
 import pandas_ta as ta
 from drl_trading_common import BaseParameterSetConfig
 from drl_trading_common.base.base_feature import BaseFeature
-from drl_trading_core.preprocess.metrics.technical_metrics_service import (
-    TechnicalMetricsServiceInterface,
+from drl_trading_core.preprocess.feature.technical_indicators_service import (
+    TechnicalIndicatorService,
 )
 from drl_trading_strategy.feature.config import RsiConfig
 from pandas import DataFrame
@@ -16,13 +15,20 @@ class RsiFeature(BaseFeature):
         self,
         source: DataFrame,
         config: BaseParameterSetConfig,
+        indicator_service: TechnicalIndicatorService,
         postfix: str = "",
-        metrics_service: Optional[TechnicalMetricsServiceInterface] = None,
     ) -> None:
-        super().__init__(source, config, postfix, metrics_service)
+        super().__init__(source, config, postfix, indicator_service)
         self.config: RsiConfig = self.config
+        self.indicator_name = f"rsi_{self.config.length}{self.postfix}"
+        self.indicator_service.register_instance(self.indicator_name, "rsi", period=config.period)
 
-
+    def update(self, record) -> float:
+        self.indicator_service.update(self.indicator_name, record)
+        val = self.indicator_service.latest(self.indicator_name)
+        # if self.config.use_slope:
+        #     return compute_slope(self.indicator_service.series(self.indicator_name), window=self.config.slope_window)
+        return val
     def compute(self) -> DataFrame:
         # Get source DataFrame with ensured DatetimeIndex using the base class method
         source_df = self._prepare_source_df()

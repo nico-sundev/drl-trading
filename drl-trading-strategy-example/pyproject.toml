@@ -26,6 +26,7 @@ dependencies = [
     # Core dependencies for runtime
     "numpy",
     "pandas",
+    "talipp",
     # Dependency injection framework
     "injector"
 ]

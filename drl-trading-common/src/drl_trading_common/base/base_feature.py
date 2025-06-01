@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
-from drl_trading_common.base.technical_metrics_service_interface import TechnicalMetricsServiceInterface
 from drl_trading_common.utils.utils import ensure_datetime_index
+from drl_trading_core.preprocess.feature.technical_indicators_service import TechnicalIndicatorService
 from pandas import DataFrame
 
 
@@ -13,13 +13,13 @@ class BaseFeature(ABC):
         self,
         source: DataFrame,
         config: BaseParameterSetConfig,
+        indicator_service: TechnicalIndicatorService,
         postfix: str = "",
-        metrics_service: Optional[TechnicalMetricsServiceInterface] = None,
     ) -> None:
         self.df_source = source
         self.config = config
         self.postfix = postfix
-        self.metrics_service = metrics_service
+        self.indicator_service = indicator_service
 
     def _prepare_source_df(self, description: Optional[str] = None) -> DataFrame:
         """
