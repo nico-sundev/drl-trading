@@ -5,7 +5,9 @@ import pkgutil
 from typing import Dict, Optional, Type
 
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
-from drl_trading_common.interfaces.feature.feature_config_registry_interface import FeatureConfigRegistryInterface
+from drl_trading_common.interfaces.feature.feature_config_registry_interface import (
+    FeatureConfigRegistryInterface,
+)
 
 logger = logging.getLogger(__name__)
 

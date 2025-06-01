@@ -9,14 +9,14 @@ cd ai-trading
 
 REM 2. Set environment for training mode
 set DEPLOYMENT_MODE=training
-set DRL_TRADING_CONFIG_PATH=%cd%\drl-trading-impl-example\config\applicationConfig.json
+set DRL_TRADING_CONFIG_PATH=%cd%\drl-trading-strategy-example\config\applicationConfig.json
 
 REM 3. Install framework and dependencies
 cd drl-trading-core
 pip install -e .
 
 REM 4. Install implementation
-cd ..\drl-trading-impl-example
+cd ..\drl-trading-strategy-example
 pip install -e .
 
 REM 5. Run training

@@ -5,8 +5,8 @@ build-backend = "setuptools.build_meta"
 
 # Project metadata
 [project]
-name = "drl_trading_core"
-description = "AI-powered trading system with reinforcement learning capabilities"
+name = "drl-trading-strategy-example"
+description = "Example trading strategy implementation using DRL framework"
 authors = [
     {name = "sonntagnico", email = "nico-tor@hotmail.com"},
 ]
@@ -26,22 +26,9 @@ dependencies = [
     # Core dependencies for runtime
     "numpy",
     "pandas",
-    "pandas_ta",
-    "stable_baselines3",
-    "yfinance",
-    # Feature storage and management
-    "feast",
-    "protobuf>=5.26.0,<6.0.0", # Pin protobuf to compatible version with feast
-    # API and services
-    "click",
     # Dependency injection framework
-    "injector",
-    "pandas-stubs"
+    "injector"
 ]
-
-[tool.uv.sources]
-drl-trading-common = { workspace = true }
-drl-trading-strategy-example = { workspace = true }
 
 [project.optional-dependencies]
 testing = [
@@ -79,10 +66,10 @@ ignore = ["E501"]  # Line length is handled by black
 [tool.ruff.lint.per-file-ignores]
 "notebooks/*.ipynb" = ["E402", "F403"]
 "tests/**/*" = ["F841"]  # Allow unused variables in tests
-"src/drl_trading_core/preprocess/feature/todo_*.py" = ["B019"]
+"src/drl_trading_strategy_example/preprocess/feature/todo_*.py" = ["B019"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["drl_trading_core"]
+known-first-party = ["drl_trading_strategy_example"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -131,7 +118,7 @@ addopts = [
     # "--verbose",
     "-ra",
     "-m not slow"
-    # "--cov=drl_trading_core",
+    # "--cov=drl_trading_strategy_example",
     # "--cov-report=term-missing"
 ]
 
@@ -146,7 +133,7 @@ exclude = ["tests"]
 
 # Coverage configuration (migrated from .coveragerc)
 [tool.coverage.run]
-source = ["drl_trading_core"]
+source = ["drl_trading_strategy_example"]
 branch = true
 omit = [
     "*/tests/*",
@@ -171,11 +158,10 @@ dev = [
     "pytest-cov>=6.1.1",
 ]
 
+[tool.uv.sources]
+drl-trading-common = { workspace = true }
+
 [tool.uv.workspace]
 members = [
-    "../drl-trading-common",
-    "../drl-trading-strategy-example",
+    "../drl-trading-common"
 ]
-
-[project.scripts]
-add-feature = "drl_trading_core.scripts.add_feature:main"

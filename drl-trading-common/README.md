@@ -81,7 +81,7 @@ The library provides a **pluggable transport layer** that allows the same code t
 - `drl-trading-core`: Core ML training and inference
 - `drl-trading-ingest`: Market data ingestion service
 - `drl-trading-execution`: Trade execution service
-- `drl-trading-impl-example`: Reference implementation
+- `drl-trading-strategy-example`: Reference implementation
 
 ## Demo
 
