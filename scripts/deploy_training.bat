@@ -12,7 +12,7 @@ set DEPLOYMENT_MODE=training
 set DRL_TRADING_CONFIG_PATH=%cd%\drl-trading-impl-example\config\applicationConfig.json
 
 REM 3. Install framework and dependencies
-cd drl-trading-framework
+cd drl-trading-core
 pip install -e .
 
 REM 4. Install implementation

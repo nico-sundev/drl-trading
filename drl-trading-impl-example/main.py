@@ -1,4 +1,4 @@
-from drl_trading_framework import bootstrap_agent_training, bootstrap_inference
+from drl_trading_core import bootstrap_agent_training, bootstrap_inference
 from src.drl_trading_impl import MyCustomTradingEnv
 
 CONFIG_PATH = (

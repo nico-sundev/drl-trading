@@ -1,7 +1,158 @@
+[build-system]
+requires = ["setuptools>=46.1.0"]
+build-backend = "setuptools.build_meta"
+
+# Project metadata
 [project]
 name = "drl-trading-training"
-version = "0.1.0"
-description = "Add your description here"
+description = "Training module for AI-powered trading system with reinforcement learning capabilities"
+authors = [
+    {name = "sonntagnico", email = "nico-tor@hotmail.com"},
+]
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python",
+]
+version = "0.1.0"
+dependencies = [
+    # Common library
+    "drl-trading-common",
+    "drl-trading-core",
+    # Core dependencies for runtime
+    "pandas",
+    "gymnasium",
+    "stable_baselines3",
+    # API and services
+    "click",
+    # Dependency injection framework
+]
+
+[tool.uv.sources]
+drl-trading-common = { workspace = true }
+drl-trading-core = { workspace = true }
+
+[project.optional-dependencies]
+testing = [
+    "pytest",
+    "pytest-cov",
+    "pytest-benchmark",
+]
+production = [
+    "pika",  # RabbitMQ client
+]
+dev = [
+    "mypy",
+    "ruff",
+    "ipython",
+]
+
+[tool.ruff]
+target-version = "py38"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "B",    # flake8-bugbear
+    "I",    # isort
+]
+ignore = ["E501"]  # Line length is handled by black
+
+[tool.ruff.lint.per-file-ignores]
+"notebooks/*.ipynb" = ["E402", "F403"]
+"tests/**/*" = ["F841"]  # Allow unused variables in tests
+
+[tool.ruff.lint.isort]
+known-first-party = ["drl_trading_training"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = false
+warn_no_return = true
+warn_unreachable = true
+strict_optional = true
+ignore_missing_imports = true
+# Suppress import-untyped warnings for workspace modules
+disable_error_code = ["import-untyped"]
+# Cache improvements from mypy.ini
+cache_dir = ".mypy_cache"
+incremental = true
+follow_imports = "silent"
+# Exclude all test files in the tests directory and files including "TODO" in filename
+exclude = "(.*tests/.*)|(.*todo.*)\\.py$"
+
+[[tool.mypy.overrides]]
+module = ["pandas.*", "numpy.*", "pytest.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests/integration",
+    "tests/unit"
+]
+python_files = "*_test.py *_it.py"
+python_functions = "test_*"
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s %(levelname)s %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')"
+]
+addopts = [
+    "-ra",
+    "-m not slow"
+]
+
+# Package discovery configuration
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = ["tests"]
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["drl_trading_training"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+    "raise ImportError",
+    "if False:",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "pytest-cov>=6.1.1",
+]
+
+[tool.uv.workspace]
+members = [
+    "../drl-trading-common",
+    "../drl-trading-core",
+]

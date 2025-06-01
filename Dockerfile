@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
-COPY drl-trading-framework/pyproject.toml ./framework/pyproject.toml
+COPY drl-trading-core/pyproject.toml ./framework/pyproject.toml
 COPY drl-trading-impl-example/pyproject.toml ./impl/pyproject.toml
 
 # Install Python dependencies
@@ -19,7 +19,7 @@ RUN pip install -e ./framework/
 RUN pip install -e ./impl/
 
 # Copy source code
-COPY drl-trading-framework/src ./framework/src
+COPY drl-trading-core/src ./framework/src
 COPY drl-trading-impl-example/src ./impl/src
 COPY drl-trading-impl-example/config ./impl/config
 

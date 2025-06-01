@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional
 
 import numpy as np
-from drl_trading_framework import BaseTradingEnv
+from drl_trading_core import BaseTradingEnv
 from gymnasium import spaces
 from pandas import DataFrame
 

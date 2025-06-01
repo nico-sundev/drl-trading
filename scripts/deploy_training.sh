@@ -15,7 +15,7 @@ export DEPLOYMENT_MODE=training
 export DRL_TRADING_CONFIG_PATH=$(pwd)/drl-trading-impl-example/config/applicationConfig.json
 
 # 3. Install framework and dependencies
-cd drl-trading-framework
+cd drl-trading-core
 pip install -e .
 
 # 4. Install implementation

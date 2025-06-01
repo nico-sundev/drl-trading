@@ -2,7 +2,7 @@ from typing import Optional
 
 import pandas_ta as ta
 from drl_trading_common.base.base_feature import BaseFeature
-from drl_trading_framework.preprocess.metrics.technical_metrics_service import (
+from drl_trading_core.preprocess.metrics.technical_metrics_service import (
     TechnicalMetricsServiceInterface,
 )
 from pandas import DataFrame

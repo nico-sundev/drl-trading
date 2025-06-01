@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 # Add framework to path
-framework_path = Path(__file__).parent / "drl-trading-framework" / "src"
+framework_path = Path(__file__).parent / "drl-trading-core" / "src"
 sys.path.insert(0, str(framework_path))
 
 
