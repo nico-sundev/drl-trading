@@ -56,7 +56,7 @@ integration-tests:
   extends: .python-job
   stage: test
   script:
-    - pytest tests/it -v
+    - pytest tests/integration -v
 
 # benchmark-tests:
 #   extends: .python-job

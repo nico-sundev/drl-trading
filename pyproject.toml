@@ -1,0 +1,10 @@
+[tool.uv.workspace]
+members = [
+    "drl-trading-common",
+    "drl-trading-core",
+    "drl-trading-strategy-example",
+    "drl-trading-execution",
+    "drl-trading-inference",
+    "drl-trading-ingest",
+    "drl-trading-training"
+]

@@ -160,8 +160,3 @@ dev = [
 
 [tool.uv.sources]
 drl-trading-common = { workspace = true }
-
-[tool.uv.workspace]
-members = [
-    "../drl-trading-common"
-]

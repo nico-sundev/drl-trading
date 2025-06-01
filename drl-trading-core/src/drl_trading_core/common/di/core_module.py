@@ -12,7 +12,7 @@ from drl_trading_common.config.feature_config import FeaturesConfig, FeatureStor
 from drl_trading_common.config.local_data_import_config import LocalDataImportConfig
 from drl_trading_common.config.rl_model_config import RlModelConfig
 from feast import FeatureStore
-from injector import Injector, Module, provider, singleton
+from injector import Module, provider, singleton
 
 from drl_trading_core.common.config.utils import parse_all_parameters
 from drl_trading_core.common.data_import.base_data_import_service import (
@@ -316,31 +316,3 @@ class CoreModule(Module):
     # def provide_message_bus(self) -> TradingMessageBus:
     #     """Provide message bus based on deployment mode."""
     #     return TradingMessageBusFactory.create_message_bus()
-
-
-# Global injector instance
-_trading_injector: Optional[Injector] = None
-
-
-def get_trading_injector(config_path: Optional[str] = None) -> Injector:
-    """Get or create the global trading injector."""
-    global _trading_injector
-
-    if _trading_injector is None:
-        module = CoreModule(config_path)
-        _trading_injector = Injector([module])
-        logger.info("Trading injector initialized")
-
-    return _trading_injector
-
-
-def reset_trading_injector():
-    """Reset the global injector (useful for testing)."""
-    global _trading_injector
-    _trading_injector = None
-
-
-def get_service(service_class, config_path: Optional[str] = None):
-    """Convenience function to get a service from the injector."""
-    injector = get_trading_injector(config_path)
-    return injector.get(service_class)

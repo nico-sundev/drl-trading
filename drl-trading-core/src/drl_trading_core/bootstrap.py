@@ -10,12 +10,13 @@ from typing import Dict, List, Optional, Tuple, Type
 
 from drl_trading_common.base.base_trading_env import BaseTradingEnv
 from drl_trading_common.config.logging_config import configure_logging
+from injector import Injector
 
 from drl_trading_core.common.agents.base_agent import BaseAgent
 from drl_trading_core.common.data_import.data_import_manager import (
     DataImportManager,
 )
-from drl_trading_core.common.di.core_module import get_trading_injector
+from drl_trading_core.common.di import CoreModule
 from drl_trading_core.common.model.preprocessing_result import PreprocessingResult
 from drl_trading_core.inference.inference_service import InferenceService
 from drl_trading_core.preprocess.data_set_utils.split_service import SplitService
@@ -30,8 +31,6 @@ logger = logging.getLogger(__name__)
 
 # Updated _preprocess to use modern injector-based DI
 def _preprocess(
-    feature_class_discovery_package: Optional[str] = None,
-    feature_config_discovery_package: Optional[str] = None,
     config_path: Optional[str] = None,
 ) -> Tuple[None, List[PreprocessingResult]]:
     """Bootstrap the application using modern dependency injection.
@@ -67,19 +66,6 @@ def _preprocess(
         logger.info("Using default config path from injector configuration")
 
     logger.info("Modern DI injector configured")
-
-    # Handle feature discovery if needed
-    if feature_class_discovery_package:
-        logger.info(
-            f"Discovering feature classes from package: {feature_class_discovery_package}"
-        )
-        # TODO: Integrate feature discovery with injector if needed
-
-    if feature_config_discovery_package:
-        logger.info(
-            f"Discovering feature config classes from package: {feature_config_discovery_package}"
-        )
-        # TODO: Integrate feature config discovery with injector if needed
 
     # Resolve services from injector using @inject decorators
     data_import_manager = injector.get(DataImportManager)
@@ -153,8 +139,6 @@ def _create_environments_and_train(
 def bootstrap_agent_training(
     env_class: Type[BaseTradingEnv],
     config_path: Optional[str] = None,
-    feature_class_discovery_package: Optional[str] = None,
-    feature_config_discovery_package: Optional[str] = None,
 ) -> None:
     """
     Bootstraps the agent training process.
@@ -189,9 +173,7 @@ def bootstrap_agent_training(
         )
 
     # Bootstrap application with DI - _preprocess returns (None, final_datasets)
-    _, final_datasets = _preprocess(
-        feature_class_discovery_package, feature_config_discovery_package, config_path
-    )
+    _, final_datasets = _preprocess(config_path)
 
     # Get the injector for training services
     injector = get_trading_injector(config_path)
@@ -276,3 +258,45 @@ def bootstrap_inference(
     except Exception as e:
         logger.error(f"Failed to bootstrap inference: {e}", exc_info=True)
         raise RuntimeError(f"Inference bootstrap failed: {e}") from e
+
+
+# Global injector instance
+_trading_injector: Optional[Injector] = None
+
+
+def get_trading_injector(config_path: Optional[str] = None) -> Injector:
+    """Get or create the global trading injector."""
+    global _trading_injector
+
+    if _trading_injector is None:
+        # Import strategy module dynamically
+        try:
+            from drl_trading_strategy.bootstrap.strategy_module import StrategyModule
+
+            strategy_module = StrategyModule()
+        except ImportError as err:
+            logger.warning("Strategy module not found, using core module only")
+            raise ImportError(
+                "Strategy module not found. Ensure drl_trading_strategy is installed and provides StrategyModule."
+            ) from err
+
+        core_module = CoreModule(config_path)
+
+        # Create injector with both core and strategy modules
+        modules = [core_module, strategy_module]
+        _trading_injector = Injector(modules)
+        logger.info("Trading injector initialized")
+
+    return _trading_injector
+
+
+def reset_trading_injector():
+    """Reset the global injector (useful for testing)."""
+    global _trading_injector
+    _trading_injector = None
+
+
+def get_service(service_class, config_path: Optional[str] = None):
+    """Convenience function to get a service from the injector."""
+    injector = get_trading_injector(config_path)
+    return injector.get(service_class)

@@ -150,9 +150,3 @@ dev = [
     "pytest>=8.3.5",
     "pytest-cov>=6.1.1",
 ]
-
-[tool.uv.workspace]
-members = [
-    "../drl-trading-common",
-    "../drl-trading-core",
-]

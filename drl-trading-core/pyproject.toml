@@ -171,11 +171,5 @@ dev = [
     "pytest-cov>=6.1.1",
 ]
 
-[tool.uv.workspace]
-members = [
-    "../drl-trading-common",
-    "../drl-trading-strategy-example",
-]
-
 [project.scripts]
 add-feature = "drl_trading_core.scripts.add_feature:main"
