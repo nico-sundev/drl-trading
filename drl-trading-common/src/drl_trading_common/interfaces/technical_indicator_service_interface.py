@@ -5,21 +5,15 @@ This module defines the contract for technical indicator services that manage
 indicator instances and provide access to their values.
 """
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Optional
 
+from drl_trading_strategy.enum.indicator_type_enum import IndicatorTypeEnum
+from pandas import DataFrame
 
-class TechnicalIndicatorServiceInterface(ABC):
-    """
-    Interface defining the contract for technical indicator service operations.
-
-    Implementations of this interface are responsible for:
-    1. Managing indicator instances with unique names
-    2. Updating indicator values with new data
-    3. Providing access to the latest indicator values
-    """
+class TechnicalIndicatorFacadeInterface(ABC):
 
     @abstractmethod
-    def register_instance(self, name: str, indicator_type: str, **params) -> None:
+    def register_instance(self, name: str, indicator_type: IndicatorTypeEnum, **params) -> None:
         """
         Register a new indicator instance with the given name and parameters.
 
@@ -34,42 +28,51 @@ class TechnicalIndicatorServiceInterface(ABC):
         pass
 
     @abstractmethod
-    def update(self, name: str, value: Any) -> None:
+    def add(self, name: str, value: DataFrame) -> None:
         """
-        Update an indicator instance with a new value.
+        Incrementally compute the indicator with a new value.
 
-        Args:
-            name: Name of the indicator instance to update
-            value: The new value to add to the indicator
-
-        Raises:
-            KeyError: If no indicator with the given name exists
+        :param value: New value to update the indicator with.
         """
         pass
 
     @abstractmethod
-    def latest(self, name: str) -> Any:
+    def get_all(self, name: str) -> Optional[DataFrame]:
         """
-        Get the latest value from an indicator instance.
+        Compute the indicator for a batch of data.
 
-        Args:
-            name: Name of the indicator instance
-
-        Returns:
-            The latest calculated value from the indicator
-
-        Raises:
-            KeyError: If no indicator with the given name exists
+        :param data: Data to compute the indicator on.
+        :return: Computed indicator values.
         """
         pass
 
-    @property
     @abstractmethod
-    def instances(self) -> Dict[str, Any]:
+    def get_latest(self, name: str) -> Optional[DataFrame]:
         """
-        Get a dictionary of all registered indicator instances.
+        Get the latest computed value of the indicator.
+
+        :return: Latest indicator value.
+        """
+        pass
+
+class TechnicalIndicatorFactoryInterface(ABC):
+    """
+    Interface defining the contract for technical indicator service factory operations.
+
+    Implementations of this interface are responsible for:
+    1. Creating instances of technical indicator services
+    2. Managing the lifecycle of indicator services
+    """
+
+    @abstractmethod
+    def create(self, **kwargs) -> TechnicalIndicatorFacadeInterface:
+        """
+        Create a new instance of a technical indicator service.
+
+        Args:
+            **kwargs: Parameters to configure the service instance
 
         Returns:
-            Dict mapping indicator names to their instances
+            An instance of TechnicalIndicatorServiceInterface
         """
         pass

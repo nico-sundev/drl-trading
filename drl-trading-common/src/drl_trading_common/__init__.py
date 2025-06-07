@@ -13,8 +13,9 @@ from .messaging import (
     TradingMessageBusFactory,
     TransportInterface,
 )
-from .base import BaseFeature, BaseParameterSetConfig, BaseTradingEnv, TechnicalMetricsServiceInterface
+from .base import BaseFeature, BaseParameterSetConfig, BaseTradingEnv
 from .interfaces.feature import FeatureClassRegistryInterface, FeatureConfigRegistryInterface
+from .interfaces.indicator import IndicatorClassRegistryInterface
 
 __all__ = [
     # Messaging
@@ -29,5 +30,5 @@ __all__ = [
     # Interfaces
     "FeatureClassRegistryInterface",
     "FeatureConfigRegistryInterface",
-    "TechnicalMetricsServiceInterface"
+    "IndicatorClassRegistryInterface",
 ]

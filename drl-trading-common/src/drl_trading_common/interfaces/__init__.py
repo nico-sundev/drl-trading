@@ -1,9 +1,8 @@
 """Interfaces module exports."""
 
-from .indicator_backend_registry_interface import IndicatorBackendRegistryInterface
-from .technical_indicator_service_interface import TechnicalIndicatorServiceInterface
+from .technical_indicator_service_interface import TechnicalIndicatorFacadeInterface, TechnicalIndicatorFactoryInterface
 
 __all__ = [
-    "IndicatorBackendRegistryInterface",
-    "TechnicalIndicatorServiceInterface",
+    "TechnicalIndicatorFacadeInterface",
+    "TechnicalIndicatorFactoryInterface"
 ]

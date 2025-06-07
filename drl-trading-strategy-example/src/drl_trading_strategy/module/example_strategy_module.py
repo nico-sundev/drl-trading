@@ -1,0 +1,80 @@
+"""
+Bootstrap module for the drl-trading-strategy-example package.
+
+This module provides concrete implementations and DI configuration
+for the trading framework.
+"""
+
+from typing import Type
+
+from drl_trading_common.base.base_strategy_module import BaseStrategyModule
+from drl_trading_common.base.base_trading_env import BaseTradingEnv
+from drl_trading_common.interfaces.feature.feature_class_registry_interface import (
+    FeatureClassRegistryInterface,
+)
+from drl_trading_common.interfaces.feature.feature_config_registry_interface import (
+    FeatureConfigRegistryInterface,
+)
+from drl_trading_common.interfaces.technical_indicator_service_interface import (
+    TechnicalIndicatorFactoryInterface,
+)
+from injector import Module, provider, singleton
+
+from drl_trading_strategy.technical_indicator.technical_indicators_service import (
+    TaLippIndicatorFactory,
+)
+
+from ..custom_env import MyCustomTradingEnv
+from ..feature.feature_class_registry import FeatureClassRegistry
+from ..feature.feature_config_registry import FeatureConfigRegistry
+
+
+class ExampleStrategyModule(BaseStrategyModule):
+
+    def as_injector_module(self) -> Module:
+        """
+        DI module providing concrete implementations for the trading framework.
+
+        This module provides the concrete registry implementation that will be
+        used by the framework's factory.
+        """
+
+        class _Internal(Module):
+
+            @provider
+            @singleton
+            def provide_feature_class_registry(self) -> FeatureClassRegistryInterface:
+                """Provide the concrete feature class registry implementation."""
+                registry = FeatureClassRegistry()
+                # Discover features from the impl package
+                registry.discover_feature_classes(
+                    "drl_trading_strategy.feature.collection"
+                )
+                return registry
+
+            @provider
+            @singleton
+            def provide_feature_config_registry(self) -> FeatureConfigRegistryInterface:
+                """Provide the concrete feature config registry implementation."""
+                registry = FeatureConfigRegistry()
+                # Discover config classes from the impl package
+                registry.discover_config_classes(
+                    "drl_trading_strategy.feature.collection"
+                )
+                return registry
+
+            @provider
+            @singleton
+            def provide_trading_environment_class(self) -> Type[BaseTradingEnv]:
+                """Provide the custom trading environment class."""
+                return MyCustomTradingEnv
+
+            @provider
+            @singleton
+            def provide_technical_indicator_factory(
+                self,
+            ) -> TechnicalIndicatorFactoryInterface:
+                """Provide the indicator backend registry implementation."""
+                return TaLippIndicatorFactory()
+
+        return _Internal()

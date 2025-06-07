@@ -1,4 +1,10 @@
-from importlib.metadata import PackageNotFoundError, version  # pragma: no cover
+from importlib.metadata import PackageNotFoundError, version
+
+from drl_trading_common.config.logging_config import (
+    configure_logging,  # pragma: no cover
+)
+
+from drl_trading_core.core_engine import CoreEngine
 
 try:
     # Change here if project is renamed and does not equal the package name
@@ -9,6 +15,9 @@ except PackageNotFoundError:  # pragma: no cover
 finally:
     del version, PackageNotFoundError
 
-# from .bootstrap import bootstrap_agent_training, bootstrap_inference
+# Initialize logging
+configure_logging()
 
-# __all__ = ["bootstrap_agent_training", "bootstrap_inference"]
+__all__ = [
+    "CoreEngine"
+]

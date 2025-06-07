@@ -1,6 +1,6 @@
-def main():
-    print("Hello from drl-trading-training!")
 
+from .src.drl_trading_training import TrainingApp
 
 if __name__ == "__main__":
-    main()
+    app = TrainingApp()
+    app.run()

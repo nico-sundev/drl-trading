@@ -1,84 +1,69 @@
-import importlib
-import inspect
 import logging
-import pkgutil
 from typing import Dict, Optional, Type
 
 from drl_trading_common.base.base_feature import BaseFeature
+from drl_trading_common.base.discoverable_registry import DiscoverableRegistry
 from drl_trading_common.interfaces.feature.feature_class_registry_interface import (
     FeatureClassRegistryInterface,
 )
+from drl_trading_strategy.enum.feature_type_enum import FeatureTypeEnum
+from drl_trading_strategy.utils.feature_type_converter import FeatureTypeConverter
 
 logger = logging.getLogger(__name__)
 
 
-class FeatureClassRegistry(FeatureClassRegistryInterface):
+class FeatureClassRegistry(DiscoverableRegistry[FeatureTypeEnum, BaseFeature], FeatureClassRegistryInterface):
     """
     Concrete implementation of FeatureClassRegistryInterface.
 
-    This registry discovers, stores, and manages feature class types.
-    It reuses the discovery logic from the original factory implementation.
+    This registry discovers, stores, and manages feature class types using
+    the DiscoverableRegistry base class for common discovery logic.
     """
 
-    def __init__(self) -> None:
-        self._feature_class_map: Dict[str, Type[BaseFeature]] = {}
-
-    def get_feature_class(self, feature_name: str) -> Optional[Type[BaseFeature]]:
-        return self._feature_class_map.get(feature_name.lower())
+    def get_feature_class(self, feature_type_string: str) -> Optional[Type[BaseFeature]]:
+        return self.get_class(FeatureTypeConverter.string_to_enum(feature_type_string))
 
     def register_feature_class(
-        self, feature_name: str, feature_class: Type[BaseFeature]
+        self, feature_type_string: str, feature_class: Type[BaseFeature]
     ) -> None:
-        key = feature_name.lower()
-        self._feature_class_map[key] = feature_class
-        logger.debug(f"Registered feature class '{key}': {feature_class}")
+        self.register_class(FeatureTypeConverter.string_to_enum(feature_type_string), feature_class)
 
     def discover_feature_classes(
         self, package_name: str
-    ) -> Dict[str, Type[BaseFeature]]:
+    ) -> Dict[FeatureTypeEnum, Type[BaseFeature]]:
         """
         Discover and register feature classes from a specified package.
-        This implementation is moved from the original FeatureClassFactory.
+        This implementation delegates to the base class discovery method.
         """
-        logger.info(f"Starting feature class discovery from package: {package_name}")
-        discovered_count = 0
-        package = importlib.import_module(package_name)
+        return self.discover_classes(package_name)
 
-        for _, module_name, is_pkg in pkgutil.iter_modules(package.__path__):
-            if is_pkg:
-                continue
-            full_module_name = f"{package_name}.{module_name}"
-            module = importlib.import_module(full_module_name)
-            module_features_found = 0
+    def _validate_class(self, class_type: Type[BaseFeature]) -> None:
+        """Validate that the class implements the BaseFeature interface."""
+        # For feature classes, we use duck typing to check required methods
+        if not issubclass(class_type, BaseFeature):
+            raise TypeError(
+                f"Feature class {class_type.__name__} must extend BaseFeature"
+            )
 
-            for name, obj in inspect.getmembers(module, inspect.isclass):
-                # Check if the class implements BaseFeature (duck typing)
-                if (
-                    hasattr(obj, 'compute') and
-                    hasattr(obj, 'get_sub_features_names') and
-                    hasattr(obj, 'get_feature_name') and
-                    obj.__name__ != 'BaseFeature'
-                ):
-                    feature_name = name.replace("Feature", "").lower()
-                    # Log each discovery with metadata
-                    logger.debug(
-                        f"Discovered feature class: '{feature_name}' from class {name} "
-                        f"in module {full_module_name}"
-                    )
-                    self._feature_class_map[feature_name] = obj
-                    discovered_count += 1
-                    module_features_found += 1
-
-            if module_features_found > 0:
-                logger.debug(
-                    f"Found {module_features_found} feature class(es) in module {full_module_name}"
-                )
-
-        logger.info(
-            f"Feature class discovery complete. Found {discovered_count} feature classes"
+    def _should_discover_class(self, class_obj) -> bool:
+        """Check if a class is a valid feature class for discovery."""
+        return (
+            issubclass(class_obj, BaseFeature)
+            and class_obj is not BaseFeature
         )
-        return self._feature_class_map
 
-    def reset(self) -> None:
-        logger.debug("Resetting feature class registry")
-        self._feature_class_map.clear()
+    def _extract_key_from_class(self, class_obj) -> FeatureTypeEnum:
+        """
+        Extract feature name using the static get_feature_type method if available,
+        otherwise fallback to extracting from class name.
+        """
+        # Try to use the static get_feature_type method first
+        if hasattr(class_obj, 'get_feature_type') and callable(class_obj.get_feature_type):
+            try:
+                feature_type_enum = class_obj.get_feature_type()
+                return feature_type_enum
+            except Exception as e:
+                logger.warning(f"Failed to get feature type from {class_obj.__name__}: {e}")
+
+        # Fallback to the original method
+        return FeatureTypeConverter.string_to_enum(class_obj.__name__.replace("Feature", "").lower())

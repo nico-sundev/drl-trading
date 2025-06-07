@@ -1,5 +1,5 @@
 import os
-from typing import Literal
+from typing import Literal, Optional
 from unittest.mock import MagicMock
 
 import pandas_ta as ta
@@ -14,15 +14,15 @@ from drl_trading_common.interfaces.feature.feature_class_registry_interface impo
 from drl_trading_common.interfaces.feature.feature_config_registry_interface import (
     FeatureConfigRegistryInterface,
 )
+from drl_trading_common.interfaces.technical_indicator_service_interface import (
+    TechnicalIndicatorFacadeInterface,
+)
 from injector import Injector
 from pandas import DataFrame
 
 from drl_trading_core.preprocess.feature.feature_factory import (
     FeatureFactory,
     FeatureFactoryInterface,
-)
-from drl_trading_core.preprocess.metrics.technical_metrics_service import (
-    TechnicalMetricsServiceInterface,
 )
 
 
@@ -57,16 +57,47 @@ class RsiConfig(BaseParameterSetConfig):
 class RsiFeature(BaseFeature):
     """Mock RSI feature implementation for testing."""
 
-    def __init__(self, source: DataFrame, config: RsiConfig, postfix: str, metrics_service: TechnicalMetricsServiceInterface):
-        super().__init__(source, config, postfix, metrics_service)
-        self.config = config
+    def __init__(
+        self,
+        source: DataFrame,
+        config: BaseParameterSetConfig,
+        indicator_service: TechnicalIndicatorFacadeInterface,
+        postfix: str = "",
+    ) -> None:
+        super().__init__(source, config, indicator_service, postfix)
+        self.config: RsiConfig = self.config
+        self.feature_name = f"rsi_{self.config.length}{self.postfix}"
+        # Mock the indicator service registration for testing
 
-    def compute(self) -> DataFrame:
-        """Compute RSI feature using pandas_ta."""
-        rsi_values = ta.rsi(close=self.df_source["Close"], length=self.config.length)
-        result_df = DataFrame()
-        result_df[f"rsi_{self.config.length}"] = rsi_values
-        return result_df
+    def add(self, df: DataFrame) -> None:
+        """Add data to the feature (mock implementation)."""
+        pass
+
+    def compute_latest(self) -> Optional[DataFrame]:
+        """Compute latest RSI value (mock implementation)."""
+        if hasattr(self, 'df_source') and not self.df_source.empty:
+            latest_rsi = ta.rsi(close=self.df_source["Close"], length=self.config.length).iloc[-1:]
+            result_df = DataFrame(index=self.df_source.index[-1:])
+            result_df[f"rsi_{self.config.length}{self.postfix}"] = latest_rsi
+            return result_df
+        return None
+
+    def compute_all(self) -> Optional[DataFrame]:
+        """Compute all RSI values (mock implementation)."""
+        if hasattr(self, 'df_source') and not self.df_source.empty:
+            rsi_values = ta.rsi(close=self.df_source["Close"], length=self.config.length)
+            result_df = DataFrame(index=self.df_source.index)
+            result_df[f"rsi_{self.config.length}{self.postfix}"] = rsi_values
+            return result_df
+        return None
+
+    def get_sub_features_names(self) -> list[str]:
+        """Get sub-feature names."""
+        return [f"rsi_{self.config.length}{self.postfix}"]
+
+    def get_feature_name(self) -> str:
+        """Get feature name."""
+        return "rsi"
 
 
 @pytest.fixture(scope="session")

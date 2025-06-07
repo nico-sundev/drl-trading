@@ -10,6 +10,9 @@ from drl_trading_common.config.feature_config import (
     FeatureDefinition,
     FeaturesConfig,
 )
+from drl_trading_common.interfaces.technical_indicator_service_interface import (
+    TechnicalIndicatorFactoryInterface,
+)
 from drl_trading_common.utils import ensure_datetime_index
 from injector import inject
 from pandas import DataFrame
@@ -18,9 +21,6 @@ from drl_trading_core.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_core.preprocess.feast.feast_service import FeastServiceInterface
 from drl_trading_core.preprocess.feature.feature_factory import (
     FeatureFactoryInterface,
-)
-from drl_trading_core.preprocess.metrics.technical_metrics_service import (
-    TechnicalMetricsServiceFactory,
 )
 
 logger = logging.getLogger(__name__)
@@ -74,6 +74,7 @@ class FeatureAggregator(FeatureAggregatorInterface):
         config: FeaturesConfig,
         feature_factory: FeatureFactoryInterface,
         feast_service: FeastServiceInterface,
+        technical_indicator_factory: TechnicalIndicatorFactoryInterface,
     ) -> None:
         """
         Initialize the FeatureAggregator with configuration and services.
@@ -86,6 +87,7 @@ class FeatureAggregator(FeatureAggregatorInterface):
         self.config = config
         self.feature_factory = feature_factory
         self.feast_service = feast_service
+        self.technical_indicator_factory = technical_indicator_factory
 
     def _compute_or_get_single_feature(
         self,
@@ -115,14 +117,14 @@ class FeatureAggregator(FeatureAggregatorInterface):
             return None
 
         # Create metrics service for this asset_data timeframe
-        metrics_service = TechnicalMetricsServiceFactory.create(asset_data)
+        indicator_service = self.technical_indicator_factory.create()
 
         # Create feature instance using the factory
         feature_instance = self.feature_factory.create_feature(
             feature_name=feature_def.name,
             source_data=original_df,
             config=param_set,
-            metrics_service=metrics_service,
+            indicators_service=indicator_service,
         )
 
         if feature_instance is None:

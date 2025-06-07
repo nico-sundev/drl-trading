@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Optional, Type
+from typing import Optional, Type
 
 from drl_trading_common.base import BaseParameterSetConfig
 
@@ -35,19 +35,6 @@ class FeatureConfigRegistryInterface(ABC):
         Args:
             feature_name: The name of the feature (case will be normalized to lowercase)
             config_class: The configuration class to register
-        """
-        pass
-
-    @abstractmethod
-    def discover_config_classes(self, package_name: str) -> Dict[str, Type[BaseParameterSetConfig]]:
-        """
-        Discover and register configuration classes from a specified package.
-
-        Args:
-            package_name: The name of the package to discover config classes from
-
-        Returns:
-            A dictionary mapping feature names to their corresponding config class types
         """
         pass
 

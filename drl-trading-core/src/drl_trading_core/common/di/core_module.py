@@ -2,8 +2,9 @@
 
 import logging
 import os
-from typing import Optional
+from typing import Optional, Type
 
+from drl_trading_common.base.base_trading_env import BaseTradingEnv
 from drl_trading_common.config.application_config import ApplicationConfig
 from drl_trading_common.config.config_loader import ConfigLoader
 from drl_trading_common.config.context_feature_config import ContextFeatureConfig
@@ -11,6 +12,9 @@ from drl_trading_common.config.environment_config import EnvironmentConfig
 from drl_trading_common.config.feature_config import FeaturesConfig, FeatureStoreConfig
 from drl_trading_common.config.local_data_import_config import LocalDataImportConfig
 from drl_trading_common.config.rl_model_config import RlModelConfig
+from drl_trading_common.interfaces.technical_indicator_service_interface import (
+    TechnicalIndicatorFactoryInterface,
+)
 from feast import FeatureStore
 from injector import Module, provider, singleton
 
@@ -23,10 +27,6 @@ from drl_trading_core.common.data_import.data_import_manager import (
 )
 from drl_trading_core.common.data_import.local.csv_data_import_service import (
     CsvDataImportService,
-)
-from drl_trading_core.inference.inference_service import (
-    InferenceService,
-    InferenceServiceInterface,
 )
 from drl_trading_core.preprocess.data_set_utils.context_feature_service import (
     ContextFeatureService,
@@ -55,17 +55,9 @@ from drl_trading_core.preprocess.feature.feature_aggregator import (
 from drl_trading_core.preprocess.feature.feature_factory import (
     FeatureFactoryInterface,
 )
-from drl_trading_core.preprocess.feature.real_time_feature_aggregator import (
-    RealTimeFeatureAggregator,
-    RealTimeFeatureAggregatorInterface,
-)
 from drl_trading_core.preprocess.preprocess_service import (
     PreprocessService,
     PreprocessServiceInterface,
-)
-from drl_trading_core.preprocess.real_time_preprocess_service import (
-    RealTimePreprocessService,
-    RealTimePreprocessServiceInterface,
 )
 from drl_trading_core.training.services.agent_training_service import (
     AgentTrainingService,
@@ -231,20 +223,10 @@ class CoreModule(Module):
         config: FeaturesConfig,
         feature_factory: FeatureFactoryInterface,
         feast_service: FeastServiceInterface,
+        technical_indicator_factory: TechnicalIndicatorFactoryInterface
     ) -> FeatureAggregatorInterface:
         """Provide FeatureAggregator implementation."""
-        return FeatureAggregator(config, feature_factory, feast_service)
-
-    @provider
-    @singleton
-    def provide_real_time_feature_aggregator(
-        self,
-        config: FeaturesConfig,
-        feature_factory: FeatureFactoryInterface,
-        feast_service: FeastServiceInterface,
-    ) -> RealTimeFeatureAggregatorInterface:
-        """Provide RealTimeFeatureAggregator implementation."""
-        return RealTimeFeatureAggregator(config, feature_factory, feast_service)
+        return FeatureAggregator(config, feature_factory, feast_service, technical_indicator_factory)
 
     @provider
     @singleton
@@ -267,19 +249,6 @@ class CoreModule(Module):
 
     @provider
     @singleton
-    def provide_real_time_preprocess_service(
-        self,
-        features_config: FeaturesConfig,
-        real_time_aggregator: RealTimeFeatureAggregatorInterface,
-        feast_service: FeastServiceInterface,
-    ) -> RealTimePreprocessServiceInterface:
-        """Provide RealTimePreprocessService implementation."""
-        return RealTimePreprocessService(
-            features_config, real_time_aggregator, feast_service
-        )
-
-    @provider
-    @singleton
     def provide_csv_data_import_service(
         self, config: LocalDataImportConfig
     ) -> BaseDataImportService:
@@ -296,19 +265,11 @@ class CoreModule(Module):
 
     @provider
     @singleton
-    def provide_inference_service(
-        self, real_time_preprocess_service: RealTimePreprocessServiceInterface
-    ) -> InferenceServiceInterface:
-        """Provide InferenceService implementation."""
-        return InferenceService(real_time_preprocess_service)
-
-    @provider
-    @singleton
     def provide_agent_training_service(
-        self, config: ApplicationConfig
+        self, config: ApplicationConfig, env_type: Type[BaseTradingEnv]
     ) -> AgentTrainingServiceInterface:
         """Provide AgentTrainingService implementation."""
-        return AgentTrainingService(config)
+        return AgentTrainingService(config, env_type)
 
     # Need in "drl-trading-training" or "drl-trading-inference"
     # @provider

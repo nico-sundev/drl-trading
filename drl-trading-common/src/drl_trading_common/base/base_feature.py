@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_common.interfaces.technical_indicator_service_interface import TechnicalIndicatorFacadeInterface
 from drl_trading_common.utils.utils import ensure_datetime_index
-from drl_trading_core.preprocess.feature.technical_indicators_service import TechnicalIndicatorService
 from pandas import DataFrame
 
 
@@ -13,7 +13,7 @@ class BaseFeature(ABC):
         self,
         source: DataFrame,
         config: BaseParameterSetConfig,
-        indicator_service: TechnicalIndicatorService,
+        indicator_service: TechnicalIndicatorFacadeInterface,
         postfix: str = "",
     ) -> None:
         self.df_source = source
@@ -35,7 +35,16 @@ class BaseFeature(ABC):
         return ensure_datetime_index(self.df_source, f"{feature_name} source data")
 
     @abstractmethod
-    def compute(self) -> DataFrame:
+    def compute_all(self) -> Optional[DataFrame]:
+        pass
+
+    @abstractmethod
+    def add(self, df: DataFrame) -> None:
+        """Add new data to the feature. This method should be implemented by subclasses to handle new data."""
+        pass
+
+    @abstractmethod
+    def compute_latest(self) -> Optional[DataFrame]:
         pass
 
     @abstractmethod
@@ -48,15 +57,6 @@ class BaseFeature(ABC):
         """
         pass
 
+    @abstractmethod
     def get_feature_name(self) -> str:
-        """Extract the feature name from the class name.
-
-        For example, if the class name is 'RsiFeature', this method will return 'Rsi'.
-
-        Returns:
-            str: The base feature name without the 'Feature' suffix
-        """
-        class_name = self.__class__.__name__
-        if class_name.endswith("Feature"):
-            return class_name[:-7]  # Remove "Feature" suffix
-        return class_name  # Return original name if it doesn't end with "Feature"
+        pass

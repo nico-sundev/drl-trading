@@ -1,8 +1,8 @@
 from typing import Any, Dict, List, Optional
 
 import numpy as np
+from drl_trading_common.base.base_trading_env import BaseTradingEnv
 from drl_trading_common.config.environment_config import EnvironmentConfig
-from drl_trading_core import BaseTradingEnv
 from gymnasium import spaces
 from pandas import DataFrame
 

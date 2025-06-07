@@ -33,6 +33,7 @@ dependencies = [
 [tool.uv.sources]
 drl-trading-common = { workspace = true }
 drl-trading-core = { workspace = true }
+drl-trading-strategy-example = { workspace = true }
 
 [project.optional-dependencies]
 testing = [

@@ -8,6 +8,9 @@ from drl_trading_common import (
     FeatureConfigRegistryInterface,
 )
 from drl_trading_common.base import BaseFeature
+from drl_trading_common.interfaces.technical_indicator_service_interface import (
+    TechnicalIndicatorFacadeInterface,
+)
 from injector import inject
 
 logger = logging.getLogger(__name__)
@@ -27,8 +30,8 @@ class FeatureFactoryInterface(ABC):
         feature_name: str,
         source_data,
         config: BaseParameterSetConfig,
-        postfix: str = "",
-        metrics_service=None,
+        indicators_service: TechnicalIndicatorFacadeInterface,
+        postfix: str = ""
     ) -> Optional[BaseFeature]:
         """
         Create a feature instance for the given feature name and parameters.
@@ -128,8 +131,8 @@ class FeatureFactory(FeatureFactoryInterface):
         feature_name: str,
         source_data,
         config: BaseParameterSetConfig,
+        indicators_service: TechnicalIndicatorFacadeInterface,
         postfix: str = "",
-        metrics_service=None,
     ) -> Optional[BaseFeature]:
         """
         Create a feature instance for the given feature name and parameters.
@@ -139,7 +142,7 @@ class FeatureFactory(FeatureFactoryInterface):
             source_data: The source data for the feature computation
             config: The configuration for the feature
             postfix: Optional postfix for the feature name
-            metrics_service: Optional metrics service for the feature
+            indicators_service: Indicators service for the feature
 
         Returns:
             The created feature instance if successful, None otherwise
@@ -156,8 +159,8 @@ class FeatureFactory(FeatureFactoryInterface):
             feature_instance = feature_class(
                 source=source_data,
                 config=config,
+                indicator_service=indicators_service,
                 postfix=postfix,
-                metrics_service=metrics_service,
             )
             logger.debug(f"Created feature instance for '{feature_name}'")
             return feature_instance

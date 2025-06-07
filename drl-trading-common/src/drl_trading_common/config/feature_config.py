@@ -16,7 +16,13 @@ class FeatureStoreConfig(BaseSchema):
 
 
 class FeatureDefinition(BaseSchema):
-    name: str
+    """Feature definition configuration.
+
+    Uses string-based names to avoid circular dependencies between common library
+    and strategy-specific enums. The strategy layer can provide type-safe conversion
+    to enums when needed.
+    """
+    name: str  # Feature type identifier (e.g., "rsi", "macd")
     enabled: bool
     derivatives: List[int]
     parameter_sets: List[Dict[str, Any]]  # raw input from JSON
