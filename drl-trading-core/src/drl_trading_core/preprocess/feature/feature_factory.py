@@ -8,7 +8,7 @@ from drl_trading_common import (
     FeatureConfigRegistryInterface,
 )
 from drl_trading_common.base import BaseFeature
-from drl_trading_common.interfaces.technical_indicator_service_interface import (
+from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
     TechnicalIndicatorFacadeInterface,
 )
 from injector import inject

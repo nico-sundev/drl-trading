@@ -3,18 +3,13 @@ from typing import Dict, Optional, Type
 
 from drl_trading_common.base.base_indicator import BaseIndicator
 from drl_trading_common.base.discoverable_registry import DiscoverableRegistry
-from drl_trading_common.interfaces.indicator.indicator_class_registry_interface import (
-    IndicatorClassRegistryInterface,
-)
 from drl_trading_strategy.enum.indicator_type_enum import IndicatorTypeEnum
 
 logger = logging.getLogger(__name__)
 
 
-class IndicatorClassRegistry(DiscoverableRegistry[IndicatorTypeEnum, BaseIndicator], IndicatorClassRegistryInterface):
+class IndicatorClassRegistry(DiscoverableRegistry[IndicatorTypeEnum, BaseIndicator]):
     """
-    Concrete implementation of IndicatorClassRegistryInterface.
-
     This registry discovers, stores, and manages indicator class types using
     the DiscoverableRegistry base class for common discovery logic.
     """

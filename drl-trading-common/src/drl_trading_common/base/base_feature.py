@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
-from drl_trading_common.interfaces.technical_indicator_service_interface import TechnicalIndicatorFacadeInterface
+from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import TechnicalIndicatorFacadeInterface
 from drl_trading_common.utils.utils import ensure_datetime_index
 from pandas import DataFrame
 

@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from drl_trading_common.base.base_feature import BaseFeature
-from drl_trading_common.interfaces.technical_indicator_service_interface import (
+from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
     TechnicalIndicatorFacadeInterface,
 )
 from drl_trading_strategy.decorators import feature_type

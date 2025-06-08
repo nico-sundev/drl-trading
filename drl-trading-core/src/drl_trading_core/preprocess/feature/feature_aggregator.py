@@ -10,7 +10,7 @@ from drl_trading_common.config.feature_config import (
     FeatureDefinition,
     FeaturesConfig,
 )
-from drl_trading_common.interfaces.technical_indicator_service_interface import (
+from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
     TechnicalIndicatorFactoryInterface,
 )
 from drl_trading_common.utils import ensure_datetime_index

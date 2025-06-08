@@ -1,3 +1,6 @@
+---
+applyTo: '**'
+---
 # Important LLM configurations:
 Do not simply affirm my statements or assume my conclusions are correct. Your goal is to be an intellectual sparring partner, not just an agreeable assistant. Every time present ar dea, do the following:
 1. Analyze my assumptions. What am I taking for granted that might not be true?
@@ -112,58 +115,3 @@ Help me design and develop a fully automated trading system that:
 ## Motto
 
 **Fail fast. Learn faster. Build something real.**
-
-
-# Project specific description
-## Preprocessing pipeline
-Raw Data → Loading → Stripping → Feature Computing → Merging → Splitting → Training
-
-### Loading the data
-- Raw OHLCV timeseries data structure:
-  - symbol_1/
-    - OHLCV dataset timeframe_1
-    - OHLCV dataset timeframe_...
-    - OHLCV dataset timeframe_n
-  - symbol_n/...
-- Lowest timeframe = `base dataset`, higher timeframes = `other datasets`
-- **Core Classes**: CsvDataImportService, DataImportManager
-- **Performance Note**: Initial loading may be memory-intensive for large datasets
-
-### Stripping other datasets
-- Reduces computing overhead by removing unnecessary data from higher timeframes
-- Uses last timestamp in base dataset as threshold
-- **Core Classes**: TimeframeStripperService
-- **Pitfall**: Ensure stripping happens both at beginning and end of dataset
-
-### Feature computing
-- Computes features for given timeframe/symbol with feast feature store caching
-- Feature hierarchy: FeatureClass → Subfeatures (e.g., MacdFeature → macd_cross_bullish, etc.)
-- Process:
-  1. Create feature store for symbol/timeframe if first call
-  2. Create feature view per feature if not existing
-  3. Compute feature if not in store
-- **Core Classes**: FeatureClassFactoryInterface, FeatureConfigRegistry, FeatureAggregator
-- **Key Interfaces**: BaseFeature (all features must extend this)
-- **Cache Strategy**: Uses feast to avoid recomputing features
-
-### Merging the timeframes
-- Maps base dataset records to last confirmed higher timeframe candle features
-- Ensures no "future sight" - simulates human trader's view at each timestamp
-- **Core Classes**: MergingService
-- **Pitfall**: Carefully manage timestamp alignment between timeframes
-
-### Splitting the final dataset
-- Divides dataset into training, validation, and test portions
-- **Core Classes**: SplitService
-- **Best Practice**: Maintain chronological order when splitting time series data
-
-### Start training
-- Creates environments, instantiates and trains agents
-- **Core Classes**: CustomEnv, AgentFactory, AgentTrainingService
-- **Performance Note**: Training phase is the most computationally intensive
-
-## Bootstrap
-- The engine is being started here in `bootstrap.py`
-
-## configuration
-- a file `applicationConfig.json` reflecting `application_config.py` module is necessary to bootstrap

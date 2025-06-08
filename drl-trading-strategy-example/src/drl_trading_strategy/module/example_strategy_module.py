@@ -15,7 +15,7 @@ from drl_trading_common.interfaces.feature.feature_class_registry_interface impo
 from drl_trading_common.interfaces.feature.feature_config_registry_interface import (
     FeatureConfigRegistryInterface,
 )
-from drl_trading_common.interfaces.technical_indicator_service_interface import (
+from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
     TechnicalIndicatorFactoryInterface,
 )
 from injector import Module, provider, singleton

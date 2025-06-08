@@ -12,7 +12,7 @@ from drl_trading_common.config.environment_config import EnvironmentConfig
 from drl_trading_common.config.feature_config import FeaturesConfig, FeatureStoreConfig
 from drl_trading_common.config.local_data_import_config import LocalDataImportConfig
 from drl_trading_common.config.rl_model_config import RlModelConfig
-from drl_trading_common.interfaces.technical_indicator_service_interface import (
+from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
     TechnicalIndicatorFactoryInterface,
 )
 from feast import FeatureStore

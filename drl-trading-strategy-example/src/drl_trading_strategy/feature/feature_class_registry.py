@@ -6,6 +6,9 @@ from drl_trading_common.base.discoverable_registry import DiscoverableRegistry
 from drl_trading_common.interfaces.feature.feature_class_registry_interface import (
     FeatureClassRegistryInterface,
 )
+from drl_trading_strategy.decorators.feature_type_decorator import (
+    get_feature_type_from_class,
+)
 from drl_trading_strategy.enum.feature_type_enum import FeatureTypeEnum
 from drl_trading_strategy.utils.feature_type_converter import FeatureTypeConverter
 
@@ -37,6 +40,8 @@ class FeatureClassRegistry(DiscoverableRegistry[FeatureTypeEnum, BaseFeature], F
         """
         return self.discover_classes(package_name)
 
+
+
     def _validate_class(self, class_type: Type[BaseFeature]) -> None:
         """Validate that the class implements the BaseFeature interface."""
         # For feature classes, we use duck typing to check required methods
@@ -54,16 +59,12 @@ class FeatureClassRegistry(DiscoverableRegistry[FeatureTypeEnum, BaseFeature], F
 
     def _extract_key_from_class(self, class_obj) -> FeatureTypeEnum:
         """
-        Extract feature name using the static get_feature_type method if available,
-        otherwise fallback to extracting from class name.
+        Extract feature type using the decorator utility function which handles
+        both the new @feature_type decorator and traditional get_feature_type() methods.
         """
-        # Try to use the static get_feature_type method first
-        if hasattr(class_obj, 'get_feature_type') and callable(class_obj.get_feature_type):
-            try:
-                feature_type_enum = class_obj.get_feature_type()
-                return feature_type_enum
-            except Exception as e:
-                logger.warning(f"Failed to get feature type from {class_obj.__name__}: {e}")
-
-        # Fallback to the original method
-        return FeatureTypeConverter.string_to_enum(class_obj.__name__.replace("Feature", "").lower())
+        try:
+            return get_feature_type_from_class(class_obj)
+        except AttributeError as e:
+            logger.warning(f"Failed to get feature type from {class_obj.__name__}: {e}")
+            # Fallback to the original method if no feature type information is available
+            return FeatureTypeConverter.string_to_enum(class_obj.__name__.replace("Feature", "").lower())
