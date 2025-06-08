@@ -6,7 +6,7 @@ with feature and config classes at the class level, eliminating the need
 for repetitive static get_feature_type() methods.
 """
 
-from typing import Type, TypeVar
+from typing import Any, Type, TypeVar
 
 from drl_trading_strategy.enum.feature_type_enum import FeatureTypeEnum
 
@@ -18,10 +18,8 @@ def feature_type(feature_type_enum: FeatureTypeEnum):
     """
     Decorator to associate a FeatureTypeEnum with a class.
 
-    This decorator:
-    1. Stores the feature type as a class attribute
-    2. Adds a static get_feature_type() method to the class
-    3. Maintains compatibility with existing registry discovery mechanisms
+    This decorator stores the feature type as a class attribute for
+    automatic discovery by registry mechanisms.
 
     Args:
         feature_type_enum: The FeatureTypeEnum to associate with this class
@@ -29,39 +27,39 @@ def feature_type(feature_type_enum: FeatureTypeEnum):
     Returns:
         The decorated class with feature type information attached
 
+    Raises:
+        TypeError: If feature_type_enum is None or not a FeatureTypeEnum
+
     Example:
         @feature_type(FeatureTypeEnum.RSI)
         class RsiFeature(BaseFeature):
-            # No need for get_feature_type() method anymore
+            # Feature type automatically available via _feature_type attribute
             pass
 
         @feature_type(FeatureTypeEnum.RSI)
         class RsiConfig(BaseParameterSetConfig):
-            # No need for get_feature_type() method anymore
+            # Feature type automatically available via _feature_type attribute
             pass
     """
+    if feature_type_enum is None:
+        raise TypeError("feature_type_enum cannot be None")
+
+    if not isinstance(feature_type_enum, FeatureTypeEnum):
+        raise TypeError(f"feature_type_enum must be a FeatureTypeEnum, got {type(feature_type_enum)}")
+
     def decorator(cls: Type[T]) -> Type[T]:
         # Store the feature type as a class attribute
-        cls._feature_type = feature_type_enum
-
-        # Add the static get_feature_type method for backwards compatibility
-        @staticmethod
-        def get_feature_type() -> FeatureTypeEnum:
-            return feature_type_enum
-
-        cls.get_feature_type = get_feature_type
-
+        cls._feature_type = feature_type_enum  # type: ignore[attr-defined]
         return cls
 
     return decorator
 
 
-def get_feature_type_from_class(cls: Type) -> FeatureTypeEnum:
+def get_feature_type_from_class(cls: Type[Any]) -> FeatureTypeEnum:
     """
     Utility function to extract feature type from a decorated class.
 
-    This function works with both decorated classes (using _feature_type attribute)
-    and classes with traditional get_feature_type() static methods.
+    This function only works with decorated classes using the @feature_type decorator.
 
     Args:
         cls: The class to extract the feature type from
@@ -72,13 +70,8 @@ def get_feature_type_from_class(cls: Type) -> FeatureTypeEnum:
     Raises:
         AttributeError: If the class has no feature type information
     """
-    # Try the decorator approach first
     if hasattr(cls, '_feature_type'):
         return cls._feature_type
 
-    # Fall back to the traditional static method approach
-    if hasattr(cls, 'get_feature_type') and callable(cls.get_feature_type):
-        return cls.get_feature_type()
-
     raise AttributeError(f"Class {cls.__name__} has no feature type information. "
-                        f"Use @feature_type decorator or implement get_feature_type() static method.")
+                        f"Use @feature_type decorator to specify the feature type.")
