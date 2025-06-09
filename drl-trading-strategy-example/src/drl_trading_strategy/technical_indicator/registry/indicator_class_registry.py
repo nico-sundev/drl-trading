@@ -2,13 +2,18 @@ import logging
 from typing import Dict, Optional, Type
 
 from drl_trading_common.base.base_indicator import BaseIndicator
-from drl_trading_common.base.discoverable_registry import DiscoverableRegistry
+from drl_trading_common.base.thread_safe_discoverable_registry import (
+    ThreadSafeDiscoverableRegistry,
+)
+from drl_trading_strategy.decorator.indicator_type_decorator import (
+    get_indicator_type_from_class,
+)
 from drl_trading_strategy.enum.indicator_type_enum import IndicatorTypeEnum
 
 logger = logging.getLogger(__name__)
 
 
-class IndicatorClassRegistry(DiscoverableRegistry[IndicatorTypeEnum, BaseIndicator]):
+class IndicatorClassRegistry(ThreadSafeDiscoverableRegistry[IndicatorTypeEnum, BaseIndicator]):
     """
     This registry discovers, stores, and manages indicator class types using
     the DiscoverableRegistry base class for common discovery logic.
@@ -48,17 +53,7 @@ class IndicatorClassRegistry(DiscoverableRegistry[IndicatorTypeEnum, BaseIndicat
 
     def _extract_key_from_class(self, class_obj) -> IndicatorTypeEnum:
         """
-        Extract indicator name using the static get_indicator_type method if available,
-        otherwise fallback to extracting from class name.
+        Extract indicator type using the decorator utility function which handles
+        the @indicator_type decorator.
         """
-        # Try to use the static get_indicator_type method first
-        if hasattr(class_obj, 'get_indicator_type') and callable(class_obj.get_indicator_type):
-            try:
-                indicator_type_enum = class_obj.get_indicator_type()
-                return indicator_type_enum
-            except Exception as e:
-                logger.warning(f"Failed to get indicator type from {class_obj.__name__}: {e}")
-
-        raise ValueError(
-            f"Class {class_obj.__name__} does not have a valid indicator type or get_indicator_type method."
-        )
+        return get_indicator_type_from_class(class_obj)

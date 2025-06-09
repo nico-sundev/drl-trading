@@ -1,8 +1,0 @@
-2025-05-18 21:11:18,545 [INFO] drl_trading_framework.bootstrap: Starting application bootstrap with dependency injection
-2025-05-18 21:39:46,210 [INFO] drl_trading_framework.bootstrap: Starting application bootstrap with dependency injection
-2025-05-18 21:39:46,215 [INFO] drl_trading_framework.bootstrap: Explicit config_path parameter 'c:/Users/nico-/Documents/git/ai_trading/drl-trading-impl-example/app_config.json' provided, overriding container's initial path '{}'.
-2025-05-18 21:39:46,216 [INFO] drl_trading_framework.bootstrap: Container config path now set to: c:/Users/nico-/Documents/git/ai_trading/drl-trading-impl-example/app_config.json
-2025-05-18 21:39:46,217 [INFO] drl_trading_framework.bootstrap: DI container configured
-2025-05-18 21:39:46,230 [INFO] drl_trading_common.config.feature_config_factory: Discovered and registered 6 feature config classes across 12 modules
-2025-05-18 21:39:46,230 [INFO] drl_trading_framework.bootstrap: Feature configuration classes discovered
-2025-05-18 21:39:46,232 [INFO] drl_trading_framework.bootstrap: Feature parameters parsed successfully

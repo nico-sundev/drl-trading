@@ -79,6 +79,9 @@ class DiscoverableRegistry(Generic[K, T], ABC):
         discovered_count = 0
         processed_modules = 0
 
+        if not package_name or not package_name.strip():
+            raise ValueError("Package name for class discovery must be a non-empty string.")
+
         try:
             package = importlib.import_module(package_name)
         except ImportError as e:

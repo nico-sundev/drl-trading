@@ -6,7 +6,7 @@ from drl_trading_common.base.discoverable_registry import DiscoverableRegistry
 from drl_trading_common.interfaces.feature.feature_class_registry_interface import (
     FeatureClassRegistryInterface,
 )
-from drl_trading_strategy.decorators.feature_type_decorator import (
+from drl_trading_strategy.decorator.feature_type_decorator import (
     get_feature_type_from_class,
 )
 from drl_trading_strategy.enum.feature_type_enum import FeatureTypeEnum
@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class FeatureClassRegistry(DiscoverableRegistry[FeatureTypeEnum, BaseFeature], FeatureClassRegistryInterface):
+
     """
     Concrete implementation of FeatureClassRegistryInterface.
 
@@ -60,7 +61,7 @@ class FeatureClassRegistry(DiscoverableRegistry[FeatureTypeEnum, BaseFeature], F
     def _extract_key_from_class(self, class_obj) -> FeatureTypeEnum:
         """
         Extract feature type using the decorator utility function which handles
-        both the new @feature_type decorator and traditional get_feature_type() methods.
+        the @feature_type decorator.
         """
         try:
             return get_feature_type_from_class(class_obj)

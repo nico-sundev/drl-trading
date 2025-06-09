@@ -43,7 +43,7 @@ class FeatureTypeConverter:
             if feature_type.value == normalized_name:
                 return feature_type
 
-        raise ValueError(f"'{feature_name}' is not a valid FeatureTypeEnum value")
+        raise ValueError(f"'{feature_name}' is not a valid FeatureTypeEnum value. Available types: {[e.value for e in FeatureTypeEnum]}")
 
     @staticmethod
     def get_all_feature_names() -> list[str]:
@@ -64,4 +64,8 @@ class FeatureTypeConverter:
         Returns:
             True if the name corresponds to a valid feature type, False otherwise
         """
-        return FeatureTypeConverter.string_to_enum(feature_name) is not None
+        try:
+            FeatureTypeConverter.string_to_enum(feature_name)
+            return True
+        except ValueError:
+            return False

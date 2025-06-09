@@ -6,8 +6,8 @@ from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
     TechnicalIndicatorFacadeInterface,
 )
-from drl_trading_strategy.decorators import feature_type
-from drl_trading_strategy.decorators.feature_type_decorator import (
+from drl_trading_strategy.decorator import feature_type
+from drl_trading_strategy.decorator.feature_type_decorator import (
     get_feature_type_from_class,
 )
 from drl_trading_strategy.enum.feature_type_enum import FeatureTypeEnum

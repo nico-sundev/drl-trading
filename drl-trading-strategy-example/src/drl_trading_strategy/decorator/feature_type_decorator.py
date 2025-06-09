@@ -6,7 +6,10 @@ with feature and config classes at the class level, eliminating the need
 for repetitive static get_feature_type() methods.
 """
 
-from typing import Any, Type, TypeVar
+from typing import Type, TypeVar
+
+from drl_trading_common.base.base_feature import BaseFeature
+from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
 
 from drl_trading_strategy.enum.feature_type_enum import FeatureTypeEnum
 
@@ -55,7 +58,7 @@ def feature_type(feature_type_enum: FeatureTypeEnum):
     return decorator
 
 
-def get_feature_type_from_class(cls: Type[Any]) -> FeatureTypeEnum:
+def get_feature_type_from_class(cls: Type[BaseFeature] | Type[BaseParameterSetConfig]) -> FeatureTypeEnum:
     """
     Utility function to extract feature type from a decorated class.
 

@@ -20,13 +20,17 @@ from drl_trading_common.interfaces.indicator.technical_indicator_facade_interfac
 )
 from injector import Module, provider, singleton
 
-from drl_trading_strategy.technical_indicator.technical_indicators_service import (
+from drl_trading_strategy.feature.registry.feature_class_registry import (
+    FeatureClassRegistry,
+)
+from drl_trading_strategy.feature.registry.feature_config_registry import (
+    FeatureConfigRegistry,
+)
+from drl_trading_strategy.technical_indicator.talipp_indicator_service import (
     TaLippIndicatorFactory,
 )
 
-from ..custom_env import MyCustomTradingEnv
-from ..feature.feature_class_registry import FeatureClassRegistry
-from ..feature.feature_config_registry import FeatureConfigRegistry
+from ..gym_env.custom_env import MyCustomTradingEnv
 
 
 class ExampleStrategyModule(BaseStrategyModule):
