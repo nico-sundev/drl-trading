@@ -7,9 +7,9 @@ from .rl_model_config import RlModelConfig
 
 
 class ApplicationConfig(BaseApplicationConfig):
-    features_config: FeaturesConfig
     local_data_import_config: LocalDataImportConfig
     rl_model_config: RlModelConfig
+    features_config: FeaturesConfig
     environment_config: EnvironmentConfig
-    feature_store_config: FeatureStoreConfig
     context_feature_config: ContextFeatureConfig
+    feature_store_config: FeatureStoreConfig

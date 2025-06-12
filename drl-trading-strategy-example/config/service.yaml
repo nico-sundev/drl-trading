@@ -1,0 +1,46 @@
+# Service Configuration - Static business logic (YAML format)
+# This file defines the core trading strategy configuration
+
+service_name: "drl-trading-strategy-example"
+version: "1.0.0"
+
+# Feature Configuration
+features:
+  feature_definitions:
+    - name: "rsi"
+      enabled: true
+      derivatives: [1]
+      parameter_sets:
+        - enabled: true
+          length: 7
+        - enabled: true
+          length: 14
+        - enabled: true
+          length: 21
+
+# Context Feature Configuration
+context_features:
+  primary_context_columns: ["High", "Low", "Close"]
+  derived_context_columns: ["Atr"]
+  optional_context_columns: ["Open", "Volume"]
+  time_column: "Time"
+
+# Trading Rules Configuration (FTMO Compliant)
+trading_rules:
+  max_daily_drawdown: 0.05
+  max_alltime_drawdown: 0.10
+  max_percentage_open_position: 50.0
+  min_percentage_open_position: 1.0
+  max_time_in_trade: 20
+  optimal_exit_time: 5
+  variance_penalty_weight: 0.5
+  atr_penalty_weight: 0.3
+
+# Market Configuration
+market:
+  symbols: ["EURUSD"]
+  timeframes: ["H1", "H4"]
+  trading_hours: "24/7"
+  fee: 0.001
+  slippage_atr_based: 0.01
+  slippage_against_trade_probability: 0.5
