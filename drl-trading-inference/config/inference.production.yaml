@@ -1,0 +1,75 @@
+# Inference Service Configuration - Production Environment
+# This file contains configuration for the inference service in production mode.
+
+# Base Application Information
+app_name: "drl-trading-inference"
+version: "1.0.0"
+deployment_mode: "production"
+
+# Infrastructure Configuration
+infrastructure:
+  service_name: "drl-trading-inference"
+  deployment_mode: "production"
+
+  # Logging Configuration
+  logging:
+    level: "WARNING"  # Higher log level for production
+    file_path: "/var/log/drl-trading/inference.log"
+    console_enabled: true
+    json_format: true  # Use JSON format for logs in production
+
+  # Message Bus Configuration
+  message_bus:
+    provider: "rabbitmq"
+    host: "${RABBITMQ_HOST}"  # Environment variable substitution
+    port: 5672
+    username: "${RABBITMQ_USERNAME}"
+    password: "${RABBITMQ_PASSWORD}"
+    vhost: "/trading"
+    connection_retry_attempts: 5
+    connection_retry_delay_seconds: 10
+
+  # Monitoring Configuration
+  monitoring:
+    prometheus_enabled: true
+    prometheus_port: 9090
+    jaeger_enabled: true
+    jaeger_endpoint: "http://jaeger-collector:14268/api/traces"
+    health_check_enabled: true
+    health_check_port: 8081
+
+# Model Configuration
+model_config:
+  model_path: "/app/models/latest"
+  model_format: "onnx"  # Use ONNX for production - better performance
+  batch_size: 1
+  prediction_timeout: 2.0  # Stricter timeout for production
+
+  # Production model options
+  model_optimization:
+    cache_queries: true
+    use_tensorrt: true
+    profiling_enabled: false
+
+# Real-time Processing Configuration
+processing_config:
+  feature_buffer_size: 5000  # Larger buffer for production
+  prediction_frequency: "500ms"  # Faster predictions in production
+  symbols: ["EURUSD", "GBPUSD", "USDJPY"]  # More symbols in production
+  timeframes: ["H1"]
+
+  # Feature computation parameters
+  feature_computation:
+    incremental: true
+    context_window: 200  # Larger context in production
+    use_feature_store: false
+
+# Message Bus Routing Configuration
+message_routing:
+  input_topic: "market_data"
+  output_topic: "trading_signals"
+  error_topic: "inference_errors"
+
+  # Additional production topics
+  status_topic: "service_status"
+  health_topic: "health_metrics"
