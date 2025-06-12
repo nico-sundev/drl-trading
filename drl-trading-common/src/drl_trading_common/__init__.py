@@ -14,7 +14,6 @@ from .messaging import (
     TransportInterface,
 )
 from .base import BaseFeature, BaseParameterSetConfig, BaseTradingEnv
-from .interfaces.feature import FeatureClassRegistryInterface, FeatureConfigRegistryInterface
 
 __all__ = [
     # Messaging
@@ -26,7 +25,4 @@ __all__ = [
     "BaseFeature",
     "BaseParameterSetConfig",
     "BaseTradingEnv",
-    # Interfaces
-    "FeatureClassRegistryInterface",
-    "FeatureConfigRegistryInterface",
 ]

@@ -2,32 +2,15 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Literal, Optional
-from unittest.mock import MagicMock
 
-import pandas_ta as ta
 import pytest
-from drl_trading_common import BaseParameterSetConfig
-from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.config.application_config import ApplicationConfig
 from drl_trading_common.config.config_loader import ConfigLoader
-from drl_trading_common.interfaces.feature.feature_class_registry_interface import (
-    FeatureClassRegistryInterface,
-)
-from drl_trading_common.interfaces.feature.feature_config_registry_interface import (
-    FeatureConfigRegistryInterface,
-)
-from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
-    TechnicalIndicatorFacadeInterface,
+from drl_trading_strategy.feature.feature_factory import (
+    FeatureFactoryInterface,
 )
 from feast import FeatureStore
 from injector import Injector
-from pandas import DataFrame
-
-from drl_trading_core.preprocess.feature.feature_factory import (
-    FeatureFactory,
-    FeatureFactoryInterface,
-)
 
 
 @pytest.fixture(scope="session")
@@ -116,99 +99,6 @@ def _clean_feature_store(repo_path: str, store_path: str) -> None:
         print(f"Removed feature store data directory: {store_path}")
         # Recreate the empty directory
         os.makedirs(store_path, exist_ok=True)
-
-
-
-class RsiConfig(BaseParameterSetConfig):
-    type: Literal["rsi"]
-    length: int
-
-
-class RsiFeature(BaseFeature):
-    """Mock RSI feature implementation for testing."""
-
-    def __init__(
-        self,
-        source: DataFrame,
-        config: BaseParameterSetConfig,
-        indicator_service: TechnicalIndicatorFacadeInterface,
-        postfix: str = "",
-    ) -> None:
-        super().__init__(source, config, indicator_service, postfix)
-        self.config: RsiConfig = self.config
-        self.feature_name = f"rsi_{self.config.length}{self.postfix}"
-        # Mock the indicator service registration for testing
-
-    def add(self, df: DataFrame) -> None:
-        """Add data to the feature (mock implementation)."""
-        pass
-
-    def compute_latest(self) -> Optional[DataFrame]:
-        """Compute latest RSI value (mock implementation)."""
-        if hasattr(self, 'df_source') and not self.df_source.empty:
-            latest_rsi = ta.rsi(close=self.df_source["Close"], length=self.config.length).iloc[-1:]
-            result_df = DataFrame(index=self.df_source.index[-1:])
-            result_df[f"rsi_{self.config.length}{self.postfix}"] = latest_rsi
-            return result_df
-        return None
-
-    def compute_all(self) -> Optional[DataFrame]:
-        """Compute all RSI values (mock implementation)."""
-        if hasattr(self, 'df_source') and not self.df_source.empty:
-            rsi_values = ta.rsi(close=self.df_source["Close"], length=self.config.length)
-            result_df = DataFrame(index=self.df_source.index)
-            result_df[f"rsi_{self.config.length}{self.postfix}"] = rsi_values
-            return result_df
-        return None
-
-    def get_sub_features_names(self) -> list[str]:
-        """Get sub-feature names."""
-        return [f"rsi_{self.config.length}{self.postfix}"]
-
-    def get_feature_name(self) -> str:
-        """Get feature name."""
-        return "rsi"
-
-
-@pytest.fixture(scope="session")
-def feature_config_registry():
-    """Create a mock feature config registry for testing."""
-    mock = MagicMock(spec=FeatureConfigRegistryInterface)
-
-    # Define mapping of feature types to config classes
-    config_mapping = {
-        "rsi": RsiConfig,
-    }
-
-    def get_config_class(feature_type: str):
-        return config_mapping.get(feature_type.lower())
-
-    mock.get_config_class.side_effect = get_config_class
-    mock.reset.side_effect = lambda: None
-    return mock
-
-@pytest.fixture(scope="session")
-def feature_class_registry():
-    """Create a mock feature class registry that returns RsiFeature for 'rsi' type."""
-    mock = MagicMock(spec=FeatureClassRegistryInterface)
-
-    # Define mapping of feature types to feature classes
-    feature_mapping = {
-        "rsi": RsiFeature
-    }
-
-    def get_feature_class(feature_type: str):
-        if feature_type in feature_mapping:
-            return feature_mapping[feature_type]
-        raise ValueError(f"Unknown feature type: {feature_type}")
-
-    mock.get_feature_class.side_effect = get_feature_class
-    return mock
-
-@pytest.fixture(scope="session")
-def feature_factory(feature_class_registry, feature_config_registry):
-    """Create a feature factory instance for testing."""
-    return FeatureFactory(feature_class_registry, feature_config_registry)
 
 @pytest.fixture(scope="session")
 def mocked_container(feature_factory, mocked_feature_store):

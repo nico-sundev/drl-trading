@@ -1,12 +1,14 @@
 from typing import Optional
 
 from drl_trading_common.base.base_indicator import BaseIndicator
+from drl_trading_strategy.decorator.indicator_type_decorator import indicator_type
 from drl_trading_strategy.enum.indicator_type_enum import IndicatorTypeEnum
 from drl_trading_strategy.feature.config.feature_configs import RsiConfig
 from pandas import DataFrame
 from talipp.indicators import RSI
 
 
+@indicator_type(IndicatorTypeEnum.RSI)
 class RsiIndicator(BaseIndicator):
     def __init__(self, config: RsiConfig):
         self.config: RsiConfig = config
@@ -30,7 +32,3 @@ class RsiIndicator(BaseIndicator):
         return DataFrame({
             "rsi": [self.indicator[-1]]
         })
-
-    @staticmethod
-    def get_indicator_type() -> IndicatorTypeEnum:
-        return IndicatorTypeEnum.RSI

@@ -14,14 +14,14 @@ from drl_trading_common.interfaces.indicator.technical_indicator_facade_interfac
     TechnicalIndicatorFactoryInterface,
 )
 from drl_trading_common.utils import ensure_datetime_index
+from drl_trading_strategy.feature.feature_factory import (
+    FeatureFactoryInterface,
+)
 from injector import inject
 from pandas import DataFrame
 
 from drl_trading_core.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_core.preprocess.feast.feast_service import FeastServiceInterface
-from drl_trading_core.preprocess.feature.feature_factory import (
-    FeatureFactoryInterface,
-)
 
 logger = logging.getLogger(__name__)
 

@@ -15,6 +15,9 @@ from drl_trading_strategy.enum.feature_type_enum import FeatureTypeEnum
 from drl_trading_strategy.feature.registry.feature_config_registry import (
     FeatureConfigRegistry,
 )
+from drl_trading_strategy.feature.registry.feature_config_registry_interface import (
+    FeatureConfigRegistryInterface,
+)
 
 
 @feature_type(FeatureTypeEnum.RSI)
@@ -369,9 +372,6 @@ class TestFeatureConfigRegistryInheritance:
     def test_implements_feature_config_registry_interface(self, registry: FeatureConfigRegistry) -> None:
         """Test that FeatureConfigRegistry implements FeatureConfigRegistryInterface."""
         # Given
-        from drl_trading_common.interfaces.feature.registry.feature_config_registry_interface import (
-            FeatureConfigRegistryInterface,
-        )
 
         # When/Then
         assert isinstance(registry, FeatureConfigRegistryInterface)

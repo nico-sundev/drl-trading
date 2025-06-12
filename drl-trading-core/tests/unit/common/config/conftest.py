@@ -9,6 +9,7 @@ import pytest
 def temp_config_file():
     """Creates a temporary JSON config file for testing."""
     config_data = {
+        "appName": "drl-trading-core",
         "localDataImportConfig": {
             "symbols": [
                 {

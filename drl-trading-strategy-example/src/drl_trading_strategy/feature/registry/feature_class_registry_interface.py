@@ -3,6 +3,7 @@ from typing import Optional, Type
 
 from drl_trading_common.base import BaseFeature
 
+
 class FeatureClassRegistryInterface(ABC):
     """
     Interface for feature class registry implementations.

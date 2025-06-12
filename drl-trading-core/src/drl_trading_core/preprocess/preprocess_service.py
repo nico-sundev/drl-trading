@@ -7,6 +7,12 @@ import pandas as pd
 from dask import delayed
 from drl_trading_common.config.feature_config import FeaturesConfig
 from drl_trading_common.utils import ensure_datetime_index
+from drl_trading_strategy.feature.context.context_feature_service import (
+    ContextFeatureServiceInterface,
+)
+from drl_trading_strategy.feature.feature_factory import (
+    FeatureFactoryInterface,
+)
 from injector import inject
 from pandas import DataFrame
 
@@ -18,9 +24,6 @@ from drl_trading_core.common.model.preprocessing_result import PreprocessingResu
 from drl_trading_core.common.model.symbol_import_container import (
     SymbolImportContainer,
 )
-from drl_trading_core.preprocess.data_set_utils.context_feature_service import (
-    ContextFeatureServiceInterface,
-)
 from drl_trading_core.preprocess.data_set_utils.merge_service import (
     MergeServiceInterface,
 )
@@ -30,9 +33,6 @@ from drl_trading_core.preprocess.data_set_utils.util import (
 )
 from drl_trading_core.preprocess.feature.feature_aggregator import (
     FeatureAggregatorInterface,
-)
-from drl_trading_core.preprocess.feature.feature_factory import (
-    FeatureFactoryInterface,
 )
 
 logger = logging.getLogger(__name__)

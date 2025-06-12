@@ -8,6 +8,9 @@ import pytest
 from drl_trading_common import BaseParameterSetConfig
 from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.config.feature_config import FeatureDefinition, FeaturesConfig
+from drl_trading_strategy.feature.feature_factory import (
+    FeatureFactoryInterface,
+)
 from pandas import DataFrame
 
 from drl_trading_core.preprocess.feast.feast_service import (
@@ -17,9 +20,6 @@ from drl_trading_core.preprocess.feast.feast_service import (
 from drl_trading_core.preprocess.feature.feature_aggregator import (
     FeatureAggregator,
     FeatureAggregatorInterface,
-)
-from drl_trading_core.preprocess.feature.feature_factory import (
-    FeatureFactoryInterface,
 )
 
 

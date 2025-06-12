@@ -3,13 +3,13 @@ from typing import Dict, Optional, Type
 
 from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.base.discoverable_registry import DiscoverableRegistry
-from drl_trading_common.interfaces.feature.feature_class_registry_interface import (
-    FeatureClassRegistryInterface,
-)
 from drl_trading_strategy.decorator.feature_type_decorator import (
     get_feature_type_from_class,
 )
 from drl_trading_strategy.enum.feature_type_enum import FeatureTypeEnum
+from drl_trading_strategy.feature.registry.feature_class_registry_interface import (
+    FeatureClassRegistryInterface,
+)
 from drl_trading_strategy.utils.feature_type_converter import FeatureTypeConverter
 
 logger = logging.getLogger(__name__)

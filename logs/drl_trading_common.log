@@ -1,0 +1,89 @@
+2025-06-12 14:36:49,035 [WARNING] drl_trading_core.preprocess.data_set_utils.merge_service: Higher timeframe dataframe is empty or has insufficient data. Returning base dataframe with only the index.
+2025-06-12 14:36:49,047 [ERROR] drl_trading_core.preprocess.data_set_utils.split_service: Split ratios sum to 1.4, expected 1.0
+2025-06-12 14:36:49,049 [ERROR] drl_trading_core.preprocess.data_set_utils.split_service: Missing split ratios - must be provided in parameters or config
+2025-06-12 14:36:49,060 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping higher timeframe dataframe. Base start: 2008-10-03 13:00:00, Base end: 2008-10-04 18:00:00, Timeframe duration: 0 days 04:00:00, Begin threshold: 2008-10-03 05:00:00, End threshold: 2008-10-05 02:00:00
+2025-06-12 14:36:49,061 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping complete. Removed 19 rows. First timestamp after strip: 2008-10-03 08:00:00, Last timestamp after strip: 2008-10-05 00:00:00
+2025-06-12 14:36:49,131 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping higher timeframe dataframe. Base start: 2008-10-03 13:00:00, Base end: 2008-10-04 18:00:00, Timeframe duration: 0 days 04:00:00, Begin threshold: 2008-10-03 05:00:00, End threshold: 2008-10-05 02:00:00
+2025-06-12 14:36:49,432 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping complete. Removed 25 rows. First timestamp after strip: 2008-10-03 08:00:00, Last timestamp after strip: 2008-10-05 00:00:00
+2025-06-12 14:36:49,463 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping higher timeframe dataframe. Base start: 2008-10-03 13:00:00, Base end: 2008-10-04 18:00:00, Timeframe duration: 0 days 04:00:00, Begin threshold: 2008-10-03 05:00:00, End threshold: 2008-10-05 02:00:00
+2025-06-12 14:36:49,466 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping complete. Removed 25 rows. First timestamp after strip: 2008-10-03 08:00:00, Last timestamp after strip: 2008-10-05 00:00:00
+2025-06-12 14:36:49,505 [ERROR] drl_trading_core.preprocess.data_set_utils.util: Cannot detect timeframe: DataFrame has less than 2 rows
+2025-06-12 14:36:49,509 [ERROR] drl_trading_core.preprocess.data_set_utils.util: Cannot detect timeframe: DataFrame is None
+2025-06-12 14:36:49,514 [ERROR] drl_trading_core.preprocess.data_set_utils.util: Cannot detect timeframe: No DatetimeIndex or 'Time' column found in DataFrame
+2025-06-12 14:36:49,517 [ERROR] drl_trading_core.preprocess.data_set_utils.util: Cannot detect timeframe: DataFrame has less than 2 rows
+2025-06-12 14:36:49,548 [INFO] drl_trading_core.preprocess.feast.feast_service: Attempting to retrieve features from store: ['TestFeature_H1_abc123:feature1', 'TestFeature_H1_abc123:feature2']
+2025-06-12 14:36:49,548 [INFO] drl_trading_core.preprocess.feast.feast_service: Successfully retrieved features for TestFeature_H1_abc123
+2025-06-12 14:36:49,569 [INFO] drl_trading_core.preprocess.feast.feast_service: Attempting to retrieve features from store: ['TestFeature_H1_abc123:feature1', 'TestFeature_H1_abc123:feature2']
+2025-06-12 14:36:49,576 [INFO] drl_trading_core.preprocess.feast.feast_service: Attempting to retrieve features from store: ['TestFeature_H1_abc123:feature1', 'TestFeature_H1_abc123:feature2']
+2025-06-12 14:36:49,577 [WARNING] drl_trading_core.preprocess.feast.feast_service: Failed to retrieve features from store: Test error
+2025-06-12 14:36:49,591 [INFO] drl_trading_core.preprocess.feast.feast_service: Storing computed features in feature store: TestFeature_H1_abc123 at test/offline/path/EURUSD_H1_TestFeature_abc123.parquet
+2025-06-12 14:36:49,591 [INFO] drl_trading_core.preprocess.feast.feast_service: Feature view TestFeature_H1_abc123 does not exist, creating...
+2025-06-12 14:36:49,600 [INFO] drl_trading_core.preprocess.feast.feast_service: Storing computed features in feature store: TestFeature_H1_abc123 at test/offline/path/EURUSD_H1_TestFeature_abc123.parquet
+2025-06-12 14:36:49,601 [WARNING] drl_trading_core.preprocess.feast.feast_service: Failed to store features: Failed to save
+2025-06-12 14:36:49,964 [INFO] drl_trading_core.preprocess.preprocess_service: Starting preprocessing for symbol EURUSD with 2 datasets.
+2025-06-12 14:36:49,964 [INFO] drl_trading_core.preprocess.preprocess_service: Computing features for all timeframes for EURUSD.
+2025-06-12 14:36:49,971 [INFO] drl_trading_core.preprocess.preprocess_service: 2. Separating base and other datasets.
+2025-06-12 14:36:49,972 [INFO] drl_trading_core.preprocess.preprocess_service: 3. Starting feature merging across all timeframes.
+2025-06-12 14:36:49,972 [INFO] drl_trading_core.preprocess.preprocess_service: 4. Preparing context-related features.
+2025-06-12 14:36:49,972 [INFO] drl_trading_core.preprocess.preprocess_service: 5. Merging context-related features with computed features.
+2025-06-12 14:36:49,979 [INFO] drl_trading_core.preprocess.preprocess_service: 6. Preprocessing finished.
+2025-06-12 14:36:50,011 [INFO] drl_trading_core.preprocess.preprocess_service: Starting preprocessing for symbol EURUSD with 2 datasets.
+2025-06-12 14:36:50,011 [INFO] drl_trading_core.preprocess.preprocess_service: Computing features for all timeframes for EURUSD.
+2025-06-12 14:36:50,032 [INFO] drl_trading_core.preprocess.preprocess_service: Starting preprocessing for symbol EURUSD with 2 datasets.
+2025-06-12 14:36:50,032 [INFO] drl_trading_core.preprocess.preprocess_service: Computing features for all timeframes for EURUSD.
+2025-06-12 14:36:50,036 [INFO] drl_trading_core.preprocess.preprocess_service: 2. Separating base and other datasets.
+2025-06-12 14:36:50,049 [INFO] drl_trading_core.preprocess.preprocess_service: Computing features for EURUSD H1
+2025-06-12 14:36:50,049 [WARNING] drl_trading_core.preprocess.preprocess_service: No feature computation tasks for EURUSD H1
+2025-06-12 14:36:50,093 [ERROR] drl_trading_core.preprocess.preprocess_service: DataFrame 0 has a different length (5) than the base frame (10). Skipping merge.
+2025-06-12 14:36:50,107 [INFO] drl_trading_core.preprocess.preprocess_service: Computing features for EURUSD H1
+2025-06-12 15:06:14,224 [WARNING] drl_trading_core.preprocess.data_set_utils.merge_service: Higher timeframe dataframe is empty or has insufficient data. Returning base dataframe with only the index.
+2025-06-12 15:06:14,233 [ERROR] drl_trading_core.preprocess.data_set_utils.split_service: Split ratios sum to 1.4, expected 1.0
+2025-06-12 15:06:14,236 [ERROR] drl_trading_core.preprocess.data_set_utils.split_service: Missing split ratios - must be provided in parameters or config
+2025-06-12 15:06:14,243 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping higher timeframe dataframe. Base start: 2008-10-03 13:00:00, Base end: 2008-10-04 18:00:00, Timeframe duration: 0 days 04:00:00, Begin threshold: 2008-10-03 05:00:00, End threshold: 2008-10-05 02:00:00
+2025-06-12 15:06:14,244 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping complete. Removed 19 rows. First timestamp after strip: 2008-10-03 08:00:00, Last timestamp after strip: 2008-10-05 00:00:00
+2025-06-12 15:06:14,254 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping higher timeframe dataframe. Base start: 2008-10-03 13:00:00, Base end: 2008-10-04 18:00:00, Timeframe duration: 0 days 04:00:00, Begin threshold: 2008-10-03 05:00:00, End threshold: 2008-10-05 02:00:00
+2025-06-12 15:06:14,255 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping complete. Removed 25 rows. First timestamp after strip: 2008-10-03 08:00:00, Last timestamp after strip: 2008-10-05 00:00:00
+2025-06-12 15:06:14,265 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping higher timeframe dataframe. Base start: 2008-10-03 13:00:00, Base end: 2008-10-04 18:00:00, Timeframe duration: 0 days 04:00:00, Begin threshold: 2008-10-03 05:00:00, End threshold: 2008-10-05 02:00:00
+2025-06-12 15:06:14,266 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping complete. Removed 25 rows. First timestamp after strip: 2008-10-03 08:00:00, Last timestamp after strip: 2008-10-05 00:00:00
+2025-06-12 15:06:14,278 [ERROR] drl_trading_core.preprocess.data_set_utils.util: Cannot detect timeframe: DataFrame has less than 2 rows
+2025-06-12 15:06:14,281 [ERROR] drl_trading_core.preprocess.data_set_utils.util: Cannot detect timeframe: DataFrame is None
+2025-06-12 15:06:14,283 [ERROR] drl_trading_core.preprocess.data_set_utils.util: Cannot detect timeframe: No DatetimeIndex or 'Time' column found in DataFrame
+2025-06-12 15:06:14,286 [ERROR] drl_trading_core.preprocess.data_set_utils.util: Cannot detect timeframe: DataFrame has less than 2 rows
+2025-06-12 15:06:14,307 [INFO] drl_trading_core.preprocess.feast.feast_service: Attempting to retrieve features from store: ['TestFeature_H1_abc123:feature1', 'TestFeature_H1_abc123:feature2']
+2025-06-12 15:06:14,307 [INFO] drl_trading_core.preprocess.feast.feast_service: Successfully retrieved features for TestFeature_H1_abc123
+2025-06-12 15:06:14,314 [INFO] drl_trading_core.preprocess.feast.feast_service: Attempting to retrieve features from store: ['TestFeature_H1_abc123:feature1', 'TestFeature_H1_abc123:feature2']
+2025-06-12 15:06:14,353 [INFO] drl_trading_core.preprocess.feast.feast_service: Attempting to retrieve features from store: ['TestFeature_H1_abc123:feature1', 'TestFeature_H1_abc123:feature2']
+2025-06-12 15:06:14,354 [WARNING] drl_trading_core.preprocess.feast.feast_service: Failed to retrieve features from store: Test error
+2025-06-12 15:06:14,387 [INFO] drl_trading_core.preprocess.feast.feast_service: Storing computed features in feature store: TestFeature_H1_abc123 at test/offline/path/EURUSD_H1_TestFeature_abc123.parquet
+2025-06-12 15:06:14,387 [INFO] drl_trading_core.preprocess.feast.feast_service: Feature view TestFeature_H1_abc123 does not exist, creating...
+2025-06-12 15:06:14,395 [INFO] drl_trading_core.preprocess.feast.feast_service: Storing computed features in feature store: TestFeature_H1_abc123 at test/offline/path/EURUSD_H1_TestFeature_abc123.parquet
+2025-06-12 15:06:14,396 [WARNING] drl_trading_core.preprocess.feast.feast_service: Failed to store features: Failed to save
+2025-06-12 15:06:14,634 [INFO] drl_trading_core.preprocess.preprocess_service: Starting preprocessing for symbol EURUSD with 2 datasets.
+2025-06-12 15:06:14,634 [INFO] drl_trading_core.preprocess.preprocess_service: Computing features for all timeframes for EURUSD.
+2025-06-12 15:06:14,641 [INFO] drl_trading_core.preprocess.preprocess_service: 2. Separating base and other datasets.
+2025-06-12 15:06:14,641 [INFO] drl_trading_core.preprocess.preprocess_service: 3. Starting feature merging across all timeframes.
+2025-06-12 15:06:14,641 [INFO] drl_trading_core.preprocess.preprocess_service: 4. Preparing context-related features.
+2025-06-12 15:06:14,642 [INFO] drl_trading_core.preprocess.preprocess_service: 5. Merging context-related features with computed features.
+2025-06-12 15:06:14,644 [INFO] drl_trading_core.preprocess.preprocess_service: 6. Preprocessing finished.
+2025-06-12 15:06:14,752 [INFO] drl_trading_core.preprocess.preprocess_service: Starting preprocessing for symbol EURUSD with 2 datasets.
+2025-06-12 15:06:14,753 [INFO] drl_trading_core.preprocess.preprocess_service: Computing features for all timeframes for EURUSD.
+2025-06-12 15:06:14,772 [INFO] drl_trading_core.preprocess.preprocess_service: Starting preprocessing for symbol EURUSD with 2 datasets.
+2025-06-12 15:06:14,772 [INFO] drl_trading_core.preprocess.preprocess_service: Computing features for all timeframes for EURUSD.
+2025-06-12 15:06:14,777 [INFO] drl_trading_core.preprocess.preprocess_service: 2. Separating base and other datasets.
+2025-06-12 15:06:14,790 [INFO] drl_trading_core.preprocess.preprocess_service: Computing features for EURUSD H1
+2025-06-12 15:06:14,790 [WARNING] drl_trading_core.preprocess.preprocess_service: No feature computation tasks for EURUSD H1
+2025-06-12 15:06:14,832 [ERROR] drl_trading_core.preprocess.preprocess_service: DataFrame 0 has a different length (5) than the base frame (10). Skipping merge.
+2025-06-12 15:06:14,842 [INFO] drl_trading_core.preprocess.preprocess_service: Computing features for EURUSD H1
+2025-06-12 15:30:30,476 [WARNING] drl_trading_core.preprocess.data_set_utils.merge_service: Higher timeframe dataframe is empty or has insufficient data. Returning base dataframe with only the index.
+2025-06-12 15:30:30,485 [ERROR] drl_trading_core.preprocess.data_set_utils.split_service: Split ratios sum to 1.4, expected 1.0
+2025-06-12 15:30:30,487 [ERROR] drl_trading_core.preprocess.data_set_utils.split_service: Missing split ratios - must be provided in parameters or config
+2025-06-12 15:30:30,497 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping higher timeframe dataframe. Base start: 2008-10-03 13:00:00, Base end: 2008-10-04 18:00:00, Timeframe duration: 0 days 04:00:00, Begin threshold: 2008-10-03 05:00:00, End threshold: 2008-10-05 02:00:00
+2025-06-12 15:30:30,498 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping complete. Removed 19 rows. First timestamp after strip: 2008-10-03 08:00:00, Last timestamp after strip: 2008-10-05 00:00:00
+2025-06-12 15:30:30,510 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping higher timeframe dataframe. Base start: 2008-10-03 13:00:00, Base end: 2008-10-04 18:00:00, Timeframe duration: 0 days 04:00:00, Begin threshold: 2008-10-03 05:00:00, End threshold: 2008-10-05 02:00:00
+2025-06-12 15:30:30,511 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping complete. Removed 25 rows. First timestamp after strip: 2008-10-03 08:00:00, Last timestamp after strip: 2008-10-05 00:00:00
+2025-06-12 15:30:30,521 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping higher timeframe dataframe. Base start: 2008-10-03 13:00:00, Base end: 2008-10-04 18:00:00, Timeframe duration: 0 days 04:00:00, Begin threshold: 2008-10-03 05:00:00, End threshold: 2008-10-05 02:00:00
+2025-06-12 15:30:30,523 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping complete. Removed 25 rows. First timestamp after strip: 2008-10-03 08:00:00, Last timestamp after strip: 2008-10-05 00:00:00
+2025-06-12 15:30:30,534 [ERROR] drl_trading_core.preprocess.data_set_utils.util: Cannot detect timeframe: DataFrame has less than 2 rows
+2025-06-12 15:30:30,536 [ERROR] drl_trading_core.preprocess.data_set_utils.util: Cannot detect timeframe: DataFrame is None
+2025-06-12 15:30:30,541 [ERROR] drl_trading_core.preprocess.data_set_utils.util: Cannot detect timeframe: No DatetimeIndex or 'Time' column found in DataFrame
+2025-06-12 15:30:30,544 [ERROR] drl_trading_core.preprocess.data_set_utils.util: Cannot detect timeframe: DataFrame has less than 2 rows

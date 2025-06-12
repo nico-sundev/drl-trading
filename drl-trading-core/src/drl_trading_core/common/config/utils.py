@@ -1,8 +1,7 @@
 from typing import List
 
 from drl_trading_common.config.feature_config import FeatureDefinition
-
-from drl_trading_core.preprocess.feature.feature_factory import (
+from drl_trading_strategy.feature.feature_factory import (
     FeatureFactoryInterface,
 )
 

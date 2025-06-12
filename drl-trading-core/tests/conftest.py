@@ -1,5 +1,5 @@
 import os
-from typing import Literal, Optional
+from typing import Literal, Optional, Type
 from unittest.mock import MagicMock
 
 import pandas_ta as ta
@@ -8,22 +8,14 @@ from drl_trading_common import BaseParameterSetConfig
 from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.config.application_config import ApplicationConfig
 from drl_trading_common.config.config_loader import ConfigLoader
-from drl_trading_common.interfaces.feature.feature_class_registry_interface import (
-    FeatureClassRegistryInterface,
-)
-from drl_trading_common.interfaces.feature.feature_config_registry_interface import (
-    FeatureConfigRegistryInterface,
-)
 from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
     TechnicalIndicatorFacadeInterface,
 )
-from injector import Injector
-from pandas import DataFrame
-
-from drl_trading_core.preprocess.feature.feature_factory import (
-    FeatureFactory,
+from drl_trading_strategy.feature.feature_factory import (
     FeatureFactoryInterface,
 )
+from injector import Injector
+from pandas import DataFrame
 
 
 @pytest.fixture(scope="session")
@@ -32,7 +24,7 @@ def mocked_config() -> ApplicationConfig:
     config_path = os.path.join(
         os.path.dirname(__file__), "resources/applicationConfig-test.json"
     )
-    return ConfigLoader.get_config(config_path)
+    return ConfigLoader.get_config(ApplicationConfig, config_path)
 
 
 class RsiConfig(BaseParameterSetConfig):
@@ -59,12 +51,11 @@ class RsiFeature(BaseFeature):
 
     def __init__(
         self,
-        source: DataFrame,
         config: BaseParameterSetConfig,
         indicator_service: TechnicalIndicatorFacadeInterface,
         postfix: str = "",
     ) -> None:
-        super().__init__(source, config, indicator_service, postfix)
+        super().__init__(config, indicator_service, postfix)
         self.config: RsiConfig = self.config
         self.feature_name = f"rsi_{self.config.length}{self.postfix}"
         # Mock the indicator service registration for testing
@@ -99,52 +90,30 @@ class RsiFeature(BaseFeature):
         """Get feature name."""
         return "rsi"
 
+@pytest.fixture(scope="session")
+def mock_rsi_config_class() -> Type[RsiConfig]:
+    """Mock RSI configuration class for testing."""
+    return RsiConfig
 
 @pytest.fixture(scope="session")
-def feature_config_registry():
-    """Create a mock feature config registry for testing."""
-    mock = MagicMock(spec=FeatureConfigRegistryInterface)
-
-    # Define mapping of feature types to config classes
-    config_mapping = {
-        "rsi": RsiConfig,
-    }
-
-    def get_config_class(feature_type: str):
-        return config_mapping.get(feature_type.lower())
-
-    mock.get_config_class.side_effect = get_config_class
-    mock.reset.side_effect = lambda: None
-    return mock
-
-
-@pytest.fixture(scope="session")
-def feature_class_registry():
-    """Create a mock feature class registry that returns RsiFeature for 'rsi' type."""
-    mock = MagicMock(spec=FeatureClassRegistryInterface)
-
-    # Define mapping of feature types to feature classes
-    feature_mapping = {
-        "rsi": RsiFeature
-    }
-
-    def get_feature_class(feature_type: str):
-        if feature_type in feature_mapping:
-            return feature_mapping[feature_type]
-        raise ValueError(f"Unknown feature type: {feature_type}")
-
-    mock.get_feature_class.side_effect = get_feature_class
-    return mock
+def feature_factory():
+    """Create a feature factory mock instance for testing."""
+    mock_factory = MagicMock(spec=FeatureFactoryInterface)
+    mock_factory.create_feature = MagicMock(
+        side_effect=lambda feature_type, source_data, config, indicator_service, postfix="": {
+            "rsi": RsiFeature(config, indicator_service, postfix),
+        }.get(feature_type.lower(), None)
+    )
+    mock_factory.create_config_instance = MagicMock(
+        side_effect=lambda feature_type, config_data: {
+            "rsi": RsiConfig(**config_data) if config_data else RsiConfig(),
+        }.get(feature_type.lower(), None)
+    )
+    return mock_factory
 
 
 @pytest.fixture(scope="session")
-def feature_factory(feature_class_registry, feature_config_registry):
-    """Create a feature factory instance for testing."""
-    return FeatureFactory(feature_class_registry, feature_config_registry)
-
-
-@pytest.fixture(scope="session")
-def mocked_container(feature_factory, mocked_config):
+def mocked_container(feature_factory):
     """Create a mocked dependency injection container using the injector library.
 
     This fixture provides a configured injector instance with test dependencies

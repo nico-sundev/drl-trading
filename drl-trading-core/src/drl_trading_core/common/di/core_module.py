@@ -15,6 +15,13 @@ from drl_trading_common.config.rl_model_config import RlModelConfig
 from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
     TechnicalIndicatorFactoryInterface,
 )
+from drl_trading_strategy.feature.context.context_feature_service import (
+    ContextFeatureService,
+    ContextFeatureServiceInterface,
+)
+from drl_trading_strategy.feature.feature_factory import (
+    FeatureFactoryInterface,
+)
 from feast import FeatureStore
 from injector import Module, provider, singleton
 
@@ -27,10 +34,6 @@ from drl_trading_core.common.data_import.data_import_manager import (
 )
 from drl_trading_core.common.data_import.local.csv_data_import_service import (
     CsvDataImportService,
-)
-from drl_trading_core.preprocess.data_set_utils.context_feature_service import (
-    ContextFeatureService,
-    ContextFeatureServiceInterface,
 )
 from drl_trading_core.preprocess.data_set_utils.merge_service import (
     MergeService,
@@ -51,9 +54,6 @@ from drl_trading_core.preprocess.feast.feast_service import (
 from drl_trading_core.preprocess.feature.feature_aggregator import (
     FeatureAggregator,
     FeatureAggregatorInterface,
-)
-from drl_trading_core.preprocess.feature.feature_factory import (
-    FeatureFactoryInterface,
 )
 from drl_trading_core.preprocess.preprocess_service import (
     PreprocessService,
@@ -123,7 +123,7 @@ class CoreModule(Module):
         self, config_path: str, feature_factory: FeatureFactoryInterface
     ) -> ApplicationConfig:
         """Provide the main application configuration."""
-        cfg = ConfigLoader.get_config(path=config_path)
+        cfg = ConfigLoader.get_config(ApplicationConfig, config_path)
         parse_all_parameters(cfg.features_config.feature_definitions, feature_factory)
         return cfg
 

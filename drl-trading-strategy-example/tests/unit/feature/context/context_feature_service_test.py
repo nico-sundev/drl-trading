@@ -3,18 +3,16 @@
 import pandas as pd
 import pytest
 from drl_trading_common.config.context_feature_config import ContextFeatureConfig
-from pandas import DataFrame
-
-from drl_trading_core.common.model.asset_price_dataset import AssetPriceDataSet
-from drl_trading_core.preprocess.data_set_utils.context_feature_service import (
+from drl_trading_strategy.feature.context.context_feature_service import (
     ContextFeatureService,
 )
+from pandas import DataFrame
 
 
 @pytest.fixture
 def mock_ohlcv_dataframe(mock_ohlcv_data_1h) -> DataFrame:
     """Create a mock OHLCV DataFrame for testing using sample_data."""
-    return mock_ohlcv_data_1h.asset_price_dataset
+    return mock_ohlcv_data_1h
 
 
 @pytest.fixture
@@ -23,28 +21,6 @@ def mock_ohlcv_with_atr_dataframe(mock_ohlcv_dataframe) -> DataFrame:
     df = mock_ohlcv_dataframe.copy()
     df["Atr"] = [0.1] * len(df)
     return df
-
-
-@pytest.fixture
-def mock_asset_price_dataset(mock_ohlcv_dataframe) -> AssetPriceDataSet:
-    """Create a mock AssetPriceDataSet for testing."""
-    return AssetPriceDataSet(
-        timeframe="H1",
-        base_dataset=True,
-        asset_price_dataset=mock_ohlcv_dataframe,
-    )
-
-
-@pytest.fixture
-def mock_asset_price_dataset_with_atr(
-    mock_ohlcv_with_atr_dataframe,
-) -> AssetPriceDataSet:
-    """Create a mock AssetPriceDataSet with ATR for testing."""
-    return AssetPriceDataSet(
-        timeframe="H1",
-        base_dataset=True,
-        asset_price_dataset=mock_ohlcv_with_atr_dataframe,
-    )
 
 
 @pytest.fixture
@@ -68,21 +44,21 @@ def context_feature_service(
 
 def test_prepare_context_features_computes_atr_when_missing(
     context_feature_service,
-    mock_asset_price_dataset,
+    mock_ohlcv_dataframe,
     context_feature_config: ContextFeatureConfig,
 ):
     """Test that prepare_context_features computes ATR when it's missing."""
     # Given
     # Asset price dataset without ATR column
-    assert "Atr" not in mock_asset_price_dataset.asset_price_dataset.columns
+    assert "Atr" not in mock_ohlcv_dataframe.columns
 
     # When
-    result = context_feature_service.prepare_context_features(mock_asset_price_dataset)
+    result = context_feature_service.prepare_context_features(mock_ohlcv_dataframe)
 
     # Then
     assert "Atr" in result.columns
     assert len(result) == len(
-        mock_asset_price_dataset.asset_price_dataset
+        mock_ohlcv_dataframe
     )  # Verify all required columns are present
     for col in context_feature_config.primary_context_columns:
         assert col in result.columns
@@ -90,20 +66,18 @@ def test_prepare_context_features_computes_atr_when_missing(
 
 def test_prepare_context_features_uses_existing_atr(
     context_feature_service,
-    mock_asset_price_dataset_with_atr,
+    mock_ohlcv_with_atr_dataframe,
     context_feature_config: ContextFeatureConfig,
 ):
     """Test that prepare_context_features uses existing ATR when available."""
     # Given
     # Asset price dataset with pre-computed ATR
-    assert "Atr" in mock_asset_price_dataset_with_atr.asset_price_dataset.columns
-    original_atr_values = mock_asset_price_dataset_with_atr.asset_price_dataset[
-        "Atr"
-    ].copy()
+    assert "Atr" in mock_ohlcv_with_atr_dataframe.columns
+    original_atr_values = mock_ohlcv_with_atr_dataframe["Atr"].copy()
 
     # When
     result = context_feature_service.prepare_context_features(
-        mock_asset_price_dataset_with_atr
+        mock_ohlcv_with_atr_dataframe
     )
 
     # Then
@@ -204,15 +178,9 @@ def test_prepare_context_features_raises_error_for_missing_required_columns(
         }
     )
 
-    incomplete_dataset = AssetPriceDataSet(
-        timeframe="H1",
-        base_dataset=True,
-        asset_price_dataset=incomplete_df,
-    )
-
     # When/Then
     with pytest.raises(ValueError) as excinfo:
-        context_feature_service.prepare_context_features(incomplete_dataset)
+        context_feature_service.prepare_context_features(incomplete_df)
 
     # Verify error message mentions the missing columns
     assert "missing" in str(excinfo.value)
@@ -225,15 +193,10 @@ def test_prepare_context_features_handles_empty_dataset(context_feature_service)
     # Given
     # Empty DataFrame with correct columns
     empty_df = DataFrame(columns=["Time", "Open", "High", "Low", "Close", "Volume"])
-    empty_dataset = AssetPriceDataSet(
-        timeframe="H1",
-        base_dataset=True,
-        asset_price_dataset=empty_df,
-    )
 
     # When/Then
     # Should not raise error but return empty DataFrame with ATR
-    result = context_feature_service.prepare_context_features(empty_dataset)
+    result = context_feature_service.prepare_context_features(empty_df)
 
     # Then
     assert len(result) == 0
@@ -445,14 +408,8 @@ def test_handles_nan_values_in_price_data(
     df.loc[1, "Open"] = None
     df.loc[2, "Close"] = None
 
-    dataset = AssetPriceDataSet(
-        timeframe="H1",
-        base_dataset=True,
-        asset_price_dataset=df,
-    )
-
     # When
-    result = context_feature_service.prepare_context_features(dataset)
+    result = context_feature_service.prepare_context_features(df)
 
     # Then
     # Should compute ATR despite NaN values

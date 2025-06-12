@@ -20,30 +20,6 @@ from drl_trading_strategy.technical_indicator.registry.indicator_class_registry 
 from pandas import DataFrame
 
 
-class MockTechnicalIndicatorFacade:
-    """Mock technical indicator facade for testing."""
-    pass
-
-
-class SampleRsiIndicator(BaseIndicator):
-    """Sample RSI indicator class with proper implementation."""
-
-    def __init__(self, length: int = 14) -> None:
-        self.length = length
-
-    def add(self, value: DataFrame) -> None:
-        """Add new value to indicator."""
-        pass
-
-    def get_all(self) -> Optional[DataFrame]:
-        """Get all computed values."""
-        return DataFrame({"rsi": [50.0, 60.0, 45.0]})
-
-    def get_latest(self) -> Optional[DataFrame]:
-        """Get latest computed value."""
-        return DataFrame({"rsi": [45.0]})
-
-
 class InvalidIndicator:
     """Invalid indicator class that doesn't extend BaseIndicator."""
     pass
@@ -64,16 +40,6 @@ class SampleWithoutDecorator(BaseIndicator):
 
 class TestIndicatorClassRegistry:
     """Test cases for IndicatorClassRegistry core functionality."""
-
-    @pytest.fixture
-    def registry(self) -> IndicatorClassRegistry:
-        """Create a fresh registry instance for each test."""
-        return IndicatorClassRegistry()
-
-    @pytest.fixture
-    def sample_indicator_class(self) -> Type[BaseIndicator]:
-        """Provide sample indicator class for testing."""
-        return SampleRsiIndicator
 
     @pytest.fixture
     def decorated_indicator_class(self) -> Type[BaseIndicator]:
@@ -105,18 +71,18 @@ class TestIndicatorClassRegistry:
         assert result is None
 
     def test_register_indicator_class_stores_class_successfully(
-        self, registry: IndicatorClassRegistry, sample_indicator_class: Type[BaseIndicator]
+        self, registry: IndicatorClassRegistry, mock_rsi_indicator_class: Type[BaseIndicator]
     ) -> None:
         """Test that register_indicator_class stores the class and makes it retrievable."""
         # Given
         indicator_type = IndicatorTypeEnum.RSI
 
         # When
-        registry.register_indicator_class(indicator_type, sample_indicator_class)
+        registry.register_indicator_class(indicator_type, mock_rsi_indicator_class)
         result = registry.get_indicator_class(indicator_type)
 
         # Then
-        assert result == sample_indicator_class
+        assert result == mock_rsi_indicator_class
 
     def test_register_indicator_class_validates_base_indicator_interface(self, registry: IndicatorClassRegistry) -> None:
         """Test that register_indicator_class validates that classes extend BaseIndicator."""
@@ -129,36 +95,28 @@ class TestIndicatorClassRegistry:
             registry.register_indicator_class(indicator_type, invalid_class)
 
     def test_register_indicator_class_overwrites_existing_registration(
-        self, registry: IndicatorClassRegistry, sample_indicator_class: Type[BaseIndicator]
+        self, registry: IndicatorClassRegistry, mock_rsi_indicator_class: Type[BaseIndicator], mock_alternative_rsi_indicator_class: Type[BaseIndicator]
     ) -> None:
         """Test that registering a class for an existing key overwrites the previous registration."""
         # Given
         indicator_type = IndicatorTypeEnum.RSI
 
-        class AlternativeRsiIndicator(BaseIndicator):
-            def add(self, value: DataFrame) -> None:
-                pass
-            def get_all(self) -> Optional[DataFrame]:
-                return DataFrame({"alt_rsi": [30.0]})
-            def get_latest(self) -> Optional[DataFrame]:
-                return DataFrame({"alt_rsi": [30.0]})
-
         # When
-        registry.register_indicator_class(indicator_type, sample_indicator_class)
-        registry.register_indicator_class(indicator_type, AlternativeRsiIndicator)
+        registry.register_indicator_class(indicator_type, mock_rsi_indicator_class)
+        registry.register_indicator_class(indicator_type, mock_alternative_rsi_indicator_class)
         result = registry.get_indicator_class(indicator_type)
 
         # Then
-        assert result == AlternativeRsiIndicator
+        assert result == mock_alternative_rsi_indicator_class
 
-    @patch('drl_trading_strategy.technical_indicator.indicator_class_registry.IndicatorClassRegistry.discover_classes')
+    @patch('drl_trading_strategy.technical_indicator.registry.indicator_class_registry.IndicatorClassRegistry.discover_classes')
     def test_discover_indicator_classes_delegates_to_base_discovery(
-        self, mock_discover: MagicMock, registry: IndicatorClassRegistry
+        self, mock_discover: MagicMock, registry: IndicatorClassRegistry, mock_rsi_indicator_class: Type[BaseIndicator]
     ) -> None:
         """Test that discover_indicator_classes properly delegates to base class discovery method."""
         # Given
         package_name = "test_package"
-        expected_result = {IndicatorTypeEnum.RSI: SampleRsiIndicator}
+        expected_result = {IndicatorTypeEnum.RSI: mock_rsi_indicator_class}
         mock_discover.return_value = expected_result
 
         # When
@@ -169,14 +127,14 @@ class TestIndicatorClassRegistry:
         assert result == expected_result
 
     def test_validate_class_accepts_valid_indicator_class(
-        self, registry: IndicatorClassRegistry, sample_indicator_class: Type[BaseIndicator]
+        self, registry: IndicatorClassRegistry, mock_rsi_indicator_class: Type[BaseIndicator]
     ) -> None:
         """Test that _validate_class accepts classes that properly extend BaseIndicator."""
         # Given
-        # sample_indicator_class extends BaseIndicator
+        # mock_rsi_indicator_class extends BaseIndicator
 
         # When & Then (should not raise)
-        registry._validate_class(sample_indicator_class)
+        registry._validate_class(mock_rsi_indicator_class)
 
     def test_validate_class_rejects_invalid_class(self, registry: IndicatorClassRegistry) -> None:
         """Test that _validate_class rejects classes that don't extend BaseIndicator."""
@@ -188,14 +146,14 @@ class TestIndicatorClassRegistry:
             registry._validate_class(invalid_class)
 
     def test_should_discover_class_returns_true_for_valid_indicator_subclass(
-        self, registry: IndicatorClassRegistry, sample_indicator_class: Type[BaseIndicator]
+        self, registry: IndicatorClassRegistry, mock_rsi_indicator_class: Type[BaseIndicator]
     ) -> None:
         """Test that _should_discover_class returns True for valid BaseIndicator subclasses."""
         # Given
-        # sample_indicator_class is a valid subclass of BaseIndicator
+        # mock_rsi_indicator_class is a valid subclass of BaseIndicator
 
         # When
-        result = registry._should_discover_class(sample_indicator_class)
+        result = registry._should_discover_class(mock_rsi_indicator_class)
 
         # Then
         assert result is True
@@ -222,7 +180,7 @@ class TestIndicatorClassRegistry:
         # Then
         assert result is False
 
-    @patch('drl_trading_strategy.technical_indicator.indicator_class_registry.get_indicator_type_from_class')
+    @patch('drl_trading_strategy.technical_indicator.registry.indicator_class_registry.get_indicator_type_from_class')
     def test_extract_key_from_class_uses_decorator_function(
         self, mock_get_indicator_type: MagicMock, registry: IndicatorClassRegistry,
         decorated_indicator_class: Type[BaseIndicator]
@@ -274,20 +232,19 @@ class TestIndicatorClassRegistry:
         assert hasattr(registry, 'discover_classes')
         assert hasattr(registry, 'reset')
 
-    def test_registry_type_parameters_are_correct(self, registry: IndicatorClassRegistry) -> None:
+    def test_registry_type_parameters_are_correct(self, registry: IndicatorClassRegistry, mock_rsi_indicator_class: Type[BaseIndicator]) -> None:
         """Test that the registry uses correct type parameters for IndicatorTypeEnum and BaseIndicator."""
         # Given
         indicator_type = IndicatorTypeEnum.RSI
-        indicator_class = SampleRsiIndicator
 
         # When
-        registry.register_indicator_class(indicator_type, indicator_class)
+        registry.register_indicator_class(indicator_type, mock_rsi_indicator_class)
         result = registry.get_indicator_class(indicator_type)
 
         # Then
-        assert result == indicator_class
+        assert result == mock_rsi_indicator_class
         assert isinstance(indicator_type, IndicatorTypeEnum)
-        assert issubclass(indicator_class, BaseIndicator)
+        assert issubclass(mock_rsi_indicator_class, BaseIndicator)
 
     def test_registry_handles_empty_state_gracefully(self, registry: IndicatorClassRegistry) -> None:
         """Test that registry methods handle empty state without errors."""

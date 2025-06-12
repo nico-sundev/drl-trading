@@ -9,22 +9,28 @@ from typing import Type
 
 from drl_trading_common.base.base_strategy_module import BaseStrategyModule
 from drl_trading_common.base.base_trading_env import BaseTradingEnv
-from drl_trading_common.interfaces.feature.feature_class_registry_interface import (
-    FeatureClassRegistryInterface,
-)
-from drl_trading_common.interfaces.feature.feature_config_registry_interface import (
-    FeatureConfigRegistryInterface,
+from drl_trading_common.interfaces.feature.context_feature_service_interface import (
+    ContextFeatureServiceInterface,
 )
 from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
     TechnicalIndicatorFactoryInterface,
 )
 from injector import Module, provider, singleton
 
+from drl_trading_strategy.feature.context.context_feature_service import (
+    ContextFeatureService,
+)
 from drl_trading_strategy.feature.registry.feature_class_registry import (
     FeatureClassRegistry,
 )
+from drl_trading_strategy.feature.registry.feature_class_registry_interface import (
+    FeatureClassRegistryInterface,
+)
 from drl_trading_strategy.feature.registry.feature_config_registry import (
     FeatureConfigRegistry,
+)
+from drl_trading_strategy.feature.registry.feature_config_registry_interface import (
+    FeatureConfigRegistryInterface,
 )
 from drl_trading_strategy.technical_indicator.talipp_indicator_service import (
     TaLippIndicatorFactory,
@@ -80,5 +86,14 @@ class ExampleStrategyModule(BaseStrategyModule):
             ) -> TechnicalIndicatorFactoryInterface:
                 """Provide the indicator backend registry implementation."""
                 return TaLippIndicatorFactory()
+
+            @provider
+            @singleton
+            def provide_context_feature_service(
+                self,
+            ) -> ContextFeatureServiceInterface:
+                """Provide the context feature service."""
+                svc = ContextFeatureService()
+                return svc
 
         return _Internal()

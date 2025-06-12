@@ -1,4 +1,4 @@
-from ..base.base_schema import BaseSchema
+from drl_trading_common.base.base_application_config import BaseApplicationConfig
 from .context_feature_config import ContextFeatureConfig
 from .environment_config import EnvironmentConfig
 from .feature_config import FeaturesConfig, FeatureStoreConfig
@@ -6,7 +6,7 @@ from .local_data_import_config import LocalDataImportConfig
 from .rl_model_config import RlModelConfig
 
 
-class ApplicationConfig(BaseSchema):
+class ApplicationConfig(BaseApplicationConfig):
     features_config: FeaturesConfig
     local_data_import_config: LocalDataImportConfig
     rl_model_config: RlModelConfig

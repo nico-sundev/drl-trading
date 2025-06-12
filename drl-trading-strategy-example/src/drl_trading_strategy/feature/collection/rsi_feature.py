@@ -22,12 +22,11 @@ class RsiFeature(BaseFeature):
 
     def __init__(
         self,
-        source: DataFrame,
         config: BaseParameterSetConfig,
         indicator_service: TechnicalIndicatorFacadeInterface,
         postfix: str = "",
     ) -> None:
-        super().__init__(source, config, indicator_service, postfix)
+        super().__init__(config, indicator_service, postfix)
         self.config: RsiConfig = self.config
         self.feature_name = f"rsi_{self.config.length}{self.postfix}"
         self.indicator_service.register_instance(self.feature_name, self._get_indicator_type(), period=self.config.length)

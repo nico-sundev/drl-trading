@@ -1,104 +1,23 @@
 import logging
-from abc import ABC, abstractmethod
-from typing import Optional, Type
+from typing import Optional
 
-from drl_trading_common import (
-    BaseParameterSetConfig,
-    FeatureClassRegistryInterface,
-    FeatureConfigRegistryInterface,
-)
 from drl_trading_common.base import BaseFeature
+from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_common.interfaces.feature.feature_factory_interface import (
+    FeatureFactoryInterface,
+)
 from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
     TechnicalIndicatorFacadeInterface,
+)
+from drl_trading_strategy.feature.registry.feature_class_registry_interface import (
+    FeatureClassRegistryInterface,
+)
+from drl_trading_strategy.feature.registry.feature_config_registry_interface import (
+    FeatureConfigRegistryInterface,
 )
 from injector import inject
 
 logger = logging.getLogger(__name__)
-
-
-class FeatureFactoryInterface(ABC):
-    """
-    Interface for feature factory implementations.
-
-    The factory is responsible for creating feature instances using the registry
-    to obtain class types. This implements the actual Factory pattern.
-    """
-
-    @abstractmethod
-    def create_feature(
-        self,
-        feature_name: str,
-        source_data,
-        config: BaseParameterSetConfig,
-        indicators_service: TechnicalIndicatorFacadeInterface,
-        postfix: str = ""
-    ) -> Optional[BaseFeature]:
-        """
-        Create a feature instance for the given feature name and parameters.
-
-        Args:
-            feature_name: The name of the feature to create
-            source_data: The source data for the feature computation
-            config: The configuration for the feature
-            postfix: Optional postfix for the feature name
-            metrics_service: Optional metrics service for the feature
-
-        Returns:
-            The created feature instance if successful, None otherwise
-        """
-        pass
-
-    @abstractmethod
-    def get_registry(self) -> FeatureClassRegistryInterface:
-        """
-        Get the underlying feature class registry.
-
-        Returns:
-            The feature class registry used by this factory
-        """
-        pass
-
-    @abstractmethod
-    def get_config_registry(self) -> FeatureConfigRegistryInterface:
-        """
-        Get the underlying feature config registry.
-
-        Returns:
-            The feature config registry used by this factory
-        """
-        pass
-
-    @abstractmethod
-    def get_config_class(self, feature_name: str) -> Optional[Type[BaseParameterSetConfig]]:
-        """
-        Get the configuration class for a given feature name.
-
-        Args:
-            feature_name: The name of the feature to get the config class for
-
-        Returns:
-            The configuration class if found, None otherwise
-        """
-        pass
-
-    @abstractmethod
-    def create_config_instance(
-        self, feature_name: str, config_data: dict
-    ) -> Optional[BaseParameterSetConfig]:
-        """
-        Create a configuration instance for the given feature name and data.
-
-        Args:
-            feature_name: The name of the feature to create config for
-            config_data: The configuration data to initialize the config with
-
-        Returns:
-            A configuration instance or None if no config class is found
-
-        Raises:
-            ValueError: If the provided config_data is invalid for the config class
-        """
-        pass
 
 
 class FeatureFactory(FeatureFactoryInterface):
@@ -157,11 +76,11 @@ class FeatureFactory(FeatureFactoryInterface):
         try:
             # Create the feature instance with the provided parameters
             feature_instance = feature_class(
-                source=source_data,
                 config=config,
                 indicator_service=indicators_service,
                 postfix=postfix,
             )
+            feature_instance.add(source_data)
             logger.debug(f"Created feature instance for '{feature_name}'")
             return feature_instance
         except Exception as e:
@@ -170,36 +89,6 @@ class FeatureFactory(FeatureFactoryInterface):
                 exc_info=True,
             )
             return None
-
-    def get_registry(self) -> FeatureClassRegistryInterface:
-        """
-        Get the underlying feature class registry.
-
-        Returns:
-            The feature class registry used by this factory
-        """
-        return self._registry
-
-    def get_config_registry(self) -> FeatureConfigRegistryInterface:
-        """
-        Get the underlying feature config registry.
-
-        Returns:
-            The feature config registry used by this factory
-        """
-        return self._config_registry
-
-    def get_config_class(self, feature_name: str) -> Optional[Type[BaseParameterSetConfig]]:
-        """
-        Get the configuration class for a given feature name.
-
-        Args:
-            feature_name: The name of the feature to get the config class for
-
-        Returns:
-            The configuration class if found, None otherwise
-        """
-        return self._config_registry.get_config_class(feature_name)
 
     def create_config_instance(
         self, feature_name: str, config_data: dict
@@ -217,7 +106,7 @@ class FeatureFactory(FeatureFactoryInterface):
         Raises:
             ValueError: If the provided config_data is invalid for the config class
         """
-        config_class = self.get_config_class(feature_name)
+        config_class = self._config_registry.get_config_class(feature_name)
         if not config_class:
             logger.warning(f"No config class found for feature '{feature_name}'")
             return None

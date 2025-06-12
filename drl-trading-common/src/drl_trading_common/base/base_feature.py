@@ -11,12 +11,10 @@ class BaseFeature(ABC):
 
     def __init__(
         self,
-        source: DataFrame,
         config: BaseParameterSetConfig,
         indicator_service: TechnicalIndicatorFacadeInterface,
         postfix: str = "",
     ) -> None:
-        self.df_source = source
         self.config = config
         self.postfix = postfix
         self.indicator_service = indicator_service
