@@ -1,6 +1,8 @@
 todo features:
 - cleanup tests/*/conftest.py
 - normalize features before training
+    - add normalization_method enum to baseparametersetconfig, e.g.: NONE, ATR
+        - add a normalization step somewhere in between the process
     - call vecnormalize before training starts
     - investigate which scope it belongs to at the best
 - optimize training multiple environments concurrently
@@ -16,3 +18,6 @@ next sprint:
     - twelvedata
     - implement dataset catchup module
 - create GNN -> see all_in_one.py -> start with: Which data to we need and how do we have to preprocess
+- introduce enum for data import strategy
+    - refactor implementations like csv import
+    - refactor config files

@@ -10,6 +10,7 @@ from typing import Optional
 from drl_trading_strategy.enum.indicator_type_enum import IndicatorTypeEnum
 from pandas import DataFrame
 
+
 class TechnicalIndicatorFacadeInterface(ABC):
 
     @abstractmethod
@@ -52,27 +53,5 @@ class TechnicalIndicatorFacadeInterface(ABC):
         Get the latest computed value of the indicator.
 
         :return: Latest indicator value.
-        """
-        pass
-
-class TechnicalIndicatorFactoryInterface(ABC):
-    """
-    Interface defining the contract for technical indicator service factory operations.
-
-    Implementations of this interface are responsible for:
-    1. Creating instances of technical indicator services
-    2. Managing the lifecycle of indicator services
-    """
-
-    @abstractmethod
-    def create(self, **kwargs) -> TechnicalIndicatorFacadeInterface:
-        """
-        Create a new instance of a technical indicator service.
-
-        Args:
-            **kwargs: Parameters to configure the service instance
-
-        Returns:
-            An instance of TechnicalIndicatorServiceInterface
         """
         pass

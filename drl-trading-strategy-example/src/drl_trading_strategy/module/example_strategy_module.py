@@ -13,7 +13,7 @@ from drl_trading_common.interfaces.feature.context_feature_service_interface imp
     ContextFeatureServiceInterface,
 )
 from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
-    TechnicalIndicatorFactoryInterface,
+    TechnicalIndicatorFacadeInterface,
 )
 from injector import Module, provider, singleton
 
@@ -32,8 +32,14 @@ from drl_trading_strategy.feature.registry.feature_config_registry import (
 from drl_trading_strategy.feature.registry.feature_config_registry_interface import (
     FeatureConfigRegistryInterface,
 )
+from drl_trading_strategy.technical_indicator.registry.indicator_class_registry import (
+    IndicatorClassRegistry,
+)
+from drl_trading_strategy.technical_indicator.registry.indicator_class_registry_interface import (
+    IndicatorClassRegistryInterface,
+)
 from drl_trading_strategy.technical_indicator.talipp_indicator_service import (
-    TaLippIndicatorFactory,
+    TaLippIndicatorService,
 )
 
 from ..gym_env.custom_env import MyCustomTradingEnv
@@ -75,17 +81,27 @@ class ExampleStrategyModule(BaseStrategyModule):
 
             @provider
             @singleton
+            def provide_indicator_class_registry(self) -> IndicatorClassRegistryInterface:
+                registry = IndicatorClassRegistry()
+                registry.discover_indicator_classes(
+                    "drl_trading_strategy.technical_indicator.collection"
+                )
+                return registry
+
+            @provider
+            @singleton
             def provide_trading_environment_class(self) -> Type[BaseTradingEnv]:
                 """Provide the custom trading environment class."""
                 return MyCustomTradingEnv
 
             @provider
             @singleton
-            def provide_technical_indicator_factory(
+            def provide_technical_indicator_facade(
                 self,
-            ) -> TechnicalIndicatorFactoryInterface:
+                registry: IndicatorClassRegistryInterface,
+            ) -> TechnicalIndicatorFacadeInterface:
                 """Provide the indicator backend registry implementation."""
-                return TaLippIndicatorFactory()
+                return TaLippIndicatorService(registry)
 
             @provider
             @singleton

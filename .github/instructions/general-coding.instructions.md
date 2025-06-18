@@ -35,12 +35,16 @@ Maintain a constructive, but rigorous, approach. Your role is not to argue for t
       test location: `tests/<unit or it>/data_set_utils/merge_service_test.py`
 
     - unit tests below `tests/unit/` directory
-    - IT below `tests/it/` directory
+    - IT below `tests/integration/` directory
     - every testfile postfixed "_test.py" for unittest or "_it.py" for integration test
     - always use pytest
-    - create fixtures for test methods
-    - unit tests should usually contain mocked dependencies
-    - integration tests should use real implementations and if necessary external files containing test values
+    - create fixtures for test methods, but use conftest.py for common fixtures
+    - if fixtures are about to be created, scan nearby conftest.py files and check for similar fixtures. combine them if possible and semantically correct
+    - use pytest.mark.parametrize for parametrized tests
+    - try to cluster similar kind of tests into multiple classes in one test file
+    - unit tests should usually contain mocked dependencies and not depend on external files
+    - integration tests should use real implementations and can make use of external files, like config files, data files, etc.
+    - external files should be located in `tests/resources/` directory
 
     ** IMPORTANT: ALL test methods MUST follow the Given/When/Then structure with explicit comments **
 

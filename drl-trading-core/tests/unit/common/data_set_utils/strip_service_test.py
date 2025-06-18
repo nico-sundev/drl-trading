@@ -2,6 +2,7 @@ from datetime import timedelta
 
 import pandas as pd
 import pytest
+from drl_trading_common.models.timeframe import Timeframe
 
 from drl_trading_core.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_core.preprocess.data_set_utils.strip_service import StripService
@@ -137,10 +138,10 @@ def test_strip_asset_price_datasets_complete(
     stripped_higher_timeframe_dataset = stripped_datasets[1]
 
     assert (
-        stripped_base_dataset.timeframe == "H1"
+        stripped_base_dataset.timeframe == Timeframe.HOUR_1
     ), "The base dataset should retain its timeframe."
     assert (
-        stripped_higher_timeframe_dataset.timeframe == "H4"
+        stripped_higher_timeframe_dataset.timeframe == Timeframe.HOUR_4
     ), "The higher timeframe dataset should retain its timeframe."
 
     # Ensure the stripped dataset has a DatetimeIndex

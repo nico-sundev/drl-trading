@@ -13,9 +13,9 @@ from drl_trading_strategy.feature.feature_factory import (
 )
 from pandas import DataFrame
 
-from drl_trading_core.preprocess.feast.feast_service import (
-    FeastService,
-    FeastServiceInterface,
+from drl_trading_core.preprocess.feast.todo_feature_store_fetch_repo import (
+    FeatureStoreFetchRepo,
+    FeatureStoreFetchRepoInterface,
 )
 from drl_trading_core.preprocess.feature.feature_aggregator import (
     FeatureAggregator,
@@ -69,9 +69,9 @@ def mock_feature_factory() -> FeatureFactoryInterface:
 
 
 @pytest.fixture
-def mock_feast_service() -> FeastServiceInterface:
+def mock_feast_service() -> FeatureStoreFetchRepoInterface:
     """Create a mock FeastService that implements FeastServiceInterface."""
-    feast_service = MagicMock(spec=FeastService)
+    feast_service = MagicMock(spec=FeatureStoreFetchRepo)
     feast_service.is_enabled.return_value = True
     feast_service.get_historical_features.return_value = None
     return feast_service

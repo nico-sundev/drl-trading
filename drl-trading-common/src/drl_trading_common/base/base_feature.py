@@ -1,25 +1,29 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Optional
 
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_common.interfaces.computable import Computable
 from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import TechnicalIndicatorFacadeInterface
+from drl_trading_common.models.dataset_identifier import DatasetIdentifier
 from drl_trading_common.utils.utils import ensure_datetime_index
 from pandas import DataFrame
 
 
-class BaseFeature(ABC):
+class BaseFeature(Computable):
 
     def __init__(
         self,
         config: BaseParameterSetConfig,
+        dataset_id: DatasetIdentifier,
         indicator_service: TechnicalIndicatorFacadeInterface,
         postfix: str = "",
     ) -> None:
         self.config = config
         self.postfix = postfix
         self.indicator_service = indicator_service
+        self.dataset_id = dataset_id
 
-    def _prepare_source_df(self, description: Optional[str] = None) -> DataFrame:
+    def _prepare_source_df(self, source: DataFrame, description: Optional[str] = None) -> DataFrame:
         """
         Prepares the source DataFrame for feature computation by ensuring it has a DatetimeIndex.
 
@@ -30,20 +34,15 @@ class BaseFeature(ABC):
             DataFrame: Source DataFrame with DatetimeIndex
         """
         feature_name = description or self.get_feature_name()
-        return ensure_datetime_index(self.df_source, f"{feature_name} source data")
+        return ensure_datetime_index(source, f"{feature_name} source data")
 
-    @abstractmethod
-    def compute_all(self) -> Optional[DataFrame]:
-        pass
+    def get_config(self) -> BaseParameterSetConfig:
+        """Get the configuration for the feature."""
+        return self.config
 
-    @abstractmethod
-    def add(self, df: DataFrame) -> None:
-        """Add new data to the feature. This method should be implemented by subclasses to handle new data."""
-        pass
-
-    @abstractmethod
-    def compute_latest(self) -> Optional[DataFrame]:
-        pass
+    def get_dataset_id(self) -> DatasetIdentifier:
+        """Get the dataset identifier for the feature."""
+        return self.dataset_id
 
     @abstractmethod
     def get_sub_features_names(self) -> list[str]:

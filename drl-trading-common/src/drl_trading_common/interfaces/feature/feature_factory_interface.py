@@ -2,11 +2,10 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
+
 from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
-from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
-    TechnicalIndicatorFacadeInterface,
-)
+from drl_trading_common.models.dataset_identifier import DatasetIdentifier
 
 
 class FeatureFactoryInterface(ABC):
@@ -21,9 +20,8 @@ class FeatureFactoryInterface(ABC):
     def create_feature(
         self,
         feature_name: str,
-        source_data,
+        dataset_id: DatasetIdentifier,
         config: BaseParameterSetConfig,
-        indicators_service: TechnicalIndicatorFacadeInterface,
         postfix: str = ""
     ) -> Optional[BaseFeature]:
         """

@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 from drl_trading_common import BaseParameterSetConfig
 from drl_trading_common.config.feature_config import FeatureDefinition
+from drl_trading_common.models.timeframe import Timeframe
 from pandas import DataFrame
 
 from drl_trading_core.common.model.asset_price_dataset import AssetPriceDataSet
@@ -80,7 +81,7 @@ def feature_test_asset_df() -> DataFrame:
 def feature_test_asset_data(feature_test_asset_df) -> AssetPriceDataSet:
     """Create a standardized asset price dataset for feature testing."""
     return AssetPriceDataSet(
-        timeframe="H1",
+        timeframe=Timeframe.HOUR_1,
         base_dataset=True,
         asset_price_dataset=feature_test_asset_df,
     )

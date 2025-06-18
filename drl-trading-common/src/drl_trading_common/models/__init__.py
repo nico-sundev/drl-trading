@@ -5,6 +5,8 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Any, Dict, Optional
+from .timeframe import Timeframe
+from .dataset_identifier import DatasetIdentifier
 
 # Import external model classes
 from .asset_price_import_properties import AssetPriceImportProperties
@@ -189,4 +191,6 @@ __all__ = [
     "InferenceRequest",
     "InferenceResponse",
     "AssetPriceImportProperties",
+    "Timeframe",
+    "DatasetIdentifier",
 ]

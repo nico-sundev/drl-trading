@@ -20,6 +20,16 @@
     "strategy": "csv"
   },
   "featuresConfig": {
+    "datasetDefinitions": {
+      "EURUSD": [
+        "H1",
+        "H4"
+      ],
+      "BTCUSDT": [
+        "H1",
+        "H4"
+      ]
+    },
     "featureDefinitions": [
       {
         "name": "rsi",

@@ -9,11 +9,14 @@ from drl_trading_strategy.decorator.indicator_type_decorator import (
     get_indicator_type_from_class,
 )
 from drl_trading_strategy.enum.indicator_type_enum import IndicatorTypeEnum
+from drl_trading_strategy.technical_indicator.registry.indicator_class_registry_interface import (
+    IndicatorClassRegistryInterface,
+)
 
 logger = logging.getLogger(__name__)
 
 
-class IndicatorClassRegistry(ThreadSafeDiscoverableRegistry[IndicatorTypeEnum, BaseIndicator]):
+class IndicatorClassRegistry(ThreadSafeDiscoverableRegistry[IndicatorTypeEnum, BaseIndicator], IndicatorClassRegistryInterface):
     """
     This registry discovers, stores, and manages indicator class types using
     the DiscoverableRegistry base class for common discovery logic.

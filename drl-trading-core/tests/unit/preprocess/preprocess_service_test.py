@@ -22,7 +22,9 @@ from drl_trading_core.common.model.symbol_import_container import (
 from drl_trading_core.preprocess.data_set_utils.merge_service import (
     MergeServiceInterface,
 )
-from drl_trading_core.preprocess.feast.feast_service import FeastService
+from drl_trading_core.preprocess.feast.todo_feature_store_fetch_repo import (
+    FeatureStoreFetchRepo,
+)
 from drl_trading_core.preprocess.feature.feature_aggregator import (
     FeatureAggregatorInterface,
 )
@@ -48,9 +50,9 @@ def mock_feature_class_registry() -> FeatureFactoryInterface:
 
 
 @pytest.fixture
-def mock_feast_service() -> FeastService:
+def mock_feast_service() -> FeatureStoreFetchRepo:
     """Create a mock FeastService."""
-    return MagicMock(spec=FeastService)
+    return MagicMock(spec=FeatureStoreFetchRepo)
 
 
 @pytest.fixture

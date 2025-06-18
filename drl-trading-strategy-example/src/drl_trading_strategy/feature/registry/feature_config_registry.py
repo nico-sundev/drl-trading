@@ -2,7 +2,9 @@ import logging
 from typing import Dict, Optional, Type
 
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
-from drl_trading_common.base.discoverable_registry import DiscoverableRegistry
+from drl_trading_common.base.thread_safe_discoverable_registry import (
+    ThreadSafeDiscoverableRegistry,
+)
 from drl_trading_strategy.decorator.feature_type_decorator import (
     get_feature_type_from_class,
 )
@@ -15,7 +17,7 @@ from drl_trading_strategy.utils.feature_type_converter import FeatureTypeConvert
 logger = logging.getLogger(__name__)
 
 
-class FeatureConfigRegistry(DiscoverableRegistry[FeatureTypeEnum, BaseParameterSetConfig], FeatureConfigRegistryInterface):
+class FeatureConfigRegistry(ThreadSafeDiscoverableRegistry[FeatureTypeEnum, BaseParameterSetConfig], FeatureConfigRegistryInterface):
     """
     Concrete implementation of FeatureConfigRegistryInterface.
 

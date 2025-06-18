@@ -6,6 +6,7 @@ from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
     TechnicalIndicatorFacadeInterface,
 )
+from drl_trading_common.models.dataset_identifier import DatasetIdentifier
 from drl_trading_strategy.decorator import feature_type
 from drl_trading_strategy.decorator.feature_type_decorator import (
     get_feature_type_from_class,
@@ -23,28 +24,27 @@ class RsiFeature(BaseFeature):
     def __init__(
         self,
         config: BaseParameterSetConfig,
+        dataset_id: DatasetIdentifier,
         indicator_service: TechnicalIndicatorFacadeInterface,
-        postfix: str = "",
+        postfix: str = ""
     ) -> None:
-        super().__init__(config, indicator_service, postfix)
+        super().__init__(config, dataset_id, indicator_service, postfix)
         self.config: RsiConfig = self.config
         self.feature_name = f"rsi_{self.config.length}{self.postfix}"
         self.indicator_service.register_instance(self.feature_name, self._get_indicator_type(), period=self.config.length)
 
     def add(self, df: DataFrame) -> None:
-        self.indicator_service.add(self.feature_name, df)
+        index_corrected_dataframe = self._prepare_source_df(df)
+        self.indicator_service.add(self.feature_name, index_corrected_dataframe)
 
     def compute_latest(self) -> Optional[DataFrame]:
         return self.indicator_service.get_latest(self.feature_name)
 
     def compute_all(self) -> Optional[DataFrame]:
-        source_df = self._prepare_source_df()
-        self.indicator_service.add(self.feature_name, source_df)
-
         # Create a DataFrame with the same index as the source
         rsi_values = self.indicator_service.get_all(self.feature_name)
         # Create result DataFrame with both Time column and feature values
-        df = DataFrame(index=source_df.index)
+        df = DataFrame()
         df[f"rsi_{self.config.length}{self.postfix}"] = rsi_values
         return df
 

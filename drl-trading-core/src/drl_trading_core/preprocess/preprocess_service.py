@@ -60,9 +60,9 @@ class PreprocessServiceInterface(ABC):
         ...
 
 
+@inject
 class PreprocessService(PreprocessServiceInterface):
 
-    @inject
     def __init__(
         self,
         features_config: FeaturesConfig,

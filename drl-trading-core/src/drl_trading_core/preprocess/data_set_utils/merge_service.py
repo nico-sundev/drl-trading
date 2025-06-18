@@ -4,6 +4,7 @@ from typing import Dict, Optional
 
 import pandas as pd
 from drl_trading_common.utils import ensure_datetime_index
+from injector import inject
 
 from drl_trading_core.preprocess.data_set_utils.util import (
     detect_timeframe,
@@ -33,7 +34,7 @@ class MergeServiceInterface(abc.ABC):
         """
         pass
 
-
+@inject
 class MergeService(MergeServiceInterface):
     """
     Merges higher timeframe datasets into lower timeframe datasets.

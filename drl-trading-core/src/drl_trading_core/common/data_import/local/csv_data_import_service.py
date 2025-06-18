@@ -28,7 +28,7 @@ class CsvDataImportService(BaseDataImportService):
         Args:
             config: Configuration containing symbols with their datasets
         """
-        self.config = config
+        super().__init__(config)
         # Determine project root dynamically.
         # Assumes this file is at <project_root>/src/drl_trading_core/common/data_import/local/csv_data_import_service.py
         # So, project_root is 5 levels up from this file's directory.

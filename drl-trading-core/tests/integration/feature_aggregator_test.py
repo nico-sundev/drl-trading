@@ -13,7 +13,9 @@ from drl_trading_core.common.data_import.data_import_manager import (
     DataImportManager,
 )
 from drl_trading_core.common.model.asset_price_dataset import AssetPriceDataSet
-from drl_trading_core.preprocess.feast.feast_service import FeastServiceInterface
+from drl_trading_core.preprocess.feast.todo_feature_store_fetch_repo import (
+    FeatureStoreFetchRepoInterface,
+)
 from drl_trading_core.preprocess.feature.feature_aggregator import (
     FeatureAggregatorInterface,
 )
@@ -96,7 +98,7 @@ def test_feature_computation_and_caching(
     """
     # Given
     feature_aggregator = mocked_container.get(FeatureAggregatorInterface)
-    feast_service = mocked_container.get(FeastServiceInterface)
+    feast_service = mocked_container.get(FeatureStoreFetchRepoInterface)
     symbol = "EURUSD"  # From test config
 
     # Create a counter to track feature computation

@@ -9,6 +9,7 @@ from drl_trading_common.interfaces.feature.feature_factory_interface import (
 from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
     TechnicalIndicatorFacadeInterface,
 )
+from drl_trading_common.models.dataset_identifier import DatasetIdentifier
 from drl_trading_strategy.feature.registry.feature_class_registry_interface import (
     FeatureClassRegistryInterface,
 )
@@ -33,7 +34,8 @@ class FeatureFactory(FeatureFactoryInterface):
     def __init__(
         self,
         registry: FeatureClassRegistryInterface,
-        config_registry: FeatureConfigRegistryInterface
+        config_registry: FeatureConfigRegistryInterface,
+        indicators_service: TechnicalIndicatorFacadeInterface,
     ) -> None:
         """
         Initialize the factory with feature class and config registries.
@@ -44,13 +46,13 @@ class FeatureFactory(FeatureFactoryInterface):
         """
         self._registry = registry
         self._config_registry = config_registry
+        self._technical_indicator_facade = indicators_service
 
     def create_feature(
         self,
         feature_name: str,
-        source_data,
+        dataset_id: DatasetIdentifier,
         config: BaseParameterSetConfig,
-        indicators_service: TechnicalIndicatorFacadeInterface,
         postfix: str = "",
     ) -> Optional[BaseFeature]:
         """
@@ -77,10 +79,10 @@ class FeatureFactory(FeatureFactoryInterface):
             # Create the feature instance with the provided parameters
             feature_instance = feature_class(
                 config=config,
-                indicator_service=indicators_service,
+                dataset_id=dataset_id,
+                indicator_service=self._technical_indicator_facade,
                 postfix=postfix,
             )
-            feature_instance.add(source_data)
             logger.debug(f"Created feature instance for '{feature_name}'")
             return feature_instance
         except Exception as e:

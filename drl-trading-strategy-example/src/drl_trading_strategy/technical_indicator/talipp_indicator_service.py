@@ -1,14 +1,13 @@
 import threading
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 from drl_trading_common.base.base_indicator import BaseIndicator
 from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
     TechnicalIndicatorFacadeInterface,
-    TechnicalIndicatorFactoryInterface,
 )
 from drl_trading_strategy.enum.indicator_type_enum import IndicatorTypeEnum
-from drl_trading_strategy.technical_indicator.registry.indicator_class_registry import (
-    IndicatorClassRegistry,
+from drl_trading_strategy.technical_indicator.registry.indicator_class_registry_interface import (
+    IndicatorClassRegistryInterface,
 )
 from injector import inject
 from pandas import DataFrame
@@ -29,7 +28,7 @@ class TaLippIndicatorService(TechnicalIndicatorFacadeInterface):
     """
 
     @inject
-    def __init__(self, registry: IndicatorClassRegistry) -> None:
+    def __init__(self, registry: IndicatorClassRegistryInterface) -> None:
         self.instances: Dict[str, BaseIndicator] = {}
         self.registry = registry
         self._lock = threading.RLock()  # Reentrant lock for nested calls
@@ -168,14 +167,3 @@ class TaLippIndicatorService(TechnicalIndicatorFacadeInterface):
         """Thread-safe string representation."""
         with self._lock:
             return f"TaLippIndicatorService({len(self.instances)} indicators)"
-
-class TaLippIndicatorFactory(TechnicalIndicatorFactoryInterface):
-
-    def create(self, **kwargs: Any) -> TechnicalIndicatorFacadeInterface:
-        """
-        Factory method to create an instance of the technical indicator service.
-
-        Returns:
-            An instance of the technical indicator service.
-        """
-        return TaLippIndicatorService(IndicatorClassRegistry())

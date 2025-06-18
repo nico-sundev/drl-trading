@@ -24,11 +24,24 @@ class DatabaseConfig(BaseSchema):
 
 
 class LoggingConfig(BaseSchema):
-    """Logging configuration."""
+    """Logging configuration.
+
+    Attributes:
+        level: Logging level (INFO, DEBUG, WARNING, ERROR, CRITICAL)
+        format: Log message format string
+        file_path: Path to log file (will be created if it doesn't exist)
+        console_enabled: Whether to also log to console
+        rotation_enabled: Whether to use rotating log files
+        max_bytes: Maximum size of log file before rotation (default: 10MB)
+        backup_count: Number of backup files to keep (default: 5)
+    """
     level: str = "INFO"
     format: str = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
     file_path: Optional[str] = "logs/application.log"
     console_enabled: bool = True
+    rotation_enabled: bool = True
+    max_bytes: int = 10_485_760  # 10 MB
+    backup_count: int = 5
 
 
 class MonitoringConfig(BaseSchema):

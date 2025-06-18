@@ -7,7 +7,9 @@ from feast import Entity
 from pandas import DataFrame
 
 from drl_trading_core.common.model.asset_price_dataset import AssetPriceDataSet
-from drl_trading_core.preprocess.feast.feast_service import FeastService
+from drl_trading_core.preprocess.feast.todo_feature_store_fetch_repo import (
+    FeatureStoreFetchRepo,
+)
 
 
 @pytest.fixture
@@ -45,7 +47,7 @@ def mock_asset_data() -> AssetPriceDataSet:
 
 
 @pytest.fixture
-def mock_feast_service(mock_feature_store_config) -> FeastService:
+def mock_feast_service(mock_feature_store_config) -> FeatureStoreFetchRepo:
     """Create a FeastService instance with mocked dependencies."""
     # Patch where FeatureStore is looked up
     with patch(
@@ -55,7 +57,7 @@ def mock_feast_service(mock_feature_store_config) -> FeastService:
         mock_feast_constructor.return_value = mock_store_instance
 
         # Instantiate the service (constructor will use the mock)
-        service = FeastService(config=mock_feature_store_config)
+        service = FeatureStoreFetchRepo(config=mock_feature_store_config)
         # Explicitly set mocks on the instance for tests using this fixture
         service.feature_store = MagicMock()
         return service
@@ -73,7 +75,7 @@ def test_init_with_disabled_config(
         "drl_trading_core.preprocess.feast.feast_service.FeatureStore"
     ) as mock_feast:
         # When
-        service = FeastService(config=mock_feature_store_config)
+        service = FeatureStoreFetchRepo(config=mock_feature_store_config)
 
         # Then
         assert service.feature_store is None
@@ -281,7 +283,7 @@ def test_create_feature_view(mock_feast_service):
 
 
 def test_store_computed_features_success(
-    mock_feast_service: FeastService, mock_asset_data: AssetPriceDataSet
+    mock_feast_service: FeatureStoreFetchRepo, mock_asset_data: AssetPriceDataSet
 ) -> None:
     """Test store_computed_features correctly stores features."""
     # Given
@@ -328,7 +330,7 @@ def test_store_computed_features_success(
 
 
 def test_store_computed_features_with_exception(
-    mock_feast_service: FeastService, mock_asset_data: AssetPriceDataSet
+    mock_feast_service: FeatureStoreFetchRepo, mock_asset_data: AssetPriceDataSet
 ) -> None:
     """Test store_computed_features gracefully handles exceptions."""
     # Given

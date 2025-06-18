@@ -2,7 +2,9 @@ import logging
 from typing import Dict, Optional, Type
 
 from drl_trading_common.base.base_feature import BaseFeature
-from drl_trading_common.base.discoverable_registry import DiscoverableRegistry
+from drl_trading_common.base.thread_safe_discoverable_registry import (
+    ThreadSafeDiscoverableRegistry,
+)
 from drl_trading_strategy.decorator.feature_type_decorator import (
     get_feature_type_from_class,
 )
@@ -15,7 +17,7 @@ from drl_trading_strategy.utils.feature_type_converter import FeatureTypeConvert
 logger = logging.getLogger(__name__)
 
 
-class FeatureClassRegistry(DiscoverableRegistry[FeatureTypeEnum, BaseFeature], FeatureClassRegistryInterface):
+class FeatureClassRegistry(ThreadSafeDiscoverableRegistry[FeatureTypeEnum, BaseFeature], FeatureClassRegistryInterface):
 
     """
     Concrete implementation of FeatureClassRegistryInterface.
@@ -40,8 +42,6 @@ class FeatureClassRegistry(DiscoverableRegistry[FeatureTypeEnum, BaseFeature], F
         This implementation delegates to the base class discovery method.
         """
         return self.discover_classes(package_name)
-
-
 
     def _validate_class(self, class_type: Type[BaseFeature]) -> None:
         """Validate that the class implements the BaseFeature interface."""
