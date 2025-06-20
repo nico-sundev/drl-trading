@@ -8,11 +8,11 @@ from dask.delayed import Delayed
 from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.config.feature_config import FeatureDefinition, FeaturesConfig
-from drl_trading_common.interfaces.feature.feature_factory_interface import (
+from drl_trading_common.interface.feature.feature_factory_interface import (
     FeatureFactoryInterface,
 )
-from drl_trading_common.models.dataset_identifier import DatasetIdentifier
-from drl_trading_common.models.timeframe import Timeframe
+from drl_trading_common.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.model.timeframe import Timeframe
 from pandas import DataFrame
 
 from drl_trading_core.preprocess.feature.feature_manager import (
@@ -77,12 +77,14 @@ def mock_features_config() -> FeaturesConfig:
     mock_feature_def.enabled = True
     mock_feature_def.parsed_parameter_sets = [mock_param_set]
 
+
+
     # Create features config
     config = MagicMock(spec=FeaturesConfig)
     config.feature_definitions = [mock_feature_def]
     config.dataset_definitions = {
-        "BTCUSD": Timeframe.MINUTE_1,
-        "ETHUSD": Timeframe.MINUTE_5,
+        "BTCUSD": [Timeframe.MINUTE_1],
+        "ETHUSD": [Timeframe.MINUTE_5],
     }
 
     return config

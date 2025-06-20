@@ -5,7 +5,7 @@ from typing import Optional
 
 from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
-from drl_trading_common.models.dataset_identifier import DatasetIdentifier
+from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 
 
 class FeatureFactoryInterface(ABC):

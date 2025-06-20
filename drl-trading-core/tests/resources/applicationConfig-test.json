@@ -1,15 +1,17 @@
-{  "localDataImportConfig": {
+{
+  "appName": "DrlTradingTestApp",
+  "localDataImportConfig": {
     "symbols": [
       {
         "symbol": "EURUSD",
         "datasets": [
           {
-            "timeframe": "H1",
+            "timeframe": "1h",
             "base_dataset": true,
             "file_path": "tests/resources/test_H1.csv"
           },
           {
-            "timeframe": "H4",
+            "timeframe": "4h",
             "base_dataset": false,
             "file_path": "tests/resources/test_H4.csv"
           }
@@ -21,14 +23,8 @@
   },
   "featuresConfig": {
     "datasetDefinitions": {
-      "EURUSD": [
-        "H1",
-        "H4"
-      ],
-      "BTCUSDT": [
-        "H1",
-        "H4"
-      ]
+      "EURUSD": ["1h", "4h"],
+      "BTCUSDT": ["1h", "4h"]
     },
     "featureDefinitions": [
       {
@@ -76,7 +72,9 @@
     "offline_store_path": "tests/resources/test_feature_store_data",
     "entity_name": "symbol",
     "ttl_days": 1,
-    "online_enabled": false
+    "online_enabled": false,
+    "service_name": "ai_trading_feature_definitions",
+    "service_version": "0.0.1"
   },
   "contextFeatureConfig": {
     "primaryContextColumns": ["High", "Low", "Close"],

@@ -1,4 +1,3 @@
-
 import json
 import tempfile
 
@@ -16,12 +15,12 @@ def temp_config_file():
                     "symbol": "EURUSD",
                     "datasets": [
                         {
-                            "timeframe": "H1",
+                            "timeframe": "1h",
                             "base_dataset": True,
                             "file_path": "../../resources/test_H1.csv",
                         },
                         {
-                            "timeframe": "H4",
+                            "timeframe": "1h",
                             "base_dataset": False,
                             "file_path": "../../resources/test_H4.csv",
                         },
@@ -32,6 +31,7 @@ def temp_config_file():
             "strategy": "csv",
         },
         "featuresConfig": {
+            "datasetDefinitions": {"EURUSD": ["1h", "4h"], "BTCUSDT": ["1h", "4h"]},
             "featureDefinitions": [
                 {
                     "name": "rsi",
@@ -43,7 +43,7 @@ def temp_config_file():
                         {"enabled": True, "length": 21},
                     ],
                 }
-            ]
+            ],
         },
         "rlModelConfig": {
             "agents": ["PPO", "A2C", "DDPG", "SAC", "TD3", "Ensemble"],

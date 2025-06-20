@@ -3,10 +3,12 @@ from typing import Optional
 
 from drl_trading_common import BaseParameterSetConfig
 from drl_trading_common.base.base_feature import BaseFeature
-from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
+from drl_trading_common.decorator.feature_role_decorator import feature_role
+from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     TechnicalIndicatorFacadeInterface,
 )
-from drl_trading_common.models.dataset_identifier import DatasetIdentifier
+from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from drl_trading_strategy.decorator import feature_type
 from drl_trading_strategy.decorator.feature_type_decorator import (
     get_feature_type_from_class,
@@ -19,6 +21,7 @@ from pandas import DataFrame
 
 
 @feature_type(FeatureTypeEnum.RSI)
+@feature_role(FeatureRoleEnum.OBSERVATION_SPACE)
 class RsiFeature(BaseFeature):
 
     def __init__(

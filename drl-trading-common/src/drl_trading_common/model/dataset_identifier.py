@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from drl_trading_common.models.timeframe import Timeframe
+from drl_trading_common.model.timeframe import Timeframe
 
 
 @dataclass(frozen=True)

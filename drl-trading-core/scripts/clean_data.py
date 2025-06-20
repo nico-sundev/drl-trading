@@ -2,7 +2,7 @@ import os
 from typing import List
 
 from drl_trading_common.config import LocalDataImportConfig, SymbolConfig
-from drl_trading_common.models import AssetPriceImportProperties
+from drl_trading_common.model import AssetPriceImportProperties
 
 from drl_trading_core.common.data_import.data_import_manager import (
     DataImportManager,

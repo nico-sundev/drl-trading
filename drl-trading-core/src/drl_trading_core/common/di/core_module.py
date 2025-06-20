@@ -11,13 +11,8 @@ from drl_trading_common.config.environment_config import EnvironmentConfig
 from drl_trading_common.config.feature_config import FeaturesConfig, FeatureStoreConfig
 from drl_trading_common.config.local_data_import_config import LocalDataImportConfig
 from drl_trading_common.config.rl_model_config import RlModelConfig
-from drl_trading_strategy.feature.feature_factory import (
-    FeatureFactoryInterface,
-)
-from feast import FeatureStore
 from injector import Module, provider, singleton
 
-from drl_trading_core.common.config.utils import parse_all_parameters
 from drl_trading_core.common.data_import.data_import_manager import (
     DataImportManager,
 )
@@ -36,6 +31,7 @@ from drl_trading_core.preprocess.data_set_utils.strip_service import (
     StripService,
     StripServiceInterface,
 )
+from drl_trading_core.preprocess.feast.feast_provider import FeastProvider
 from drl_trading_core.preprocess.feast.feature_store_save_repo import (
     FeatureStoreSaveRepo,
     FeatureStoreSaveRepoInterface,
@@ -59,23 +55,6 @@ from drl_trading_core.training.services.agent_training_service import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-def _resolve_feature_store_path(
-    feature_store_config: FeatureStoreConfig,
-) -> Optional[str]:
-    """Resolve the feature store path based on configuration."""
-    if not feature_store_config.enabled:
-        return None
-
-    project_root = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
-    )
-    if not os.path.isabs(feature_store_config.repo_path):
-        abs_file_path = os.path.join(project_root, feature_store_config.repo_path)
-    else:
-        abs_file_path = feature_store_config.repo_path
-    return abs_file_path
 
 
 class CoreModule(Module):
@@ -115,11 +94,10 @@ class CoreModule(Module):
     @provider
     @singleton
     def provide_application_config(
-        self, config_path: str, feature_factory: FeatureFactoryInterface
+        self, config_path: str
     ) -> ApplicationConfig:
         """Provide the main application configuration."""
         cfg = ConfigLoader.get_config(ApplicationConfig, config_path)
-        parse_all_parameters(cfg.features_config.feature_definitions, feature_factory)
         return cfg
 
     # Configuration sections - these are just data extractions
@@ -167,16 +145,6 @@ class CoreModule(Module):
             application_config.context_feature_config
         )  # Complex factory logic that can't be auto-wired
 
-    @provider
-    @singleton
-    def provide_feature_store(
-        self, feature_store_config: FeatureStoreConfig
-    ) -> Optional[FeatureStore]:
-        """Provide FeatureStore instance with complex path resolution."""
-        repo_path = _resolve_feature_store_path(feature_store_config)
-        return FeatureStore(repo_path=repo_path) if repo_path else None
-
-
     def configure(self, binder) -> None:
         """Configure interface bindings for auto-wiring services with @inject decorators."""
         from drl_trading_core.preprocess.compute.computing_service import (
@@ -189,18 +157,24 @@ class CoreModule(Module):
         binder.bind(MergeServiceInterface, to=MergeService, scope=singleton)
         binder.bind(StripServiceInterface, to=StripService, scope=singleton)
         binder.bind(SplitServiceInterface, to=SplitService, scope=singleton)
-        binder.bind(FeatureComputingServiceInterface, to=FeatureComputingService, scope=singleton)
+        binder.bind(
+            FeatureComputingServiceInterface,
+            to=FeatureComputingService,
+            scope=singleton,
+        )
+        binder.bind(FeastProvider, to=FeastProvider, scope=singleton)
         binder.bind(FeatureAggregatorInterface, to=FeatureAggregator, scope=singleton)
-        binder.bind(FeatureStoreSaveRepoInterface, to=FeatureStoreSaveRepo, scope=singleton)
-        binder.bind(FeatureStoreFetchRepoInterface, to=FeatureStoreFetchRepo, scope=singleton)
+        binder.bind(
+            FeatureStoreSaveRepoInterface, to=FeatureStoreSaveRepo, scope=singleton
+        )
+        binder.bind(
+            FeatureStoreFetchRepoInterface, to=FeatureStoreFetchRepo, scope=singleton
+        )
         binder.bind(FeatureManager, to=FeatureManager, scope=singleton)
         binder.bind(PreprocessServiceInterface, to=PreprocessService, scope=singleton)
-        binder.bind(DataImportStrategyFactory, to=DataImportStrategyFactory, scope=singleton)
-        binder.bind(AgentTrainingServiceInterface, to=AgentTrainingService, scope=singleton)
-
-    # Need in "drl-trading-training" or "drl-trading-inference"
-    # @provider
-    # @singleton
-    # def provide_message_bus(self) -> TradingMessageBus:
-    #     """Provide message bus based on deployment mode."""
-    #     return TradingMessageBusFactory.create_message_bus()
+        binder.bind(
+            DataImportStrategyFactory, to=DataImportStrategyFactory, scope=singleton
+        )
+        binder.bind(
+            AgentTrainingServiceInterface, to=AgentTrainingService, scope=singleton
+        )

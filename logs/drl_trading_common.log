@@ -272,3 +272,115 @@
 2025-06-18 23:49:47,740 [INFO] drl_trading_core.preprocess.feature.feature_manager: Computing latest values for 1 features using Dask delayed execution...
 2025-06-18 23:49:47,740 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error during Dask delayed computation for latest values: Dask compute failed
 2025-06-18 23:49:47,764 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error combining DataFrames with concat: Concat failed
+2025-06-19 00:08:53,178 [INFO] drl_trading_core.preprocess.feature.feature_manager: Starting feature initialization process...
+2025-06-19 00:08:53,178 [INFO] drl_trading_core.preprocess.feature.feature_manager: Generated 2 feature configurations
+2025-06-19 00:08:53,178 [INFO] drl_trading_core.preprocess.feature.feature_manager: === Feature Initialization Summary ===
+2025-06-19 00:08:53,179 [INFO] drl_trading_core.preprocess.feature.feature_manager: Total features created: 2
+2025-06-19 00:08:53,179 [INFO] drl_trading_core.preprocess.feature.feature_manager: Creation failures: 0
+2025-06-19 00:08:53,180 [INFO] drl_trading_core.preprocess.feature.feature_manager: Features by symbol:
+2025-06-19 00:08:53,181 [INFO] drl_trading_core.preprocess.feature.feature_manager:   BTCUSD: 1 features
+2025-06-19 00:08:53,181 [INFO] drl_trading_core.preprocess.feature.feature_manager:   ETHUSD: 1 features
+2025-06-19 00:08:53,181 [INFO] drl_trading_core.preprocess.feature.feature_manager: Features by timeframe:
+2025-06-19 00:08:53,181 [INFO] drl_trading_core.preprocess.feature.feature_manager:   1m: 1 features
+2025-06-19 00:08:53,181 [INFO] drl_trading_core.preprocess.feature.feature_manager:   5m: 1 features
+2025-06-19 00:08:53,181 [INFO] drl_trading_core.preprocess.feature.feature_manager: Features by type:
+2025-06-19 00:08:53,181 [INFO] drl_trading_core.preprocess.feature.feature_manager:   TestFeature: 2 instances
+2025-06-19 00:08:53,181 [INFO] drl_trading_core.preprocess.feature.feature_manager: =======================================
+2025-06-19 00:08:53,181 [INFO] drl_trading_core.preprocess.feature.feature_manager: Feature initialization completed: 2 instances created from 2 configurations
+2025-06-19 00:08:53,206 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Failed to create feature instance for 'TestFeature'
+2025-06-19 00:08:53,207 [WARNING] drl_trading_core.preprocess.feature.feature_manager: Failed to create feature TestFeature for DatasetIdentifier(symbol='BTCUSD', timeframe=<Timeframe.MINUTE_1: '1m'>)
+2025-06-19 00:08:53,207 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Failed to create feature instance for 'TestFeature'
+2025-06-19 00:08:53,207 [WARNING] drl_trading_core.preprocess.feature.feature_manager: Failed to create feature TestFeature for DatasetIdentifier(symbol='ETHUSD', timeframe=<Timeframe.MINUTE_5: '5m'>)
+2025-06-19 00:08:53,207 [WARNING] drl_trading_core.preprocess.feature.feature_manager: Failed to create 2 feature instances
+2025-06-19 00:08:53,213 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error creating feature 'TestFeature': Creation failed
+2025-06-19 00:08:53,213 [WARNING] drl_trading_core.preprocess.feature.feature_manager: Failed to create feature TestFeature for DatasetIdentifier(symbol='BTCUSD', timeframe=<Timeframe.MINUTE_1: '1m'>)
+2025-06-19 00:08:53,213 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error creating feature 'TestFeature': Creation failed
+2025-06-19 00:08:53,214 [WARNING] drl_trading_core.preprocess.feature.feature_manager: Failed to create feature TestFeature for DatasetIdentifier(symbol='ETHUSD', timeframe=<Timeframe.MINUTE_5: '5m'>)
+2025-06-19 00:08:53,214 [WARNING] drl_trading_core.preprocess.feature.feature_manager: Failed to create 2 feature instances
+2025-06-19 00:08:53,240 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Failed to create feature instance for 'TestFeature'
+2025-06-19 00:08:53,246 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error creating feature 'TestFeature': Factory error
+2025-06-19 00:08:53,284 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error updating feature <MagicMock id='2000637496832'>: Update failed
+2025-06-19 00:08:53,339 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Failed to create feature instance for 'TestFeature'
+2025-06-19 00:08:53,348 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error computing feature TestFeature with hash test_hash: Computation failed
+2025-06-19 00:08:53,367 [INFO] drl_trading_core.preprocess.feature.feature_manager: Generated 2 delayed latest feature computation tasks.
+2025-06-19 00:08:53,375 [INFO] drl_trading_core.preprocess.feature.feature_manager: Generated 0 delayed latest feature computation tasks.
+2025-06-19 00:08:53,381 [INFO] drl_trading_core.preprocess.feature.feature_manager: Computing 2 features using Dask delayed execution...
+2025-06-19 00:08:53,393 [WARNING] drl_trading_core.preprocess.feature.feature_manager: No features initialized. Call initialize_features() first.
+2025-06-19 00:08:53,399 [INFO] drl_trading_core.preprocess.feature.feature_manager: Computing 1 features using Dask delayed execution...
+2025-06-19 00:08:53,399 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error during Dask delayed computation: Dask compute failed
+2025-06-19 00:08:53,407 [INFO] drl_trading_core.preprocess.feature.feature_manager: Computing 2 features using Dask delayed execution...
+2025-06-19 00:08:53,414 [INFO] drl_trading_core.preprocess.feature.feature_manager: Computing 1 features using Dask delayed execution...
+2025-06-19 00:08:53,415 [WARNING] drl_trading_core.preprocess.feature.feature_manager: No valid feature results obtained from computation.
+2025-06-19 00:08:53,421 [INFO] drl_trading_core.preprocess.feature.feature_manager: Generated 2 delayed latest feature computation tasks.
+2025-06-19 00:08:53,422 [INFO] drl_trading_core.preprocess.feature.feature_manager: Computing latest values for 2 features using Dask delayed execution...
+2025-06-19 00:08:53,431 [WARNING] drl_trading_core.preprocess.feature.feature_manager: No features initialized. Call initialize_features() first.
+2025-06-19 00:08:53,438 [INFO] drl_trading_core.preprocess.feature.feature_manager: Generated 1 delayed latest feature computation tasks.
+2025-06-19 00:08:53,438 [INFO] drl_trading_core.preprocess.feature.feature_manager: Computing latest values for 1 features using Dask delayed execution...
+2025-06-19 00:08:53,438 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error during Dask delayed computation for latest values: Dask compute failed
+2025-06-19 00:08:53,463 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error combining DataFrames with concat: Concat failed
+2025-06-19 00:10:57,138 [INFO] drl_trading_core.common.data_import.data_import_strategy_factory: Creating import service using strategy: csv
+2025-06-19 00:10:57,468 [WARNING] drl_trading_core.preprocess.data_set_utils.merge_service: Higher timeframe dataframe is empty or has insufficient data. Returning base dataframe with only the index.
+2025-06-19 00:10:57,478 [ERROR] drl_trading_core.preprocess.data_set_utils.split_service: Split ratios sum to 1.4, expected 1.0
+2025-06-19 00:10:57,481 [ERROR] drl_trading_core.preprocess.data_set_utils.split_service: Missing split ratios - must be provided in parameters or config
+2025-06-19 00:10:57,491 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping higher timeframe dataframe. Base start: 2008-10-03 13:00:00, Base end: 2008-10-04 18:00:00, Timeframe duration: 0 days 04:00:00, Begin threshold: 2008-10-03 05:00:00, End threshold: 2008-10-05 02:00:00
+2025-06-19 00:10:57,493 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping complete. Removed 19 rows. First timestamp after strip: 2008-10-03 08:00:00, Last timestamp after strip: 2008-10-05 00:00:00
+2025-06-19 00:10:57,510 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping higher timeframe dataframe. Base start: 2008-10-03 13:00:00, Base end: 2008-10-04 18:00:00, Timeframe duration: 0 days 04:00:00, Begin threshold: 2008-10-03 05:00:00, End threshold: 2008-10-05 02:00:00
+2025-06-19 00:10:57,511 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping complete. Removed 25 rows. First timestamp after strip: 2008-10-03 08:00:00, Last timestamp after strip: 2008-10-05 00:00:00
+2025-06-19 00:10:57,522 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping higher timeframe dataframe. Base start: 2008-10-03 13:00:00, Base end: 2008-10-04 18:00:00, Timeframe duration: 0 days 04:00:00, Begin threshold: 2008-10-03 05:00:00, End threshold: 2008-10-05 02:00:00
+2025-06-19 00:10:57,523 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping complete. Removed 25 rows. First timestamp after strip: 2008-10-03 08:00:00, Last timestamp after strip: 2008-10-05 00:00:00
+2025-06-19 00:10:57,581 [ERROR] drl_trading_core.preprocess.data_set_utils.util: Cannot detect timeframe: DataFrame has less than 2 rows
+2025-06-19 00:10:57,584 [ERROR] drl_trading_core.preprocess.data_set_utils.util: Cannot detect timeframe: DataFrame is None
+2025-06-19 00:10:57,589 [ERROR] drl_trading_core.preprocess.data_set_utils.util: Cannot detect timeframe: No DatetimeIndex or 'Time' column found in DataFrame
+2025-06-19 00:10:57,591 [ERROR] drl_trading_core.preprocess.data_set_utils.util: Cannot detect timeframe: DataFrame has less than 2 rows
+2025-06-19 00:10:57,598 [ERROR] drl_trading_core.preprocess.compute.computing_service: Failed to initialize computing service: Test error
+2025-06-19 00:10:57,608 [WARNING] drl_trading_core.preprocess.compute.computing_service: ComputingService not initialized. Initializing with provided data.
+2025-06-19 00:10:57,618 [ERROR] drl_trading_core.preprocess.compute.computing_service: ComputingService not initialized. Cannot compute incremental data.
+2025-06-19 00:10:57,624 [WARNING] drl_trading_core.preprocess.compute.computing_service: No incremental results computed. Returning empty Series.
+2025-06-19 00:10:58,609 [INFO] drl_trading_core.preprocess.feature.feature_manager: Starting feature initialization process...
+2025-06-19 00:10:58,609 [INFO] drl_trading_core.preprocess.feature.feature_manager: Generated 2 feature configurations
+2025-06-19 00:10:58,610 [INFO] drl_trading_core.preprocess.feature.feature_manager: === Feature Initialization Summary ===
+2025-06-19 00:10:58,610 [INFO] drl_trading_core.preprocess.feature.feature_manager: Total features created: 2
+2025-06-19 00:10:58,610 [INFO] drl_trading_core.preprocess.feature.feature_manager: Creation failures: 0
+2025-06-19 00:10:58,610 [INFO] drl_trading_core.preprocess.feature.feature_manager: Features by symbol:
+2025-06-19 00:10:58,611 [INFO] drl_trading_core.preprocess.feature.feature_manager:   BTCUSD: 1 features
+2025-06-19 00:10:58,611 [INFO] drl_trading_core.preprocess.feature.feature_manager:   ETHUSD: 1 features
+2025-06-19 00:10:58,611 [INFO] drl_trading_core.preprocess.feature.feature_manager: Features by timeframe:
+2025-06-19 00:10:58,611 [INFO] drl_trading_core.preprocess.feature.feature_manager:   1m: 1 features
+2025-06-19 00:10:58,611 [INFO] drl_trading_core.preprocess.feature.feature_manager:   5m: 1 features
+2025-06-19 00:10:58,611 [INFO] drl_trading_core.preprocess.feature.feature_manager: Features by type:
+2025-06-19 00:10:58,611 [INFO] drl_trading_core.preprocess.feature.feature_manager:   TestFeature: 2 instances
+2025-06-19 00:10:58,612 [INFO] drl_trading_core.preprocess.feature.feature_manager: =======================================
+2025-06-19 00:10:58,612 [INFO] drl_trading_core.preprocess.feature.feature_manager: Feature initialization completed: 2 instances created from 2 configurations
+2025-06-19 00:10:58,634 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Failed to create feature instance for 'TestFeature'
+2025-06-19 00:10:58,634 [WARNING] drl_trading_core.preprocess.feature.feature_manager: Failed to create feature TestFeature for DatasetIdentifier(symbol='BTCUSD', timeframe=<Timeframe.MINUTE_1: '1m'>)
+2025-06-19 00:10:58,634 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Failed to create feature instance for 'TestFeature'
+2025-06-19 00:10:58,634 [WARNING] drl_trading_core.preprocess.feature.feature_manager: Failed to create feature TestFeature for DatasetIdentifier(symbol='ETHUSD', timeframe=<Timeframe.MINUTE_5: '5m'>)
+2025-06-19 00:10:58,635 [WARNING] drl_trading_core.preprocess.feature.feature_manager: Failed to create 2 feature instances
+2025-06-19 00:10:58,641 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error creating feature 'TestFeature': Creation failed
+2025-06-19 00:10:58,641 [WARNING] drl_trading_core.preprocess.feature.feature_manager: Failed to create feature TestFeature for DatasetIdentifier(symbol='BTCUSD', timeframe=<Timeframe.MINUTE_1: '1m'>)
+2025-06-19 00:10:58,642 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error creating feature 'TestFeature': Creation failed
+2025-06-19 00:10:58,642 [WARNING] drl_trading_core.preprocess.feature.feature_manager: Failed to create feature TestFeature for DatasetIdentifier(symbol='ETHUSD', timeframe=<Timeframe.MINUTE_5: '5m'>)
+2025-06-19 00:10:58,642 [WARNING] drl_trading_core.preprocess.feature.feature_manager: Failed to create 2 feature instances
+2025-06-19 00:10:58,667 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Failed to create feature instance for 'TestFeature'
+2025-06-19 00:10:58,675 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error creating feature 'TestFeature': Factory error
+2025-06-19 00:10:58,709 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error updating feature <MagicMock id='2411489120560'>: Update failed
+2025-06-19 00:10:58,757 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Failed to create feature instance for 'TestFeature'
+2025-06-19 00:10:58,764 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error computing feature TestFeature with hash test_hash: Computation failed
+2025-06-19 00:10:58,782 [INFO] drl_trading_core.preprocess.feature.feature_manager: Generated 2 delayed latest feature computation tasks.
+2025-06-19 00:10:58,791 [INFO] drl_trading_core.preprocess.feature.feature_manager: Generated 0 delayed latest feature computation tasks.
+2025-06-19 00:10:58,796 [INFO] drl_trading_core.preprocess.feature.feature_manager: Computing 2 features using Dask delayed execution...
+2025-06-19 00:10:58,807 [WARNING] drl_trading_core.preprocess.feature.feature_manager: No features initialized. Call initialize_features() first.
+2025-06-19 00:10:58,814 [INFO] drl_trading_core.preprocess.feature.feature_manager: Computing 1 features using Dask delayed execution...
+2025-06-19 00:10:58,814 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error during Dask delayed computation: Dask compute failed
+2025-06-19 00:10:58,822 [INFO] drl_trading_core.preprocess.feature.feature_manager: Computing 2 features using Dask delayed execution...
+2025-06-19 00:10:58,828 [INFO] drl_trading_core.preprocess.feature.feature_manager: Computing 1 features using Dask delayed execution...
+2025-06-19 00:10:58,828 [WARNING] drl_trading_core.preprocess.feature.feature_manager: No valid feature results obtained from computation.
+2025-06-19 00:10:58,834 [INFO] drl_trading_core.preprocess.feature.feature_manager: Generated 2 delayed latest feature computation tasks.
+2025-06-19 00:10:58,834 [INFO] drl_trading_core.preprocess.feature.feature_manager: Computing latest values for 2 features using Dask delayed execution...
+2025-06-19 00:10:58,846 [WARNING] drl_trading_core.preprocess.feature.feature_manager: No features initialized. Call initialize_features() first.
+2025-06-19 00:10:58,851 [INFO] drl_trading_core.preprocess.feature.feature_manager: Generated 1 delayed latest feature computation tasks.
+2025-06-19 00:10:58,851 [INFO] drl_trading_core.preprocess.feature.feature_manager: Computing latest values for 1 features using Dask delayed execution...
+2025-06-19 00:10:58,851 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error during Dask delayed computation for latest values: Dask compute failed
+2025-06-19 00:10:58,876 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error combining DataFrames with concat: Concat failed
+2025-06-19 00:14:05,433 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping higher timeframe dataframe. Base start: 2008-10-03 13:00:00, Base end: 2008-10-04 18:00:00, Timeframe duration: 0 days 04:00:00, Begin threshold: 2008-10-03 05:00:00, End threshold: 2008-10-05 02:00:00
+2025-06-19 00:14:05,434 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping complete. Removed 25 rows. First timestamp after strip: 2008-10-03 08:00:00, Last timestamp after strip: 2008-10-05 00:00:00

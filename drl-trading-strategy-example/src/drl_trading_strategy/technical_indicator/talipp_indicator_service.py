@@ -2,7 +2,7 @@ import threading
 from typing import Dict, Optional
 
 from drl_trading_common.base.base_indicator import BaseIndicator
-from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
+from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     TechnicalIndicatorFacadeInterface,
 )
 from drl_trading_strategy.enum.indicator_type_enum import IndicatorTypeEnum

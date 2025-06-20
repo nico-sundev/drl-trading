@@ -19,7 +19,7 @@ def mocked_config() -> ApplicationConfig:
     config_path = os.path.join(
         os.path.dirname(__file__), "../resources/applicationConfig-test.json"
     )
-    return ConfigLoader.get_config(config_path)
+    return ConfigLoader.get_config(ApplicationConfig, path=config_path)
 
 
 @pytest.fixture(scope="session")

@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pandas as pd
 import pytest
 from drl_trading_common.config.feature_config import FeaturesConfig
-from drl_trading_common.interfaces.feature.feature_factory_interface import (
+from drl_trading_common.interface.feature.feature_factory_interface import (
     FeatureFactoryInterface,
 )
 

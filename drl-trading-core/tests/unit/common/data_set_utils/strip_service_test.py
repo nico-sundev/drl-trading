@@ -2,7 +2,7 @@ from datetime import timedelta
 
 import pandas as pd
 import pytest
-from drl_trading_common.models.timeframe import Timeframe
+from drl_trading_common.model.timeframe import Timeframe
 
 from drl_trading_core.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_core.preprocess.data_set_utils.strip_service import StripService
@@ -121,8 +121,8 @@ def test_strip_asset_price_datasets_complete(
     # Given
     service = StripService()
     datasets = [
-        AssetPriceDataSet("H1", True, base_dataset),
-        AssetPriceDataSet("H4", False, extended_higher_timeframe_dataset),
+        AssetPriceDataSet(Timeframe.HOUR_1, True, base_dataset),
+        AssetPriceDataSet(Timeframe.HOUR_4, False, extended_higher_timeframe_dataset),
     ]
 
     base_start_timestamp = base_dataset.index[0]

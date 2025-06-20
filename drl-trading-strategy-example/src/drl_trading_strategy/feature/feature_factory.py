@@ -3,13 +3,13 @@ from typing import Optional
 
 from drl_trading_common.base import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
-from drl_trading_common.interfaces.feature.feature_factory_interface import (
+from drl_trading_common.interface.feature.feature_factory_interface import (
     FeatureFactoryInterface,
 )
-from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
+from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     TechnicalIndicatorFacadeInterface,
 )
-from drl_trading_common.models.dataset_identifier import DatasetIdentifier
+from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from drl_trading_strategy.feature.registry.feature_class_registry_interface import (
     FeatureClassRegistryInterface,
 )

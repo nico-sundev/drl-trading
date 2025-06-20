@@ -2,8 +2,9 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict
 
 import pandas as pd
-from drl_trading_common.models.timeframe import Timeframe
+from drl_trading_common.model.timeframe import Timeframe
 from feast import FeatureService, FeatureStore
+from injector import inject
 
 # --- FEATURE FETCH REPOSITORY INTERFACE ---
 
@@ -21,7 +22,7 @@ class IFeatureFetchRepository(ABC):
         """
         pass
 
-
+@inject
 class FeatureFetchRepository(IFeatureFetchRepository):
     def __init__(
         self,

@@ -165,7 +165,7 @@ class FeatureStoreFetchRepo(FeatureStoreFetchRepoInterface):
         """
         return Entity(
             name=self.config.entity_name,
-            join_keys=[self.config.entity_name],
+            join_keys=["symbol", "timeframe"],
             description=f"Entity for {symbol}/{timeframe} asset price data",
         )
 

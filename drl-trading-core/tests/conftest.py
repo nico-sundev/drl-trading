@@ -8,7 +8,7 @@ from drl_trading_common import BaseParameterSetConfig
 from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.config.application_config import ApplicationConfig
 from drl_trading_common.config.config_loader import ConfigLoader
-from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
+from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     TechnicalIndicatorFacadeInterface,
 )
 from drl_trading_strategy.feature.feature_factory import (

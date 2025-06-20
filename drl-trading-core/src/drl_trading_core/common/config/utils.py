@@ -25,7 +25,10 @@ def parse_parameters(
     if not feature_definition.name:
         raise ValueError("Feature name is required")
 
-    # Clear any existing parsed parameters
+    # early exit if parameter sets were already parsed
+    if feature_definition.parsed_parameter_sets:
+        return
+
     feature_definition.parsed_parameter_sets = []
 
     for param_dict in feature_definition.parameter_sets:
@@ -48,7 +51,6 @@ def parse_parameters(
         raise ValueError(
             f"Failed to parse any parameter sets for feature '{feature_definition.name}'"
         )
-
 
 def parse_all_parameters(
     feature_definitions: List[FeatureDefinition],

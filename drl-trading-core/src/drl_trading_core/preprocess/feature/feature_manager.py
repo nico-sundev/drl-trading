@@ -7,13 +7,16 @@ from dask.delayed import Delayed
 from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.config.feature_config import FeatureDefinition, FeaturesConfig
-from drl_trading_common.interfaces.computable import Computable
-from drl_trading_common.interfaces.feature.feature_factory_interface import (
+from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+from drl_trading_common.interface.computable import Computable
+from drl_trading_common.interface.feature.feature_factory_interface import (
     FeatureFactoryInterface,
 )
-from drl_trading_common.models.dataset_identifier import DatasetIdentifier
+from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from injector import inject
 from pandas import DataFrame
+
+from drl_trading_core.common.config.utils import parse_all_parameters
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +73,10 @@ class FeatureManager(Computable):
         """
         self.config = config
         self.feature_factory = feature_factory
+
+        # Populate parsed feature configurations
+        parse_all_parameters(self.config.features_config.feature_definitions, feature_factory)
+
         # Enhanced feature storage with structured, observable keys
         # Key provides full context: feature + symbol + timeframe + parameters
         self._features: Dict[FeatureKey, BaseFeature] = {}
@@ -107,6 +114,20 @@ class FeatureManager(Computable):
         self._log_initialization_summary()
 
         logger.info(f"Feature initialization completed: {len(self._features)} instances created from {len(feature_configs)} configurations")
+
+    def get_features_by_role(
+        self, role: FeatureRoleEnum):
+        """
+        Get all features by their role.
+        Args:
+            role: The role to filter features by.
+        Returns:
+            List[BaseFeature]: List of features matching the specified role.
+        """
+        return [
+            feature for feature in self._features.values()
+            if feature.get_feature_role() == role
+        ]
 
     def _update_initialization_metrics(self, created_features: List[Tuple[FeatureKey, BaseFeature]]) -> None:
         """
@@ -186,7 +207,8 @@ class FeatureManager(Computable):
         # Get dataset identifiers
         dataset_ids = [
             DatasetIdentifier(symbol, timeframe)
-            for symbol, timeframe in self.config.dataset_definitions.items()
+            for symbol, timeframes in self.config.dataset_definitions.items()
+            for timeframe in timeframes
         ]
 
         # Use cartesian product to generate all combinations efficiently

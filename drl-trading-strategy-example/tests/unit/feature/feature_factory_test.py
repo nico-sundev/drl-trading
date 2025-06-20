@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 from drl_trading_common import BaseParameterSetConfig
 from drl_trading_common.base.base_feature import BaseFeature
-from drl_trading_common.interfaces.indicator.technical_indicator_facade_interface import (
+from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     TechnicalIndicatorFacadeInterface,
 )
 from drl_trading_strategy.feature.feature_factory import FeatureFactory

@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg14
+    container_name: timescaledb
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: marketdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+
+  kafka:
+    image: bitnami/kafka:3.7.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,PLAINTEXT_INTERNAL://:29092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT_INTERNAL
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
+    ports:
+      - "9092:9092"
+
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka-init:
+    image: bitnami/kafka:3.7.0
+    container_name: kafka-init
+    depends_on:
+      - kafka
+    entrypoint: /bin/bash
+    command: -c "
+      sleep 10 && \
+      kafka-topics.sh --create --if-not-exists --topic ready.rawdata.batch \
+        --bootstrap-server kafka:29092 \
+        --replication-factor 1 --partitions 1 && \
+      kafka-topics.sh --create --if-not-exists --topic ready.rawdata.increment \
+        --bootstrap-server kafka:29092 \
+        --replication-factor 1 --partitions 1"
+
+
+
+volumes:
+  timescale_data:

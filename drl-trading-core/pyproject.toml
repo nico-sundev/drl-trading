@@ -108,7 +108,7 @@ follow_imports = "silent"
 exclude = "(.*tests/.*)|(.*todo.*)\\.py$"
 
 [[tool.mypy.overrides]]
-module = ["pandas.*", "numpy.*", "pytest.*"]
+module = ["pandas.*", "numpy.*", "pytest.*", "drl_trading_common.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

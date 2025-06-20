@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from ..models import AssetPriceImportProperties
+from ..model import AssetPriceImportProperties
 from ..base.base_schema import BaseSchema
 
 

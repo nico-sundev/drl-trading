@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 
-from drl_trading_common.models.timeframe import Timeframe
+from drl_trading_common.model.timeframe import Timeframe
 from pydantic import Field
 
 from ..base.base_parameter_set_config import BaseParameterSetConfig
@@ -14,6 +14,8 @@ class FeatureStoreConfig(BaseSchema):
     entity_name: str
     ttl_days: int
     online_enabled: bool
+    service_name: str
+    service_version: str
 
 class FeatureDefinition(BaseSchema):
     """Feature definition configuration.
@@ -29,5 +31,5 @@ class FeatureDefinition(BaseSchema):
     parsed_parameter_sets: List[BaseParameterSetConfig] = Field(default_factory=list)
 
 class FeaturesConfig(BaseSchema):
-    dataset_definitions: Dict[str, Timeframe]
+    dataset_definitions: Dict[str, List[Timeframe]]
     feature_definitions: List[FeatureDefinition]

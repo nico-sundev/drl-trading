@@ -5,7 +5,7 @@ from typing import List, Optional
 
 import pandas_ta as ta
 from drl_trading_common.config.context_feature_config import ContextFeatureConfig
-from drl_trading_common.interfaces.feature.context_feature_service_interface import (
+from drl_trading_common.interface.feature.context_feature_service_interface import (
     ContextFeatureServiceInterface,
 )
 from drl_trading_common.utils import ensure_datetime_index
