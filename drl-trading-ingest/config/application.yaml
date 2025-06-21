@@ -1,0 +1,69 @@
+# =============================================================================
+# DRL Trading Data Ingestion Service Configuration
+# =============================================================================
+# This configuration aligns with the current architecture and DataIngestionConfig class
+
+# =============================================================================
+# INFRASTRUCTURE CONFIGURATION (maps to InfrastructureConfig)
+# =============================================================================
+infrastructure:
+  deployment_mode: "development"
+
+  messaging:
+    provider: "in_memory"  # in_memory for training, rabbitmq for production
+    host: null
+    port: null
+    username: null
+    password: null
+    vhost: null
+
+  database:
+    provider: "postgresql"
+    host: "localhost"
+    port: 5432
+    database: "drl_trading"
+    username: "trading_user"
+    password: "secure_password"
+
+  logging:
+    level: "INFO"
+    format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    file_path: "logs/data-ingestion.log"
+    console_enabled: true
+    rotation_enabled: true
+    max_bytes: 10485760
+    backup_count: 5
+
+  monitoring:
+    prometheus_enabled: false
+    prometheus_port: 9090
+    jaeger_enabled: false
+    jaeger_endpoint: null
+
+# =============================================================================
+# DATA SOURCES (maps to data_sources in DataIngestionConfig)
+# =============================================================================
+data_sources:
+  mt5:
+    enabled: true
+    symbols:
+      - "EURUSD"
+      - "GBPUSD"
+    timeframes:
+      - "M1"
+      - "M5"
+      - "H1"
+    max_bars: 10000
+
+  binance:
+    enabled: false
+    api_key_env: "BINANCE_API_KEY"
+    secret_key_env: "BINANCE_SECRET_KEY"
+
+# =============================================================================
+# MESSAGE ROUTING (maps to message_routing in DataIngestionConfig)
+# =============================================================================
+message_routing:
+  market_data_topic: "market_data"
+  heartbeat_interval: 30
+  batch_size: 100

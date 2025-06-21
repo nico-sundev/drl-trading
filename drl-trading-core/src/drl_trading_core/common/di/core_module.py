@@ -143,8 +143,7 @@ class CoreModule(Module):
         """Provide context feature configuration."""
         return (
             application_config.context_feature_config
-        )  # Complex factory logic that can't be auto-wired
-
+        )
     def configure(self, binder) -> None:
         """Configure interface bindings for auto-wiring services with @inject decorators."""
         from drl_trading_core.preprocess.compute.computing_service import (

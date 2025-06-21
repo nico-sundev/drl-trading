@@ -20,16 +20,19 @@ dependencies = [
     # Core dependencies for runtime
     "numpy",
     "pandas",
-    "yfinance",  # Yahoo Finance API
-    "boto3",  # AWS S3 integration
-    "pyarrow",  # Parquet file support
-    "requests",  # HTTP requests for APIs
-    "websocket-client",  # WebSocket connections for real-time data
+    "yfinance", # Yahoo Finance API
+    "boto3", # AWS S3 integration
+    "pyarrow", # Parquet file support
+    "requests", # HTTP requests for APIs
+    "websocket-client", # WebSocket connections for real-time data
     # API and services
     "click",
     # Dependency injection framework
     "dependency_injector",
-    "pandas-stubs"
+    "pandas-stubs",
+    "flask>=3.1.1",
+    "psycopg2-binary>=2.9.10",
+    "kafka-python>=2.2.13",
 ]
 
 [project.optional-dependencies]

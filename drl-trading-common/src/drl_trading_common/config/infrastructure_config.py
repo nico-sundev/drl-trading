@@ -5,7 +5,7 @@ from drl_trading_common.base.base_schema import BaseSchema
 
 class MessagingConfig(BaseSchema):
     """Message bus configuration."""
-    provider: str = "rabbitmq"  # rabbitmq | in_memory
+    provider: str = "kafka"  # rabbitmq | in_memory
     host: Optional[str] = None
     port: Optional[int] = None
     username: Optional[str] = None
