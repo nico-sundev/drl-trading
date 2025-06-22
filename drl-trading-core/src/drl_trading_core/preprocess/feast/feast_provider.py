@@ -4,6 +4,7 @@ from datetime import timedelta
 from typing import Optional
 
 from drl_trading_common.base.base_feature import BaseFeature
+from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.config.feature_config import FeatureStoreConfig
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.model.dataset_identifier import DatasetIdentifier
@@ -13,6 +14,7 @@ from feast.types import Float32
 from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
 
 logger = logging.getLogger(__name__)
+
 
 class FeastProvider:
     """
@@ -34,7 +36,7 @@ class FeastProvider:
         self.feature_manager = feature_manager
         self.feature_store_config = feature_store_config
         self._feature_store = FeatureStore(repo_path=self._resolve_feature_store_path())
-        self._feature_service = self.feature_store.get_feature_service(
+        self._feature_service = self._feature_store.get_feature_service(
             feature_store_config.service_name
         )
 
@@ -63,10 +65,16 @@ class FeastProvider:
         Returns:
             bool: True if the feature store is enabled, False otherwise
         """
-        return self.config.enabled and self.feature_store
+        return self.feature_store_config.enabled
 
     def _resolve_feature_store_path(self) -> Optional[str]:
-        """Resolve the feature store path based on configuration."""
+        """
+        Resolve the feature store path based on configuration.
+        If the path is relative, it will be resolved against the project root directory.
+
+        Returns:
+            Optional[str]: Absolute path to the feature store repository, or None if not enabled
+        """
         if not self.feature_store_config.enabled:
             return None
 
@@ -92,16 +100,22 @@ class FeastProvider:
             list[Field]: List of fields for the feature view
         """
         fields = []
-        feature_view_name = self._get_feature_view_name(feature.get_feature_name(), feature.get_config().hash_id())
+        feature_name = self._get_feature_name(
+            feature.get_feature_name(), feature.get_config()
+        )
+        logger.debug(f"Feast fields will be created for feature: {feature_name}")
 
         for sub_feature in feature.get_sub_features_names():
-            fields.append(Field(name=f"{feature_view_name}_{sub_feature}", dtype=Float32))
+            feast_field_name = f"{feature_name}_{sub_feature}"
+            logger.debug(f"Creating feast field:{feast_field_name}")
+            fields.append(
+                Field(name=feast_field_name, dtype=Float32)
+            )
 
         return fields
 
     def create_feature_view(
         self,
-        entity: Entity,
         dataset_id: DatasetIdentifier,
         feature_view_name: str,
         feature_role: FeatureRoleEnum,
@@ -120,23 +134,23 @@ class FeastProvider:
         # Create a file source for the feature
         source = FileSource(
             name=f"{feature_view_name}_source",
-            path=self.config.offline_store_path,
+            path=self.feature_store_config.offline_store_path,
             timestamp_field="event_timestamp",
         )
 
         # Create fields for the feature view
         fields = []
 
-        for feature in self.feature_manager.get_features_by_role(
-            feature_role
-        ):
+        logger.debug(f"Feast feature view will be created for feature role: {feature_role.value}")
+
+        for feature in self.feature_manager.get_features_by_role(feature_role):
             fields.extend(self._create_fields(feature))
 
         # Create and return the feature view
         return FeatureView(
             name=feature_view_name,
-            entities=[entity],
-            ttl=timedelta(days=self.config.ttl_days),
+            entities=[self.get_entity(dataset_id)],
+            ttl=timedelta(days=self.feature_store_config.ttl_days),
             schema=fields,
             online=False,
             source=source,
@@ -222,26 +236,25 @@ class FeastProvider:
             Entity: Feast entity for this symbol/timeframe combination
         """
         return Entity(
-            name=self.config.entity_name,
+            name=self.feature_store_config.entity_name,
             join_keys=["symbol", "timeframe"],
             description=f"Entity for {dataset_id.symbol}{{{dataset_id.timeframe.value}}} asset price data",
         )
 
-    def _get_feature_view_name(self, feature_name: str, param_hash: str) -> str:
+    def _get_feature_name(self, feature_name: str, feature_config: BaseParameterSetConfig) -> str:
         """
-        Create a unique feature view name incorporating timeframe.
+        Create a unique feature name based on the feature name and its config hash.
 
         Args:
             feature_name: Name of the feature
-            param_hash: Hash of the feature parameters
-            timeframe: The timeframe of the data
+            feature_config: Configuration of the feature
 
         Returns:
-            str: A unique name for the feature view including timeframe information
+            str: A unique name for the feature
         """
-        return f"{feature_name}_{param_hash}"
+        return f"{feature_name}_{feature_config.hash_id()}"
 
-    def _get_entity_value(self, dataset_id: DatasetIdentifier) -> str:
+    def _get_entity_key_formatted(self, dataset_id: DatasetIdentifier) -> str:
         """
         Get the entity value for the given dataset identifier.
 

@@ -5,7 +5,9 @@ import pandas as pd
 from injector import inject
 from kafka import KafkaProducer
 
-from drl_trading_ingest.core.timescale_repo_interface import TimescaleRepoInterface
+from drl_trading_ingest.core.port.timescale_repo_interface import (
+    TimescaleRepoInterface,
+)
 
 TOPIC_BATCH = "ready.rawdata.batch"
 

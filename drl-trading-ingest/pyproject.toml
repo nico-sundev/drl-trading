@@ -33,6 +33,9 @@ dependencies = [
     "flask>=3.1.1",
     "psycopg2-binary>=2.9.10",
     "kafka-python>=2.2.13",
+    # Database migration
+    "alembic>=1.13.0",
+    "sqlalchemy>=2.0.0",
 ]
 
 [project.optional-dependencies]

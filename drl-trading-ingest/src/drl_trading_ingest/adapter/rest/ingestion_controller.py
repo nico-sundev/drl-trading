@@ -4,7 +4,7 @@ from flask import jsonify, request
 from flask.views import MethodView
 from injector import inject
 
-from drl_trading_ingest.core.ingestion_service import IngestionService
+from drl_trading_ingest.core.service.ingestion_service import IngestionService
 
 
 class IngestionControllerInterface(ABC):

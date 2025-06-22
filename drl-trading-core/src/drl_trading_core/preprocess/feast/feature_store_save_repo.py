@@ -78,20 +78,17 @@ class FeatureStoreSaveRepo(FeatureStoreSaveRepoInterface):
         )
 
         logger.info(f"Storing computed features in feature store at {file_path}")
-        entity = self.feast_provider.get_entity(dataset_id)
         obs_fv = self.feast_provider.create_feature_view(
-            entity=entity,
             dataset_id=dataset_id,
             feature_view_name=OBSERVATION_SPACE_FEATURE_VIEW_NAME,
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
         )
         reward_fv = self.feast_provider.create_feature_view(
-            entity=entity,
             dataset_id=dataset_id,
             feature_view_name=REWARD_SPACE_FEATURE_VIEW_NAME,
             feature_role=FeatureRoleEnum.REWARD_ENGINEERING,
         )
-        self.feature_store.apply([entity, obs_fv, reward_fv])
+        self.feature_store.apply([obs_fv, reward_fv])
 
     def store_computed_features_online(
         self, features_df: DataFrame, dataset_id: DatasetIdentifier

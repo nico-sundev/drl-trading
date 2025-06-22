@@ -6,20 +6,32 @@ from flask import Flask
 from injector import Module, provider, singleton
 from kafka import KafkaProducer
 
+from drl_trading_ingest.adapter.migration.alembic_migration_service import (
+    AlembicMigrationService,
+)
 from drl_trading_ingest.adapter.rest.ingestion_controller import (
     IngestionController,
     IngestionControllerInterface,
 )
-from drl_trading_ingest.adapter.timescale.timescale_repo import (
-    TimescaleRepo,
+from drl_trading_ingest.adapter.timescale.timescale_repo import TimescaleRepo
+from drl_trading_ingest.core.port.database_connection_interface import (
+    DatabaseConnectionInterface,
+)
+from drl_trading_ingest.core.port.migration_service_interface import (
+    MigrationServiceInterface,
+)
+from drl_trading_ingest.core.port.timescale_repo_interface import (
     TimescaleRepoInterface,
 )
-from drl_trading_ingest.core.ingestion_service import (
+from drl_trading_ingest.core.service.ingestion_service import (
     IngestionService,
     IngestionServiceInterface,
 )
 from drl_trading_ingest.infrastructure.config.data_ingestion_config import (
     DataIngestionConfig,
+)
+from drl_trading_ingest.infrastructure.database.postgresql_connection_service import (
+    PostgreSQLConnectionService,
 )
 
 logger = logging.getLogger(__name__)
@@ -68,3 +80,9 @@ class IngestModule(Module):
         )
         binder.bind(TimescaleRepoInterface, to=TimescaleRepo, scope=singleton)
         binder.bind(IngestionServiceInterface, to=IngestionService, scope=singleton)
+        binder.bind(
+            MigrationServiceInterface, to=AlembicMigrationService, scope=singleton
+        )
+        binder.bind(
+            DatabaseConnectionInterface, to=PostgreSQLConnectionService, scope=singleton
+        )
