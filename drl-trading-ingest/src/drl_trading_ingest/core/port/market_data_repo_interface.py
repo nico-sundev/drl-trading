@@ -14,7 +14,7 @@ class TimescaleRepoInterface(ABC):
     """
 
     @abstractmethod
-    def store_timeseries_to_db(self, symbol: str, timeframe: str, df: DataFrame) -> None:
+    def save_market_data(self, symbol: str, timeframe: str, df: DataFrame) -> None:
         """
         Store time series data to the database.
 

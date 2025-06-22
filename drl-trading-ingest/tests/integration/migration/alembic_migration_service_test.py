@@ -20,7 +20,7 @@ from drl_trading_ingest.core.port.migration_service_interface import (
 from drl_trading_ingest.infrastructure.config.data_ingestion_config import (
     DataIngestionConfig,
 )
-from drl_trading_ingest.infrastructure.ingest_module import IngestModule
+from drl_trading_ingest.infrastructure.di.ingest_module import IngestModule
 
 
 class TestAlembicMigrationServiceIntegration:
@@ -109,9 +109,12 @@ class TestAlembicMigrationServiceIntegration:
     def test_create_migration_with_autogenerate(self, mock_command, migration_service: AlembicMigrationService) -> None:
         """Test migration creation with autogenerate enabled."""
         # Given
-        mock_revision = Mock()
+        from alembic.script.revision import Revision
+        mock_revision = Mock(spec=Revision)
         mock_revision.revision = "def456"
         mock_command.revision.return_value = mock_revision
+
+
 
         # When
         revision_id = migration_service.create_migration("Test migration", autogenerate=True)
@@ -134,7 +137,7 @@ class TestAlembicMigrationServiceIntegration:
         mock_context.get_current_revision.return_value = "current123"
 
         mock_create_engine.return_value = mock_engine
-        mock_engine.connect.return_value.__enter__.return_value = mock_connection
+        mock_engine.connect.return_value = mock_connection
 
         with patch('drl_trading_ingest.adapter.migration.alembic_migration_service.MigrationContext') as mock_migration_context:
             mock_migration_context.configure.return_value = mock_context
@@ -144,6 +147,7 @@ class TestAlembicMigrationServiceIntegration:
 
             # Then
             assert current_rev == "current123"
+            mock_connection.close.assert_called_once()
 
     @patch('drl_trading_ingest.adapter.migration.alembic_migration_service.create_engine')
     def test_get_current_revision_failure(self, mock_create_engine, migration_service: AlembicMigrationService) -> None:
@@ -193,7 +197,7 @@ class TestDependencyInjectionIntegration:
         """Test that migration service can be injected from the DI container."""
         # Given
         # Mock the config loading to avoid file dependencies
-        with patch('drl_trading_ingest.infrastructure.ingest_module.ServiceConfigLoader') as mock_loader:
+        with patch('drl_trading_ingest.infrastructure.di.ingest_module.ServiceConfigLoader') as mock_loader:
             mock_config = Mock(spec=DataIngestionConfig)
             mock_config.infrastructure = Mock()
             mock_config.infrastructure.database = Mock()

@@ -79,13 +79,13 @@ Command-line interface for manual migration management:
 
 ```bash
 # Apply all pending migrations
-python -m drl_trading_ingest.cli.migration_cli migrate
+python -m drl_trading_ingest.adapter.cli.migration_cli migrate
 
 # Create new migration
-python -m drl_trading_ingest.cli.migration_cli create-migration "Add new table"
+python -m drl_trading_ingest.adapter.cli.migration_cli create-migration "Add new table"
 
 # Check migration status
-python -m drl_trading_ingest.cli.migration_cli status
+python -m drl_trading_ingest.adapter.cli.migration_cli status
 ```
 
 ## Usage
@@ -104,12 +104,12 @@ python -m drl_trading_ingest.cli.migration_cli status
 
 3. **Initialize Migration Repository** (first time only):
    ```bash
-   python -m drl_trading_ingest.cli.migration_cli init
+   python -m drl_trading_ingest.adapter.cli.migration_cli init
    ```
 
 4. **Apply Migrations**:
    ```bash
-   python -m drl_trading_ingest.cli.migration_cli migrate
+   python -m drl_trading_ingest.adapter.cli.migration_cli migrate
    ```
 
 ### Creating New Migrations
@@ -118,14 +118,14 @@ python -m drl_trading_ingest.cli.migration_cli status
 
 2. **Generate Migration**:
    ```bash
-   python -m drl_trading_ingest.cli.migration_cli create-migration "Description of changes"
+   python -m drl_trading_ingest.adapter.cli.migration_cli create-migration "Description of changes"
    ```
 
 3. **Review Generated Migration** in `migrations/versions/`
 
 4. **Apply Migration**:
    ```bash
-   python -m drl_trading_ingest.cli.migration_cli migrate
+   python -m drl_trading_ingest.adapter.cli.migration_cli migrate
    ```
 
 ### Production Deployment
@@ -234,7 +234,7 @@ Migration service uses the same database configuration as the main service:
    - Check file permissions
 
 2. **"Migration repository not initialized"**
-   - Run `python -m drl_trading_ingest.cli.migration_cli init`
+   - Run `python -m drl_trading_ingest.adapter.cli.migration_cli init`
 
 3. **"Database connection failed"**
    - Verify database is running

@@ -17,7 +17,9 @@ from pandas import DataFrame
 from drl_trading_ingest.core.port.database_connection_interface import (
     DatabaseConnectionInterface,
 )
-from drl_trading_ingest.core.port.timescale_repo_interface import TimescaleRepoInterface
+from drl_trading_ingest.core.port.market_data_repo_interface import (
+    TimescaleRepoInterface,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +45,7 @@ class TimescaleRepo(TimescaleRepoInterface):
         self.connection_service = connection_service
         self.logger = logging.getLogger(__name__)
 
-    def store_timeseries_to_db(self, symbol: str, timeframe: str, df: DataFrame) -> None:
+    def save_market_data(self, symbol: str, timeframe: str, df: DataFrame) -> None:
         """
         Store time series data to the unified market data table.
 

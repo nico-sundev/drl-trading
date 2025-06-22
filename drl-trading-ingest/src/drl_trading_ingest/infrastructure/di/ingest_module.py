@@ -13,19 +13,22 @@ from drl_trading_ingest.adapter.rest.ingestion_controller import (
     IngestionController,
     IngestionControllerInterface,
 )
-from drl_trading_ingest.adapter.timescale.timescale_repo import TimescaleRepo
+from drl_trading_ingest.adapter.timescale.market_data_repo import TimescaleRepo
 from drl_trading_ingest.core.port.database_connection_interface import (
     DatabaseConnectionInterface,
+)
+from drl_trading_ingest.core.port.market_data_repo_interface import (
+    TimescaleRepoInterface,
 )
 from drl_trading_ingest.core.port.migration_service_interface import (
     MigrationServiceInterface,
 )
-from drl_trading_ingest.core.port.timescale_repo_interface import (
-    TimescaleRepoInterface,
-)
 from drl_trading_ingest.core.service.ingestion_service import (
     IngestionService,
     IngestionServiceInterface,
+)
+from drl_trading_ingest.infrastructure.bootstrap.flask_app_factory import (
+    FlaskAppFactory,
 )
 from drl_trading_ingest.infrastructure.config.data_ingestion_config import (
     DataIngestionConfig,
@@ -66,23 +69,24 @@ class IngestModule(Module):
 
     @provider
     @singleton
-    def provide_flask_app(self) -> Flask:
-        """Provide a Flask application instance."""
-        from flask import Flask
+    def provide_flask_app(self, injector) -> Flask:
+        """
+        Provide a Flask application instance using the factory pattern.
 
-        app = Flask(__name__)
-        return app
+        This is now properly separated - the factory handles infrastructure
+        concerns while routes handle adapter concerns.
+        """
+        return FlaskAppFactory.create_app(injector)
 
     def configure(self, binder) -> None:
         """Configure the module with necessary bindings."""
-        binder.bind(
-            IngestionControllerInterface, to=IngestionController, scope=singleton
-        )
-        binder.bind(TimescaleRepoInterface, to=TimescaleRepo, scope=singleton)
+        # Core services
         binder.bind(IngestionServiceInterface, to=IngestionService, scope=singleton)
-        binder.bind(
-            MigrationServiceInterface, to=AlembicMigrationService, scope=singleton
-        )
-        binder.bind(
-            DatabaseConnectionInterface, to=PostgreSQLConnectionService, scope=singleton
-        )
+
+        # Adapters
+        binder.bind(IngestionControllerInterface, to=IngestionController, scope=singleton)
+        binder.bind(TimescaleRepoInterface, to=TimescaleRepo, scope=singleton)
+        binder.bind(MigrationServiceInterface, to=AlembicMigrationService, scope=singleton)
+
+        # Infrastructure services
+        binder.bind(DatabaseConnectionInterface, to=PostgreSQLConnectionService, scope=singleton)

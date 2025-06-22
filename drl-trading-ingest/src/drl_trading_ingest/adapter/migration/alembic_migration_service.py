@@ -14,6 +14,7 @@ from alembic import command
 from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
+from alembic.script.revision import Revision
 from injector import inject
 from sqlalchemy import create_engine
 
@@ -146,12 +147,18 @@ class AlembicMigrationService(MigrationServiceInterface):
             else:
                 revision = command.revision(self.alembic_cfg, message=message)
 
-            # Extract revision ID(s) from the returned object (list of Script or None)
+            # Handle different return types from command.revision()
             if isinstance(revision, list) and revision:
+                # Multiple revisions returned (rare case)
                 revision_ids = [rev.revision for rev in revision if rev is not None]
                 revision_id = revision_ids[0] if revision_ids else "unknown"
+            elif isinstance(revision, Revision):
+                # Single revision object returned (common case)
+                revision_id = revision.revision
             else:
+                # Fallback for unexpected return types
                 revision_id = "unknown"
+
             self.logger.info(f"Created migration with revision ID: {revision_id}")
             return revision_id
 
@@ -168,9 +175,13 @@ class AlembicMigrationService(MigrationServiceInterface):
         """
         try:
             engine = create_engine(self.connection_string)
-            with engine.connect() as connection:
+            # Use explicit connection management for better testability
+            connection = engine.connect()
+            try:
                 context = MigrationContext.configure(connection)
                 return context.get_current_revision()
+            finally:
+                connection.close()
         except Exception as e:
             self.logger.error(f"Failed to get current revision: {str(e)}")
             return None

@@ -5,7 +5,7 @@ import pandas as pd
 from injector import inject
 from kafka import KafkaProducer
 
-from drl_trading_ingest.core.port.timescale_repo_interface import (
+from drl_trading_ingest.core.port.market_data_repo_interface import (
     TimescaleRepoInterface,
 )
 
@@ -38,7 +38,7 @@ class IngestionService(IngestionServiceInterface):
 
         try:
             df = pd.read_csv(filename, parse_dates=["timestamp"])
-            self.db_repo.store_timeseries_to_db(symbol, df)
+            self.db_repo.save_market_data(symbol, df)
             self.producer.send(TOPIC_BATCH, b"")
             self.producer.flush()
             return {"status": "ok"}, 200

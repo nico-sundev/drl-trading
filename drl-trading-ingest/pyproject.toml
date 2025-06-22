@@ -99,18 +99,15 @@ testpaths = [
     "tests/unit",
     "tests/integration"
 ]
-python_files = "*_test.py *_it.py"
-python_classes = "Test*"
+python_files = ["*_test.py", "*_it.py", "test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
 log_cli = true
 log_cli_level = "INFO"
 log_cli_format = "%(asctime)s %(levelname)s %(message)s"
 log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')"
-]
-addopts = [
-    "-ra",
-    "-m not slow"
 ]
 
 [tool.setuptools]

@@ -3,11 +3,11 @@ import logging
 from flask import Flask
 from injector import Injector
 
-from drl_trading_ingest.core.ports.migration_service_interface import (
+from drl_trading_ingest.adapter.web.routes import register_routes
+from drl_trading_ingest.core.port.migration_service_interface import (
     MigrationServiceInterface,
 )
-from drl_trading_ingest.infrastructure.ingest_module import IngestModule
-from drl_trading_ingest.infrastructure.routes import register_routes
+from drl_trading_ingest.infrastructure.di.ingest_module import IngestModule
 
 logger = logging.getLogger(__name__)
 
