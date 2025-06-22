@@ -9,17 +9,11 @@ import logging
 from contextlib import contextmanager
 from typing import Generator
 
+from drl_trading_common.db.database_connection_interface import DatabaseConnectionError, DatabaseConnectionInterface
 import psycopg2
+from drl_trading_common.config.infrastructure_config import DatabaseConfig
 from injector import inject
 from psycopg2 import pool
-
-from drl_trading_ingest.core.port.database_connection_interface import (
-    DatabaseConnectionError,
-    DatabaseConnectionInterface,
-)
-from drl_trading_ingest.infrastructure.config.data_ingestion_config import (
-    DataIngestionConfig,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -33,15 +27,14 @@ class PostgreSQLConnectionService(DatabaseConnectionInterface):
     with proper resource cleanup and transaction management.
     """
 
-    def __init__(self, config: DataIngestionConfig):
+    def __init__(self, config: DatabaseConfig):
         """
         Initialize connection service with configuration.
 
         Args:
             config: Data ingestion configuration containing database settings
         """
-        self.config = config
-        self.db_config = config.infrastructure.database
+        self.db_config = config
         self.logger = logging.getLogger(__name__)
 
         # Build connection string

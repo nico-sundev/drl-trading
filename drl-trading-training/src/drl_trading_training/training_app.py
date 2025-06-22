@@ -1,7 +1,14 @@
 import logging
 import os
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
+from drl_trading_common.config.feature_config import FeaturesConfig
+from drl_trading_common.config.feature_config_repo import FeatureConfigPostgresRepo
+from drl_trading_common.model.feature_config_version_info import (
+    FeatureConfigVersionInfo,
+)
+from drl_trading_common.utils.utils import compute_feature_config_hash
 from drl_trading_core.common.agents.base_agent import BaseAgent
 from drl_trading_core.common.model.preprocessing_result import PreprocessingResult
 from drl_trading_core.core_engine import CoreEngine
@@ -21,6 +28,32 @@ class TrainingApp:
         Run the training application.
         """
         self.start_training()
+
+    def register_feature_config(version_store: FeatureConfigPostgresRepo, config: FeaturesConfig, semver: str) -> FeatureConfigVersionInfo:
+        hash = compute_feature_config_hash(config.feature_definitions)
+        entry = version_store.get_config(semver)
+
+        if entry and entry.hash != hash:
+            raise ValueError(
+                f"Feature config with semver {semver} already exists with a different hash. "
+                "Please use a different semver or update the existing config."
+            )
+
+        if not entry:
+            logging.info(
+                f"Registering new feature config with semver {semver} and hash {hash}"
+            )
+            new_entry = FeatureConfigVersionInfo(
+                    semver=semver,
+                    hash=hash,
+                    feature_definitions=config.feature_definitions,
+                    description=config.description,
+                    created_at=datetime.now()
+                )
+            version_store.save_config(new_entry)
+            return new_entry
+
+        return entry
 
     def _create_environments_and_train(
         self,

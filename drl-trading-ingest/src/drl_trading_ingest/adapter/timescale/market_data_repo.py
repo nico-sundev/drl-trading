@@ -11,12 +11,12 @@ from typing import List, Optional
 
 import psycopg2
 import psycopg2.extras
+from drl_trading_common.db.database_connection_interface import (
+    DatabaseConnectionInterface,
+)
 from injector import inject
 from pandas import DataFrame
 
-from drl_trading_ingest.core.port.database_connection_interface import (
-    DatabaseConnectionInterface,
-)
 from drl_trading_ingest.core.port.market_data_repo_interface import (
     TimescaleRepoInterface,
 )

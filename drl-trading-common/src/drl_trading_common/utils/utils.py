@@ -1,3 +1,5 @@
+import hashlib
+import json
 import logging
 
 import pandas as pd
@@ -98,3 +100,8 @@ def ensure_datetime_time_column(
     msg = f"{df_description} must have a 'Time' column or a DatetimeIndex."
     logger.error(msg)
     raise ValueError(msg)
+
+def compute_feature_config_hash(feature_definitions: list[dict]) -> str:
+    # Normalize and encode
+    json_bytes = json.dumps(feature_definitions, sort_keys=True).encode('utf-8')
+    return hashlib.sha256(json_bytes).hexdigest()[:10]  # shorten to 10 chars

@@ -2,6 +2,12 @@ import logging
 import os
 
 from drl_trading_common.config.service_config_loader import ServiceConfigLoader
+from drl_trading_common.db.database_connection_interface import (
+    DatabaseConnectionInterface,
+)
+from drl_trading_common.db.postgresql_connection_service import (
+    PostgreSQLConnectionService,
+)
 from flask import Flask
 from injector import Module, provider, singleton
 from kafka import KafkaProducer
@@ -14,9 +20,6 @@ from drl_trading_ingest.adapter.rest.ingestion_controller import (
     IngestionControllerInterface,
 )
 from drl_trading_ingest.adapter.timescale.market_data_repo import TimescaleRepo
-from drl_trading_ingest.core.port.database_connection_interface import (
-    DatabaseConnectionInterface,
-)
 from drl_trading_ingest.core.port.market_data_repo_interface import (
     TimescaleRepoInterface,
 )
@@ -32,9 +35,6 @@ from drl_trading_ingest.infrastructure.bootstrap.flask_app_factory import (
 )
 from drl_trading_ingest.infrastructure.config.data_ingestion_config import (
     DataIngestionConfig,
-)
-from drl_trading_ingest.infrastructure.database.postgresql_connection_service import (
-    PostgreSQLConnectionService,
 )
 
 logger = logging.getLogger(__name__)

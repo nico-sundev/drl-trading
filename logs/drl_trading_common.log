@@ -384,3 +384,202 @@
 2025-06-19 00:10:58,876 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error combining DataFrames with concat: Concat failed
 2025-06-19 00:14:05,433 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping higher timeframe dataframe. Base start: 2008-10-03 13:00:00, Base end: 2008-10-04 18:00:00, Timeframe duration: 0 days 04:00:00, Begin threshold: 2008-10-03 05:00:00, End threshold: 2008-10-05 02:00:00
 2025-06-19 00:14:05,434 [INFO] drl_trading_core.preprocess.data_set_utils.strip_service: Stripping complete. Removed 25 rows. First timestamp after strip: 2008-10-03 08:00:00, Last timestamp after strip: 2008-10-05 00:00:00
+2025-06-23 00:29:07,052 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:07,184 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmp0duw6ylt\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:29:07,184 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:29:07,604 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-06-23 00:29:07,610 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:07,618 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpjftvv6cu\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:29:07,619 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:29:07,625 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-06-23 00:29:07,628 [WARNING] drl_trading_core.preprocess.feast.offline_feature_local_repo: Found 3 overlapping timestamps for EURUSD/1h. These will be skipped to prevent data corruption.
+2025-06-23 00:29:07,635 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 features for 2024-01-05 in C:\Users\nico-\AppData\Local\Temp\tmpjftvv6cu\EURUSD\1h\year=2024\month=01\day=05\features_20240105_100000_100000.parquet (EURUSD/1h)
+2025-06-23 00:29:07,636 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 new features out of 4 total for EURUSD/1h
+2025-06-23 00:29:07,652 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 4 existing feature records from 2 files
+2025-06-23 00:29:07,661 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:07,661 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No new features to store for EURUSD/1h
+2025-06-23 00:29:07,668 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:07,673 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpb7rfwqja\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:29:07,673 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:29:07,680 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-06-23 00:29:07,689 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:07,695 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpuqo7hsfe\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:29:07,695 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:29:07,701 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-06-23 00:29:07,707 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:07,786 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 2 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmp85g802ij\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_100000.parquet (EURUSD/1h)
+2025-06-23 00:29:07,787 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 2 new features out of 2 total for EURUSD/1h
+2025-06-23 00:29:07,817 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 2 existing feature records from 1 files
+2025-06-23 00:29:07,825 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 2 features for 2024-01-02 in C:\Users\nico-\AppData\Local\Temp\tmp85g802ij\EURUSD\1h\year=2024\month=01\day=02\features_20240102_090000_100000.parquet (EURUSD/1h)
+2025-06-23 00:29:07,825 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 2 new features out of 2 total for EURUSD/1h
+2025-06-23 00:29:07,842 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 4 existing feature records from 2 files
+2025-06-23 00:29:07,888 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:07,895 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpc77uqwl0\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:29:07,895 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:29:07,904 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:07,911 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpvze79l7u\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:29:07,912 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:29:07,919 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-06-23 00:29:07,924 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:07,929 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmp8x2pf5cm\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:29:07,930 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:29:07,933 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Successfully deleted features for EURUSD/1h
+2025-06-23 00:29:07,943 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:07,951 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 2 features for 2024-01-15 in C:\Users\nico-\AppData\Local\Temp\tmpl7s85g7t\EURUSD\1h\year=2024\month=01\day=15\features_20240115_090000_100000.parquet (EURUSD/1h)
+2025-06-23 00:29:07,955 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 features for 2024-02-01 in C:\Users\nico-\AppData\Local\Temp\tmpl7s85g7t\EURUSD\1h\year=2024\month=02\day=01\features_20240201_090000_090000.parquet (EURUSD/1h)
+2025-06-23 00:29:07,955 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:29:07,961 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:07,969 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 features for 2024-01-15 in C:\Users\nico-\AppData\Local\Temp\tmpjj8156gm\EURUSD\1h\year=2024\month=01\day=15\features_20240115_093045_093045.parquet (EURUSD/1h)
+2025-06-23 00:29:07,969 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 new features out of 1 total for EURUSD/1h
+2025-06-23 00:29:07,974 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:07,981 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmppbkx18xz\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_090000.parquet (EURUSD/1h)
+2025-06-23 00:29:07,982 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 new features out of 1 total for EURUSD/1h
+2025-06-23 00:29:07,998 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 1 existing feature records from 1 files
+2025-06-23 00:29:08,004 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 features for 2024-01-02 in C:\Users\nico-\AppData\Local\Temp\tmppbkx18xz\EURUSD\1h\year=2024\month=01\day=02\features_20240102_090000_090000.parquet (EURUSD/1h)
+2025-06-23 00:29:08,004 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 new features out of 1 total for EURUSD/1h
+2025-06-23 00:29:08,010 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:08,019 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpx259yr1n\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:29:08,019 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:29:08,025 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-06-23 00:29:08,025 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: New feature columns detected for EURUSD/1h: ['new_feature']
+2025-06-23 00:29:08,034 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-05 in C:\Users\nico-\AppData\Local\Temp\tmpx259yr1n\EURUSD\1h\year=2024\month=01\day=05\features_20240105_090000_090000.parquet (EURUSD/1h)
+2025-06-23 00:29:08,034 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:29:21,545 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:21,562 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmp04yy6_er\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:29:21,562 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:29:21,587 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-06-23 00:29:21,592 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:21,600 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpwrelai_d\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:29:21,600 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:29:21,607 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-06-23 00:29:21,608 [WARNING] drl_trading_core.preprocess.feast.offline_feature_local_repo: Found 3 overlapping timestamps for EURUSD/1h. These will be skipped to prevent data corruption.
+2025-06-23 00:29:21,614 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 features for 2024-01-05 in C:\Users\nico-\AppData\Local\Temp\tmpwrelai_d\EURUSD\1h\year=2024\month=01\day=05\features_20240105_100000_100000.parquet (EURUSD/1h)
+2025-06-23 00:29:21,615 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 new features out of 4 total for EURUSD/1h
+2025-06-23 00:29:21,624 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 4 existing feature records from 2 files
+2025-06-23 00:29:21,636 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:21,636 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No new features to store for EURUSD/1h
+2025-06-23 00:29:21,640 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:21,647 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpb6prwsex\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:29:21,647 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:29:21,655 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-06-23 00:29:21,664 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:21,671 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpaxu_msb5\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:29:21,671 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:29:21,676 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-06-23 00:29:21,683 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:21,689 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 2 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmp_jwz6oad\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_100000.parquet (EURUSD/1h)
+2025-06-23 00:29:21,690 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 2 new features out of 2 total for EURUSD/1h
+2025-06-23 00:29:21,695 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 2 existing feature records from 1 files
+2025-06-23 00:29:21,702 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 2 features for 2024-01-02 in C:\Users\nico-\AppData\Local\Temp\tmp_jwz6oad\EURUSD\1h\year=2024\month=01\day=02\features_20240102_090000_100000.parquet (EURUSD/1h)
+2025-06-23 00:29:21,702 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 2 new features out of 2 total for EURUSD/1h
+2025-06-23 00:29:21,710 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 4 existing feature records from 2 files
+2025-06-23 00:29:21,742 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:21,749 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpfbs_f1t4\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:29:21,750 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:29:21,758 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:21,766 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmplx8gl4n8\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:29:21,766 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:29:21,771 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-06-23 00:29:21,776 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:21,783 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmplw_sts1s\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:29:21,784 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:29:21,785 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Successfully deleted features for EURUSD/1h
+2025-06-23 00:29:21,795 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:21,804 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 2 features for 2024-01-15 in C:\Users\nico-\AppData\Local\Temp\tmp65tc0hj1\EURUSD\1h\year=2024\month=01\day=15\features_20240115_090000_100000.parquet (EURUSD/1h)
+2025-06-23 00:29:21,809 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 features for 2024-02-01 in C:\Users\nico-\AppData\Local\Temp\tmp65tc0hj1\EURUSD\1h\year=2024\month=02\day=01\features_20240201_090000_090000.parquet (EURUSD/1h)
+2025-06-23 00:29:21,809 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:29:21,818 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:21,827 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 features for 2024-01-15 in C:\Users\nico-\AppData\Local\Temp\tmp5uff983e\EURUSD\1h\year=2024\month=01\day=15\features_20240115_093045_093045.parquet (EURUSD/1h)
+2025-06-23 00:29:21,827 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 new features out of 1 total for EURUSD/1h
+2025-06-23 00:29:21,835 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:21,844 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpdy7maq3v\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_090000.parquet (EURUSD/1h)
+2025-06-23 00:29:21,844 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 new features out of 1 total for EURUSD/1h
+2025-06-23 00:29:21,852 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 1 existing feature records from 1 files
+2025-06-23 00:29:21,858 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 features for 2024-01-02 in C:\Users\nico-\AppData\Local\Temp\tmpdy7maq3v\EURUSD\1h\year=2024\month=01\day=02\features_20240102_090000_090000.parquet (EURUSD/1h)
+2025-06-23 00:29:21,858 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 new features out of 1 total for EURUSD/1h
+2025-06-23 00:29:21,865 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:29:21,871 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpxcc9ijru\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:29:21,871 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:29:21,878 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-06-23 00:29:21,878 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: New feature columns detected for EURUSD/1h: ['new_feature']
+2025-06-23 00:29:21,886 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-05 in C:\Users\nico-\AppData\Local\Temp\tmpxcc9ijru\EURUSD\1h\year=2024\month=01\day=05\features_20240105_090000_090000.parquet (EURUSD/1h)
+2025-06-23 00:29:21,886 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:37:01,105 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:37:01,120 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpef2pk4f2\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:37:01,121 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:37:01,142 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-06-23 00:37:01,149 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:37:01,155 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmp6zsts2r0\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:37:01,156 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:37:01,162 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-06-23 00:37:01,163 [WARNING] drl_trading_core.preprocess.feast.offline_feature_local_repo: Found 3 overlapping timestamps for EURUSD/1h. These will be skipped to prevent data corruption.
+2025-06-23 00:37:01,170 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 features for 2024-01-05 in C:\Users\nico-\AppData\Local\Temp\tmp6zsts2r0\EURUSD\1h\year=2024\month=01\day=05\features_20240105_100000_100000.parquet (EURUSD/1h)
+2025-06-23 00:37:01,171 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 new features out of 4 total for EURUSD/1h
+2025-06-23 00:37:01,178 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 4 existing feature records from 2 files
+2025-06-23 00:37:01,189 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:37:01,189 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No new features to store for EURUSD/1h
+2025-06-23 00:37:01,193 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:37:01,200 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpjwxusfvv\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:37:01,201 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:37:01,208 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-06-23 00:37:01,219 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:37:01,224 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpuzz1xfda\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:37:01,224 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:37:01,229 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-06-23 00:37:01,236 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:37:01,241 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 2 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpy1uqpm99\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_100000.parquet (EURUSD/1h)
+2025-06-23 00:37:01,242 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 2 new features out of 2 total for EURUSD/1h
+2025-06-23 00:37:01,248 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 2 existing feature records from 1 files
+2025-06-23 00:37:01,255 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 2 features for 2024-01-02 in C:\Users\nico-\AppData\Local\Temp\tmpy1uqpm99\EURUSD\1h\year=2024\month=01\day=02\features_20240102_090000_100000.parquet (EURUSD/1h)
+2025-06-23 00:37:01,255 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 2 new features out of 2 total for EURUSD/1h
+2025-06-23 00:37:01,263 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 4 existing feature records from 2 files
+2025-06-23 00:37:01,319 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:37:01,325 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpcs1e7u42\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:37:01,325 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:37:01,335 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:37:01,344 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpbhxe63w_\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:37:01,345 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:37:01,351 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-06-23 00:37:01,357 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:37:01,362 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpu_10vu1c\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:37:01,363 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:37:01,366 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Successfully deleted features for EURUSD/1h
+2025-06-23 00:37:01,376 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:37:01,383 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 2 features for 2024-01-15 in C:\Users\nico-\AppData\Local\Temp\tmppja1sbm7\EURUSD\1h\year=2024\month=01\day=15\features_20240115_090000_100000.parquet (EURUSD/1h)
+2025-06-23 00:37:01,389 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 features for 2024-02-01 in C:\Users\nico-\AppData\Local\Temp\tmppja1sbm7\EURUSD\1h\year=2024\month=02\day=01\features_20240201_090000_090000.parquet (EURUSD/1h)
+2025-06-23 00:37:01,389 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:37:01,395 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:37:01,403 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 features for 2024-01-15 in C:\Users\nico-\AppData\Local\Temp\tmpdt7bxlq2\EURUSD\1h\year=2024\month=01\day=15\features_20240115_093045_093045.parquet (EURUSD/1h)
+2025-06-23 00:37:01,403 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 new features out of 1 total for EURUSD/1h
+2025-06-23 00:37:01,408 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:37:01,415 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpi1lp8pr0\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_090000.parquet (EURUSD/1h)
+2025-06-23 00:37:01,415 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 new features out of 1 total for EURUSD/1h
+2025-06-23 00:37:01,422 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 1 existing feature records from 1 files
+2025-06-23 00:37:01,427 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 features for 2024-01-02 in C:\Users\nico-\AppData\Local\Temp\tmpi1lp8pr0\EURUSD\1h\year=2024\month=01\day=02\features_20240102_090000_090000.parquet (EURUSD/1h)
+2025-06-23 00:37:01,427 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 1 new features out of 1 total for EURUSD/1h
+2025-06-23 00:37:01,434 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: No existing features found for EURUSD/1h
+2025-06-23 00:37:01,440 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpbh639ugp\EURUSD\1h\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD/1h)
+2025-06-23 00:37:01,440 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:37:01,446 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-06-23 00:37:01,446 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: New feature columns detected for EURUSD/1h: ['new_feature']
+2025-06-23 00:37:01,455 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 features for 2024-01-05 in C:\Users\nico-\AppData\Local\Temp\tmpbh639ugp\EURUSD\1h\year=2024\month=01\day=05\features_20240105_090000_090000.parquet (EURUSD/1h)
+2025-06-23 00:37:01,455 [INFO] drl_trading_core.preprocess.feast.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD/1h
+2025-06-23 00:42:42,217 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: Materialized features for online serving: EURUSD/1h
+2025-06-23 00:43:29,240 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: Stored 3 feature records for EURUSD/1h
+2025-06-23 00:43:29,241 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: Applied Feast feature views and service: test_feature_service
+2025-06-23 00:43:29,245 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: No features to store for EURUSD/1h
+2025-06-23 00:43:29,255 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: No new features stored for EURUSD/1h
+2025-06-23 00:43:29,267 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: Materialized features for online serving: EURUSD/1h
+2025-06-23 00:43:29,294 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: Applied Feast feature views and service: test_service
+2025-06-23 00:44:06,871 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: Stored 3 feature records for EURUSD/1h
+2025-06-23 00:44:06,872 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: Applied Feast feature views and service: test_feature_service
+2025-06-23 00:44:06,877 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: No features to store for EURUSD/1h
+2025-06-23 00:44:06,887 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: No new features stored for EURUSD/1h
+2025-06-23 00:44:06,900 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: Materialized features for online serving: EURUSD/1h
+2025-06-23 00:44:06,928 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: Applied Feast feature views and service: test_service
+2025-06-23 00:44:48,851 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: Stored 3 feature records for EURUSD/1h
+2025-06-23 00:44:48,852 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: Applied Feast feature views and service: test_feature_service
+2025-06-23 00:44:48,857 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: No features to store for EURUSD/1h
+2025-06-23 00:44:48,865 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: No new features stored for EURUSD/1h
+2025-06-23 00:44:48,877 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: Materialized features for online serving: EURUSD/1h
+2025-06-23 00:44:48,911 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: Applied Feast feature views and service: test_service

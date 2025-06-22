@@ -8,7 +8,18 @@ from drl_trading_common.base.base_parameter_set_config import BaseParameterSetCo
 from drl_trading_common.config.feature_config import FeatureStoreConfig
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.model.dataset_identifier import DatasetIdentifier
-from feast import Entity, FeatureService, FeatureStore, FeatureView, Field, FileSource
+from drl_trading_common.model.feature_config_version_info import (
+    FeatureConfigVersionInfo,
+)
+from feast import (
+    Entity,
+    FeatureService,
+    FeatureStore,
+    FeatureView,
+    Field,
+    FileSource,
+    OnDemandFeatureView,
+)
 from feast.types import Float32
 
 from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
@@ -36,18 +47,6 @@ class FeastProvider:
         self.feature_manager = feature_manager
         self.feature_store_config = feature_store_config
         self._feature_store = FeatureStore(repo_path=self._resolve_feature_store_path())
-        self._feature_service = self._feature_store.get_feature_service(
-            feature_store_config.service_name
-        )
-
-    def get_feature_service(self) -> FeatureService:
-        """
-        Getter for the feature_service instance.
-
-        Returns:
-            FeatureService: The Feast FeatureService instance.
-        """
-        return self._feature_service
 
     def get_feature_store(self) -> FeatureStore:
         """
@@ -108,9 +107,7 @@ class FeastProvider:
         for sub_feature in feature.get_sub_features_names():
             feast_field_name = f"{feature_name}_{sub_feature}"
             logger.debug(f"Creating feast field:{feast_field_name}")
-            fields.append(
-                Field(name=feast_field_name, dtype=Float32)
-            )
+            fields.append(Field(name=feast_field_name, dtype=Float32))
 
         return fields
 
@@ -119,6 +116,7 @@ class FeastProvider:
         dataset_id: DatasetIdentifier,
         feature_view_name: str,
         feature_role: FeatureRoleEnum,
+        feature_version_info: FeatureConfigVersionInfo,
     ) -> FeatureView:
         """
         Create a feature view for the given feature parameters.
@@ -133,7 +131,7 @@ class FeastProvider:
 
         # Create a file source for the feature
         source = FileSource(
-            name=f"{feature_view_name}_source",
+            name=f"view_{feature_view_name}_v{feature_version_info.semver}-{feature_version_info.hash}",
             path=self.feature_store_config.offline_store_path,
             timestamp_field="event_timestamp",
         )
@@ -141,7 +139,9 @@ class FeastProvider:
         # Create fields for the feature view
         fields = []
 
-        logger.debug(f"Feast feature view will be created for feature role: {feature_role.value}")
+        logger.debug(
+            f"Feast feature view will be created for feature role: {feature_role.value}"
+        )
 
         for feature in self.feature_manager.get_features_by_role(feature_role):
             fields.extend(self._create_fields(feature))
@@ -225,6 +225,18 @@ class FeastProvider:
     #     except Exception as e:
     #         logger.warning(f"Failed to store features: {str(e)}")
 
+    def create_feature_service(
+        self,
+        feature_views: list[FeatureView | OnDemandFeatureView],
+        dataset_id: DatasetIdentifier,
+        feature_version_info: FeatureConfigVersionInfo,
+    ):
+
+        return FeatureService(
+            name=f"service_{dataset_id.symbol}_{dataset_id.timeframe.value}_v{feature_version_info.semver}-{feature_version_info.hash}",
+            features=feature_views,
+        )
+
     def get_entity(self, dataset_id: DatasetIdentifier) -> Entity:
         """
         Create an entity for the given dataset identifier.
@@ -241,7 +253,9 @@ class FeastProvider:
             description=f"Entity for {dataset_id.symbol}{{{dataset_id.timeframe.value}}} asset price data",
         )
 
-    def _get_feature_name(self, feature_name: str, feature_config: BaseParameterSetConfig) -> str:
+    def _get_feature_name(
+        self, feature_name: str, feature_config: BaseParameterSetConfig
+    ) -> str:
         """
         Create a unique feature name based on the feature name and its config hash.
 

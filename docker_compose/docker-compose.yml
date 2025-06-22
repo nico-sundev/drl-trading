@@ -53,7 +53,20 @@ services:
         --bootstrap-server kafka:29092 \
         --replication-factor 1 --partitions 1"
 
-
+  postgres:
+    image: postgres:15
+    container_name: feature_config_db
+    restart: always
+    ports:
+      - "5431:5432"
+    environment:
+      POSTGRES_USER: fc_user
+      POSTGRES_PASSWORD: fc_pass
+      POSTGRES_DB: feature_config_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db/init.sql:/docker-entrypoint-initdb.d/init.sql
 
 volumes:
   timescale_data:
+  postgres_data:
