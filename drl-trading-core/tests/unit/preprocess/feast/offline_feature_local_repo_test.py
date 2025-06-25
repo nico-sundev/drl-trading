@@ -14,7 +14,7 @@ from drl_trading_common.config.feature_config import FeatureStoreConfig
 from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from pandas import DataFrame
 
-from drl_trading_core.preprocess.feast.offline_feature_local_repo import (
+from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo import (
     OfflineFeatureLocalRepo,
 )
 
@@ -217,7 +217,7 @@ class TestOfflineFeatureLocalRepoLoadExisting:
         assert len(result) == 4  # Combined from both days
         assert result["event_timestamp"].is_monotonic_increasing  # Should be sorted
 
-    @patch('drl_trading_core.preprocess.feast.offline_feature_local_repo.logger')
+    @patch('drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo.logger')
     def test_load_existing_features_corrupted_file(
         self,
         mock_logger: Mock,
@@ -309,39 +309,6 @@ class TestOfflineFeatureLocalRepoUtilityMethods:
 
         # Then
         assert count == len(sample_features_df)
-
-    def test_delete_features_success(
-        self,
-        offline_repo: OfflineFeatureLocalRepo,
-        sample_features_df: DataFrame,
-        eurusd_h1_dataset_id: DatasetIdentifier
-    ) -> None:
-        """Test successful deletion of features."""
-        # Given
-        offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_dataset_id)
-        assert offline_repo.feature_exists(eurusd_h1_dataset_id)
-
-        # When
-        success = offline_repo.delete_features(eurusd_h1_dataset_id)
-
-        # Then
-        assert success is True
-        assert not offline_repo.feature_exists(eurusd_h1_dataset_id)
-
-    def test_delete_features_nonexistent(
-        self,
-        offline_repo: OfflineFeatureLocalRepo,
-        eurusd_h1_dataset_id: DatasetIdentifier
-    ) -> None:
-        """Test deletion of non-existent features returns True."""
-        # Given
-        # No existing features
-
-        # When
-        success = offline_repo.delete_features(eurusd_h1_dataset_id)
-
-        # Then
-        assert success is True
 
     def test_get_dataset_base_path(
         self,
@@ -481,7 +448,7 @@ class TestOfflineFeatureLocalRepoSchemaValidation:
         stored_count = offline_repo.store_features_incrementally(extended_df, eurusd_h1_dataset_id)
         assert stored_count == len(extended_df)
 
-    @patch('drl_trading_core.preprocess.feast.offline_feature_local_repo.logger')
+    @patch('drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo.logger')
     def test_validate_schema_consistency_type_mismatch_warning(
         self,
         mock_logger: Mock,

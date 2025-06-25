@@ -10,9 +10,11 @@ from drl_trading_common.model.feature_config_version_info import (
 from injector import inject
 from pandas import DataFrame
 
-from drl_trading_core.preprocess.feast.feast_provider import FeastProvider
-from drl_trading_core.preprocess.feast.offline_feature_repo_interface import (
+from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_repo_interface import (
     OfflineFeatureRepoInterface,
+)
+from drl_trading_core.preprocess.feature_store.provider.feast_provider import (
+    FeastProvider,
 )
 
 from .feature_view_constants import (

@@ -31,20 +31,22 @@ from drl_trading_core.preprocess.data_set_utils.strip_service import (
     StripService,
     StripServiceInterface,
 )
-from drl_trading_core.preprocess.feast.feast_provider import FeastProvider
-from drl_trading_core.preprocess.feast.feature_store_save_repo import (
-    FeatureStoreSaveRepo,
-    FeatureStoreSaveRepoInterface,
-)
-from drl_trading_core.preprocess.feast.todo_feature_store_fetch_repo import (
-    FeatureStoreFetchRepo,
-    FeatureStoreFetchRepoInterface,
-)
 from drl_trading_core.preprocess.feature.feature_aggregator import (
     FeatureAggregator,
     FeatureAggregatorInterface,
 )
 from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
+from drl_trading_core.preprocess.feature_store.feature_store_save_repo import (
+    FeatureStoreSaveRepo,
+    FeatureStoreSaveRepoInterface,
+)
+from drl_trading_core.preprocess.feature_store.provider.feast_provider import (
+    FeastProvider,
+)
+from drl_trading_core.preprocess.feature_store.todo_feature_store_fetch_repo import (
+    FeatureStoreFetchRepo,
+    FeatureStoreFetchRepoInterface,
+)
 from drl_trading_core.preprocess.preprocess_service import (
     PreprocessService,
     PreprocessServiceInterface,

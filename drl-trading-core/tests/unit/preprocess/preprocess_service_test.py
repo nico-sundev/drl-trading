@@ -22,11 +22,11 @@ from drl_trading_core.common.model.symbol_import_container import (
 from drl_trading_core.preprocess.data_set_utils.merge_service import (
     MergeServiceInterface,
 )
-from drl_trading_core.preprocess.feast.todo_feature_store_fetch_repo import (
-    FeatureStoreFetchRepo,
-)
 from drl_trading_core.preprocess.feature.feature_aggregator import (
     FeatureAggregatorInterface,
+)
+from drl_trading_core.preprocess.feature_store.todo_feature_store_fetch_repo import (
+    FeatureStoreFetchRepo,
 )
 from drl_trading_core.preprocess.preprocess_service import (
     PreprocessService,

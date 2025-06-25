@@ -183,30 +183,6 @@ class OfflineFeatureLocalRepo(OfflineFeatureRepoInterface):
         existing_df = self.load_existing_features(dataset_id)
         return len(existing_df) if existing_df is not None else 0
 
-    def delete_features(self, dataset_id: DatasetIdentifier) -> bool:
-        """
-        Delete all features for a dataset by removing the dataset directory.
-
-        Args:
-            dataset_id: Dataset identifier
-
-        Returns:
-            True if deletion was successful, False otherwise
-        """
-        dataset_path = self._get_dataset_base_path(dataset_id)
-
-        if not os.path.exists(dataset_path):
-            return True  # Already deleted/doesn't exist
-
-        try:
-            import shutil
-            shutil.rmtree(dataset_path)
-            logger.info(f"Successfully deleted features for {dataset_id.symbol}/{dataset_id.timeframe.value}")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to delete features for {dataset_id.symbol}/{dataset_id.timeframe.value}: {e}")
-            return False
-
     def _get_dataset_base_path(self, dataset_id: DatasetIdentifier) -> str:
         """Get the base path for a specific dataset."""
         return os.path.join(self.base_path, dataset_id.symbol, dataset_id.timeframe.value)

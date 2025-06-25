@@ -7,7 +7,7 @@ from feast import Entity
 from pandas import DataFrame
 
 from drl_trading_core.common.model.asset_price_dataset import AssetPriceDataSet
-from drl_trading_core.preprocess.feast.todo_feature_store_fetch_repo import (
+from drl_trading_core.preprocess.feature_store.todo_feature_store_fetch_repo import (
     FeatureStoreFetchRepo,
 )
 
@@ -51,7 +51,7 @@ def mock_feast_service(mock_feature_store_config) -> FeatureStoreFetchRepo:
     """Create a FeastService instance with mocked dependencies."""
     # Patch where FeatureStore is looked up
     with patch(
-        "drl_trading_core.preprocess.feast.feast_service.FeatureStore"
+        "drl_trading_core.preprocess.feature_store.feast_service.FeatureStore"
     ) as mock_feast_constructor:
         mock_store_instance = MagicMock()
         mock_feast_constructor.return_value = mock_store_instance
@@ -72,7 +72,7 @@ def test_init_with_disabled_config(
 
     # Patch where FeatureStore is looked up
     with patch(
-        "drl_trading_core.preprocess.feast.feast_service.FeatureStore"
+        "drl_trading_core.preprocess.feature_store.feast_service.FeatureStore"
     ) as mock_feast:
         # When
         service = FeatureStoreFetchRepo(config=mock_feature_store_config)
@@ -237,10 +237,10 @@ def test_create_feature_view(mock_feast_service):
     # When
     # Patch where FileSource and FeatureView are looked up
     with patch(
-        "drl_trading_core.preprocess.feast.feast_service.FileSource"
+        "drl_trading_core.preprocess.feature_store.feast_service.FileSource"
     ) as mock_file_source:
         with patch(
-            "drl_trading_core.preprocess.feast.feast_service.FeatureView"
+            "drl_trading_core.preprocess.feature_store.feast_service.FeatureView"
         ) as mock_feature_view:
             mock_source_instance = MagicMock()
             mock_view_instance = MagicMock()

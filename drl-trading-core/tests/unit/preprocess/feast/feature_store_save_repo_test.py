@@ -17,7 +17,7 @@ from drl_trading_common.model.feature_config_version_info import (
 )
 from pandas import DataFrame
 
-from drl_trading_core.preprocess.feast.feature_store_save_repo import (
+from drl_trading_core.preprocess.feature_store.feature_store_save_repo import (
     FeatureStoreSaveRepo,
 )
 
@@ -144,7 +144,7 @@ class TestFeatureStoreSaveRepoOfflineStorage:
         mock_offline_repo.store_features_incrementally.assert_called_once()
         # Should not create feature views when no new features are stored
 
-    @patch('drl_trading_core.preprocess.feast.feature_store_save_repo.logger')
+    @patch('drl_trading_core.preprocess.feature_store.feature_store_save_repo.logger')
     def test_store_computed_features_offline_with_feature_views_creation(
         self,
         mock_logger: Mock,
@@ -289,7 +289,7 @@ class TestFeatureStoreSaveRepoOnlineStore:
                 eurusd_h1_dataset_id
             )
 
-    @patch('drl_trading_core.preprocess.feast.feature_store_save_repo.logger')
+    @patch('drl_trading_core.preprocess.feature_store.feature_store_save_repo.logger')
     def test_push_features_to_online_store_logging(
         self,
         mock_logger: Mock,

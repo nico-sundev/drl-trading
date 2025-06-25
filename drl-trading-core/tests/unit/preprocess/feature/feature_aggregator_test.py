@@ -13,13 +13,13 @@ from drl_trading_strategy.feature.feature_factory import (
 )
 from pandas import DataFrame
 
-from drl_trading_core.preprocess.feast.todo_feature_store_fetch_repo import (
-    FeatureStoreFetchRepo,
-    FeatureStoreFetchRepoInterface,
-)
 from drl_trading_core.preprocess.feature.feature_aggregator import (
     FeatureAggregator,
     FeatureAggregatorInterface,
+)
+from drl_trading_core.preprocess.feature_store.todo_feature_store_fetch_repo import (
+    FeatureStoreFetchRepo,
+    FeatureStoreFetchRepoInterface,
 )
 
 

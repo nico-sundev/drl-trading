@@ -92,19 +92,3 @@ class OfflineFeatureRepoInterface(ABC):
             Total number of feature records
         """
         pass
-
-    @abstractmethod
-    def delete_features(
-        self,
-        dataset_id: DatasetIdentifier,
-    ) -> bool:
-        """
-        Delete all features for a dataset.
-
-        Args:
-            dataset_id: Identifier for the dataset
-
-        Returns:
-            True if deletion was successful, False otherwise
-        """
-        pass

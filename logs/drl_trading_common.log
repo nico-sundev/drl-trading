@@ -583,3 +583,9 @@
 2025-06-23 00:44:48,865 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: No new features stored for EURUSD/1h
 2025-06-23 00:44:48,877 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: Materialized features for online serving: EURUSD/1h
 2025-06-23 00:44:48,911 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: Applied Feast feature views and service: test_service
+2025-06-25 16:47:16,695 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: Stored 3 feature records for EURUSD/1h
+2025-06-25 16:47:16,696 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: Applied Feast feature views and service: test_feature_service
+2025-06-25 16:47:16,701 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: No features to store for EURUSD/1h
+2025-06-25 16:47:16,712 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: No new features stored for EURUSD/1h
+2025-06-25 16:47:16,729 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: Materialized features for online serving: EURUSD/1h
+2025-06-25 16:47:16,756 [INFO] drl_trading_core.preprocess.feast.feature_store_save_repo: Applied Feast feature views and service: test_service

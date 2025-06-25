@@ -11,11 +11,11 @@ from injector import inject
 from pandas import DataFrame
 
 from drl_trading_core.common.model.asset_price_dataset import AssetPriceDataSet
-from drl_trading_core.preprocess.feast.todo_feature_store_fetch_repo import (
-    FeatureStoreFetchRepoInterface,
-)
 from drl_trading_core.preprocess.feature.feature_manager import (
     FeatureManager,
+)
+from drl_trading_core.preprocess.feature_store.todo_feature_store_fetch_repo import (
+    FeatureStoreFetchRepoInterface,
 )
 
 logger = logging.getLogger(__name__)

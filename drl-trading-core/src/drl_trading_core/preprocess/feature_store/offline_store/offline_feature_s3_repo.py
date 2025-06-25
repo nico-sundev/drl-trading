@@ -122,24 +122,6 @@ class OfflineFeatureS3Repo(OfflineFeatureRepoInterface):
             "TODO: Implement S3 counting with boto3 integration."
         )
 
-    def delete_features(self, dataset_id: DatasetIdentifier) -> bool:
-        """
-        Delete all features for a dataset by removing S3 objects with the dataset prefix.
-
-        Args:
-            dataset_id: Dataset identifier
-
-        Returns:
-            True if deletion was successful, False otherwise
-
-        Raises:
-            NotImplementedError: This is a placeholder implementation
-        """
-        raise NotImplementedError(
-            "S3 implementation not yet available. Use OfflineFeatureLocalRepo for now. "
-            "TODO: Implement S3 deletion with boto3 integration."
-        )
-
     def _get_dataset_s3_prefix(self, dataset_id: DatasetIdentifier) -> str:
         """Get the S3 prefix for a specific dataset."""
         return f"{self.s3_prefix}/{dataset_id.symbol}/{dataset_id.timeframe.value}"

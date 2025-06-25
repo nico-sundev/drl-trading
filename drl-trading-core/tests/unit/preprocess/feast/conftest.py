@@ -19,10 +19,10 @@ from drl_trading_common.model.feature_config_version_info import (
 from drl_trading_common.model.timeframe import Timeframe
 from pandas import DataFrame
 
-from drl_trading_core.preprocess.feast.feature_store_save_repo import (
+from drl_trading_core.preprocess.feature_store.feature_store_save_repo import (
     FeatureStoreSaveRepo,
 )
-from drl_trading_core.preprocess.feast.offline_feature_local_repo import (
+from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo import (
     OfflineFeatureLocalRepo,
 )
 
