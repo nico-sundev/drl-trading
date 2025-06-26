@@ -17,9 +17,8 @@ from drl_trading_core.preprocess.feature.feature_aggregator import (
     FeatureAggregator,
     FeatureAggregatorInterface,
 )
-from drl_trading_core.preprocess.feature_store.todo_feature_store_fetch_repo import (
-    FeatureStoreFetchRepo,
-    FeatureStoreFetchRepoInterface,
+from drl_trading_core.preprocess.feature_store.repository.feature_store_fetch_repo import (
+    IFeatureStoreFetchRepository,
 )
 
 
@@ -69,9 +68,9 @@ def mock_feature_factory() -> FeatureFactoryInterface:
 
 
 @pytest.fixture
-def mock_feast_service() -> FeatureStoreFetchRepoInterface:
+def mock_feast_fetch_repo() -> IFeatureStoreFetchRepository:
     """Create a mock FeastService that implements FeastServiceInterface."""
-    feast_service = MagicMock(spec=FeatureStoreFetchRepo)
+    feast_service = MagicMock(spec=IFeatureStoreFetchRepository)
     feast_service.is_enabled.return_value = True
     feast_service.get_historical_features.return_value = None
     return feast_service
@@ -79,13 +78,13 @@ def mock_feast_service() -> FeatureStoreFetchRepoInterface:
 
 @pytest.fixture
 def feature_aggregator(
-    mock_features_config, mock_feature_factory, mock_feast_service
+    mock_features_config, mock_feature_factory, mock_feast_fetch_repo
 ) -> FeatureAggregator:
     """Create a FeatureAggregator instance with mocked dependencies."""
     return FeatureAggregator(
         config=mock_features_config,
         feature_factory=mock_feature_factory,
-        feast_service=mock_feast_service,
+        feast_fetch_repo=mock_feast_fetch_repo,
     )
 
 
@@ -93,7 +92,7 @@ def test_compute_single_feature_no_cache(
     feature_aggregator,
     mock_feature_definition,
     mock_param_set,
-    mock_feast_service,
+    mock_feast_fetch_repo,
     feature_test_asset_df,
     feature_test_asset_data,
     feature_test_symbol,
@@ -101,7 +100,7 @@ def test_compute_single_feature_no_cache(
     """Test _compute_or_get_single_feature when feature is not cached."""
     # Given
     # Feature not in cache
-    mock_feast_service.get_historical_features.return_value = None
+    mock_feast_fetch_repo.get_historical_features.return_value = None
 
     # When
     # Compute feature without cache
@@ -115,14 +114,14 @@ def test_compute_single_feature_no_cache(
 
     # Then
     # Verify feature was retrieved from Feast and stored back
-    mock_feast_service.get_historical_features.assert_called_once_with(
+    mock_feast_fetch_repo.get_historical_features.assert_called_once_with(
         feature_name="MockFeature",
         param_hash="abc123hash",
         sub_feature_names=["feature1", "feature2"],
         asset_data=feature_test_asset_data,
         symbol=feature_test_symbol,
     )
-    mock_feast_service.store_computed_features.assert_called_once()
+    mock_feast_fetch_repo.store_computed_features.assert_called_once()
     assert result_df is not None
     assert not result_df.empty
     assert isinstance(result_df.index, pd.DatetimeIndex)
@@ -143,7 +142,7 @@ def test_compute_single_feature_with_cache(
     feature_aggregator,
     mock_feature_definition,
     mock_param_set,
-    mock_feast_service,
+    mock_feast_fetch_repo,
     feature_test_asset_df,
     feature_test_asset_data,
     feature_test_symbol,
@@ -159,7 +158,7 @@ def test_compute_single_feature_with_cache(
         index=feature_test_asset_df.index.copy(),
     )
     cached_features.index.name = "Time"
-    mock_feast_service.get_historical_features.return_value = cached_features
+    mock_feast_fetch_repo.get_historical_features.return_value = cached_features
 
     # When
     # Retrieve feature from cache
@@ -173,8 +172,8 @@ def test_compute_single_feature_with_cache(
 
     # Then
     # Verify feature was retrieved from cache and not computed again
-    mock_feast_service.get_historical_features.assert_called_once()
-    mock_feast_service.store_computed_features.assert_not_called()
+    mock_feast_fetch_repo.get_historical_features.assert_called_once()
+    mock_feast_fetch_repo.store_computed_features.assert_not_called()
     assert result_df is not None
 
     assert not result_df.empty
@@ -286,7 +285,7 @@ def test_compute_single_feature_handles_missing_time_index_after_compute(
     feature_aggregator,
     mock_feature_definition,
     mock_param_set_drop_time,
-    mock_feast_service,
+    mock_feast_fetch_repo,
     feature_test_asset_df,
     feature_test_asset_data,
     feature_test_symbol,
@@ -294,7 +293,7 @@ def test_compute_single_feature_handles_missing_time_index_after_compute(
     """Test _compute_or_get_single_feature returns None if 'Time' index name is missing after compute."""
     # Given
     # Feature not in cache and will drop Time index name when computed
-    mock_feast_service.get_historical_features.return_value = None
+    mock_feast_fetch_repo.get_historical_features.return_value = None
 
     # When
     # Attempt to compute the feature
@@ -309,7 +308,7 @@ def test_compute_single_feature_handles_missing_time_index_after_compute(
     # Then
     # Verify None is returned because the index name was removed
     assert result is None
-    mock_feast_service.get_historical_features.assert_called_once()
+    mock_feast_fetch_repo.get_historical_features.assert_called_once()
 
 
 @patch(
@@ -424,7 +423,7 @@ def test_compute_skips_disabled_features_and_params(
 def test_compute_execute_tasks_and_check_column_names(
     mock_delayed,
     feature_aggregator: FeatureAggregatorInterface,
-    mock_feast_service,
+    mock_feast_fetch_repo,
     feature_test_asset_data,
     feature_test_symbol,
     feature_test_asset_df,
@@ -432,7 +431,7 @@ def test_compute_execute_tasks_and_check_column_names(
     """Test executing the delayed tasks from compute and checking column names using real dask compute."""
     # Given
     # Setup feature aggregator and ensure feature is not in cache
-    mock_feast_service.get_historical_features.return_value = None
+    mock_feast_fetch_repo.get_historical_features.return_value = None
     # Note: mock hash_id as a method, not a property
     mock_hash = "abc123hash"
     mock_to_string = "7_14"
@@ -474,5 +473,5 @@ def test_compute_execute_tasks_and_check_column_names(
     assert expected_col2 in result_df.columns
 
     # Verify data was passed to and from the store correctly
-    mock_feast_service.get_historical_features.assert_called_once()
-    mock_feast_service.store_computed_features.assert_called_once()
+    mock_feast_fetch_repo.get_historical_features.assert_called_once()
+    mock_feast_fetch_repo.store_computed_features.assert_called_once()

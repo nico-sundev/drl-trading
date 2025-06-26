@@ -14,8 +14,8 @@ from drl_trading_core.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_core.preprocess.feature.feature_manager import (
     FeatureManager,
 )
-from drl_trading_core.preprocess.feature_store.todo_feature_store_fetch_repo import (
-    FeatureStoreFetchRepoInterface,
+from drl_trading_core.preprocess.feature_store.repository.feature_store_fetch_repo import (
+    IFeatureStoreFetchRepository,
 )
 
 logger = logging.getLogger(__name__)
@@ -72,25 +72,6 @@ class FeatureAggregatorInterface(ABC):
         """
         pass
 
-    @abstractmethod
-    def fetch_features_batch_optimized(
-        self, asset_data: AssetPriceDataSet, symbol: str
-    ) -> List[Delayed]:
-        """
-        Optimized batch feature retrieval using single Feast query for multiple features.
-
-        This method leverages the get_batch_historical_features capability to retrieve
-        multiple features in a single query, reducing the number of round trips to Feast.
-
-        Args:
-            asset_data: Dataset containing asset price information.
-            symbol: The trading symbol being processed.
-
-        Returns:
-            List[dask.delayed]: A list of delayed objects ready for computation.
-        """
-        pass
-
 
 class FeatureAggregator(FeatureAggregatorInterface):
     """
@@ -107,7 +88,7 @@ class FeatureAggregator(FeatureAggregatorInterface):
     def __init__(
         self,
         config: FeaturesConfig,
-        feast_service: FeatureStoreFetchRepoInterface,
+        feast_fetch_repo: IFeatureStoreFetchRepository,
         feature_manager_service: FeatureManager,
     ) -> None:
         """
@@ -119,7 +100,7 @@ class FeatureAggregator(FeatureAggregatorInterface):
             computing_service: Service for computing features.
         """
         self.config = config
-        self.feast_service = feast_service
+        self.feast_service = feast_fetch_repo
         self.feature_manager_service = feature_manager_service
 
     def _get_single_feature_offline(
@@ -375,103 +356,3 @@ class FeatureAggregator(FeatureAggregatorInterface):
             f"Generated {len(delayed_tasks)} delayed feature computation tasks for symbol {symbol}."
         )
         return delayed_tasks
-
-    def fetch_features_batch_optimized(
-        self, asset_data: AssetPriceDataSet, symbol: str
-    ) -> List[Delayed]:
-        """
-        Optimized batch feature retrieval using single Feast query for multiple features.
-
-        This method leverages the get_batch_historical_features capability to retrieve
-        multiple features in a single query, reducing the number of round trips to Feast.
-
-        Args:
-            asset_data: Dataset containing asset price information.
-            symbol: The trading symbol being processed.
-
-        Returns:
-            List[dask.delayed]: A list of delayed objects ready for computation.
-        """
-        if not self.feast_service.is_enabled():
-            logger.warning("Feast service is not enabled, falling back to standard batch processing")
-            return self.fetch_features_batch(asset_data, symbol)
-
-        # Prepare batch request for all features
-        feature_requests = []
-        for feature in self.feature_manager_service.get_all_features():
-            feature_requests.append({
-                'feature_name': feature.get_feature_name(),
-                'param_hash': feature.get_config().hash_id(),
-                'sub_feature_names': feature.get_sub_features_names()
-            })
-
-        if not feature_requests:
-            logger.info(f"No features to retrieve for symbol {symbol}")
-            return []
-
-        # Create a single delayed task for batch retrieval
-        def _get_batch_features_optimized():
-            try:
-                batch_results = self.feast_service.get_batch_historical_features(
-                    feature_requests=feature_requests,
-                    asset_data=asset_data,
-                    symbol=symbol
-                )
-
-                if not batch_results:
-                    logger.warning(f"No batch features retrieved for symbol {symbol}")
-                    return []
-
-                # Process and split results back into individual feature DataFrames
-                processed_features = []
-                for i, feature_request in enumerate(feature_requests):
-                    if i < len(batch_results) and batch_results[i] is not None:
-                        feature_df = batch_results[i]
-
-                        # Ensure proper time index
-                        if not isinstance(feature_df.index, pd.DatetimeIndex):
-                            if "Time" in feature_df.columns:
-                                try:
-                                    feature_df["Time"] = pd.to_datetime(feature_df["Time"])
-                                    feature_df = feature_df.set_index("Time")
-                                except Exception:
-                                    logger.warning(f"Invalid 'Time' column in batch result {i}")
-                                    continue
-                            else:
-                                logger.warning(f"Missing DatetimeIndex in batch result {i}")
-                                continue
-
-                        # Apply column renaming for sub-features
-                        rename_map = {}
-                        columns_to_keep = []
-
-                        for sub_feature in feature_request['sub_feature_names']:
-                            if sub_feature in feature_df.columns:
-                                rename_map[sub_feature] = sub_feature
-                                columns_to_keep.append(sub_feature)
-                            else:
-                                logger.warning(
-                                    f"Sub-feature '{sub_feature}' not found in batch result for "
-                                    f"{feature_request['feature_name']} (hash: {feature_request['param_hash']})"
-                                )
-
-                        if columns_to_keep:
-                            feature_df_selected = feature_df[columns_to_keep]
-                            feature_df_renamed = feature_df_selected.rename(columns=rename_map)
-                            processed_features.append(feature_df_renamed)
-                        else:
-                            processed_features.append(None)
-                    else:
-                        processed_features.append(None)
-
-                return processed_features
-
-            except Exception as e:
-                logger.error(f"Error in batch feature retrieval for symbol {symbol}: {e}")
-                return []
-
-        # Create delayed task for batch processing
-        batch_task = delayed(_get_batch_features_optimized)()
-
-        logger.info(f"Generated optimized batch feature retrieval task for {len(feature_requests)} features for symbol {symbol}")
-        return [batch_task]

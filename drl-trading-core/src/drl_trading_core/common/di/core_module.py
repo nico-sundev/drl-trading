@@ -36,16 +36,16 @@ from drl_trading_core.preprocess.feature.feature_aggregator import (
     FeatureAggregatorInterface,
 )
 from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
-from drl_trading_core.preprocess.feature_store.feature_store_save_repo import (
-    FeatureStoreSaveRepo,
-    FeatureStoreSaveRepoInterface,
-)
 from drl_trading_core.preprocess.feature_store.provider.feast_provider import (
     FeastProvider,
 )
-from drl_trading_core.preprocess.feature_store.todo_feature_store_fetch_repo import (
-    FeatureStoreFetchRepo,
-    FeatureStoreFetchRepoInterface,
+from drl_trading_core.preprocess.feature_store.repository.feature_store_fetch_repo import (
+    FeatureStoreFetchRepository,
+    IFeatureStoreFetchRepository,
+)
+from drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo import (
+    FeatureStoreSaveRepository,
+    IFeatureStoreSaveRepository,
 )
 from drl_trading_core.preprocess.preprocess_service import (
     PreprocessService,
@@ -166,10 +166,10 @@ class CoreModule(Module):
         binder.bind(FeastProvider, to=FeastProvider, scope=singleton)
         binder.bind(FeatureAggregatorInterface, to=FeatureAggregator, scope=singleton)
         binder.bind(
-            FeatureStoreSaveRepoInterface, to=FeatureStoreSaveRepo, scope=singleton
+            IFeatureStoreSaveRepository, to=FeatureStoreSaveRepository, scope=singleton
         )
         binder.bind(
-            FeatureStoreFetchRepoInterface, to=FeatureStoreFetchRepo, scope=singleton
+            IFeatureStoreFetchRepository, to=FeatureStoreFetchRepository, scope=singleton
         )
         binder.bind(FeatureManager, to=FeatureManager, scope=singleton)
         binder.bind(PreprocessServiceInterface, to=PreprocessService, scope=singleton)

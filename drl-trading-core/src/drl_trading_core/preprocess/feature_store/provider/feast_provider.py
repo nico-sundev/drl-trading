@@ -7,7 +7,6 @@ from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.config.feature_config import FeatureStoreConfig
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
@@ -113,7 +112,7 @@ class FeastProvider:
 
     def create_feature_view(
         self,
-        dataset_id: DatasetIdentifier,
+        symbol: str,
         feature_view_name: str,
         feature_role: FeatureRoleEnum,
         feature_version_info: FeatureConfigVersionInfo,
@@ -122,8 +121,10 @@ class FeastProvider:
         Create a feature view for the given feature parameters.
 
         Args:
-            entity: The entity for which the feature view is created
-            dataset_id: Identifier for the dataset containing symbol and timeframe
+            symbol: The symbol for which the feature view is created
+            feature_view_name: The name of the feature view
+            feature_role: The role of the feature
+            feature_version_info: Version information for the feature configuration
 
         Returns:
             FeatureView: The created feature view
@@ -149,95 +150,32 @@ class FeastProvider:
         # Create and return the feature view
         return FeatureView(
             name=feature_view_name,
-            entities=[self.get_entity(dataset_id)],
+            entities=[self.get_entity(symbol)],
             ttl=timedelta(days=self.feature_store_config.ttl_days),
             schema=fields,
             online=False,
             source=source,
             tags={
-                "symbol": dataset_id.symbol,
-                "timeframe": dataset_id.timeframe.value,
+                "symbol": symbol,
             },
         )
 
-    # def get_feature_views(
-    #     self,
-    #     feature_df: DataFrame,
-    #     feature_name: str,
-    #     param_hash: str,
-    #     sub_feature_names: List[str],
-    #     asset_data: AssetPriceDataSet,
-    #     symbol: str,
-    # ) -> None:
-    #     """
-    #     Store computed features in the feature store.
-
-    #     Args:
-    #         feature_df: DataFrame containing the computed features
-    #         feature_name: Name of the feature
-    #         param_hash: Hash of the feature parameters
-    #         sub_feature_names: List of sub-feature names in the feature
-    #         asset_data: The asset price dataset containing metadata
-    #         symbol: The trading symbol
-    #     """
-    #     if not self.feature_store or not self.config.enabled:
-    #         return
-
-    #     try:
-    #         # Make a copy to avoid modifying the original dataframe
-    #         store_df = feature_df.copy()
-
-    #         # Add required columns for feast
-    #         store_df["event_timestamp"] = store_df["Time"]
-    #         store_df[self.config.entity_name] = self._get_entity_value(
-    #             symbol, asset_data.timeframe.value
-    #         )
-
-    #         feature_view_name = self._get_feature_view_name(
-    #             feature_name, param_hash, asset_data.timeframe.value
-    #         )
-
-    #         # Check if feature view exists
-    #         feature_view_exists = True
-    #         try:
-    #             self.feature_store.get_feature_view(feature_view_name)
-    #         except Exception:
-    #             feature_view_exists = False
-    #             logger.info(
-    #                 f"Feature view {feature_view_name} does not exist, creating..."
-    #             )
-
-    #         # Create and apply feature view if needed
-    #         if not feature_view_exists:
-    #             # Create entity for this symbol and timeframe
-    #             entity = self._get_entity(symbol, asset_data.timeframe.value)
-
-    #             feature_view = self._create_feature_view(
-    #                 feature_name=feature_name,
-    #                 param_hash=param_hash,
-    #                 sub_feature_names=sub_feature_names,
-    #                 source_path=file_path,
-    #                 entity=entity,
-    #                 symbol=symbol,
-    #                 timeframe=asset_data.timeframe.value,
-    #             )
-
-    #     except Exception as e:
-    #         logger.warning(f"Failed to store features: {str(e)}")
-
     def create_feature_service(
         self,
-        feature_views: list[FeatureView | OnDemandFeatureView],
-        dataset_id: DatasetIdentifier,
+        symbol: str,
         feature_version_info: FeatureConfigVersionInfo,
+        feature_views: Optional[list[FeatureView | OnDemandFeatureView]] = None,
     ):
 
+        if feature_views is None:
+            feature_views = []
+
         return FeatureService(
-            name=f"service_{dataset_id.symbol}_{dataset_id.timeframe.value}_v{feature_version_info.semver}-{feature_version_info.hash}",
+            name=f"service_{symbol}_v{feature_version_info.semver}-{feature_version_info.hash}",
             features=feature_views,
         )
 
-    def get_entity(self, dataset_id: DatasetIdentifier) -> Entity:
+    def get_entity(self, symbol: str) -> Entity:
         """
         Create an entity for the given dataset identifier.
 
@@ -249,8 +187,8 @@ class FeastProvider:
         """
         return Entity(
             name=self.feature_store_config.entity_name,
-            join_keys=["symbol", "timeframe"],
-            description=f"Entity for {dataset_id.symbol}{{{dataset_id.timeframe.value}}} asset price data",
+            join_keys=[symbol],
+            description=f"Entity for {symbol} asset price data",
         )
 
     def _get_feature_name(
@@ -267,15 +205,3 @@ class FeastProvider:
             str: A unique name for the feature
         """
         return f"{feature_name}_{feature_config.hash_id()}"
-
-    def _get_entity_key_formatted(self, dataset_id: DatasetIdentifier) -> str:
-        """
-        Get the entity value for the given dataset identifier.
-
-        Args:
-            dataset_id: Identifier for the dataset containing symbol and timeframe
-
-        Returns:
-            str: A unique identifier combining symbol and timeframe
-        """
-        return f"{dataset_id.symbol}_{dataset_id.timeframe.value}"

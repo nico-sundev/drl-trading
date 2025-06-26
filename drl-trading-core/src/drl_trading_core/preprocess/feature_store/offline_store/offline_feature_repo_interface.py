@@ -9,7 +9,6 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from pandas import DataFrame
 
 logger = logging.getLogger(__name__)
@@ -28,7 +27,7 @@ class OfflineFeatureRepoInterface(ABC):
     def store_features_incrementally(
         self,
         features_df: DataFrame,
-        dataset_id: DatasetIdentifier,
+        symbol: str,
     ) -> int:
         """
         Store features incrementally, avoiding duplicates and optimizing storage.
@@ -48,7 +47,7 @@ class OfflineFeatureRepoInterface(ABC):
     @abstractmethod
     def load_existing_features(
         self,
-        dataset_id: DatasetIdentifier,
+        symbol: str,
     ) -> Optional[DataFrame]:
         """
         Load all existing features for a dataset.
@@ -64,7 +63,7 @@ class OfflineFeatureRepoInterface(ABC):
     @abstractmethod
     def feature_exists(
         self,
-        dataset_id: DatasetIdentifier,
+        symbol: str,
     ) -> bool:
         """
         Check if features exist for the given dataset.
@@ -80,7 +79,7 @@ class OfflineFeatureRepoInterface(ABC):
     @abstractmethod
     def get_feature_count(
         self,
-        dataset_id: DatasetIdentifier,
+        symbol: str,
     ) -> int:
         """
         Get the total count of feature records for a dataset.

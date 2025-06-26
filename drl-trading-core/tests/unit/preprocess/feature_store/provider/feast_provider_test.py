@@ -1,0 +1,651 @@
+import os
+import tempfile
+from datetime import datetime, timedelta
+from typing import Generator
+from unittest.mock import Mock, patch
+
+import pytest
+from drl_trading_common.base.base_feature import BaseFeature
+from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_common.config.feature_config import FeatureStoreConfig
+from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+from drl_trading_common.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.model.feature_config_version_info import (
+    FeatureConfigVersionInfo,
+)
+from drl_trading_common.model.timeframe import Timeframe
+from feast import Entity, FeatureService, FeatureStore, FeatureView
+from feast.types import Float32
+
+from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
+from drl_trading_core.preprocess.feature_store.provider.feast_provider import (
+    FeastProvider,
+)
+
+
+class TestFeastProvider:
+    """Test cases for FeastProvider class."""
+
+    @pytest.fixture
+    def temp_dir(self) -> Generator[str, None, None]:
+        """Create a temporary directory for testing."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            yield temp_dir
+
+    @pytest.fixture
+    def feature_store_config(self, temp_dir: str) -> FeatureStoreConfig:
+        """Create a test feature store configuration."""
+        return FeatureStoreConfig(
+            enabled=True,
+            repo_path=temp_dir,
+            offline_store_path=os.path.join(temp_dir, "offline_store.parquet"),
+            entity_name="trading_entity",
+            ttl_days=30,
+            online_enabled=False,
+            service_name="test_service",
+            service_version="1.0.0"
+        )
+
+    @pytest.fixture
+    def disabled_feature_store_config(self, temp_dir: str) -> FeatureStoreConfig:
+        """Create a disabled feature store configuration."""
+        return FeatureStoreConfig(
+            enabled=False,
+            repo_path=temp_dir,
+            offline_store_path=os.path.join(temp_dir, "offline_store.parquet"),
+            entity_name="trading_entity",
+            ttl_days=30,
+            online_enabled=False,
+            service_name="test_service",
+            service_version="1.0.0"
+        )
+
+    @pytest.fixture
+    def mock_feature_manager(self) -> Mock:
+        """Create a mock feature manager."""
+        mock_manager = Mock(spec=FeatureManager)
+        return mock_manager
+
+    @pytest.fixture
+    def mock_feature_config(self) -> Mock:
+        """Create a mock feature configuration."""
+        mock_config = Mock(spec=BaseParameterSetConfig)
+        mock_config.hash_id.return_value = "test_hash_123"
+        return mock_config
+
+    @pytest.fixture
+    def mock_observation_feature(self, mock_feature_config: Mock) -> Mock:
+        """Create a mock observation space feature."""
+        mock_feature = Mock(spec=BaseFeature)
+        mock_feature.get_feature_name.return_value = "rsi_feature"
+        mock_feature.get_config.return_value = mock_feature_config
+        mock_feature.get_sub_features_names.return_value = ["rsi_14", "rsi_21"]
+        mock_feature.get_feature_role.return_value = FeatureRoleEnum.OBSERVATION_SPACE
+        return mock_feature
+
+    @pytest.fixture
+    def mock_reward_feature(self, mock_feature_config: Mock) -> Mock:
+        """Create a mock reward engineering feature."""
+        mock_feature = Mock(spec=BaseFeature)
+        mock_feature.get_feature_name.return_value = "profit_feature"
+        mock_feature.get_config.return_value = mock_feature_config
+        mock_feature.get_sub_features_names.return_value = ["profit_target", "stop_loss"]
+        mock_feature.get_feature_role.return_value = FeatureRoleEnum.REWARD_ENGINEERING
+        return mock_feature
+
+    @pytest.fixture
+    def dataset_id(self) -> DatasetIdentifier:
+        """Create a test dataset identifier."""
+        return DatasetIdentifier(
+            symbol="EURUSD",
+            timeframe=Timeframe.HOUR_1
+        )
+
+    @pytest.fixture
+    def feature_version_info(self) -> FeatureConfigVersionInfo:
+        """Create a test feature version info."""
+        return FeatureConfigVersionInfo(
+            semver="1.0.0",
+            hash="abc123def456",
+            created_at=datetime(2024, 1, 1, 12, 0, 0),
+            feature_definitions=[],
+            description="Test feature version"
+        )
+
+    @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
+    def test_init_with_enabled_config(
+        self,
+        mock_feast_store: Mock,
+        feature_store_config: FeatureStoreConfig,
+        mock_feature_manager: Mock,
+        temp_dir: str
+    ) -> None:
+        """Test FeastProvider initialization with enabled configuration."""
+        # Given
+        mock_store_instance = Mock(spec=FeatureStore)
+        mock_feast_store.return_value = mock_store_instance
+
+        # When
+        provider = FeastProvider(
+            feature_store_config=feature_store_config,
+            feature_manager=mock_feature_manager
+        )
+
+        # Then
+        assert provider.feature_manager == mock_feature_manager
+        assert provider.feature_store_config == feature_store_config
+        mock_feast_store.assert_called_once_with(repo_path=temp_dir)
+        assert provider._feature_store == mock_store_instance
+
+    @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
+    def test_init_with_disabled_config(
+        self,
+        mock_feast_store: Mock,
+        disabled_feature_store_config: FeatureStoreConfig,
+        mock_feature_manager: Mock
+    ) -> None:
+        """Test FeastProvider initialization with disabled configuration."""
+        # Given
+        mock_store_instance = Mock(spec=FeatureStore)
+        mock_feast_store.return_value = mock_store_instance
+
+        # When
+        provider = FeastProvider(
+            feature_store_config=disabled_feature_store_config,
+            feature_manager=mock_feature_manager
+        )
+
+        # Then
+        assert provider.feature_manager == mock_feature_manager
+        assert provider.feature_store_config == disabled_feature_store_config
+        mock_feast_store.assert_called_once_with(repo_path=None)
+
+    @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
+    def test_get_feature_store(
+        self,
+        mock_feast_store: Mock,
+        feature_store_config: FeatureStoreConfig,
+        mock_feature_manager: Mock
+    ) -> None:
+        """Test getting the feature store instance."""
+        # Given
+        mock_store_instance = Mock(spec=FeatureStore)
+        mock_feast_store.return_value = mock_store_instance
+        provider = FeastProvider(feature_store_config, mock_feature_manager)
+
+        # When
+        result = provider.get_feature_store()
+
+        # Then
+        assert result == mock_store_instance
+
+    @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
+    def test_is_enabled_returns_true(
+        self,
+        mock_feast_store: Mock,
+        feature_store_config: FeatureStoreConfig,
+        mock_feature_manager: Mock
+    ) -> None:
+        """Test is_enabled returns True for enabled configuration."""
+        # Given
+        provider = FeastProvider(feature_store_config, mock_feature_manager)
+
+        # When
+        result = provider.is_enabled()
+
+        # Then
+        assert result is True
+
+    @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
+    def test_is_enabled_returns_false(
+        self,
+        mock_feast_store: Mock,
+        disabled_feature_store_config: FeatureStoreConfig,
+        mock_feature_manager: Mock
+    ) -> None:
+        """Test is_enabled returns False for disabled configuration."""
+        # Given
+        provider = FeastProvider(disabled_feature_store_config, mock_feature_manager)
+
+        # When
+        result = provider.is_enabled()
+
+        # Then
+        assert result is False
+
+    @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
+    def test_resolve_feature_store_path_absolute_path(
+        self,
+        mock_feast_store: Mock,
+        mock_feature_manager: Mock,
+        temp_dir: str
+    ) -> None:
+        """Test resolving absolute feature store path."""
+        # Given
+        absolute_path = os.path.abspath(temp_dir)
+        config = FeatureStoreConfig(
+            enabled=True,
+            repo_path=absolute_path,
+            offline_store_path="test.parquet",
+            entity_name="test_entity",
+            ttl_days=30,
+            online_enabled=False,
+            service_name="test_service",
+            service_version="1.0.0"
+        )
+
+        # When
+        provider = FeastProvider(config, mock_feature_manager)
+
+        # Then
+        mock_feast_store.assert_called_once_with(repo_path=absolute_path)
+
+    @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
+    def test_resolve_feature_store_path_relative_path(
+        self,
+        mock_feast_store: Mock,
+        mock_feature_manager: Mock
+    ) -> None:
+        """Test resolving relative feature store path."""
+        # Given
+        relative_path = "relative/path/to/store"
+        config = FeatureStoreConfig(
+            enabled=True,
+            repo_path=relative_path,
+            offline_store_path="test.parquet",
+            entity_name="test_entity",
+            ttl_days=30,
+            online_enabled=False,
+            service_name="test_service",
+            service_version="1.0.0"
+        )
+
+        # When
+        provider = FeastProvider(config, mock_feature_manager)
+
+        # Then
+        # Should be called with an absolute path
+        called_path = mock_feast_store.call_args[1]['repo_path']
+        assert os.path.isabs(called_path)
+        assert called_path.endswith(relative_path)
+
+    @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
+    def test_create_fields_single_feature(
+        self,
+        mock_feast_store: Mock,
+        feature_store_config: FeatureStoreConfig,
+        mock_feature_manager: Mock,
+        mock_observation_feature: Mock
+    ) -> None:
+        """Test creating fields for a single feature."""
+        # Given
+        provider = FeastProvider(feature_store_config, mock_feature_manager)
+
+        # When
+        fields = provider._create_fields(mock_observation_feature)
+
+        # Then
+        assert len(fields) == 2
+        assert fields[0].name == "rsi_feature_test_hash_123_rsi_14"
+        assert fields[0].dtype == Float32
+        assert fields[1].name == "rsi_feature_test_hash_123_rsi_21"
+        assert fields[1].dtype == Float32
+
+    @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
+    def test_create_feature_view_observation_space(
+        self,
+        mock_feast_store: Mock,
+        feature_store_config: FeatureStoreConfig,
+        mock_feature_manager: Mock,
+        mock_observation_feature: Mock,
+        dataset_id: DatasetIdentifier,
+        feature_version_info: FeatureConfigVersionInfo
+    ) -> None:
+        """Test creating feature view for observation space features."""
+        # Given
+        provider = FeastProvider(feature_store_config, mock_feature_manager)
+        mock_feature_manager.get_features_by_role.return_value = [mock_observation_feature]
+        feature_view_name = "test_observation_view"
+
+        # When
+        feature_view = provider.create_feature_view(
+            dataset_id=dataset_id,
+            feature_view_name=feature_view_name,
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature_version_info=feature_version_info
+        )
+
+        # Then
+        assert isinstance(feature_view, FeatureView)
+        assert feature_view.name == feature_view_name
+        assert len(feature_view.schema) == 2  # Two sub-features
+        assert feature_view.ttl == timedelta(days=30)
+        assert not feature_view.online
+        assert feature_view.tags["symbol"] == "EURUSD"
+        assert feature_view.tags["timeframe"] == "1h"
+        mock_feature_manager.get_features_by_role.assert_called_once_with(FeatureRoleEnum.OBSERVATION_SPACE)
+
+    @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
+    def test_create_feature_service(
+        self,
+        mock_feast_store: Mock,
+        feature_store_config: FeatureStoreConfig,
+        mock_feature_manager: Mock,
+        dataset_id: DatasetIdentifier,
+        feature_version_info: FeatureConfigVersionInfo
+    ) -> None:
+        """Test creating feature service."""
+        # Given
+        provider = FeastProvider(feature_store_config, mock_feature_manager)
+        mock_feature_views = []
+        for _ in range(2):
+            mock_fv = Mock(spec=FeatureView)
+            mock_fv.projection = Mock()  # Add required projection attribute
+            mock_feature_views.append(mock_fv)
+
+        # When
+        feature_service = provider.create_feature_service(
+            feature_views=mock_feature_views,
+            dataset_id=dataset_id,
+            feature_version_info=feature_version_info
+        )
+
+        # Then
+        assert isinstance(feature_service, FeatureService)
+        expected_name = f"service_{dataset_id.symbol}_{dataset_id.timeframe.value}_v{feature_version_info.semver}-{feature_version_info.hash}"
+        assert feature_service.name == expected_name
+        assert len(feature_service._features) == 2  # Check internal _features attribute
+
+    @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
+    def test_get_entity(
+        self,
+        mock_feast_store: Mock,
+        feature_store_config: FeatureStoreConfig,
+        mock_feature_manager: Mock,
+        dataset_id: DatasetIdentifier
+    ) -> None:
+        """Test getting entity for dataset identifier."""
+        # Given
+        provider = FeastProvider(feature_store_config, mock_feature_manager)
+
+        # When
+        entity = provider.get_entity(dataset_id)
+
+        # Then
+        assert isinstance(entity, Entity)
+        assert entity.name == "trading_entity"
+        assert entity.join_key == "EURUSD_1h"  # Single join key
+        assert "EURUSD{1h}" in entity.description
+
+    @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
+    def test_get_feature_name(
+        self,
+        mock_feast_store: Mock,
+        feature_store_config: FeatureStoreConfig,
+        mock_feature_manager: Mock,
+        mock_feature_config: Mock
+    ) -> None:
+        """Test getting feature name with config hash."""
+        # Given
+        provider = FeastProvider(feature_store_config, mock_feature_manager)
+        feature_name = "test_feature"
+
+        # When
+        result = provider._get_feature_name(feature_name, mock_feature_config)
+
+        # Then
+        assert result == "test_feature_test_hash_123"
+        mock_feature_config.hash_id.assert_called_once()
+
+    @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
+    def test_get_entity_key_formatted(
+        self,
+        mock_feast_store: Mock,
+        feature_store_config: FeatureStoreConfig,
+        mock_feature_manager: Mock,
+        dataset_id: DatasetIdentifier
+    ) -> None:
+        """Test getting formatted entity key."""
+        # Given
+        provider = FeastProvider(feature_store_config, mock_feature_manager)
+
+        # When
+        result = provider._get_entity_key_formatted(dataset_id)
+
+        # Then
+        assert result == "EURUSD_1h"
+
+
+class TestFeastProviderParametrized:
+    """Parametrized tests for FeastProvider class."""
+
+    @pytest.fixture
+    def temp_dir(self) -> Generator[str, None, None]:
+        """Create a temporary directory for testing."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            yield temp_dir
+
+    @pytest.fixture
+    def mock_feature_manager(self) -> Mock:
+        """Create a mock feature manager."""
+        return Mock(spec=FeatureManager)
+
+    @pytest.mark.parametrize(
+        "enabled,expected_result",
+        [
+            (True, True),
+            (False, False),
+        ],
+    )
+    @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
+    def test_is_enabled_parametrized(
+        self,
+        mock_feast_store: Mock,
+        mock_feature_manager: Mock,
+        temp_dir: str,
+        enabled: bool,
+        expected_result: bool
+    ) -> None:
+        """Test is_enabled method with different configuration states."""
+        # Given
+        config = FeatureStoreConfig(
+            enabled=enabled,
+            repo_path=temp_dir,
+            offline_store_path="test.parquet",
+            entity_name="test_entity",
+            ttl_days=30,
+            online_enabled=False,
+            service_name="test_service",
+            service_version="1.0.0"
+        )
+        provider = FeastProvider(config, mock_feature_manager)
+
+        # When
+        result = provider.is_enabled()
+
+        # Then
+        assert result == expected_result
+
+    @pytest.mark.parametrize(
+        "feature_role,features_count,expected_fields_count",
+        [
+            (FeatureRoleEnum.OBSERVATION_SPACE, 1, 2),  # One feature with 2 sub-features
+            (FeatureRoleEnum.REWARD_ENGINEERING, 1, 2),  # One feature with 2 sub-features
+            (FeatureRoleEnum.OBSERVATION_SPACE, 2, 4),  # Two features with 2 sub-features each
+        ],
+    )
+    @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
+    def test_create_feature_view_with_different_feature_counts(
+        self,
+        mock_feast_store: Mock,
+        mock_feature_manager: Mock,
+        temp_dir: str,
+        feature_role: FeatureRoleEnum,
+        features_count: int,
+        expected_fields_count: int
+    ) -> None:
+        """Test creating feature views with different numbers of features."""
+        # Given
+        config = FeatureStoreConfig(
+            enabled=True,
+            repo_path=temp_dir,
+            offline_store_path="test.parquet",
+            entity_name="test_entity",
+            ttl_days=30,
+            online_enabled=False,
+            service_name="test_service",
+            service_version="1.0.0"
+        )
+        provider = FeastProvider(config, mock_feature_manager)
+
+        # Create mock features
+        mock_features = []
+        for i in range(features_count):
+            mock_feature = Mock(spec=BaseFeature)
+            mock_config = Mock(spec=BaseParameterSetConfig)
+            mock_config.hash_id.return_value = f"hash_{i}"
+            mock_feature.get_feature_name.return_value = f"feature_{i}"
+            mock_feature.get_config.return_value = mock_config
+            mock_feature.get_sub_features_names.return_value = ["sub_1", "sub_2"]
+            mock_features.append(mock_feature)
+
+        mock_feature_manager.get_features_by_role.return_value = mock_features
+
+        dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe=Timeframe.HOUR_1)
+        feature_version_info = FeatureConfigVersionInfo(
+            semver="1.0.0",
+            hash="test_hash",
+            created_at=datetime.now(),
+            feature_definitions=[]
+        )
+
+        # When
+        feature_view = provider.create_feature_view(
+            dataset_id=dataset_id,
+            feature_view_name="test_view",
+            feature_role=feature_role,
+            feature_version_info=feature_version_info
+        )
+
+        # Then
+        assert len(feature_view.schema) == expected_fields_count
+        mock_feature_manager.get_features_by_role.assert_called_once_with(feature_role)
+
+
+class TestFeastProviderEdgeCases:
+    """Test edge cases and error conditions for FeastProvider."""
+
+    @pytest.fixture
+    def temp_dir(self) -> Generator[str, None, None]:
+        """Create a temporary directory for testing."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            yield temp_dir
+
+    @pytest.fixture
+    def mock_feature_manager(self) -> Mock:
+        """Create a mock feature manager."""
+        return Mock(spec=FeatureManager)
+
+    @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
+    def test_create_fields_empty_sub_features(
+        self,
+        mock_feast_store: Mock,
+        temp_dir: str,
+        mock_feature_manager: Mock
+    ) -> None:
+        """Test creating fields when feature has no sub-features."""
+        # Given
+        config = FeatureStoreConfig(
+            enabled=True,
+            repo_path=temp_dir,
+            offline_store_path="test.parquet",
+            entity_name="test_entity",
+            ttl_days=30,
+            online_enabled=False,
+            service_name="test_service",
+            service_version="1.0.0"
+        )
+        provider = FeastProvider(config, mock_feature_manager)
+
+        mock_feature = Mock(spec=BaseFeature)
+        mock_feature_config = Mock(spec=BaseParameterSetConfig)
+        mock_feature_config.hash_id.return_value = "empty_hash"
+        mock_feature.get_feature_name.return_value = "empty_feature"
+        mock_feature.get_config.return_value = mock_feature_config
+        mock_feature.get_sub_features_names.return_value = []  # Empty sub-features
+
+        # When
+        fields = provider._create_fields(mock_feature)
+
+        # Then
+        assert len(fields) == 0
+
+    @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
+    def test_create_feature_view_no_features_for_role(
+        self,
+        mock_feast_store: Mock,
+        temp_dir: str,
+        mock_feature_manager: Mock
+    ) -> None:
+        """Test creating feature view when no features exist for the role."""
+        # Given
+        config = FeatureStoreConfig(
+            enabled=True,
+            repo_path=temp_dir,
+            offline_store_path="test.parquet",
+            entity_name="test_entity",
+            ttl_days=30,
+            online_enabled=False,
+            service_name="test_service",
+            service_version="1.0.0"
+        )
+        provider = FeastProvider(config, mock_feature_manager)
+        mock_feature_manager.get_features_by_role.return_value = []  # No features
+
+        dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe=Timeframe.HOUR_1)
+        feature_version_info = FeatureConfigVersionInfo(
+            semver="1.0.0",
+            hash="test_hash",
+            created_at=datetime.now(),
+            feature_definitions=[]
+        )
+
+        # When
+        feature_view = provider.create_feature_view(
+            dataset_id=dataset_id,
+            feature_view_name="empty_view",
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature_version_info=feature_version_info
+        )
+
+        # Then
+        assert len(feature_view.schema) == 0
+        mock_feature_manager.get_features_by_role.assert_called_once_with(FeatureRoleEnum.OBSERVATION_SPACE)
+
+    @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
+    def test_provider_with_very_long_paths(
+        self,
+        mock_feast_store: Mock,
+        mock_feature_manager: Mock
+    ) -> None:
+        """Test provider initialization with very long file paths."""
+        # Given
+        long_path = os.path.join("very", "long", "path", "to", "feature", "store") * 10
+        config = FeatureStoreConfig(
+            enabled=True,
+            repo_path=long_path,
+            offline_store_path="test.parquet",
+            entity_name="test_entity",
+            ttl_days=30,
+            online_enabled=False,
+            service_name="test_service",
+            service_version="1.0.0"
+        )
+
+        # When
+        provider = FeastProvider(config, mock_feature_manager)
+
+        # Then
+        # Should handle long paths without errors
+        called_path = mock_feast_store.call_args[1]['repo_path']
+        assert long_path in called_path
