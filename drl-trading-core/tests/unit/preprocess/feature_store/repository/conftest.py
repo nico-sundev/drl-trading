@@ -1,7 +1,7 @@
 """
-Test fixtures for feature_store_save_repository tests.
+Test fixtures for feature_store repository tests.
 
-Provides common test fixtures and mocks for testing the FeatureStoreSaveRepository class.
+Provides common test fixtures and mocks for testing the FeatureStore repository classes.
 """
 
 import tempfile
@@ -12,11 +12,9 @@ from unittest.mock import Mock
 import pandas as pd
 import pytest
 from drl_trading_common.config.feature_config import FeatureStoreConfig
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
-from drl_trading_common.model.timeframe import Timeframe
 from feast import FeatureService, FeatureStore
 from pandas import DataFrame
 
@@ -63,24 +61,6 @@ def sample_features_df() -> DataFrame:
 
 
 @pytest.fixture
-def eurusd_h1_dataset_id() -> DatasetIdentifier:
-    """Create a sample dataset identifier for EUR/USD H1."""
-    return DatasetIdentifier(
-        symbol="EURUSD",
-        timeframe=Timeframe.HOUR_1
-    )
-
-
-@pytest.fixture
-def gbpusd_m15_dataset_id() -> DatasetIdentifier:
-    """Create a sample dataset identifier for GBP/USD M15."""
-    return DatasetIdentifier(
-        symbol="GBPUSD",
-        timeframe=Timeframe.MINUTE_15
-    )
-
-
-@pytest.fixture
 def mock_feast_provider() -> Mock:
     """Create a mock FeastProvider for testing."""
     mock_provider = Mock()
@@ -99,7 +79,6 @@ def mock_feature_store() -> Mock:
     mock_online_response = Mock()
     mock_online_response.to_df.return_value = DataFrame({
         "symbol": ["EURUSD"],
-        "timeframe": ["H1"],
         "rsi_14": [45.2],
         "sma_20": [1.0855]
     })
@@ -114,7 +93,6 @@ def mock_feature_store() -> Mock:
             pd.Timestamp("2024-01-01 11:00:00")
         ],
         "symbol": ["EURUSD", "EURUSD", "EURUSD"],
-        "timeframe": ["H1", "H1", "H1"],
         "rsi_14": [30.5, 45.2, 67.8],
         "sma_20": [1.0850, 1.0855, 1.0860]
     })
@@ -173,3 +151,15 @@ def feature_store_save_repository(
         offline_repo=mock_offline_repo,
         feature_view_name_mapper=mock_feature_view_name_mapper
     )
+
+
+@pytest.fixture
+def eurusd_h1_symbol() -> str:
+    """Create a sample symbol for EUR/USD H1."""
+    return "EURUSD"
+
+
+@pytest.fixture
+def gbpusd_m15_symbol() -> str:
+    """Create a sample symbol for GBP/USD M15."""
+    return "GBPUSD"

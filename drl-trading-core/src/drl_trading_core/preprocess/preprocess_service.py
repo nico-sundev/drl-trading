@@ -32,7 +32,7 @@ from drl_trading_core.preprocess.data_set_utils.util import (
     separate_computed_datasets,
 )
 from drl_trading_core.preprocess.feature.feature_aggregator import (
-    FeatureAggregatorInterface,
+    IFeatureAggregator,
 )
 
 logger = logging.getLogger(__name__)
@@ -67,7 +67,7 @@ class PreprocessService(PreprocessServiceInterface):
         self,
         features_config: FeaturesConfig,
         feature_factory: FeatureFactoryInterface,
-        feature_aggregator: FeatureAggregatorInterface,
+        feature_aggregator: IFeatureAggregator,
         merge_service: MergeServiceInterface,
         context_feature_service: ContextFeatureServiceInterface,
     ) -> None:

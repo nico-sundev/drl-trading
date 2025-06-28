@@ -21,7 +21,7 @@ from drl_trading_core.preprocess.feature_store.repository.feature_store_fetch_re
 logger = logging.getLogger(__name__)
 
 
-class FeatureAggregatorInterface(ABC):
+class IFeatureAggregator(ABC):
     """
     Interface defining the contract for feature aggregation operations.
 
@@ -73,7 +73,7 @@ class FeatureAggregatorInterface(ABC):
         pass
 
 
-class FeatureAggregator(FeatureAggregatorInterface):
+class FeatureAggregator(IFeatureAggregator):
     """
     Aggregates and computes features for asset price datasets using delayed execution.
 

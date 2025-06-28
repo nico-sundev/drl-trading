@@ -33,7 +33,7 @@ from drl_trading_core.preprocess.data_set_utils.strip_service import (
 )
 from drl_trading_core.preprocess.feature.feature_aggregator import (
     FeatureAggregator,
-    FeatureAggregatorInterface,
+    IFeatureAggregator,
 )
 from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
 from drl_trading_core.preprocess.feature_store.provider.feast_provider import (
@@ -164,7 +164,7 @@ class CoreModule(Module):
             scope=singleton,
         )
         binder.bind(FeastProvider, to=FeastProvider, scope=singleton)
-        binder.bind(FeatureAggregatorInterface, to=FeatureAggregator, scope=singleton)
+        binder.bind(IFeatureAggregator, to=FeatureAggregator, scope=singleton)
         binder.bind(
             IFeatureStoreSaveRepository, to=FeatureStoreSaveRepository, scope=singleton
         )

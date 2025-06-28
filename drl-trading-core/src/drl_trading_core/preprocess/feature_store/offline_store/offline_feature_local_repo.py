@@ -11,17 +11,16 @@ from typing import Optional
 
 import pandas as pd
 from drl_trading_common.config.feature_config import FeatureStoreConfig
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from injector import inject
 from pandas import DataFrame, concat, to_datetime
 
-from .offline_feature_repo_interface import OfflineFeatureRepoInterface
+from .offline_feature_repo_interface import IOfflineFeatureRepository
 
 logger = logging.getLogger(__name__)
 
 
 @inject
-class OfflineFeatureLocalRepo(OfflineFeatureRepoInterface):
+class OfflineFeatureLocalRepo(IOfflineFeatureRepository):
     """
     Local filesystem implementation for offline feature storage.
 
@@ -41,7 +40,7 @@ class OfflineFeatureLocalRepo(OfflineFeatureRepoInterface):
     def store_features_incrementally(
         self,
         features_df: DataFrame,
-        dataset_id: DatasetIdentifier,
+        symbol: str,
     ) -> int:
         """
         Store features incrementally using datetime-organized directory structure.
@@ -67,14 +66,14 @@ class OfflineFeatureLocalRepo(OfflineFeatureRepoInterface):
         features_df = features_df.sort_values("event_timestamp").reset_index(drop=True)
 
         # Load existing features to check for duplicates
-        existing_df = self.load_existing_features(dataset_id)
+        existing_df = self.load_existing_features(symbol)
 
         if existing_df is None or existing_df.empty:
             new_features_df = features_df
-            logger.info(f"No existing features found for {dataset_id.symbol}/{dataset_id.timeframe.value}")
+            logger.info(f"No existing features found for {symbol}")
         else:
             # Validate schema consistency
-            self._validate_schema_consistency(existing_df, features_df, dataset_id)
+            self._validate_schema_consistency(existing_df, features_df, symbol)
 
             # Find new records by timestamp comparison
             existing_timestamps = set(existing_df["event_timestamp"])
@@ -85,25 +84,25 @@ class OfflineFeatureLocalRepo(OfflineFeatureRepoInterface):
             overlapping_count = (~new_mask).sum()
             if overlapping_count > 0:
                 logger.warning(
-                    f"Found {overlapping_count} overlapping timestamps for {dataset_id.symbol}/{dataset_id.timeframe.value}. "
+                    f"Found {overlapping_count} overlapping timestamps for {symbol}. "
                     f"These will be skipped to prevent data corruption."
                 )
 
         if new_features_df.empty:
-            logger.info(f"No new features to store for {dataset_id.symbol}/{dataset_id.timeframe.value}")
+            logger.info(f"No new features to store for {symbol}")
             return 0
 
         # Store new features with datetime organization
-        self._store_with_datetime_organization(new_features_df, dataset_id)
+        self._store_with_datetime_organization(new_features_df, symbol)
 
         logger.info(
             f"Stored {len(new_features_df)} new features out of {len(features_df)} total "
-            f"for {dataset_id.symbol}/{dataset_id.timeframe.value}"
+            f"for {symbol}"
         )
 
         return len(new_features_df)
 
-    def load_existing_features(self, dataset_id: DatasetIdentifier) -> Optional[DataFrame]:
+    def load_existing_features(self, symbol: str) -> Optional[DataFrame]:
         """
         Load existing features from all parquet files in the dataset path.
 
@@ -113,7 +112,7 @@ class OfflineFeatureLocalRepo(OfflineFeatureRepoInterface):
         Returns:
             Combined DataFrame of existing features, or None if no files exist
         """
-        dataset_path = self._get_dataset_base_path(dataset_id)
+        dataset_path = self._get_dataset_base_path(symbol)
 
         if not os.path.exists(dataset_path):
             return None
@@ -149,7 +148,7 @@ class OfflineFeatureLocalRepo(OfflineFeatureRepoInterface):
         logger.info(f"Loaded {len(combined_df)} existing feature records from {len(parquet_files)} files")
         return combined_df
 
-    def feature_exists(self, dataset_id: DatasetIdentifier) -> bool:
+    def feature_exists(self, symbol: str) -> bool:
         """
         Check if features exist for the given dataset.
 
@@ -159,10 +158,12 @@ class OfflineFeatureLocalRepo(OfflineFeatureRepoInterface):
         Returns:
             True if features exist, False otherwise
         """
-        dataset_path = self._get_dataset_base_path(dataset_id)
+        dataset_path = self._get_dataset_base_path(symbol)
 
         if not os.path.exists(dataset_path):
-            return False        # Check for any parquet files in the directory tree
+            return False
+
+        # Check for any parquet files in the directory tree
         for _, _, files in os.walk(dataset_path):
             for file in files:
                 if file.endswith('.parquet'):
@@ -170,7 +171,7 @@ class OfflineFeatureLocalRepo(OfflineFeatureRepoInterface):
 
         return False
 
-    def get_feature_count(self, dataset_id: DatasetIdentifier) -> int:
+    def get_feature_count(self, symbol: str) -> int:
         """
         Get the total count of feature records for a dataset.
 
@@ -180,18 +181,18 @@ class OfflineFeatureLocalRepo(OfflineFeatureRepoInterface):
         Returns:
             Total number of feature records
         """
-        existing_df = self.load_existing_features(dataset_id)
+        existing_df = self.load_existing_features(symbol)
         return len(existing_df) if existing_df is not None else 0
 
-    def _get_dataset_base_path(self, dataset_id: DatasetIdentifier) -> str:
+    def _get_dataset_base_path(self, symbol: str) -> str:
         """Get the base path for a specific dataset."""
-        return os.path.join(self.base_path, dataset_id.symbol, dataset_id.timeframe.value)
+        return os.path.join(self.base_path, symbol)
 
     def _validate_schema_consistency(
         self,
         existing_df: DataFrame,
         new_df: DataFrame,
-        dataset_id: DatasetIdentifier
+        symbol: str
     ) -> None:
         """
         Validate that new features have consistent schema with existing features.
@@ -211,7 +212,7 @@ class OfflineFeatureLocalRepo(OfflineFeatureRepoInterface):
         missing_cols = existing_cols - new_cols
         if missing_cols:
             raise ValueError(
-                f"Schema validation failed for {dataset_id.symbol}/{dataset_id.timeframe.value}: "
+                f"Schema validation failed for {symbol}: "
                 f"New features missing columns: {sorted(missing_cols)}"
             )
 
@@ -219,7 +220,7 @@ class OfflineFeatureLocalRepo(OfflineFeatureRepoInterface):
         extra_cols = new_cols - existing_cols
         if extra_cols:
             logger.info(
-                f"New feature columns detected for {dataset_id.symbol}/{dataset_id.timeframe.value}: "
+                f"New feature columns detected for {symbol}: "
                 f"{sorted(extra_cols)}"
             )
 
@@ -237,14 +238,14 @@ class OfflineFeatureLocalRepo(OfflineFeatureRepoInterface):
 
             if existing_dtype != new_dtype:
                 logger.warning(
-                    f"Column type mismatch for '{col}' in {dataset_id.symbol}/{dataset_id.timeframe.value}: "
+                    f"Column type mismatch for '{col}' in {symbol}: "
                     f"existing={existing_dtype}, new={new_dtype}"
                 )
 
     def _store_with_datetime_organization(
         self,
         features_df: DataFrame,
-        dataset_id: DatasetIdentifier
+        symbol: str
     ) -> None:
         """
         Store features using datetime-based path organization.
@@ -258,7 +259,7 @@ class OfflineFeatureLocalRepo(OfflineFeatureRepoInterface):
         if features_df.empty:
             return
 
-        base_path = self._get_dataset_base_path(dataset_id)
+        base_path = self._get_dataset_base_path(symbol)
 
         # Group features by date for organized storage
         features_df["_date"] = features_df["event_timestamp"].dt.date
@@ -305,5 +306,5 @@ class OfflineFeatureLocalRepo(OfflineFeatureRepoInterface):
 
             logger.info(
                 f"Stored {len(store_df)} features for {year}-{month:02d}-{day:02d} in {file_path} "
-                f"({dataset_id.symbol}/{dataset_id.timeframe.value})"
+                f"({symbol})"
             )

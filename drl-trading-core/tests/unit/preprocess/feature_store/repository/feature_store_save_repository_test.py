@@ -11,7 +11,6 @@ import pandas as pd
 import pytest
 from drl_trading_common.config.feature_config import FeatureStoreConfig
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
@@ -60,7 +59,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         self,
         feature_store_save_repository: FeatureStoreSaveRepository,
         sample_features_df: DataFrame,
-        eurusd_h1_dataset_id: DatasetIdentifier,
+        eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
@@ -71,20 +70,20 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         # When
         feature_store_save_repository.store_computed_features_offline(
             sample_features_df,
-            eurusd_h1_dataset_id,
+            eurusd_h1_symbol,
             feature_version_info
         )
 
         # Then
         mock_offline_repo.store_features_incrementally.assert_called_once_with(
             sample_features_df,
-            eurusd_h1_dataset_id
+            eurusd_h1_symbol
         )
 
     def test_store_computed_features_offline_empty_dataframe(
         self,
         feature_store_save_repository: FeatureStoreSaveRepository,
-        eurusd_h1_dataset_id: DatasetIdentifier,
+        eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
@@ -95,7 +94,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         # When
         feature_store_save_repository.store_computed_features_offline(
             empty_df,
-            eurusd_h1_dataset_id,
+            eurusd_h1_symbol,
             feature_version_info
         )
 
@@ -105,7 +104,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
     def test_store_computed_features_offline_missing_timestamp_column(
         self,
         feature_store_save_repository: FeatureStoreSaveRepository,
-        eurusd_h1_dataset_id: DatasetIdentifier,
+        eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
@@ -121,7 +120,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         with pytest.raises(ValueError, match="features_df must contain 'event_timestamp' column"):
             feature_store_save_repository.store_computed_features_offline(
                 invalid_df,
-                eurusd_h1_dataset_id,
+                eurusd_h1_symbol,
                 feature_version_info
             )
 
@@ -129,7 +128,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         self,
         feature_store_save_repository: FeatureStoreSaveRepository,
         sample_features_df: DataFrame,
-        eurusd_h1_dataset_id: DatasetIdentifier,
+        eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
@@ -140,7 +139,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         # When
         feature_store_save_repository.store_computed_features_offline(
             sample_features_df,
-            eurusd_h1_dataset_id,
+            eurusd_h1_symbol,
             feature_version_info
         )
 
@@ -154,7 +153,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         mock_logger: Mock,
         feature_store_save_repository: FeatureStoreSaveRepository,
         sample_features_df: DataFrame,
-        eurusd_h1_dataset_id: DatasetIdentifier,
+        eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
         mock_feast_provider: Mock,
         feature_version_info: FeatureConfigVersionInfo
@@ -175,7 +174,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         # When
         feature_store_save_repository.store_computed_features_offline(
             sample_features_df,
-            eurusd_h1_dataset_id,
+            eurusd_h1_symbol,
             feature_version_info
         )
 
@@ -184,7 +183,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         assert mock_feast_provider.create_feature_view.call_count == 2
         mock_feast_provider.create_feature_service.assert_called_once_with(
             feature_views=[mock_obs_fv, mock_reward_fv],
-            dataset_id=eurusd_h1_dataset_id,
+            symbol=eurusd_h1_symbol,
             feature_version_info=feature_version_info
         )
 
@@ -204,7 +203,7 @@ class TestFeatureStoreSaveRepositoryBatchMaterialization:
         self,
         feature_store_save_repository: FeatureStoreSaveRepository,
         sample_features_df: DataFrame,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test successful batch materialization of features."""
         # Given
@@ -213,7 +212,7 @@ class TestFeatureStoreSaveRepositoryBatchMaterialization:
         # When
         feature_store_save_repository.batch_materialize_features(
             sample_features_df,
-            eurusd_h1_dataset_id
+            eurusd_h1_symbol
         )
 
         # Then
@@ -225,7 +224,7 @@ class TestFeatureStoreSaveRepositoryBatchMaterialization:
     def test_batch_materialize_features_missing_timestamp_column(
         self,
         feature_store_save_repository: FeatureStoreSaveRepository,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test error handling when event_timestamp column is missing."""
         # Given
@@ -239,7 +238,7 @@ class TestFeatureStoreSaveRepositoryBatchMaterialization:
         with pytest.raises(ValueError, match="features_df must contain 'event_timestamp' column"):
             feature_store_save_repository.batch_materialize_features(
                 invalid_df,
-                eurusd_h1_dataset_id
+                eurusd_h1_symbol
             )
 
     @patch('drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo.logger')
@@ -248,7 +247,7 @@ class TestFeatureStoreSaveRepositoryBatchMaterialization:
         mock_logger: Mock,
         feature_store_save_repository: FeatureStoreSaveRepository,
         sample_features_df: DataFrame,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test that batch materialization is properly logged."""
         # Given
@@ -257,14 +256,14 @@ class TestFeatureStoreSaveRepositoryBatchMaterialization:
         # When
         feature_store_save_repository.batch_materialize_features(
             sample_features_df,
-            eurusd_h1_dataset_id
+            eurusd_h1_symbol
         )
 
         # Then
         mock_logger.info.assert_called_once()
         log_message = mock_logger.info.call_args[0][0]
         assert "Materialized features for online serving" in log_message
-        assert "EURUSD/1h" in log_message
+        assert "EURUSD" in log_message
 
 
 class TestFeatureStoreSaveRepositoryOnlineStore:
@@ -273,7 +272,7 @@ class TestFeatureStoreSaveRepositoryOnlineStore:
     def test_push_features_to_online_store_success(
         self,
         feature_store_save_repository: FeatureStoreSaveRepository,
-        eurusd_h1_dataset_id: DatasetIdentifier,
+        eurusd_h1_symbol: str,
         mock_feature_view_name_mapper: Mock
     ) -> None:
         """Test successful push of features to online store."""
@@ -289,7 +288,7 @@ class TestFeatureStoreSaveRepositoryOnlineStore:
         # When
         feature_store_save_repository.push_features_to_online_store(
             single_record_df,
-            eurusd_h1_dataset_id,
+            eurusd_h1_symbol,
             feature_role
         )
 
@@ -303,7 +302,7 @@ class TestFeatureStoreSaveRepositoryOnlineStore:
     def test_push_features_to_online_store_missing_timestamp_column(
         self,
         feature_store_save_repository: FeatureStoreSaveRepository,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test error handling when event_timestamp column is missing."""
         # Given
@@ -317,14 +316,14 @@ class TestFeatureStoreSaveRepositoryOnlineStore:
         with pytest.raises(ValueError, match="features_df must contain 'event_timestamp' column"):
             feature_store_save_repository.push_features_to_online_store(
                 invalid_df,
-                eurusd_h1_dataset_id,
+                eurusd_h1_symbol,
                 feature_role
             )
 
     def test_push_features_to_online_store_unknown_feature_role(
         self,
         feature_store_save_repository: FeatureStoreSaveRepository,
-        eurusd_h1_dataset_id: DatasetIdentifier,
+        eurusd_h1_symbol: str,
         mock_feature_view_name_mapper: Mock
     ) -> None:
         """Test error handling when feature view name mapper fails."""
@@ -340,7 +339,7 @@ class TestFeatureStoreSaveRepositoryOnlineStore:
         with pytest.raises(ValueError, match="Unknown feature role"):
             feature_store_save_repository.push_features_to_online_store(
                 single_record_df,
-                eurusd_h1_dataset_id,
+                eurusd_h1_symbol,
                 feature_role
             )
 
@@ -349,7 +348,7 @@ class TestFeatureStoreSaveRepositoryOnlineStore:
         self,
         mock_logger: Mock,
         feature_store_save_repository: FeatureStoreSaveRepository,
-        eurusd_h1_dataset_id: DatasetIdentifier,
+        eurusd_h1_symbol: str,
         mock_feature_view_name_mapper: Mock
     ) -> None:
         """Test that online store push operations are logged at debug level."""
@@ -364,7 +363,7 @@ class TestFeatureStoreSaveRepositoryOnlineStore:
         # When
         feature_store_save_repository.push_features_to_online_store(
             single_record_df,
-            eurusd_h1_dataset_id,
+            eurusd_h1_symbol,
             feature_role
         )
 
@@ -372,7 +371,7 @@ class TestFeatureStoreSaveRepositoryOnlineStore:
         mock_logger.debug.assert_called_once()
         debug_message = mock_logger.debug.call_args[0][0]
         assert "Pushed 1 feature records" in debug_message
-        assert "EURUSD/1h" in debug_message
+        assert "EURUSD" in debug_message
 
 
 class TestFeatureStoreSaveRepositoryUtilityMethods:
@@ -446,7 +445,7 @@ class TestFeatureStoreSaveRepositoryPrivateMethods:
         self,
         feature_store_save_repository: FeatureStoreSaveRepository,
         sample_features_df: DataFrame,
-        eurusd_h1_dataset_id: DatasetIdentifier,
+        eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
         mock_feast_provider: Mock,
         feature_version_info: FeatureConfigVersionInfo
@@ -466,21 +465,21 @@ class TestFeatureStoreSaveRepositoryPrivateMethods:
         # When
         feature_store_save_repository.store_computed_features_offline(
             sample_features_df,
-            eurusd_h1_dataset_id,
+            eurusd_h1_symbol,
             feature_version_info
         )
 
         # Then
         # Verify observation space feature view creation
         observation_call_args = mock_feast_provider.create_feature_view.call_args_list[0]
-        assert observation_call_args[1]["dataset_id"] == eurusd_h1_dataset_id
+        assert observation_call_args[1]["symbol"] == eurusd_h1_symbol
         assert observation_call_args[1]["feature_view_name"] == "observation_space_feature_view"
         assert observation_call_args[1]["feature_role"] == FeatureRoleEnum.OBSERVATION_SPACE
         assert observation_call_args[1]["feature_version_info"] == feature_version_info
 
         # Verify reward engineering feature view creation
         reward_call_args = mock_feast_provider.create_feature_view.call_args_list[1]
-        assert reward_call_args[1]["dataset_id"] == eurusd_h1_dataset_id
+        assert reward_call_args[1]["symbol"] == eurusd_h1_symbol
         assert reward_call_args[1]["feature_view_name"] == "reward_engineering_feature_view"
         assert reward_call_args[1]["feature_role"] == FeatureRoleEnum.REWARD_ENGINEERING
         assert reward_call_args[1]["feature_version_info"] == feature_version_info
@@ -493,7 +492,7 @@ class TestFeatureStoreSaveRepositoryErrorHandling:
         self,
         feature_store_save_repository: FeatureStoreSaveRepository,
         sample_features_df: DataFrame,
-        eurusd_h1_dataset_id: DatasetIdentifier,
+        eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
         mock_feast_provider: Mock,
         feature_version_info: FeatureConfigVersionInfo
@@ -507,7 +506,7 @@ class TestFeatureStoreSaveRepositoryErrorHandling:
         with pytest.raises(Exception, match="Feast provider error"):
             feature_store_save_repository.store_computed_features_offline(
                 sample_features_df,
-                eurusd_h1_dataset_id,
+                eurusd_h1_symbol,
                 feature_version_info
             )
 
@@ -515,7 +514,7 @@ class TestFeatureStoreSaveRepositoryErrorHandling:
         self,
         feature_store_save_repository: FeatureStoreSaveRepository,
         sample_features_df: DataFrame,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test error handling when feast store materialization fails."""
         # Given
@@ -525,13 +524,13 @@ class TestFeatureStoreSaveRepositoryErrorHandling:
         with pytest.raises(Exception, match="Materialization failed"):
             feature_store_save_repository.batch_materialize_features(
                 sample_features_df,
-                eurusd_h1_dataset_id
+                eurusd_h1_symbol
             )
 
     def test_push_features_to_online_store_feast_store_exception(
         self,
         feature_store_save_repository: FeatureStoreSaveRepository,
-        eurusd_h1_dataset_id: DatasetIdentifier,
+        eurusd_h1_symbol: str,
         mock_feature_view_name_mapper: Mock
     ) -> None:
         """Test error handling when online store write fails."""
@@ -548,7 +547,7 @@ class TestFeatureStoreSaveRepositoryErrorHandling:
         with pytest.raises(Exception, match="Online store error"):
             feature_store_save_repository.push_features_to_online_store(
                 single_record_df,
-                eurusd_h1_dataset_id,
+                eurusd_h1_symbol,
                 feature_role
             )
 
@@ -563,7 +562,7 @@ class TestFeatureStoreSaveRepositoryParametrized:
     def test_push_features_to_online_store_different_roles(
         self,
         feature_store_save_repository: FeatureStoreSaveRepository,
-        eurusd_h1_dataset_id: DatasetIdentifier,
+        eurusd_h1_symbol: str,
         mock_feature_view_name_mapper: Mock,
         feature_role: FeatureRoleEnum,
         expected_view_name: str
@@ -579,7 +578,7 @@ class TestFeatureStoreSaveRepositoryParametrized:
         # When
         feature_store_save_repository.push_features_to_online_store(
             single_record_df,
-            eurusd_h1_dataset_id,
+            eurusd_h1_symbol,
             feature_role
         )
 

@@ -13,13 +13,13 @@ from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from injector import inject
 from pandas import DataFrame
 
-from .offline_feature_repo_interface import OfflineFeatureRepoInterface
+from .offline_feature_repo_interface import IOfflineFeatureRepository
 
 logger = logging.getLogger(__name__)
 
 
 @inject
-class OfflineFeatureS3Repo(OfflineFeatureRepoInterface):
+class OfflineFeatureS3Repo(IOfflineFeatureRepository):
     """
     S3 implementation for offline feature storage.
 

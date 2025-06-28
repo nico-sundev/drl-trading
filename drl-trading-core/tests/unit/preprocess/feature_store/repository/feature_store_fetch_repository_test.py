@@ -9,7 +9,6 @@ from unittest.mock import Mock
 
 import pandas as pd
 import pytest
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
@@ -83,25 +82,23 @@ class TestFeatureStoreFetchRepositoryGetOnline:
         mock_feature_store: Mock,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        eurusd_h1_dataset_id: DatasetIdentifier,
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test that get_online creates feature service on first call."""
         # Given
         mock_feast_provider.create_feature_service.return_value = mock_feature_service
-        expected_entity_rows = [
-            {"symbol": "EURUSD", "timeframe": "1h"}
-        ]
+        symbol = "EURUSD"
+        expected_entity_rows = [{"symbol": symbol}]
 
         # When
         result = repository.get_online(
-            dataset_id=eurusd_h1_dataset_id,
+            symbol=symbol,
             feature_version_info=feature_version_info
         )
 
         # Then
         mock_feast_provider.create_feature_service.assert_called_once_with(
-            dataset_id=eurusd_h1_dataset_id,
+            symbol=symbol,
             feature_version_info=feature_version_info
         )
         mock_feature_store.get_online_features.assert_called_once_with(
@@ -117,19 +114,17 @@ class TestFeatureStoreFetchRepositoryGetOnline:
         mock_feature_store: Mock,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        eurusd_h1_dataset_id: DatasetIdentifier,
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test that get_online reuses existing feature service on subsequent calls."""
         # Given
         repository._feature_service = mock_feature_service
-        expected_entity_rows = [
-            {"symbol": "EURUSD", "timeframe": "1h"}
-        ]
+        symbol = "EURUSD"
+        expected_entity_rows = [{"symbol": symbol}]
 
         # When
         result = repository.get_online(
-            dataset_id=eurusd_h1_dataset_id,
+            symbol=symbol,
             feature_version_info=feature_version_info
         )
 
@@ -145,39 +140,37 @@ class TestFeatureStoreFetchRepositoryGetOnline:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        eurusd_h1_dataset_id: DatasetIdentifier,
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test that get_online raises error when feature service creation returns None."""
         # Given
         mock_feast_provider.create_feature_service.return_value = None
+        symbol = "EURUSD"
 
         # When & Then
         with pytest.raises(RuntimeError, match="FeatureService is not initialized. Cannot fetch online features."):
             repository.get_online(
-                dataset_id=eurusd_h1_dataset_id,
+                symbol=symbol,
                 feature_version_info=feature_version_info
             )
 
-    def test_get_online_with_different_dataset_id(
+    def test_get_online_with_different_symbol(
         self,
         repository: FeatureStoreFetchRepository,
         mock_feature_store: Mock,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        gbpusd_m15_dataset_id: DatasetIdentifier,
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
-        """Test get_online with different dataset identifier."""
+        """Test get_online with different symbol."""
         # Given
         mock_feast_provider.create_feature_service.return_value = mock_feature_service
-        expected_entity_rows = [
-            {"symbol": "GBPUSD", "timeframe": "15m"}
-        ]
+        symbol = "GBPUSD"
+        expected_entity_rows = [{"symbol": symbol}]
 
         # When
         result = repository.get_online(
-            dataset_id=gbpusd_m15_dataset_id,
+            symbol=symbol,
             feature_version_info=feature_version_info
         )
 
@@ -194,15 +187,14 @@ class TestFeatureStoreFetchRepositoryGetOnline:
         mock_feature_store: Mock,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        eurusd_h1_dataset_id: DatasetIdentifier,
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test that get_online returns the DataFrame from Feast response."""
         # Given
         mock_feast_provider.create_feature_service.return_value = mock_feature_service
+        symbol = "EURUSD"
         expected_df = DataFrame({
-            "symbol": ["EURUSD"],
-            "timeframe": ["H1"],
+            "symbol": [symbol],
             "rsi_14": [45.2],
             "sma_20": [1.0855],
             "event_timestamp": [pd.Timestamp("2024-01-01 10:00:00")]
@@ -213,7 +205,7 @@ class TestFeatureStoreFetchRepositoryGetOnline:
 
         # When
         result = repository.get_online(
-            dataset_id=eurusd_h1_dataset_id,
+            symbol=symbol,
             feature_version_info=feature_version_info
         )
 
@@ -251,24 +243,24 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         mock_feature_store: Mock,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        eurusd_h1_dataset_id: DatasetIdentifier,
         feature_version_info: FeatureConfigVersionInfo,
         sample_timestamps: pd.Series
     ) -> None:
         """Test that get_offline creates feature service on first call."""
         # Given
         mock_feast_provider.create_feature_service.return_value = mock_feature_service
+        symbol = "EURUSD"
 
         # When
         result = repository.get_offline(
-            dataset_id=eurusd_h1_dataset_id,
+            symbol=symbol,
             timestamps=sample_timestamps,
             feature_version_info=feature_version_info
         )
 
         # Then
         mock_feast_provider.create_feature_service.assert_called_once_with(
-            dataset_id=eurusd_h1_dataset_id,
+            symbol=symbol,
             feature_version_info=feature_version_info
         )
 
@@ -278,8 +270,7 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         entity_df = call_args[1]["entity_df"]
 
         pd.testing.assert_series_equal(entity_df["event_timestamp"], sample_timestamps, check_names=False)
-        assert all(entity_df["symbol"] == "EURUSD")
-        assert all(entity_df["timeframe"] == "1h")
+        assert all(entity_df["symbol"] == symbol)
 
         assert isinstance(result, DataFrame)
         assert repository._feature_service == mock_feature_service
@@ -290,17 +281,17 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         mock_feature_store: Mock,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        eurusd_h1_dataset_id: DatasetIdentifier,
         feature_version_info: FeatureConfigVersionInfo,
         sample_timestamps: pd.Series
     ) -> None:
         """Test that get_offline reuses existing feature service on subsequent calls."""
         # Given
         repository._feature_service = mock_feature_service
+        symbol = "EURUSD"
 
         # When
         result = repository.get_offline(
-            dataset_id=eurusd_h1_dataset_id,
+            symbol=symbol,
             timestamps=sample_timestamps,
             feature_version_info=feature_version_info
         )
@@ -314,39 +305,39 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        eurusd_h1_dataset_id: DatasetIdentifier,
         feature_version_info: FeatureConfigVersionInfo,
         sample_timestamps: pd.Series
     ) -> None:
         """Test that get_offline raises error when feature service creation returns None."""
         # Given
         mock_feast_provider.create_feature_service.return_value = None
+        symbol = "EURUSD"
 
         # When & Then
         with pytest.raises(RuntimeError, match="FeatureService is not initialized. Cannot fetch online features."):
             repository.get_offline(
-                dataset_id=eurusd_h1_dataset_id,
+                symbol=symbol,
                 timestamps=sample_timestamps,
                 feature_version_info=feature_version_info
             )
 
-    def test_get_offline_with_different_dataset_id(
+    def test_get_offline_with_different_symbol(
         self,
         repository: FeatureStoreFetchRepository,
         mock_feature_store: Mock,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        gbpusd_m15_dataset_id: DatasetIdentifier,
         feature_version_info: FeatureConfigVersionInfo,
         sample_timestamps: pd.Series
     ) -> None:
-        """Test get_offline with different dataset identifier."""
+        """Test get_offline with different symbol."""
         # Given
         mock_feast_provider.create_feature_service.return_value = mock_feature_service
+        symbol = "GBPUSD"
 
         # When
         result = repository.get_offline(
-            dataset_id=gbpusd_m15_dataset_id,
+            symbol=symbol,
             timestamps=sample_timestamps,
             feature_version_info=feature_version_info
         )
@@ -355,8 +346,7 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         call_args = mock_feature_store.get_historical_features.call_args
         entity_df = call_args[1]["entity_df"]
 
-        assert all(entity_df["symbol"] == "GBPUSD")
-        assert all(entity_df["timeframe"] == "15m")
+        assert all(entity_df["symbol"] == symbol)
         assert isinstance(result, DataFrame)
 
     def test_get_offline_with_empty_timestamps(
@@ -365,17 +355,17 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         mock_feature_store: Mock,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        eurusd_h1_dataset_id: DatasetIdentifier,
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test get_offline with empty timestamps series."""
         # Given
         mock_feast_provider.create_feature_service.return_value = mock_feature_service
         empty_timestamps = pd.Series([], dtype='datetime64[ns]')
+        symbol = "EURUSD"
 
         # When
         result = repository.get_offline(
-            dataset_id=eurusd_h1_dataset_id,
+            symbol=symbol,
             timestamps=empty_timestamps,
             feature_version_info=feature_version_info
         )
@@ -387,7 +377,6 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         assert len(entity_df) == 0
         assert "event_timestamp" in entity_df.columns
         assert "symbol" in entity_df.columns
-        assert "timeframe" in entity_df.columns
         assert isinstance(result, DataFrame)
 
     def test_get_offline_returns_dataframe_from_feast_response(
@@ -396,17 +385,16 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         mock_feature_store: Mock,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        eurusd_h1_dataset_id: DatasetIdentifier,
         feature_version_info: FeatureConfigVersionInfo,
         sample_timestamps: pd.Series
     ) -> None:
         """Test that get_offline returns the DataFrame from Feast response."""
         # Given
         mock_feast_provider.create_feature_service.return_value = mock_feature_service
+        symbol = "EURUSD"
         expected_df = DataFrame({
             "event_timestamp": sample_timestamps,
-            "symbol": ["EURUSD"] * 3,
-            "timeframe": ["H1"] * 3,
+            "symbol": [symbol] * 3,
             "rsi_14": [30.5, 45.2, 67.8],
             "sma_20": [1.0850, 1.0855, 1.0860]
         })
@@ -416,7 +404,7 @@ class TestFeatureStoreFetchRepositoryGetOffline:
 
         # When
         result = repository.get_offline(
-            dataset_id=eurusd_h1_dataset_id,
+            symbol=symbol,
             timestamps=sample_timestamps,
             feature_version_info=feature_version_info
         )
@@ -444,17 +432,17 @@ class TestFeatureStoreFetchRepositoryErrorHandling:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        eurusd_h1_dataset_id: DatasetIdentifier,
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test that get_online properly propagates FeastProvider exceptions."""
         # Given
         mock_feast_provider.create_feature_service.side_effect = Exception("Feast provider error")
+        symbol = "EURUSD"
 
         # When & Then
         with pytest.raises(Exception, match="Feast provider error"):
             repository.get_online(
-                dataset_id=eurusd_h1_dataset_id,
+                symbol=symbol,
                 feature_version_info=feature_version_info
             )
 
@@ -462,18 +450,18 @@ class TestFeatureStoreFetchRepositoryErrorHandling:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        eurusd_h1_dataset_id: DatasetIdentifier,
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test that get_offline properly propagates FeastProvider exceptions."""
         # Given
         mock_feast_provider.create_feature_service.side_effect = Exception("Feast provider error")
         sample_timestamps = pd.Series([pd.Timestamp("2024-01-01 09:00:00")])
+        symbol = "EURUSD"
 
         # When & Then
         with pytest.raises(Exception, match="Feast provider error"):
             repository.get_offline(
-                dataset_id=eurusd_h1_dataset_id,
+                symbol=symbol,
                 timestamps=sample_timestamps,
                 feature_version_info=feature_version_info
             )
@@ -482,7 +470,6 @@ class TestFeatureStoreFetchRepositoryErrorHandling:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        eurusd_h1_dataset_id: DatasetIdentifier,
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test that get_online properly propagates FeatureStore exceptions."""
@@ -490,11 +477,12 @@ class TestFeatureStoreFetchRepositoryErrorHandling:
         mock_feature_service = Mock(spec=FeatureService)
         mock_feast_provider.create_feature_service.return_value = mock_feature_service
         repository._fs.get_online_features.side_effect = Exception("Feature store error")
+        symbol = "EURUSD"
 
         # When & Then
         with pytest.raises(Exception, match="Feature store error"):
             repository.get_online(
-                dataset_id=eurusd_h1_dataset_id,
+                symbol=symbol,
                 feature_version_info=feature_version_info
             )
 
@@ -502,7 +490,6 @@ class TestFeatureStoreFetchRepositoryErrorHandling:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        eurusd_h1_dataset_id: DatasetIdentifier,
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test that get_offline properly propagates FeatureStore exceptions."""
@@ -511,11 +498,12 @@ class TestFeatureStoreFetchRepositoryErrorHandling:
         mock_feast_provider.create_feature_service.return_value = mock_feature_service
         repository._fs.get_historical_features.side_effect = Exception("Feature store error")
         sample_timestamps = pd.Series([pd.Timestamp("2024-01-01 09:00:00")])
+        symbol = "EURUSD"
 
         # When & Then
         with pytest.raises(Exception, match="Feature store error"):
             repository.get_offline(
-                dataset_id=eurusd_h1_dataset_id,
+                symbol=symbol,
                 timestamps=sample_timestamps,
                 feature_version_info=feature_version_info
             )
@@ -534,7 +522,6 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         mock_response = Mock()
         mock_response.to_df.return_value = DataFrame({
             "symbol": ["EURUSD"],
-            "timeframe": ["H1"],
             "rsi_14": [45.2]
         })
         mock_feature_store.get_online_features.return_value = mock_response
@@ -548,25 +535,25 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        eurusd_h1_dataset_id: DatasetIdentifier,
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test that feature service is created only once for multiple online calls."""
         # Given
         mock_feature_service = Mock(spec=FeatureService)
         mock_feast_provider.create_feature_service.return_value = mock_feature_service
+        symbol = "EURUSD"
 
         # When
         repository.get_online(
-            dataset_id=eurusd_h1_dataset_id,
+            symbol=symbol,
             feature_version_info=feature_version_info
         )
         repository.get_online(
-            dataset_id=eurusd_h1_dataset_id,
+            symbol=symbol,
             feature_version_info=feature_version_info
         )
         repository.get_online(
-            dataset_id=eurusd_h1_dataset_id,
+            symbol=symbol,
             feature_version_info=feature_version_info
         )
 
@@ -577,7 +564,6 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        eurusd_h1_dataset_id: DatasetIdentifier,
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test that feature service is created only once for multiple offline calls."""
@@ -585,20 +571,21 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         mock_feature_service = Mock(spec=FeatureService)
         mock_feast_provider.create_feature_service.return_value = mock_feature_service
         sample_timestamps = pd.Series([pd.Timestamp("2024-01-01 09:00:00")])
+        symbol = "EURUSD"
 
         # When
         repository.get_offline(
-            dataset_id=eurusd_h1_dataset_id,
+            symbol=symbol,
             timestamps=sample_timestamps,
             feature_version_info=feature_version_info
         )
         repository.get_offline(
-            dataset_id=eurusd_h1_dataset_id,
+            symbol=symbol,
             timestamps=sample_timestamps,
             feature_version_info=feature_version_info
         )
         repository.get_offline(
-            dataset_id=eurusd_h1_dataset_id,
+            symbol=symbol,
             timestamps=sample_timestamps,
             feature_version_info=feature_version_info
         )
@@ -610,7 +597,6 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        eurusd_h1_dataset_id: DatasetIdentifier,
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test that feature service is shared between online and offline calls."""
@@ -618,14 +604,15 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         mock_feature_service = Mock(spec=FeatureService)
         mock_feast_provider.create_feature_service.return_value = mock_feature_service
         sample_timestamps = pd.Series([pd.Timestamp("2024-01-01 09:00:00")])
+        symbol = "EURUSD"
 
         # When
         repository.get_online(
-            dataset_id=eurusd_h1_dataset_id,
+            symbol=symbol,
             feature_version_info=feature_version_info
         )
         repository.get_offline(
-            dataset_id=eurusd_h1_dataset_id,
+            symbol=symbol,
             timestamps=sample_timestamps,
             feature_version_info=feature_version_info
         )

@@ -11,7 +11,6 @@ from unittest.mock import Mock, patch
 import pandas as pd
 import pytest
 from drl_trading_common.config.feature_config import FeatureStoreConfig
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from pandas import DataFrame
 
 from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo import (
@@ -42,36 +41,36 @@ class TestOfflineFeatureLocalRepoStoreIncremental:
         self,
         offline_repo: OfflineFeatureLocalRepo,
         sample_features_df: DataFrame,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test storing features for a new dataset with no existing data."""
         # Given
         # Fresh dataset with no existing features
-        assert not offline_repo.feature_exists(eurusd_h1_dataset_id)
+        assert not offline_repo.feature_exists(eurusd_h1_symbol)
 
         # When
         stored_count = offline_repo.store_features_incrementally(
             sample_features_df,
-            eurusd_h1_dataset_id
+            eurusd_h1_symbol
         )
 
         # Then
         assert stored_count == len(sample_features_df)
-        assert offline_repo.feature_exists(eurusd_h1_dataset_id)
-        assert offline_repo.get_feature_count(eurusd_h1_dataset_id) == len(sample_features_df)
+        assert offline_repo.feature_exists(eurusd_h1_symbol)
+        assert offline_repo.get_feature_count(eurusd_h1_symbol) == len(sample_features_df)
 
     def test_store_features_incrementally_with_duplicates(
         self,
         offline_repo: OfflineFeatureLocalRepo,
         sample_features_df: DataFrame,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test storing features when some timestamps already exist."""
         # Given
         # Store initial features
         initial_count = offline_repo.store_features_incrementally(
             sample_features_df,
-            eurusd_h1_dataset_id
+            eurusd_h1_symbol
         )
 
         # Create overlapping dataset with some new data
@@ -85,17 +84,17 @@ class TestOfflineFeatureLocalRepoStoreIncremental:
         # When
         stored_count = offline_repo.store_features_incrementally(
             overlapping_df,
-            eurusd_h1_dataset_id
+            eurusd_h1_symbol
         )
 
         # Then
         assert stored_count == 1  # Only the new row should be stored
-        assert offline_repo.get_feature_count(eurusd_h1_dataset_id) == initial_count + 1
+        assert offline_repo.get_feature_count(eurusd_h1_symbol) == initial_count + 1
 
     def test_store_features_incrementally_missing_timestamp_column(
         self,
         offline_repo: OfflineFeatureLocalRepo,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test error handling when event_timestamp column is missing."""
         # Given
@@ -107,12 +106,12 @@ class TestOfflineFeatureLocalRepoStoreIncremental:
 
         # When & Then
         with pytest.raises(ValueError, match="features_df must contain 'event_timestamp' column"):
-            offline_repo.store_features_incrementally(invalid_df, eurusd_h1_dataset_id)
+            offline_repo.store_features_incrementally(invalid_df, eurusd_h1_symbol)
 
     def test_store_features_incrementally_empty_dataframe(
         self,
         offline_repo: OfflineFeatureLocalRepo,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test handling of empty DataFrame."""
         # Given
@@ -121,23 +120,23 @@ class TestOfflineFeatureLocalRepoStoreIncremental:
         # When
         stored_count = offline_repo.store_features_incrementally(
             empty_df,
-            eurusd_h1_dataset_id
+            eurusd_h1_symbol
         )
 
         # Then
         assert stored_count == 0
-        assert not offline_repo.feature_exists(eurusd_h1_dataset_id)
+        assert not offline_repo.feature_exists(eurusd_h1_symbol)
 
     def test_store_features_incrementally_schema_validation_failure(
         self,
         offline_repo: OfflineFeatureLocalRepo,
         sample_features_df: DataFrame,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test schema validation when new features are missing required columns."""
         # Given
         # Store initial features with specific schema
-        offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_dataset_id)
+        offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_symbol)
 
         # Create new features missing a required column
         incomplete_df = sample_features_df[["event_timestamp", "feature_1"]].copy()
@@ -145,7 +144,7 @@ class TestOfflineFeatureLocalRepoStoreIncremental:
 
         # When & Then
         with pytest.raises(ValueError, match="Schema validation failed.*missing columns"):
-            offline_repo.store_features_incrementally(incomplete_df, eurusd_h1_dataset_id)
+            offline_repo.store_features_incrementally(incomplete_df, eurusd_h1_symbol)
 
 
 class TestOfflineFeatureLocalRepoLoadExisting:
@@ -154,14 +153,14 @@ class TestOfflineFeatureLocalRepoLoadExisting:
     def test_load_existing_features_no_data(
         self,
         offline_repo: OfflineFeatureLocalRepo,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test loading features when no data exists."""
         # Given
         # No existing features for the dataset
 
         # When
-        result = offline_repo.load_existing_features(eurusd_h1_dataset_id)
+        result = offline_repo.load_existing_features(eurusd_h1_symbol)
 
         # Then
         assert result is None
@@ -170,15 +169,15 @@ class TestOfflineFeatureLocalRepoLoadExisting:
         self,
         offline_repo: OfflineFeatureLocalRepo,
         sample_features_df: DataFrame,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test loading features when data exists."""
         # Given
         # Store some features first
-        offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_dataset_id)
+        offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_symbol)
 
         # When
-        result = offline_repo.load_existing_features(eurusd_h1_dataset_id)
+        result = offline_repo.load_existing_features(eurusd_h1_symbol)
 
         # Then
         assert result is not None
@@ -189,7 +188,7 @@ class TestOfflineFeatureLocalRepoLoadExisting:
     def test_load_existing_features_multiple_files(
         self,
         offline_repo: OfflineFeatureLocalRepo,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test loading and combining features from multiple parquet files."""
         # Given
@@ -206,11 +205,11 @@ class TestOfflineFeatureLocalRepoLoadExisting:
             "feature_2": [30.0, 40.0]
         })
 
-        offline_repo.store_features_incrementally(features_day1, eurusd_h1_dataset_id)
-        offline_repo.store_features_incrementally(features_day2, eurusd_h1_dataset_id)
+        offline_repo.store_features_incrementally(features_day1, eurusd_h1_symbol)
+        offline_repo.store_features_incrementally(features_day2, eurusd_h1_symbol)
 
         # When
-        result = offline_repo.load_existing_features(eurusd_h1_dataset_id)
+        result = offline_repo.load_existing_features(eurusd_h1_symbol)
 
         # Then
         assert result is not None
@@ -223,22 +222,22 @@ class TestOfflineFeatureLocalRepoLoadExisting:
         mock_logger: Mock,
         offline_repo: OfflineFeatureLocalRepo,
         sample_features_df: DataFrame,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test handling of corrupted parquet files during loading."""
         # Given
         # Store valid features first
-        offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_dataset_id)
+        offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_symbol)
 
         # Create a corrupted file in the dataset path
-        dataset_path = offline_repo._get_dataset_base_path(eurusd_h1_dataset_id)
+        dataset_path = offline_repo._get_dataset_base_path(eurusd_h1_symbol)
         corrupted_file = os.path.join(dataset_path, "year=2024", "month=01", "day=01", "corrupted.parquet")
         os.makedirs(os.path.dirname(corrupted_file), exist_ok=True)
         with open(corrupted_file, "w") as f:
             f.write("corrupted content")
 
         # When
-        result = offline_repo.load_existing_features(eurusd_h1_dataset_id)
+        result = offline_repo.load_existing_features(eurusd_h1_symbol)
 
         # Then
         assert result is not None  # Should still load valid files
@@ -251,14 +250,14 @@ class TestOfflineFeatureLocalRepoUtilityMethods:
     def test_feature_exists_false(
         self,
         offline_repo: OfflineFeatureLocalRepo,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test feature_exists returns False when no features exist."""
         # Given
         # No existing features
 
         # When
-        exists = offline_repo.feature_exists(eurusd_h1_dataset_id)
+        exists = offline_repo.feature_exists(eurusd_h1_symbol)
 
         # Then
         assert exists is False
@@ -267,14 +266,14 @@ class TestOfflineFeatureLocalRepoUtilityMethods:
         self,
         offline_repo: OfflineFeatureLocalRepo,
         sample_features_df: DataFrame,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test feature_exists returns True when features exist."""
         # Given
-        offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_dataset_id)
+        offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_symbol)
 
         # When
-        exists = offline_repo.feature_exists(eurusd_h1_dataset_id)
+        exists = offline_repo.feature_exists(eurusd_h1_symbol)
 
         # Then
         assert exists is True
@@ -282,14 +281,14 @@ class TestOfflineFeatureLocalRepoUtilityMethods:
     def test_get_feature_count_empty(
         self,
         offline_repo: OfflineFeatureLocalRepo,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test get_feature_count returns 0 for empty dataset."""
         # Given
         # No existing features
 
         # When
-        count = offline_repo.get_feature_count(eurusd_h1_dataset_id)
+        count = offline_repo.get_feature_count(eurusd_h1_symbol)
 
         # Then
         assert count == 0
@@ -298,14 +297,14 @@ class TestOfflineFeatureLocalRepoUtilityMethods:
         self,
         offline_repo: OfflineFeatureLocalRepo,
         sample_features_df: DataFrame,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test get_feature_count returns correct count."""
         # Given
-        offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_dataset_id)
+        offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_symbol)
 
         # When
-        count = offline_repo.get_feature_count(eurusd_h1_dataset_id)
+        count = offline_repo.get_feature_count(eurusd_h1_symbol)
 
         # Then
         assert count == len(sample_features_df)
@@ -313,20 +312,19 @@ class TestOfflineFeatureLocalRepoUtilityMethods:
     def test_get_dataset_base_path(
         self,
         offline_repo: OfflineFeatureLocalRepo,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test dataset base path generation."""
         # Given
         # Repository with base path configured
 
         # When
-        path = offline_repo._get_dataset_base_path(eurusd_h1_dataset_id)
+        path = offline_repo._get_dataset_base_path(eurusd_h1_symbol)
 
         # Then
         expected_path = os.path.join(
             offline_repo.base_path,
-            eurusd_h1_dataset_id.symbol,
-            eurusd_h1_dataset_id.timeframe.value
+            eurusd_h1_symbol
         )
         assert path == expected_path
 
@@ -337,7 +335,7 @@ class TestOfflineFeatureLocalRepoDatetimeOrganization:
     def test_datetime_organization_structure(
         self,
         offline_repo: OfflineFeatureLocalRepo,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test that files are organized in correct datetime structure."""
         # Given
@@ -352,10 +350,10 @@ class TestOfflineFeatureLocalRepoDatetimeOrganization:
         })
 
         # When
-        offline_repo.store_features_incrementally(features_df, eurusd_h1_dataset_id)
+        offline_repo.store_features_incrementally(features_df, eurusd_h1_symbol)
 
         # Then
-        base_path = offline_repo._get_dataset_base_path(eurusd_h1_dataset_id)
+        base_path = offline_repo._get_dataset_base_path(eurusd_h1_symbol)
 
         # Check that date-organized directories were created
         jan_path = os.path.join(base_path, "year=2024", "month=01", "day=15")
@@ -374,7 +372,7 @@ class TestOfflineFeatureLocalRepoDatetimeOrganization:
     def test_filename_generation(
         self,
         offline_repo: OfflineFeatureLocalRepo,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test that filenames include timestamp information."""
         # Given
@@ -385,10 +383,10 @@ class TestOfflineFeatureLocalRepoDatetimeOrganization:
         })
 
         # When
-        offline_repo.store_features_incrementally(features_df, eurusd_h1_dataset_id)
+        offline_repo.store_features_incrementally(features_df, eurusd_h1_symbol)
 
         # Then
-        base_path = offline_repo._get_dataset_base_path(eurusd_h1_dataset_id)
+        base_path = offline_repo._get_dataset_base_path(eurusd_h1_symbol)
         date_path = os.path.join(base_path, "year=2024", "month=01", "day=15")
 
         files = [f for f in os.listdir(date_path) if f.endswith('.parquet')]
@@ -405,7 +403,7 @@ class TestOfflineFeatureLocalRepoSchemaValidation:
     def test_validate_schema_consistency_compatible_types(
         self,
         offline_repo: OfflineFeatureLocalRepo,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test schema validation allows compatible numeric types."""
         # Given
@@ -415,7 +413,7 @@ class TestOfflineFeatureLocalRepoSchemaValidation:
             "feature_int": [1],  # int64
             "feature_float": [1.0]  # float64
         })
-        offline_repo.store_features_incrementally(initial_df, eurusd_h1_dataset_id)
+        offline_repo.store_features_incrementally(initial_df, eurusd_h1_symbol)
 
         # Create new features with compatible types
         new_df = DataFrame({
@@ -426,17 +424,17 @@ class TestOfflineFeatureLocalRepoSchemaValidation:
 
         # When & Then
         # Should not raise an exception
-        offline_repo.store_features_incrementally(new_df, eurusd_h1_dataset_id)
+        offline_repo.store_features_incrementally(new_df, eurusd_h1_symbol)
 
     def test_validate_schema_consistency_new_columns_allowed(
         self,
         offline_repo: OfflineFeatureLocalRepo,
         sample_features_df: DataFrame,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test that new columns are allowed and logged."""
         # Given
-        offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_dataset_id)
+        offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_symbol)
 
         # Create features with additional column
         extended_df = sample_features_df.copy()
@@ -445,7 +443,7 @@ class TestOfflineFeatureLocalRepoSchemaValidation:
 
         # When & Then
         # Should not raise an exception and should store successfully
-        stored_count = offline_repo.store_features_incrementally(extended_df, eurusd_h1_dataset_id)
+        stored_count = offline_repo.store_features_incrementally(extended_df, eurusd_h1_symbol)
         assert stored_count == len(extended_df)
 
     @patch('drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo.logger')
@@ -453,7 +451,7 @@ class TestOfflineFeatureLocalRepoSchemaValidation:
         self,
         mock_logger: Mock,
         offline_repo: OfflineFeatureLocalRepo,
-        eurusd_h1_dataset_id: DatasetIdentifier
+        eurusd_h1_symbol: str
     ) -> None:
         """Test that incompatible type changes generate warnings."""
         # Given
@@ -461,7 +459,7 @@ class TestOfflineFeatureLocalRepoSchemaValidation:
             "event_timestamp": [pd.Timestamp("2024-01-01 09:00:00")],
             "feature_str": ["text"]  # string type
         })
-        offline_repo.store_features_incrementally(initial_df, eurusd_h1_dataset_id)
+        offline_repo.store_features_incrementally(initial_df, eurusd_h1_symbol)
 
         # Create features with incompatible type
         new_df = DataFrame({
@@ -470,7 +468,7 @@ class TestOfflineFeatureLocalRepoSchemaValidation:
         })
 
         # When
-        offline_repo.store_features_incrementally(new_df, eurusd_h1_dataset_id)
+        offline_repo.store_features_incrementally(new_df, eurusd_h1_symbol)
 
         # Then
         mock_logger.warning.assert_called()

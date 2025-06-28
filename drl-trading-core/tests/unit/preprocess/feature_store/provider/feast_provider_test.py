@@ -9,11 +9,9 @@ from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.config.feature_config import FeatureStoreConfig
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
-from drl_trading_common.model.timeframe import Timeframe
 from feast import Entity, FeatureService, FeatureStore, FeatureView
 from feast.types import Float32
 
@@ -94,12 +92,9 @@ class TestFeastProvider:
         return mock_feature
 
     @pytest.fixture
-    def dataset_id(self) -> DatasetIdentifier:
-        """Create a test dataset identifier."""
-        return DatasetIdentifier(
-            symbol="EURUSD",
-            timeframe=Timeframe.HOUR_1
-        )
+    def symbol(self) -> str:
+        """Create a test symbol."""
+        return "EURUSD"
 
     @pytest.fixture
     def feature_version_info(self) -> FeatureConfigVersionInfo:
@@ -298,7 +293,7 @@ class TestFeastProvider:
         feature_store_config: FeatureStoreConfig,
         mock_feature_manager: Mock,
         mock_observation_feature: Mock,
-        dataset_id: DatasetIdentifier,
+        symbol: str,
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test creating feature view for observation space features."""
@@ -309,7 +304,7 @@ class TestFeastProvider:
 
         # When
         feature_view = provider.create_feature_view(
-            dataset_id=dataset_id,
+            symbol=symbol,
             feature_view_name=feature_view_name,
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
             feature_version_info=feature_version_info
@@ -322,7 +317,6 @@ class TestFeastProvider:
         assert feature_view.ttl == timedelta(days=30)
         assert not feature_view.online
         assert feature_view.tags["symbol"] == "EURUSD"
-        assert feature_view.tags["timeframe"] == "1h"
         mock_feature_manager.get_features_by_role.assert_called_once_with(FeatureRoleEnum.OBSERVATION_SPACE)
 
     @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
@@ -331,7 +325,7 @@ class TestFeastProvider:
         mock_feast_store: Mock,
         feature_store_config: FeatureStoreConfig,
         mock_feature_manager: Mock,
-        dataset_id: DatasetIdentifier,
+        symbol: str,
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test creating feature service."""
@@ -346,13 +340,13 @@ class TestFeastProvider:
         # When
         feature_service = provider.create_feature_service(
             feature_views=mock_feature_views,
-            dataset_id=dataset_id,
+            symbol=symbol,
             feature_version_info=feature_version_info
         )
 
         # Then
         assert isinstance(feature_service, FeatureService)
-        expected_name = f"service_{dataset_id.symbol}_{dataset_id.timeframe.value}_v{feature_version_info.semver}-{feature_version_info.hash}"
+        expected_name = f"service_{symbol}_v{feature_version_info.semver}-{feature_version_info.hash}"
         assert feature_service.name == expected_name
         assert len(feature_service._features) == 2  # Check internal _features attribute
 
@@ -362,20 +356,20 @@ class TestFeastProvider:
         mock_feast_store: Mock,
         feature_store_config: FeatureStoreConfig,
         mock_feature_manager: Mock,
-        dataset_id: DatasetIdentifier
+        symbol: str
     ) -> None:
-        """Test getting entity for dataset identifier."""
+        """Test getting entity for symbol."""
         # Given
         provider = FeastProvider(feature_store_config, mock_feature_manager)
 
         # When
-        entity = provider.get_entity(dataset_id)
+        entity = provider.get_entity(symbol)
 
         # Then
         assert isinstance(entity, Entity)
         assert entity.name == "trading_entity"
-        assert entity.join_key == "EURUSD_1h"  # Single join key
-        assert "EURUSD{1h}" in entity.description
+        assert entity.join_key == "EURUSD"  # Single join key
+        assert "EURUSD" in entity.description
 
     @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
     def test_get_feature_name(
@@ -396,24 +390,6 @@ class TestFeastProvider:
         # Then
         assert result == "test_feature_test_hash_123"
         mock_feature_config.hash_id.assert_called_once()
-
-    @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
-    def test_get_entity_key_formatted(
-        self,
-        mock_feast_store: Mock,
-        feature_store_config: FeatureStoreConfig,
-        mock_feature_manager: Mock,
-        dataset_id: DatasetIdentifier
-    ) -> None:
-        """Test getting formatted entity key."""
-        # Given
-        provider = FeastProvider(feature_store_config, mock_feature_manager)
-
-        # When
-        result = provider._get_entity_key_formatted(dataset_id)
-
-        # Then
-        assert result == "EURUSD_1h"
 
 
 class TestFeastProviderParametrized:
@@ -511,7 +487,7 @@ class TestFeastProviderParametrized:
 
         mock_feature_manager.get_features_by_role.return_value = mock_features
 
-        dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe=Timeframe.HOUR_1)
+        symbol = "EURUSD"
         feature_version_info = FeatureConfigVersionInfo(
             semver="1.0.0",
             hash="test_hash",
@@ -521,7 +497,7 @@ class TestFeastProviderParametrized:
 
         # When
         feature_view = provider.create_feature_view(
-            dataset_id=dataset_id,
+            symbol=symbol,
             feature_view_name="test_view",
             feature_role=feature_role,
             feature_version_info=feature_version_info
@@ -602,7 +578,7 @@ class TestFeastProviderEdgeCases:
         provider = FeastProvider(config, mock_feature_manager)
         mock_feature_manager.get_features_by_role.return_value = []  # No features
 
-        dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe=Timeframe.HOUR_1)
+        symbol = "EURUSD"
         feature_version_info = FeatureConfigVersionInfo(
             semver="1.0.0",
             hash="test_hash",
@@ -612,7 +588,7 @@ class TestFeastProviderEdgeCases:
 
         # When
         feature_view = provider.create_feature_view(
-            dataset_id=dataset_id,
+            symbol=symbol,
             feature_view_name="empty_view",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
             feature_version_info=feature_version_info

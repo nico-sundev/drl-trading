@@ -23,7 +23,7 @@ from drl_trading_core.preprocess.data_set_utils.merge_service import (
     MergeServiceInterface,
 )
 from drl_trading_core.preprocess.feature.feature_aggregator import (
-    FeatureAggregatorInterface,
+    IFeatureAggregator,
 )
 from drl_trading_core.preprocess.feature_store.repository.feature_store_fetch_repo import (
     IFeatureStoreFetchRepository,
@@ -58,7 +58,7 @@ def mock_feast_fetch_repo() -> IFeatureStoreFetchRepository:
 @pytest.fixture
 def mock_feature_aggregator() -> MagicMock:
     """Create a mock FeatureAggregator."""
-    mock = MagicMock(spec=FeatureAggregatorInterface)
+    mock = MagicMock(spec=IFeatureAggregator)
 
     # Create a real delayed object that returns a dataframe
     def create_sample_df(i=0):

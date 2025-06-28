@@ -14,7 +14,7 @@ from pandas import DataFrame
 logger = logging.getLogger(__name__)
 
 
-class OfflineFeatureRepoInterface(ABC):
+class IOfflineFeatureRepository(ABC):
     """
     Interface for offline feature storage operations.
 

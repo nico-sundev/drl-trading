@@ -15,7 +15,7 @@ from pandas import DataFrame
 
 from drl_trading_core.preprocess.feature.feature_aggregator import (
     FeatureAggregator,
-    FeatureAggregatorInterface,
+    IFeatureAggregator,
 )
 from drl_trading_core.preprocess.feature_store.repository.feature_store_fetch_repo import (
     IFeatureStoreFetchRepository,
@@ -422,7 +422,7 @@ def test_compute_skips_disabled_features_and_params(
 @patch("drl_trading_core.preprocess.feature.feature_aggregator.delayed")
 def test_compute_execute_tasks_and_check_column_names(
     mock_delayed,
-    feature_aggregator: FeatureAggregatorInterface,
+    feature_aggregator: IFeatureAggregator,
     mock_feast_fetch_repo,
     feature_test_asset_data,
     feature_test_symbol,

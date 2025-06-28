@@ -6,6 +6,7 @@ from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
+from feast import FeatureView
 from injector import inject
 from pandas import DataFrame
 
@@ -13,7 +14,7 @@ from drl_trading_core.preprocess.feature_store.mapper.feature_view_name_mapper i
     FeatureViewNameMapper,
 )
 from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_repo_interface import (
-    OfflineFeatureRepoInterface,
+    IOfflineFeatureRepository,
 )
 from drl_trading_core.preprocess.feature_store.provider.feast_provider import (
     FeastProvider,
@@ -103,7 +104,7 @@ class FeatureStoreSaveRepository(IFeatureStoreSaveRepository):
         self,
         config: FeatureStoreConfig,
         feast_provider: FeastProvider,
-        offline_repo: OfflineFeatureRepoInterface,
+        offline_repo: IOfflineFeatureRepository,
         feature_view_name_mapper: FeatureViewNameMapper,
     ):
         self.config = config
@@ -244,18 +245,8 @@ class FeatureStoreSaveRepository(IFeatureStoreSaveRepository):
             feature_version_info: Version information for feature tracking
         """
         # Create feature views for observation and reward spaces
-        obs_fv = self.feast_provider.create_feature_view(
-            symbol=symbol,
-            feature_view_name=FeatureViewNameEnum.OBSERVATION_SPACE.value,
-            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature_version_info=feature_version_info,
-        )
-        reward_fv = self.feast_provider.create_feature_view(
-            symbol=symbol,
-            feature_view_name=FeatureViewNameEnum.REWARD_ENGINEERING.value,
-            feature_role=FeatureRoleEnum.REWARD_ENGINEERING,
-            feature_version_info=feature_version_info,
-        )
+        obs_fv = self._create_observation_feature_view(symbol, feature_version_info)
+        reward_fv = self._create_reward_feature_view(symbol, feature_version_info)
 
         # Create feature service combining both views
         feature_service = self.feast_provider.create_feature_service(
@@ -267,3 +258,41 @@ class FeatureStoreSaveRepository(IFeatureStoreSaveRepository):
         # Apply to Feast registry
         self.feature_store.apply([obs_fv, reward_fv, feature_service])
         logger.info(f"Applied Feast feature views and service: {feature_service.name}")
+
+    def _create_observation_feature_view(
+        self,
+        symbol: str,
+        feature_version_info: FeatureConfigVersionInfo,
+    ) -> FeatureView:
+        """
+        Create observation feature view for the given symbol.
+
+        Args:
+            symbol: The trading symbol for which to create the feature view
+            feature_version_info: Version information for feature tracking
+        """
+        return self.feast_provider.create_feature_view(
+            symbol=symbol,
+            feature_view_name=FeatureViewNameEnum.OBSERVATION_SPACE.value,
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature_version_info=feature_version_info,
+        )
+
+    def _create_reward_feature_view(
+        self,
+        symbol: str,
+        feature_version_info: FeatureConfigVersionInfo,
+    ) -> FeatureView:
+        """
+        Create reward feature view for the given symbol.
+
+        Args:
+            symbol: The trading symbol for which to create the feature view
+            feature_version_info: Version information for feature tracking
+        """
+        return self.feast_provider.create_feature_view(
+            symbol=symbol,
+            feature_view_name=FeatureViewNameEnum.REWARD_ENGINEERING.value,
+            feature_role=FeatureRoleEnum.REWARD_ENGINEERING,
+            feature_version_info=feature_version_info,
+        )

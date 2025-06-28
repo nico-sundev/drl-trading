@@ -10,8 +10,6 @@ from typing import Generator
 import pandas as pd
 import pytest
 from drl_trading_common.config.feature_config import FeatureStoreConfig
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
-from drl_trading_common.model.timeframe import Timeframe
 from pandas import DataFrame
 
 from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo import (
@@ -63,18 +61,12 @@ def sample_features_df() -> DataFrame:
 
 
 @pytest.fixture
-def eurusd_h1_dataset_id() -> DatasetIdentifier:
-    """Create a sample dataset identifier for EUR/USD H1."""
-    return DatasetIdentifier(
-        symbol="EURUSD",
-        timeframe=Timeframe.HOUR_1
-    )
+def eurusd_h1_symbol() -> str:
+    """Create a sample symbol for EUR/USD H1."""
+    return "EURUSD"
 
 
 @pytest.fixture
-def gbpusd_m15_dataset_id() -> DatasetIdentifier:
-    """Create a sample dataset identifier for GBP/USD M15."""
-    return DatasetIdentifier(
-        symbol="GBPUSD",
-        timeframe=Timeframe.MINUTE_15
-    )
+def gbpusd_m15_symbol() -> str:
+    """Create a sample symbol for GBP/USD M15."""
+    return "GBPUSD"
