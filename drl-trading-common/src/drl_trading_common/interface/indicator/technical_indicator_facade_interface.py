@@ -11,7 +11,7 @@ from drl_trading_strategy.enum.indicator_type_enum import IndicatorTypeEnum
 from pandas import DataFrame
 
 
-class TechnicalIndicatorFacadeInterface(ABC):
+class ITechnicalIndicatorFacade(ABC):
 
     @abstractmethod
     def register_instance(self, name: str, indicator_type: IndicatorTypeEnum, **params) -> None:

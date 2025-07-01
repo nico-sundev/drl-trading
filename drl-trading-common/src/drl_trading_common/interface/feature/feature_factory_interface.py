@@ -8,7 +8,7 @@ from drl_trading_common.base.base_parameter_set_config import BaseParameterSetCo
 from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 
 
-class FeatureFactoryInterface(ABC):
+class IFeatureFactory(ABC):
     """
     Interface for feature factory implementations.
 

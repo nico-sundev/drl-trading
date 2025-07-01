@@ -8,7 +8,7 @@ from drl_trading_strategy.feature.context.context_feature_service import (
     ContextFeatureService,
 )
 from drl_trading_strategy.feature.feature_factory import (
-    FeatureFactoryInterface,
+    IFeatureFactory,
 )
 
 from drl_trading_core.common.model.asset_price_dataset import AssetPriceDataSet
@@ -44,9 +44,9 @@ def mock_feature_config() -> FeaturesConfig:
 
 
 @pytest.fixture
-def mock_feature_class_registry() -> FeatureFactoryInterface:
+def mock_feature_class_registry() -> IFeatureFactory:
     """Create a mock feature class registry."""
-    return MagicMock(spec=FeatureFactoryInterface)
+    return MagicMock(spec=IFeatureFactory)
 
 
 @pytest.fixture
@@ -239,7 +239,7 @@ def mock_context_feature_service() -> ContextFeatureService:
 @pytest.fixture
 def preprocess_service(
     mock_feature_config: FeaturesConfig,
-    mock_feature_class_registry: FeatureFactoryInterface,
+    mock_feature_class_registry: IFeatureFactory,
     mock_feature_aggregator: MagicMock,
     mock_merge_service: MagicMock,
     mock_context_feature_service: ContextFeatureService,

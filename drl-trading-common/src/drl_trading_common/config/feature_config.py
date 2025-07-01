@@ -10,10 +10,9 @@ from ..base.base_schema import BaseSchema
 class FeatureStoreConfig(BaseSchema):
     enabled: bool
     repo_path: str
-    offline_store_path: str
     entity_name: str
     ttl_days: int
-    online_enabled: bool
+    online_enabled: bool = False
     service_name: str
     service_version: str
 

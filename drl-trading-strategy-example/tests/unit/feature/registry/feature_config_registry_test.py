@@ -16,7 +16,7 @@ from drl_trading_strategy.feature.registry.feature_config_registry import (
     FeatureConfigRegistry,
 )
 from drl_trading_strategy.feature.registry.feature_config_registry_interface import (
-    FeatureConfigRegistryInterface,
+    IFeatureConfigRegistry,
 )
 
 
@@ -374,7 +374,7 @@ class TestFeatureConfigRegistryInheritance:
         # Given
 
         # When/Then
-        assert isinstance(registry, FeatureConfigRegistryInterface)
+        assert isinstance(registry, IFeatureConfigRegistry)
 
     def test_has_required_interface_methods(self, registry: FeatureConfigRegistry) -> None:
         """Test that FeatureConfigRegistry has all required interface methods."""

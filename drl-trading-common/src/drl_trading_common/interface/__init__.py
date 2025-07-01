@@ -2,10 +2,10 @@
 
 from .computable import Computable
 from .indicator.technical_indicator_facade_interface import (
-    TechnicalIndicatorFacadeInterface,
+    ITechnicalIndicatorFacade,
 )
 
 __all__ = [
-    "TechnicalIndicatorFacadeInterface",
+    "ITechnicalIndicatorFacade",
     "Computable",
 ]

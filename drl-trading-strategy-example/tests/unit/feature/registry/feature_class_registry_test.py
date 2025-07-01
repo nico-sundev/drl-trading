@@ -12,7 +12,7 @@ import pytest
 from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
-    TechnicalIndicatorFacadeInterface,
+    ITechnicalIndicatorFacade,
 )
 from drl_trading_strategy.decorator.feature_type_decorator import feature_type
 from drl_trading_strategy.enum.feature_type_enum import FeatureTypeEnum
@@ -23,7 +23,7 @@ from pandas import DataFrame
 
 
 # Mock technical indicator interface to avoid import issues
-class MockTechnicalIndicatorFacade(TechnicalIndicatorFacadeInterface):
+class MockTechnicalIndicatorFacade(ITechnicalIndicatorFacade):
     """Mock technical indicator facade for testing."""
     pass
 

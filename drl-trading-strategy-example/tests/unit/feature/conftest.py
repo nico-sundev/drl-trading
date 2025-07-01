@@ -6,7 +6,7 @@ import pytest
 from drl_trading_common import BaseParameterSetConfig
 from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
-    TechnicalIndicatorFacadeInterface,
+    ITechnicalIndicatorFacade,
 )
 
 
@@ -16,7 +16,7 @@ class MockMacdFeature(BaseFeature):
     def __init__(
         self,
         config: BaseParameterSetConfig,
-        indicator_service: TechnicalIndicatorFacadeInterface,
+        indicator_service: ITechnicalIndicatorFacade,
         postfix: str = "",
     ) -> None:
         super().__init__(config, indicator_service, postfix)
@@ -71,7 +71,7 @@ class MockRsiFeature(BaseFeature):
     def __init__(
         self,
         config: BaseParameterSetConfig,
-        indicator_service: TechnicalIndicatorFacadeInterface,
+        indicator_service: ITechnicalIndicatorFacade,
         postfix: str = "",
     ) -> None:
         super().__init__(config, indicator_service, postfix)
@@ -127,7 +127,7 @@ def mock_rsi_feature_class():
 @pytest.fixture
 def mock_indicator_service():
     """Fixture providing a mock indicator service."""
-    return MagicMock(spec=TechnicalIndicatorFacadeInterface)
+    return MagicMock(spec=ITechnicalIndicatorFacade)
 
 
 @pytest.fixture

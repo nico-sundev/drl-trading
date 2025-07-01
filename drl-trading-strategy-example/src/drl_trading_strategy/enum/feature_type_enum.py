@@ -5,4 +5,4 @@ class FeatureTypeEnum(Enum):
     """Enumeration of available feature types."""
 
     RSI = "rsi"
-    CLOSE = "close"
+    CLOSE_PRICE = "close_price"

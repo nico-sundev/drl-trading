@@ -2,12 +2,12 @@ from typing import List
 
 from drl_trading_common.config.feature_config import FeatureDefinition
 from drl_trading_strategy.feature.feature_factory import (
-    FeatureFactoryInterface,
+    IFeatureFactory,
 )
 
 
 def parse_parameters(
-    feature_definition: FeatureDefinition, feature_factory: FeatureFactoryInterface
+    feature_definition: FeatureDefinition, feature_factory: IFeatureFactory
 ) -> None:
     """
     Parse raw parameter sets using the provided feature factory.
@@ -54,7 +54,7 @@ def parse_parameters(
 
 def parse_all_parameters(
     feature_definitions: List[FeatureDefinition],
-    feature_factory: FeatureFactoryInterface,
+    feature_factory: IFeatureFactory,
 ) -> None:
     """
     Parse all feature definitions' parameter sets using the provided feature factory.

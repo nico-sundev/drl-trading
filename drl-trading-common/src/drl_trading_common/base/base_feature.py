@@ -5,7 +5,7 @@ from drl_trading_common.base.base_parameter_set_config import BaseParameterSetCo
 from drl_trading_common.decorator.feature_role_decorator import get_feature_role_from_class
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.interface.computable import Computable
-from drl_trading_common.interface.indicator.technical_indicator_facade_interface import TechnicalIndicatorFacadeInterface
+from drl_trading_common.interface.indicator.technical_indicator_facade_interface import ITechnicalIndicatorFacade
 from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.utils.utils import ensure_datetime_index
 from pandas import DataFrame
@@ -17,7 +17,7 @@ class BaseFeature(Computable):
         self,
         config: BaseParameterSetConfig,
         dataset_id: DatasetIdentifier,
-        indicator_service: TechnicalIndicatorFacadeInterface,
+        indicator_service: ITechnicalIndicatorFacade,
         postfix: str = "",
     ) -> None:
         self.config = config

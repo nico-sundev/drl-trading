@@ -3,7 +3,7 @@ from typing import Dict, Optional
 
 from drl_trading_common.base.base_indicator import BaseIndicator
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
-    TechnicalIndicatorFacadeInterface,
+    ITechnicalIndicatorFacade,
 )
 from drl_trading_strategy.enum.indicator_type_enum import IndicatorTypeEnum
 from drl_trading_strategy.technical_indicator.registry.indicator_class_registry_interface import (
@@ -13,7 +13,7 @@ from injector import inject
 from pandas import DataFrame
 
 
-class TaLippIndicatorService(TechnicalIndicatorFacadeInterface):
+class TaLippIndicatorService(ITechnicalIndicatorFacade):
     """
     Thread-safe technical indicator service for concurrent access.
 

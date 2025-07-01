@@ -11,7 +11,7 @@ from drl_trading_core.preprocess.feature.feature_manager import (
 
 logger = logging.getLogger(__name__)
 
-class FeatureComputingServiceInterface(ABC):
+class IFeatureComputer(ABC):
     @abstractmethod
     def compute_batch(self, data: DataFrame) -> DataFrame:
         """Compute results on a batch of data."""
@@ -27,7 +27,7 @@ class FeatureComputingServiceInterface(ABC):
         """Initialize the computing service with initial data."""
         pass
 
-class FeatureComputingService(FeatureComputingServiceInterface):
+class FeatureComputingService(IFeatureComputer):
 
     @inject
     def __init__(

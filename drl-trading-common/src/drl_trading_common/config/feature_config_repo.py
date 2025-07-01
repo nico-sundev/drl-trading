@@ -10,7 +10,7 @@ from drl_trading_common.db.database_connection_interface import DatabaseConnecti
 from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
 
 
-class FeatureConfigRepoInterface(ABC):
+class IFeatureConfigRepository(ABC):
     @abstractmethod
     def get_config(self, version: str) -> FeatureConfigVersionInfo:
         pass
@@ -33,7 +33,7 @@ class FeatureConfigRepoInterface(ABC):
         pass
 
 @inject
-class FeatureConfigPostgresRepo(FeatureConfigRepoInterface):
+class FeatureConfigPostgresRepo(IFeatureConfigRepository):
     """
     PostgreSQL repository for storing and retrieving feature configuration versions.
 

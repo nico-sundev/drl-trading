@@ -6,12 +6,12 @@ import pandas as pd
 import pytest
 from drl_trading_common.config.feature_config import FeaturesConfig
 from drl_trading_common.interface.feature.feature_factory_interface import (
-    FeatureFactoryInterface,
+    IFeatureFactory,
 )
 
 from drl_trading_core.preprocess.compute.computing_service import (
     FeatureComputingService,
-    FeatureComputingServiceInterface,
+    IFeatureComputer,
 )
 from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
 
@@ -27,7 +27,7 @@ class TestComputingService:
     @pytest.fixture
     def feature_factory_mock(self) -> Mock:
         """Create mock for FeatureFactoryInterface."""
-        return Mock(spec=FeatureFactoryInterface)
+        return Mock(spec=IFeatureFactory)
 
     @pytest.fixture
     def feature_manager_service_mock(self) -> Mock:
@@ -35,7 +35,7 @@ class TestComputingService:
         return Mock(spec=FeatureManager)
 
     @pytest.fixture
-    def computing_service(self, config_mock, feature_factory_mock, feature_manager_service_mock) -> FeatureComputingServiceInterface:
+    def computing_service(self, config_mock, feature_factory_mock, feature_manager_service_mock) -> IFeatureComputer:
         """Create a ComputingService instance with mocked dependencies."""
         return FeatureComputingService(
             feature_manager_service=feature_manager_service_mock

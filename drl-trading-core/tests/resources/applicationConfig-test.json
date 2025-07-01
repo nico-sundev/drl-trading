@@ -30,7 +30,7 @@
       {
         "name": "rsi",
         "enabled": true,
-        "derivatives": [1],
+        "derivatives": [],
         "parameterSets": [
           {
             "enabled": true,
@@ -68,8 +68,7 @@
   },
   "featureStoreConfig": {
     "enabled": true,
-    "repo_path": "tests/resources/test_feature_repo",
-    "offline_store_path": "tests/resources/test_feature_store_data",
+    "repo_path": "tests/resources",
     "entity_name": "symbol",
     "ttl_days": 1,
     "online_enabled": false,

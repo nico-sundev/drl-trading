@@ -3,10 +3,6 @@
 from drl_trading_common.config.application_config import ApplicationConfig
 
 from drl_trading_core.common.di.core_module import CoreModule
-from drl_trading_core.preprocess.feature.feature_aggregator import (
-    FeatureAggregator,
-    IFeatureAggregator,
-)
 from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
 
 
@@ -15,7 +11,6 @@ def test_injector_loads_successfully(mocked_container):
     # When: We get the application config from the injector
     module = mocked_container.get(CoreModule)
     config = mocked_container.get(ApplicationConfig)
-    feature_aggregator = mocked_container.get(IFeatureAggregator)
     feature_manager = mocked_container.get(FeatureManager)
 
     # Then: It should be properly loaded
@@ -26,5 +21,4 @@ def test_injector_loads_successfully(mocked_container):
     assert hasattr(config, "environment_config")
     assert hasattr(config, "feature_store_config")
 
-    assert isinstance(feature_aggregator, FeatureAggregator)
     assert isinstance(feature_manager, FeatureManager)

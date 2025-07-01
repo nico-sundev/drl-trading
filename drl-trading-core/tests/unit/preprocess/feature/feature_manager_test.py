@@ -9,7 +9,7 @@ from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.config.feature_config import FeatureDefinition, FeaturesConfig
 from drl_trading_common.interface.feature.feature_factory_interface import (
-    FeatureFactoryInterface,
+    IFeatureFactory,
 )
 from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.model.timeframe import Timeframe
@@ -56,7 +56,7 @@ class MockFeature(BaseFeature):
 @pytest.fixture
 def mock_feature_factory() -> MagicMock:
     """Create a mock feature factory."""
-    factory = MagicMock(spec=FeatureFactoryInterface)
+    factory = MagicMock(spec=IFeatureFactory)
     factory.create_feature.return_value = MockFeature()
     return factory
 
@@ -154,7 +154,8 @@ class TestFeatureManagerInitialization:
         """
         # Given
         mock_config = MagicMock(spec=FeaturesConfig)
-        mock_factory = MagicMock(spec=FeatureFactoryInterface)
+        mock_config.feature_definitions = []
+        mock_factory = MagicMock(spec=IFeatureFactory)
 
         # When
         manager = FeatureManager(config=mock_config, feature_factory=mock_factory)

@@ -6,14 +6,14 @@ import pytest
 from drl_trading_common import BaseParameterSetConfig
 from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
-    TechnicalIndicatorFacadeInterface,
+    ITechnicalIndicatorFacade,
 )
 from drl_trading_strategy.feature.feature_factory import FeatureFactory
 from drl_trading_strategy.feature.registry.feature_class_registry_interface import (
-    FeatureClassRegistryInterface,
+    IFeatureClassRegistry,
 )
 from drl_trading_strategy.feature.registry.feature_config_registry_interface import (
-    FeatureConfigRegistryInterface,
+    IFeatureConfigRegistry,
 )
 
 
@@ -39,10 +39,10 @@ class MacdConfig(BaseParameterSetConfig):
 @pytest.fixture
 def class_registry(
     mock_rsi_feature_class, mock_macd_feature_class
-) -> FeatureClassRegistryInterface:
+) -> IFeatureClassRegistry:
     """Create a mock feature class registry that returns mock feature classes."""
     mock = MagicMock(
-        spec=FeatureClassRegistryInterface
+        spec=IFeatureClassRegistry
     )  # Define mapping of feature types to feature classes
     feature_mapping = {
         "rsi": mock_rsi_feature_class,
@@ -60,9 +60,9 @@ def class_registry(
 
 
 @pytest.fixture
-def config_registry() -> FeatureConfigRegistryInterface:
+def config_registry() -> IFeatureConfigRegistry:
     """Create a mock feature config registry."""
-    mock = MagicMock(spec=FeatureConfigRegistryInterface)
+    mock = MagicMock(spec=IFeatureConfigRegistry)
     # Define mapping of feature types to config classes
     config_mapping = {
         "rsi": RsiConfig,
@@ -85,7 +85,7 @@ def factory(class_registry, config_registry) -> FeatureFactory:
 
 def test_create_feature(
     factory: FeatureFactory,
-    mock_indicator_service: TechnicalIndicatorFacadeInterface,
+    mock_indicator_service: ITechnicalIndicatorFacade,
     mock_rsi_feature_class: Type[BaseFeature],
     mock_macd_feature_class: Type[BaseFeature],
 ) -> None:

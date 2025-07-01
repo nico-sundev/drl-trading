@@ -4,7 +4,7 @@ from typing import Optional, Type
 from drl_trading_common.base import BaseParameterSetConfig
 
 
-class FeatureConfigRegistryInterface(ABC):
+class IFeatureConfigRegistry(ABC):
     """
     Interface for feature configuration registry implementations.
 

@@ -11,7 +11,7 @@ from drl_trading_strategy.feature.context.context_feature_service import (
     ContextFeatureServiceInterface,
 )
 from drl_trading_strategy.feature.feature_factory import (
-    FeatureFactoryInterface,
+    IFeatureFactory,
 )
 from injector import inject
 from pandas import DataFrame
@@ -24,15 +24,13 @@ from drl_trading_core.common.model.preprocessing_result import PreprocessingResu
 from drl_trading_core.common.model.symbol_import_container import (
     SymbolImportContainer,
 )
+from drl_trading_core.preprocess.compute.computing_service import IFeatureComputer
 from drl_trading_core.preprocess.data_set_utils.merge_service import (
     MergeServiceInterface,
 )
 from drl_trading_core.preprocess.data_set_utils.util import (
     separate_asset_price_datasets,
     separate_computed_datasets,
-)
-from drl_trading_core.preprocess.feature.feature_aggregator import (
-    IFeatureAggregator,
 )
 
 logger = logging.getLogger(__name__)
@@ -66,10 +64,10 @@ class PreprocessService(PreprocessServiceInterface):
     def __init__(
         self,
         features_config: FeaturesConfig,
-        feature_factory: FeatureFactoryInterface,
-        feature_aggregator: IFeatureAggregator,
+        feature_factory: IFeatureFactory,
         merge_service: MergeServiceInterface,
         context_feature_service: ContextFeatureServiceInterface,
+        computer: IFeatureComputer,
     ) -> None:
         """
         Initializes the PreprocessService with configuration and stateless dependencies.
@@ -83,9 +81,9 @@ class PreprocessService(PreprocessServiceInterface):
         """
         self.features_config = features_config
         self.feature_class_registry = feature_factory
-        self.feature_aggregator = feature_aggregator
         self.merge_service = merge_service
         self.context_feature_service = context_feature_service
+        self.feature_computer = computer
 
     def _prepare_dataframe_for_join(
         self, df: DataFrame, dataset_info: str
@@ -122,9 +120,7 @@ class PreprocessService(PreprocessServiceInterface):
         logger.info(f"Computing features for {symbol} {dataset.timeframe}")
 
         # Get delayed computation tasks from feature aggregator
-        delayed_tasks = self.feature_aggregator.compute(
-            asset_data=dataset, symbol=symbol
-        )
+        delayed_tasks = self.feature_computer.compute_batch(dataset.asset_price_dataset)
 
         # Skip if no features to compute
         if not delayed_tasks:

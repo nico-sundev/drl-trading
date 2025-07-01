@@ -1,9 +1,9 @@
 """Indicator interface classes for DRL trading components."""
 
 from .technical_indicator_facade_interface import (
-    TechnicalIndicatorFacadeInterface,
+    ITechnicalIndicatorFacade,
 )
 
 __all__ = [
-    "TechnicalIndicatorFacadeInterface",
+    "ITechnicalIndicatorFacade",
 ]

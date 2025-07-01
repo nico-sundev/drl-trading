@@ -130,7 +130,7 @@ class TestFeastProvider:
         assert provider.feature_manager == mock_feature_manager
         assert provider.feature_store_config == feature_store_config
         mock_feast_store.assert_called_once_with(repo_path=temp_dir)
-        assert provider._feature_store == mock_store_instance
+        assert provider.feature_store == mock_store_instance
 
     @patch('drl_trading_core.preprocess.feature_store.provider.feast_provider.FeatureStore')
     def test_init_with_disabled_config(

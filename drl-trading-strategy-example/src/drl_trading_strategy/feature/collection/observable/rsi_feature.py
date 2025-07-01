@@ -6,7 +6,7 @@ from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.decorator.feature_role_decorator import feature_role
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
-    TechnicalIndicatorFacadeInterface,
+    ITechnicalIndicatorFacade,
 )
 from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from drl_trading_strategy.decorator import feature_type
@@ -28,7 +28,7 @@ class RsiFeature(BaseFeature):
         self,
         config: BaseParameterSetConfig,
         dataset_id: DatasetIdentifier,
-        indicator_service: TechnicalIndicatorFacadeInterface,
+        indicator_service: ITechnicalIndicatorFacade,
         postfix: str = ""
     ) -> None:
         super().__init__(config, dataset_id, indicator_service, postfix)

@@ -9,6 +9,10 @@ from drl_trading_common.config.config_loader import ConfigLoader
 from drl_trading_common.config.context_feature_config import ContextFeatureConfig
 from drl_trading_common.config.environment_config import EnvironmentConfig
 from drl_trading_common.config.feature_config import FeaturesConfig, FeatureStoreConfig
+from drl_trading_common.config.feature_config_repo import (
+    FeatureConfigPostgresRepo,
+    IFeatureConfigRepository,
+)
 from drl_trading_common.config.local_data_import_config import LocalDataImportConfig
 from drl_trading_common.config.rl_model_config import RlModelConfig
 from injector import Module, provider, singleton
@@ -31,13 +35,12 @@ from drl_trading_core.preprocess.data_set_utils.strip_service import (
     StripService,
     StripServiceInterface,
 )
-from drl_trading_core.preprocess.feature.feature_aggregator import (
-    FeatureAggregator,
-    IFeatureAggregator,
-)
 from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
 from drl_trading_core.preprocess.feature_store.provider.feast_provider import (
     FeastProvider,
+)
+from drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper import (
+    FeatureStoreWrapper,
 )
 from drl_trading_core.preprocess.feature_store.repository.feature_store_fetch_repo import (
     FeatureStoreFetchRepository,
@@ -150,7 +153,7 @@ class CoreModule(Module):
         """Configure interface bindings for auto-wiring services with @inject decorators."""
         from drl_trading_core.preprocess.compute.computing_service import (
             FeatureComputingService,
-            FeatureComputingServiceInterface,
+            IFeatureComputer,
         )
 
         # Auto-wire services that use @inject decorator
@@ -159,12 +162,17 @@ class CoreModule(Module):
         binder.bind(StripServiceInterface, to=StripService, scope=singleton)
         binder.bind(SplitServiceInterface, to=SplitService, scope=singleton)
         binder.bind(
-            FeatureComputingServiceInterface,
+            IFeatureComputer,
             to=FeatureComputingService,
             scope=singleton,
         )
+        binder.bind(
+            FeatureStoreWrapper, to=FeatureStoreWrapper, scope=singleton
+        )
+        binder.bind(
+            IFeatureConfigRepository, to=FeatureConfigPostgresRepo, scope=singleton
+        )
         binder.bind(FeastProvider, to=FeastProvider, scope=singleton)
-        binder.bind(IFeatureAggregator, to=FeatureAggregator, scope=singleton)
         binder.bind(
             IFeatureStoreSaveRepository, to=FeatureStoreSaveRepository, scope=singleton
         )

@@ -13,7 +13,7 @@ from drl_trading_common.interface.feature.context_feature_service_interface impo
     ContextFeatureServiceInterface,
 )
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
-    TechnicalIndicatorFacadeInterface,
+    ITechnicalIndicatorFacade,
 )
 from injector import Module, provider, singleton
 
@@ -24,13 +24,13 @@ from drl_trading_strategy.feature.registry.feature_class_registry import (
     FeatureClassRegistry,
 )
 from drl_trading_strategy.feature.registry.feature_class_registry_interface import (
-    FeatureClassRegistryInterface,
+    IFeatureClassRegistry,
 )
 from drl_trading_strategy.feature.registry.feature_config_registry import (
     FeatureConfigRegistry,
 )
 from drl_trading_strategy.feature.registry.feature_config_registry_interface import (
-    FeatureConfigRegistryInterface,
+    IFeatureConfigRegistry,
 )
 from drl_trading_strategy.technical_indicator.registry.indicator_class_registry import (
     IndicatorClassRegistry,
@@ -59,7 +59,7 @@ class ExampleStrategyModule(BaseStrategyModule):
 
             @provider
             @singleton
-            def provide_feature_class_registry(self) -> FeatureClassRegistryInterface:
+            def provide_feature_class_registry(self) -> IFeatureClassRegistry:
                 """Provide the concrete feature class registry implementation."""
                 registry = FeatureClassRegistry()
                 # Discover features from the impl package
@@ -70,7 +70,7 @@ class ExampleStrategyModule(BaseStrategyModule):
 
             @provider
             @singleton
-            def provide_feature_config_registry(self) -> FeatureConfigRegistryInterface:
+            def provide_feature_config_registry(self) -> IFeatureConfigRegistry:
                 """Provide the concrete feature config registry implementation."""
                 registry = FeatureConfigRegistry()
                 # Discover config classes from the impl package
@@ -99,7 +99,7 @@ class ExampleStrategyModule(BaseStrategyModule):
             def provide_technical_indicator_facade(
                 self,
                 registry: IndicatorClassRegistryInterface,
-            ) -> TechnicalIndicatorFacadeInterface:
+            ) -> ITechnicalIndicatorFacade:
                 """Provide the indicator backend registry implementation."""
                 return TaLippIndicatorService(registry)
 

@@ -10,14 +10,14 @@ from drl_trading_strategy.decorator.feature_type_decorator import (
 )
 from drl_trading_strategy.enum.feature_type_enum import FeatureTypeEnum
 from drl_trading_strategy.feature.registry.feature_config_registry_interface import (
-    FeatureConfigRegistryInterface,
+    IFeatureConfigRegistry,
 )
 from drl_trading_strategy.utils.feature_type_converter import FeatureTypeConverter
 
 logger = logging.getLogger(__name__)
 
 
-class FeatureConfigRegistry(ThreadSafeDiscoverableRegistry[FeatureTypeEnum, BaseParameterSetConfig], FeatureConfigRegistryInterface):
+class FeatureConfigRegistry(ThreadSafeDiscoverableRegistry[FeatureTypeEnum, BaseParameterSetConfig], IFeatureConfigRegistry):
     """
     Concrete implementation of FeatureConfigRegistryInterface.
 

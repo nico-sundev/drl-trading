@@ -2,6 +2,7 @@ import copy
 
 import pytest
 from drl_trading_common.config.application_config import ApplicationConfig
+from drl_trading_common.model.timeframe import Timeframe
 from injector import Injector
 
 from drl_trading_core.common.data_import.local.csv_data_import_service import (
@@ -44,10 +45,10 @@ def test_csv_import_basic(create_csv_service_with_limit):
     # Given
     limit = 1
     expected_symbol = "EURUSD"
-    expected_timeframe = "H1"
+    expected_timeframe = Timeframe.HOUR_1
 
     # Create a service with the specific limit in config
-    csv_service = create_csv_service_with_limit(limit)
+    csv_service: CsvDataImportService = create_csv_service_with_limit(limit)
 
     # When
     symbol_containers = csv_service.import_data()
@@ -74,7 +75,7 @@ def test_csv_import_all_timeframes(create_csv_service_with_limit):
     """Test CSV import functionality with validation of multiple timeframes."""
     # Given
     expected_symbol = "EURUSD"
-    expected_timeframes = ["H1", "H4"]
+    expected_timeframes = [Timeframe.HOUR_1, Timeframe.HOUR_4]
     csv_service = create_csv_service_with_limit(None)
 
     # When

@@ -7,8 +7,8 @@ from drl_trading_strategy.enum.feature_type_enum import FeatureTypeEnum
 class RsiConfig(BaseParameterSetConfig):
     length: int
 
-@feature_type(FeatureTypeEnum.CLOSE)
-class EmptyConfig(BaseParameterSetConfig):
+@feature_type(FeatureTypeEnum.CLOSE_PRICE)
+class ClosePriceConfig(BaseParameterSetConfig):
     """
     An empty configuration class that can be used as a placeholder.
     This is useful when no specific configuration is needed for a feature.

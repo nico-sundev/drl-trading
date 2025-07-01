@@ -4,24 +4,24 @@ from typing import Optional
 from drl_trading_common.base import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.interface.feature.feature_factory_interface import (
-    FeatureFactoryInterface,
+    IFeatureFactory,
 )
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
-    TechnicalIndicatorFacadeInterface,
+    ITechnicalIndicatorFacade,
 )
 from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from drl_trading_strategy.feature.registry.feature_class_registry_interface import (
-    FeatureClassRegistryInterface,
+    IFeatureClassRegistry,
 )
 from drl_trading_strategy.feature.registry.feature_config_registry_interface import (
-    FeatureConfigRegistryInterface,
+    IFeatureConfigRegistry,
 )
 from injector import inject
 
 logger = logging.getLogger(__name__)
 
 
-class FeatureFactory(FeatureFactoryInterface):
+class FeatureFactory(IFeatureFactory):
     """
     Concrete implementation of FeatureFactoryInterface.
 
@@ -33,9 +33,9 @@ class FeatureFactory(FeatureFactoryInterface):
     @inject
     def __init__(
         self,
-        registry: FeatureClassRegistryInterface,
-        config_registry: FeatureConfigRegistryInterface,
-        indicators_service: TechnicalIndicatorFacadeInterface,
+        registry: IFeatureClassRegistry,
+        config_registry: IFeatureConfigRegistry,
+        indicators_service: ITechnicalIndicatorFacade,
     ) -> None:
         """
         Initialize the factory with feature class and config registries.

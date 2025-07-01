@@ -9,10 +9,10 @@ from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.config.application_config import ApplicationConfig
 from drl_trading_common.config.config_loader import ConfigLoader
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
-    TechnicalIndicatorFacadeInterface,
+    ITechnicalIndicatorFacade,
 )
 from drl_trading_strategy.feature.feature_factory import (
-    FeatureFactoryInterface,
+    IFeatureFactory,
 )
 from injector import Injector
 from pandas import DataFrame
@@ -52,7 +52,7 @@ class RsiFeature(BaseFeature):
     def __init__(
         self,
         config: BaseParameterSetConfig,
-        indicator_service: TechnicalIndicatorFacadeInterface,
+        indicator_service: ITechnicalIndicatorFacade,
         postfix: str = "",
     ) -> None:
         super().__init__(config, indicator_service, postfix)
@@ -98,7 +98,7 @@ def mock_rsi_config_class() -> Type[RsiConfig]:
 @pytest.fixture(scope="session")
 def feature_factory():
     """Create a feature factory mock instance for testing."""
-    mock_factory = MagicMock(spec=FeatureFactoryInterface)
+    mock_factory = MagicMock(spec=IFeatureFactory)
     mock_factory.create_feature = MagicMock(
         side_effect=lambda feature_type, source_data, config, indicator_service, postfix="": {
             "rsi": RsiFeature(config, indicator_service, postfix),
@@ -132,6 +132,6 @@ def mocked_container(feature_factory):
     injector = Injector([app_module])
 
     # Override the feature factory with our test fixture
-    injector.binder.bind(FeatureFactoryInterface, to=feature_factory)
+    injector.binder.bind(IFeatureFactory, to=feature_factory)
 
     return injector

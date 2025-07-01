@@ -10,7 +10,7 @@ from drl_trading_common.config.feature_config import FeatureDefinition, Features
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.interface.computable import Computable
 from drl_trading_common.interface.feature.feature_factory_interface import (
-    FeatureFactoryInterface,
+    IFeatureFactory,
 )
 from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from injector import inject
@@ -29,6 +29,7 @@ class FeatureKey:
     Designed for multi-symbol, multi-timeframe feature management with full observability.
     Provides type safety, debuggability, and clear string representation for logging.
     """
+
     feature_name: str
     dataset_id: DatasetIdentifier
     param_hash: str
@@ -62,7 +63,7 @@ class FeatureManager(Computable):
     """
 
     def __init__(
-        self, config: FeaturesConfig, feature_factory: FeatureFactoryInterface
+        self, config: FeaturesConfig, feature_factory: IFeatureFactory
     ) -> None:
         """
         Initialize the FeatureManagerService.
@@ -75,20 +76,20 @@ class FeatureManager(Computable):
         self.feature_factory = feature_factory
 
         # Populate parsed feature configurations
-        parse_all_parameters(self.config.features_config.feature_definitions, feature_factory)
+        parse_all_parameters(self.config.feature_definitions, feature_factory)
 
         # Enhanced feature storage with structured, observable keys
         # Key provides full context: feature + symbol + timeframe + parameters
         self._features: Dict[FeatureKey, BaseFeature] = {}
 
         # Observability metrics
-        self._feature_creation_stats: Dict[str, Union[int|Dict]] = {
+        self._feature_creation_stats: Dict[str, Union[int | Dict]] = {
             "total_requested": 0,
             "successfully_created": 0,
             "creation_failures": 0,
             "features_by_symbol": {},
             "features_by_timeframe": {},
-            "features_by_type": {}
+            "features_by_type": {},
         }
 
     def initialize_features(self) -> None:
@@ -113,10 +114,11 @@ class FeatureManager(Computable):
         # Log comprehensive summary
         self._log_initialization_summary()
 
-        logger.info(f"Feature initialization completed: {len(self._features)} instances created from {len(feature_configs)} configurations")
+        logger.info(
+            f"Feature initialization completed: {len(self._features)} instances created from {len(feature_configs)} configurations"
+        )
 
-    def get_features_by_role(
-        self, role: FeatureRoleEnum):
+    def get_features_by_role(self, role: FeatureRoleEnum):
         """
         Get all features by their role.
         Args:
@@ -125,11 +127,14 @@ class FeatureManager(Computable):
             List[BaseFeature]: List of features matching the specified role.
         """
         return [
-            feature for feature in self._features.values()
+            feature
+            for feature in self._features.values()
             if feature.get_feature_role() == role
         ]
 
-    def _update_initialization_metrics(self, created_features: List[Tuple[FeatureKey, BaseFeature]]) -> None:
+    def _update_initialization_metrics(
+        self, created_features: List[Tuple[FeatureKey, BaseFeature]]
+    ) -> None:
         """
         Update internal metrics for observability and debugging.
 
@@ -166,24 +171,26 @@ class FeatureManager(Computable):
         logger.info(f"Total features created: {stats['successfully_created']}")
         logger.info(f"Creation failures: {stats['creation_failures']}")
 
-        if stats['features_by_symbol']:
+        if stats["features_by_symbol"]:
             logger.info("Features by symbol:")
-            for symbol, count in stats['features_by_symbol'].items():
+            for symbol, count in stats["features_by_symbol"].items():
                 logger.info(f"  {symbol}: {count} features")
 
-        if stats['features_by_timeframe']:
+        if stats["features_by_timeframe"]:
             logger.info("Features by timeframe:")
-            for timeframe, count in stats['features_by_timeframe'].items():
+            for timeframe, count in stats["features_by_timeframe"].items():
                 logger.info(f"  {timeframe}: {count} features")
 
-        if stats['features_by_type']:
+        if stats["features_by_type"]:
             logger.info("Features by type:")
-            for feature_type, count in stats['features_by_type'].items():
+            for feature_type, count in stats["features_by_type"].items():
                 logger.info(f"  {feature_type}: {count} instances")
 
         logger.info("=======================================")
 
-    def _generate_feature_configurations(self) -> List[Tuple[str, DatasetIdentifier, BaseParameterSetConfig]]:
+    def _generate_feature_configurations(
+        self,
+    ) -> List[Tuple[str, DatasetIdentifier, BaseParameterSetConfig]]:
         """
         Generate all valid feature configurations using functional programming.
 
@@ -214,7 +221,9 @@ class FeatureManager(Computable):
         # Use cartesian product to generate all combinations efficiently
         configurations = [
             (feature_name, dataset_id, param_set)
-            for (feature_name, param_set), dataset_id in product(enabled_features, dataset_ids)
+            for (feature_name, param_set), dataset_id in product(
+                enabled_features, dataset_ids
+            )
         ]
 
         logger.debug(f"Generated {len(configurations)} feature configurations")
@@ -222,7 +231,7 @@ class FeatureManager(Computable):
 
     def _create_features_batch(
         self,
-        feature_configs: List[Tuple[str, DatasetIdentifier, BaseParameterSetConfig]]
+        feature_configs: List[Tuple[str, DatasetIdentifier, BaseParameterSetConfig]],
     ) -> List[Tuple[FeatureKey, BaseFeature]]:
         """
         Create feature instances in batch.
@@ -252,7 +261,7 @@ class FeatureManager(Computable):
                     feature_key = FeatureKey(
                         feature_name=feature_name,
                         dataset_id=dataset_id,
-                        param_hash=param_hash
+                        param_hash=param_hash,
                     )
                     created_features.append((feature_key, feature_instance))
 
@@ -260,11 +269,15 @@ class FeatureManager(Computable):
                     logger.debug(f"Created feature: {feature_key}")
                 else:
                     failed_count += 1
-                    logger.warning(f"Failed to create feature {feature_name} for {dataset_id}")
+                    logger.warning(
+                        f"Failed to create feature {feature_name} for {dataset_id}"
+                    )
 
             except Exception as e:
                 failed_count += 1
-                logger.error(f"Exception creating feature {feature_name} for {dataset_id}: {str(e)}")
+                logger.error(
+                    f"Exception creating feature {feature_name} for {dataset_id}: {str(e)}"
+                )
 
         # Update metrics
         self._feature_creation_stats["successfully_created"] = len(created_features)
@@ -275,7 +288,9 @@ class FeatureManager(Computable):
 
         return created_features
 
-    def _store_features(self, created_features: List[Tuple[FeatureKey, BaseFeature]]) -> None:
+    def _store_features(
+        self, created_features: List[Tuple[FeatureKey, BaseFeature]]
+    ) -> None:
         """
         Store created features in the internal dictionary with observable keys.
 
@@ -289,13 +304,17 @@ class FeatureManager(Computable):
         for feature_key, feature_instance in created_features:
             if feature_key in self._features:
                 conflicts_detected += 1
-                logger.warning(f"Feature key conflict detected: {feature_key} (overwriting existing)")
+                logger.warning(
+                    f"Feature key conflict detected: {feature_key} (overwriting existing)"
+                )
 
             self._features[feature_key] = feature_instance
             logger.debug(f"Stored feature: {feature_key}")
 
         if conflicts_detected > 0:
-            logger.error(f"Detected {conflicts_detected} feature key conflicts during storage!")
+            logger.error(
+                f"Detected {conflicts_detected} feature key conflicts during storage!"
+            )
 
     def _create_feature_instance(
         self,
@@ -333,7 +352,9 @@ class FeatureManager(Computable):
             logger.error(f"Error creating feature '{feature_name}': {str(e)}")
             return None
 
-    def get_feature(self, feature_name: str, dataset_id: DatasetIdentifier, param_hash: str) -> Optional[BaseFeature]:
+    def get_feature(
+        self, feature_name: str, dataset_id: DatasetIdentifier, param_hash: str
+    ) -> Optional[BaseFeature]:
         """
         Get a specific feature instance.
 
@@ -345,9 +366,7 @@ class FeatureManager(Computable):
             The feature instance if found, None otherwise.
         """
         feature_key = FeatureKey(
-            feature_name=feature_name,
-            dataset_id=dataset_id,
-            param_hash=param_hash
+            feature_name=feature_name, dataset_id=dataset_id, param_hash=param_hash
         )
         return self._features.get(feature_key)
 
@@ -412,7 +431,7 @@ class FeatureManager(Computable):
             feature_key = FeatureKey(
                 feature_name=feature_def.name,
                 dataset_id=dataset_id,
-                param_hash=param_hash
+                param_hash=param_hash,
             )
             self._features[feature_key] = feature
 
@@ -462,7 +481,13 @@ class FeatureManager(Computable):
         Returns:
             Delayed object that will compute and return the latest feature values when executed.
         """
-        return delayed(lambda f: f.compute_latest() if hasattr(f, "compute_latest") and callable(f.compute_latest) else None)(feature)
+        return delayed(
+            lambda f: (
+                f.compute_latest()
+                if hasattr(f, "compute_latest") and callable(f.compute_latest)
+                else None
+            )
+        )(feature)
 
     def compute_features_latest_delayed(self) -> List[Delayed]:
         """
@@ -472,11 +497,12 @@ class FeatureManager(Computable):
             List of delayed objects for computing latest values of all features.
         """
         delayed_tasks = [
-            self.compute_latest_delayed(feature)
-            for feature in self._features.values()
+            self.compute_latest_delayed(feature) for feature in self._features.values()
         ]
 
-        logger.info(f"Generated {len(delayed_tasks)} delayed latest feature computation tasks.")
+        logger.info(
+            f"Generated {len(delayed_tasks)} delayed latest feature computation tasks."
+        )
         return delayed_tasks
 
     def compute_all(self) -> Optional[DataFrame]:
@@ -492,7 +518,13 @@ class FeatureManager(Computable):
 
         # Create delayed tasks for all features' compute_all method
         delayed_tasks = [
-            delayed(lambda f: f.compute_all() if hasattr(f, "compute_all") and callable(f.compute_all) else None)(feature)
+            delayed(
+                lambda f: (
+                    f.compute_all()
+                    if hasattr(f, "compute_all") and callable(f.compute_all)
+                    else None
+                )
+            )(feature)
             for feature in self._features.values()
         ]
 
@@ -502,13 +534,14 @@ class FeatureManager(Computable):
 
         try:
             # Execute all delayed tasks in parallel
-            logger.info(f"Computing {len(delayed_tasks)} features using Dask delayed execution...")
+            logger.info(
+                f"Computing {len(delayed_tasks)} features using Dask delayed execution..."
+            )
             results = compute(*delayed_tasks)
 
             # Filter out None results and empty DataFrames
             valid_results = [
-                result for result in results
-                if result is not None and not result.empty
+                result for result in results if result is not None and not result.empty
             ]
 
             if not valid_results:
@@ -521,7 +554,9 @@ class FeatureManager(Computable):
             logger.error(f"Error during Dask delayed computation: {str(e)}")
             return None
 
-    def _combine_dataframes_efficiently(self, dataframes: List[DataFrame]) -> Optional[DataFrame]:
+    def _combine_dataframes_efficiently(
+        self, dataframes: List[DataFrame]
+    ) -> Optional[DataFrame]:
         """
         Efficiently combine multiple DataFrames using pandas.concat.
 
@@ -541,7 +576,8 @@ class FeatureManager(Computable):
         try:
             # Use concat with outer join for better performance than iterative joins
             import pandas as pd
-            combined_df = pd.concat(dataframes, axis=1, join='outer', sort=False)
+
+            combined_df = pd.concat(dataframes, axis=1, join="outer", sort=False)
             return combined_df
         except Exception as e:
             logger.error(f"Error combining DataFrames with concat: {str(e)}")
@@ -566,7 +602,9 @@ class FeatureManager(Computable):
 
                 return combined_df
             except Exception as join_error:
-                logger.error(f"Error combining DataFrames with manual fallback: {str(join_error)}")
+                logger.error(
+                    f"Error combining DataFrames with manual fallback: {str(join_error)}"
+                )
                 # Final fallback: return first dataframe if all else fails
                 return dataframes[0] if dataframes else None
 
@@ -599,22 +637,27 @@ class FeatureManager(Computable):
 
         try:
             # Execute all delayed tasks in parallel
-            logger.info(f"Computing latest values for {len(delayed_tasks)} features using Dask delayed execution...")
+            logger.info(
+                f"Computing latest values for {len(delayed_tasks)} features using Dask delayed execution..."
+            )
             results = compute(*delayed_tasks)
 
             # Filter out None results and empty DataFrames
             valid_results = [
-                result for result in results
-                if result is not None and not result.empty
+                result for result in results if result is not None and not result.empty
             ]
 
             if not valid_results:
-                logger.warning("No valid latest feature results obtained from computation.")
+                logger.warning(
+                    "No valid latest feature results obtained from computation."
+                )
                 return None
 
             # Combine all results efficiently
             return self._combine_dataframes_efficiently(valid_results)
 
         except Exception as e:
-            logger.error(f"Error during Dask delayed computation for latest values: {str(e)}")
+            logger.error(
+                f"Error during Dask delayed computation for latest values: {str(e)}"
+            )
             return None
