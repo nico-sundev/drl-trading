@@ -436,3 +436,40 @@ def integration_container(real_feast_container: Injector, clean_feature_store: F
             os.unlink(config_path)
         except OSError:
             pass  # File might already be deleted
+
+
+@pytest.fixture(scope="function")
+def sample_trading_features_df() -> DataFrame:
+    """Create comprehensive sample trading features DataFrame for integration testing.
+
+    This fixture provides a realistic set of trading features with proper column names
+    and data types that match what the feature store repositories expect.
+    """
+    # Create realistic time series data
+    timestamps = pd.date_range(
+        start="2024-01-01 09:00:00",
+        periods=50,
+        freq="H"
+    )
+
+    # Generate realistic trading feature data
+    return DataFrame({
+        "event_timestamp": timestamps,
+        "symbol": ["EURUSD"] * len(timestamps),
+        # Technical indicators - observation space features
+        "rsi_14": [30.0 + (i % 40) + (i * 0.5) for i in range(len(timestamps))],
+        "rsi_21": [35.0 + (i % 35) + (i * 0.4) for i in range(len(timestamps))],
+        "sma_20": [1.0850 + (i % 30) * 0.0001 for i in range(len(timestamps))],
+        "sma_50": [1.0845 + (i % 25) * 0.0001 for i in range(len(timestamps))],
+        "bb_upper": [1.0870 + (i % 20) * 0.0001 for i in range(len(timestamps))],
+        "bb_lower": [1.0830 + (i % 15) * 0.0001 for i in range(len(timestamps))],
+        "bb_middle": [1.0850 + (i % 18) * 0.0001 for i in range(len(timestamps))],
+        # OHLCV data - observation space features
+        "close": [1.0850 + (i % 20) * 0.0001 for i in range(len(timestamps))],
+        "high": [1.0855 + (i % 20) * 0.0001 for i in range(len(timestamps))],
+        "low": [1.0845 + (i % 20) * 0.0001 for i in range(len(timestamps))],
+        "volume": [1000 + (i % 500) for i in range(len(timestamps))],
+        # Reward engineering features
+        "reward": [0.01 * (i % 20 - 10) for i in range(len(timestamps))],
+        "cumulative_return": [0.001 * i for i in range(len(timestamps))]
+    })

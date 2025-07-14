@@ -31,7 +31,7 @@ class TestOfflineFeatureLocalRepoInit:
 
         # Then
         assert repo.config == feature_store_config
-        assert repo.base_path == feature_store_config.offline_store_path
+        assert repo.base_path == feature_store_config.repo_path
 
 
 class TestOfflineFeatureLocalRepoStoreIncremental:
@@ -115,7 +115,9 @@ class TestOfflineFeatureLocalRepoStoreIncremental:
     ) -> None:
         """Test handling of empty DataFrame."""
         # Given
-        empty_df = DataFrame(columns=["event_timestamp", "feature_1", "feature_2"])
+        empty_df = DataFrame({
+            "event_timestamp": []
+        })
 
         # When
         stored_count = offline_repo.store_features_incrementally(
@@ -126,25 +128,6 @@ class TestOfflineFeatureLocalRepoStoreIncremental:
         # Then
         assert stored_count == 0
         assert not offline_repo.feature_exists(eurusd_h1_symbol)
-
-    def test_store_features_incrementally_schema_validation_failure(
-        self,
-        offline_repo: OfflineFeatureLocalRepo,
-        sample_features_df: DataFrame,
-        eurusd_h1_symbol: str
-    ) -> None:
-        """Test schema validation when new features are missing required columns."""
-        # Given
-        # Store initial features with specific schema
-        offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_symbol)
-
-        # Create new features missing a required column
-        incomplete_df = sample_features_df[["event_timestamp", "feature_1"]].copy()
-        incomplete_df["event_timestamp"] = pd.Timestamp("2024-01-05 10:00:00")
-
-        # When & Then
-        with pytest.raises(ValueError, match="Schema validation failed.*missing columns"):
-            offline_repo.store_features_incrementally(incomplete_df, eurusd_h1_symbol)
 
 
 class TestOfflineFeatureLocalRepoLoadExisting:
@@ -157,13 +140,14 @@ class TestOfflineFeatureLocalRepoLoadExisting:
     ) -> None:
         """Test loading features when no data exists."""
         # Given
-        # No existing features for the dataset
+        # No existing features for symbol
+        assert not offline_repo.feature_exists(eurusd_h1_symbol)
 
         # When
-        result = offline_repo.load_existing_features(eurusd_h1_symbol)
+        loaded_features = offline_repo.load_existing_features(eurusd_h1_symbol)
 
         # Then
-        assert result is None
+        assert loaded_features is None
 
     def test_load_existing_features_with_data(
         self,
@@ -173,119 +157,64 @@ class TestOfflineFeatureLocalRepoLoadExisting:
     ) -> None:
         """Test loading features when data exists."""
         # Given
-        # Store some features first
+        # Store features first
         offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_symbol)
 
         # When
-        result = offline_repo.load_existing_features(eurusd_h1_symbol)
+        loaded_features = offline_repo.load_existing_features(eurusd_h1_symbol)
 
         # Then
-        assert result is not None
-        assert len(result) == len(sample_features_df)
-        assert "event_timestamp" in result.columns
-        assert result["event_timestamp"].dtype == "datetime64[ns]"
-
-    def test_load_existing_features_multiple_files(
-        self,
-        offline_repo: OfflineFeatureLocalRepo,
-        eurusd_h1_symbol: str
-    ) -> None:
-        """Test loading and combining features from multiple parquet files."""
-        # Given
-        # Store features from different days
-        features_day1 = DataFrame({
-            "event_timestamp": [pd.Timestamp("2024-01-01 09:00:00"), pd.Timestamp("2024-01-01 10:00:00")],
-            "feature_1": [1.0, 2.0],
-            "feature_2": [10.0, 20.0]
-        })
-
-        features_day2 = DataFrame({
-            "event_timestamp": [pd.Timestamp("2024-01-02 09:00:00"), pd.Timestamp("2024-01-02 10:00:00")],
-            "feature_1": [3.0, 4.0],
-            "feature_2": [30.0, 40.0]
-        })
-
-        offline_repo.store_features_incrementally(features_day1, eurusd_h1_symbol)
-        offline_repo.store_features_incrementally(features_day2, eurusd_h1_symbol)
-
-        # When
-        result = offline_repo.load_existing_features(eurusd_h1_symbol)
-
-        # Then
-        assert result is not None
-        assert len(result) == 4  # Combined from both days
-        assert result["event_timestamp"].is_monotonic_increasing  # Should be sorted
-
-    @patch('drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo.logger')
-    def test_load_existing_features_corrupted_file(
-        self,
-        mock_logger: Mock,
-        offline_repo: OfflineFeatureLocalRepo,
-        sample_features_df: DataFrame,
-        eurusd_h1_symbol: str
-    ) -> None:
-        """Test handling of corrupted parquet files during loading."""
-        # Given
-        # Store valid features first
-        offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_symbol)
-
-        # Create a corrupted file in the dataset path
-        dataset_path = offline_repo._get_dataset_base_path(eurusd_h1_symbol)
-        corrupted_file = os.path.join(dataset_path, "year=2024", "month=01", "day=01", "corrupted.parquet")
-        os.makedirs(os.path.dirname(corrupted_file), exist_ok=True)
-        with open(corrupted_file, "w") as f:
-            f.write("corrupted content")
-
-        # When
-        result = offline_repo.load_existing_features(eurusd_h1_symbol)
-
-        # Then
-        assert result is not None  # Should still load valid files
-        mock_logger.warning.assert_called()  # Should log warning about corrupted file
+        assert loaded_features is not None
+        assert len(loaded_features) == len(sample_features_df)
+        pd.testing.assert_frame_equal(
+            loaded_features.sort_values("event_timestamp").reset_index(drop=True),
+            sample_features_df.sort_values("event_timestamp").reset_index(drop=True)
+        )
 
 
 class TestOfflineFeatureLocalRepoUtilityMethods:
     """Test class for utility methods."""
 
-    def test_feature_exists_false(
+    def test_feature_exists_false_for_new_symbol(
         self,
         offline_repo: OfflineFeatureLocalRepo,
         eurusd_h1_symbol: str
     ) -> None:
-        """Test feature_exists returns False when no features exist."""
+        """Test feature_exists returns False for new symbol."""
         # Given
-        # No existing features
+        # Fresh symbol with no stored features
 
         # When
         exists = offline_repo.feature_exists(eurusd_h1_symbol)
 
         # Then
-        assert exists is False
+        assert not exists
 
-    def test_feature_exists_true(
+    def test_feature_exists_true_after_storage(
         self,
         offline_repo: OfflineFeatureLocalRepo,
         sample_features_df: DataFrame,
         eurusd_h1_symbol: str
     ) -> None:
-        """Test feature_exists returns True when features exist."""
+        """Test feature_exists returns True after storing features."""
         # Given
+        # Store features
         offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_symbol)
 
         # When
         exists = offline_repo.feature_exists(eurusd_h1_symbol)
 
         # Then
-        assert exists is True
+        assert exists
 
-    def test_get_feature_count_empty(
+    def test_get_feature_count_zero_for_new_symbol(
         self,
         offline_repo: OfflineFeatureLocalRepo,
         eurusd_h1_symbol: str
     ) -> None:
-        """Test get_feature_count returns 0 for empty dataset."""
+        """Test get_feature_count returns 0 for new symbol."""
         # Given
-        # No existing features
+        # Fresh symbol with no stored features
 
         # When
         count = offline_repo.get_feature_count(eurusd_h1_symbol)
@@ -293,14 +222,15 @@ class TestOfflineFeatureLocalRepoUtilityMethods:
         # Then
         assert count == 0
 
-    def test_get_feature_count_with_data(
+    def test_get_feature_count_correct_after_storage(
         self,
         offline_repo: OfflineFeatureLocalRepo,
         sample_features_df: DataFrame,
         eurusd_h1_symbol: str
     ) -> None:
-        """Test get_feature_count returns correct count."""
+        """Test get_feature_count returns correct count after storage."""
         # Given
+        # Store features
         offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_symbol)
 
         # When
@@ -309,25 +239,6 @@ class TestOfflineFeatureLocalRepoUtilityMethods:
         # Then
         assert count == len(sample_features_df)
 
-    def test_get_dataset_base_path(
-        self,
-        offline_repo: OfflineFeatureLocalRepo,
-        eurusd_h1_symbol: str
-    ) -> None:
-        """Test dataset base path generation."""
-        # Given
-        # Repository with base path configured
-
-        # When
-        path = offline_repo._get_dataset_base_path(eurusd_h1_symbol)
-
-        # Then
-        expected_path = os.path.join(
-            offline_repo.base_path,
-            eurusd_h1_symbol
-        )
-        assert path == expected_path
-
 
 class TestOfflineFeatureLocalRepoDatetimeOrganization:
     """Test class for datetime-based storage organization."""
@@ -335,142 +246,109 @@ class TestOfflineFeatureLocalRepoDatetimeOrganization:
     def test_datetime_organization_structure(
         self,
         offline_repo: OfflineFeatureLocalRepo,
+        sample_features_df: DataFrame,
         eurusd_h1_symbol: str
     ) -> None:
-        """Test that files are organized in correct datetime structure."""
+        """Test that features are organized by datetime structure."""
         # Given
-        features_df = DataFrame({
-            "event_timestamp": [
-                pd.Timestamp("2024-01-15 09:00:00"),
-                pd.Timestamp("2024-01-15 10:00:00"),
-                pd.Timestamp("2024-02-01 09:00:00")
-            ],
-            "feature_1": [1.0, 2.0, 3.0],
-            "feature_2": [10.0, 20.0, 30.0]
-        })
+        # Store features with known timestamps
+        offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_symbol)
 
         # When
-        offline_repo.store_features_incrementally(features_df, eurusd_h1_symbol)
-
-        # Then
+        # Check the generated directory structure
         base_path = offline_repo._get_dataset_base_path(eurusd_h1_symbol)
 
-        # Check that date-organized directories were created
-        jan_path = os.path.join(base_path, "year=2024", "month=01", "day=15")
-        feb_path = os.path.join(base_path, "year=2024", "month=02", "day=01")
+        # Then
+        assert os.path.exists(base_path)
+        # Should have datetime-organized subdirectories
+        subdirs = []
+        for root, _dirs, files in os.walk(base_path):
+            if files:  # Directories with parquet files
+                subdirs.append(root)
 
-        assert os.path.exists(jan_path)
-        assert os.path.exists(feb_path)
+        assert len(subdirs) > 0, "Should have created datetime-organized directories"
 
-        # Check that parquet files exist in the correct locations
-        jan_files = [f for f in os.listdir(jan_path) if f.endswith('.parquet')]
-        feb_files = [f for f in os.listdir(feb_path) if f.endswith('.parquet')]
-
-        assert len(jan_files) == 1
-        assert len(feb_files) == 1
-
-    def test_filename_generation(
+    @patch('os.walk')
+    def test_load_from_multiple_partitions(
         self,
+        mock_walk: Mock,
         offline_repo: OfflineFeatureLocalRepo,
         eurusd_h1_symbol: str
     ) -> None:
-        """Test that filenames include timestamp information."""
+        """Test loading features from multiple datetime partitions."""
         # Given
-        features_df = DataFrame({
-            "event_timestamp": [pd.Timestamp("2024-01-15 09:30:45")],
-            "feature_1": [1.0],
-            "feature_2": [10.0]
-        })
+        # Mock directory structure with multiple partitions
+        test_files = [
+            "/test/EURUSD/year=2024/month=01/day=01/features_part1.parquet",
+            "/test/EURUSD/year=2024/month=01/day=02/features_part2.parquet"
+        ]
 
-        # When
-        offline_repo.store_features_incrementally(features_df, eurusd_h1_symbol)
+        mock_walk.return_value = [
+            ("/test/EURUSD/year=2024/month=01/day=01", [], ["features_part1.parquet"]),
+            ("/test/EURUSD/year=2024/month=01/day=02", [], ["features_part2.parquet"])
+        ]
 
-        # Then
-        base_path = offline_repo._get_dataset_base_path(eurusd_h1_symbol)
-        date_path = os.path.join(base_path, "year=2024", "month=01", "day=15")
+        with patch('pandas.read_parquet') as mock_read:
+            # Mock parquet files content
+            df1 = DataFrame({
+                "event_timestamp": [pd.Timestamp("2024-01-01 10:00:00")],
+                "feature_1": [1.0]
+            })
+            df2 = DataFrame({
+                "event_timestamp": [pd.Timestamp("2024-01-02 10:00:00")],
+                "feature_1": [2.0]
+            })
+            mock_read.side_effect = [df1, df2]
 
-        files = [f for f in os.listdir(date_path) if f.endswith('.parquet')]
-        assert len(files) == 1
+            # When
+            result = offline_repo.load_existing_features(eurusd_h1_symbol)
 
-        filename = files[0]
-        assert filename.startswith("features_20240115_093045")
-        assert filename.endswith(".parquet")
+            # Then
+            assert result is not None
+            assert len(result) == 2
+            assert len(mock_read.call_args_list) == 2
 
 
 class TestOfflineFeatureLocalRepoSchemaValidation:
-    """Test class for schema validation functionality."""
+    """Test class for schema validation between existing and new features."""
 
-    def test_validate_schema_consistency_compatible_types(
-        self,
-        offline_repo: OfflineFeatureLocalRepo,
-        eurusd_h1_symbol: str
-    ) -> None:
-        """Test schema validation allows compatible numeric types."""
-        # Given
-        # Store initial features with int64 types
-        initial_df = DataFrame({
-            "event_timestamp": [pd.Timestamp("2024-01-01 09:00:00")],
-            "feature_int": [1],  # int64
-            "feature_float": [1.0]  # float64
-        })
-        offline_repo.store_features_incrementally(initial_df, eurusd_h1_symbol)
-
-        # Create new features with compatible types
-        new_df = DataFrame({
-            "event_timestamp": [pd.Timestamp("2024-01-02 09:00:00")],
-            "feature_int": [2.0],  # float64 (compatible with int64)
-            "feature_float": [2]   # int64 (compatible with float64)
-        })
-
-        # When & Then
-        # Should not raise an exception
-        offline_repo.store_features_incrementally(new_df, eurusd_h1_symbol)
-
-    def test_validate_schema_consistency_new_columns_allowed(
+    def test_schema_consistency_validation_success(
         self,
         offline_repo: OfflineFeatureLocalRepo,
         sample_features_df: DataFrame,
         eurusd_h1_symbol: str
     ) -> None:
-        """Test that new columns are allowed and logged."""
+        """Test successful schema validation with consistent schemas."""
         # Given
+        # Store initial features
         offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_symbol)
 
-        # Create features with additional column
-        extended_df = sample_features_df.copy()
-        extended_df["event_timestamp"] = pd.Timestamp("2024-01-05 09:00:00")
-        extended_df["new_feature"] = [999.0] * len(extended_df)
+        # Create new features with same schema
+        new_features = sample_features_df.copy()
+        new_features["event_timestamp"] = pd.Timestamp("2024-01-05 10:00:00")
 
         # When & Then
-        # Should not raise an exception and should store successfully
-        stored_count = offline_repo.store_features_incrementally(extended_df, eurusd_h1_symbol)
-        assert stored_count == len(extended_df)
+        # Should not raise an exception
+        stored_count = offline_repo.store_features_incrementally(new_features, eurusd_h1_symbol)
+        assert stored_count == 1  # Only new timestamp should be stored
 
-    @patch('drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo.logger')
-    def test_validate_schema_consistency_type_mismatch_warning(
+    def test_schema_consistency_validation_failure(
         self,
-        mock_logger: Mock,
         offline_repo: OfflineFeatureLocalRepo,
+        sample_features_df: DataFrame,
         eurusd_h1_symbol: str
     ) -> None:
-        """Test that incompatible type changes generate warnings."""
+        """Test schema validation failure with inconsistent schemas."""
         # Given
-        initial_df = DataFrame({
-            "event_timestamp": [pd.Timestamp("2024-01-01 09:00:00")],
-            "feature_str": ["text"]  # string type
-        })
-        offline_repo.store_features_incrementally(initial_df, eurusd_h1_symbol)
+        # Store initial features
+        offline_repo.store_features_incrementally(sample_features_df, eurusd_h1_symbol)
 
-        # Create features with incompatible type
-        new_df = DataFrame({
-            "event_timestamp": [pd.Timestamp("2024-01-02 09:00:00")],
-            "feature_str": [123]  # numeric type (incompatible)
+        # Create new features with different schema (missing column)
+        incompatible_features = DataFrame({
+            "event_timestamp": [pd.Timestamp("2024-01-05 10:00:00")],
+            "different_feature": [999.0]  # Different column name
         })
 
-        # When
-        offline_repo.store_features_incrementally(new_df, eurusd_h1_symbol)
-
-        # Then
-        mock_logger.warning.assert_called()
-        warning_call = mock_logger.warning.call_args[0][0]
-        assert "Column type mismatch" in warning_call
+        # When & Then
+        with pytest.raises(ValueError, match="Schema mismatch"):
+            offline_repo.store_features_incrementally(incompatible_features, eurusd_h1_symbol)

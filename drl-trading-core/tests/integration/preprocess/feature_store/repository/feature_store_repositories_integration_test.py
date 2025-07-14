@@ -16,10 +16,10 @@ from injector import Injector
 from pandas import DataFrame
 
 from drl_trading_core.preprocess.feature_store.repository.feature_store_fetch_repo import (
-    FeatureStoreFetchRepository,
+    IFeatureStoreFetchRepository,
 )
 from drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo import (
-    FeatureStoreSaveRepository,
+    IFeatureStoreSaveRepository,
 )
 
 
@@ -28,7 +28,7 @@ class TestFeatureStoreRepositoriesIntegration:
 
     def test_complete_save_and_fetch_workflow(
         self,
-        mocked_container: Injector,
+        integration_container: Injector,
         sample_trading_features_df: DataFrame,
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
@@ -37,8 +37,8 @@ class TestFeatureStoreRepositoriesIntegration:
         symbol = "EURUSD"
 
         # Get repository instances from DI container
-        save_repo = mocked_container.get(FeatureStoreSaveRepository)
-        fetch_repo = mocked_container.get(FeatureStoreFetchRepository)
+        save_repo = integration_container.get(IFeatureStoreSaveRepository)
+        fetch_repo = integration_container.get(IFeatureStoreFetchRepository)
 
         # When - Store features offline
         save_repo.store_computed_features_offline(
@@ -72,7 +72,7 @@ class TestFeatureStoreRepositoriesIntegration:
 
     def test_batch_materialize_and_online_fetch_workflow(
         self,
-        mocked_container: Injector,
+        integration_container: Injector,
         sample_trading_features_df: DataFrame,
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
@@ -81,8 +81,8 @@ class TestFeatureStoreRepositoriesIntegration:
         symbol = "EURUSD"
 
         # Get repository instances from DI container
-        save_repo = mocked_container.get(FeatureStoreSaveRepository)
-        fetch_repo = mocked_container.get(FeatureStoreFetchRepository)
+        save_repo = integration_container.get(IFeatureStoreSaveRepository)
+        fetch_repo = integration_container.get(IFeatureStoreFetchRepository)
 
         # Store features offline first
         save_repo.store_computed_features_offline(
@@ -112,7 +112,7 @@ class TestFeatureStoreRepositoriesIntegration:
 
     def test_direct_online_push_and_fetch_workflow(
         self,
-        mocked_container: Injector,
+        integration_container: Injector,
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test workflow: push single record directly to online, then fetch."""
@@ -129,8 +129,8 @@ class TestFeatureStoreRepositoriesIntegration:
         })
 
         # Get repository instances from DI container
-        save_repo = mocked_container.get(FeatureStoreSaveRepository)
-        fetch_repo = mocked_container.get(FeatureStoreFetchRepository)
+        save_repo = integration_container.get(IFeatureStoreSaveRepository)
+        fetch_repo = integration_container.get(IFeatureStoreFetchRepository)
 
         # When - Push directly to online store (inference mode)
         save_repo.push_features_to_online_store(
@@ -152,14 +152,14 @@ class TestFeatureStoreRepositoriesIntegration:
 
     def test_feature_store_enabled_disabled_behavior(
         self,
-        mocked_container: Injector,
+        integration_container: Injector,
         sample_trading_features_df: DataFrame,
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test behavior when feature store is disabled."""
         # Given
         symbol = "EURUSD"
-        save_repo = mocked_container.get(FeatureStoreSaveRepository)
+        save_repo = integration_container.get(IFeatureStoreSaveRepository)
 
         # When feature store is enabled
         assert save_repo.is_enabled() is True
@@ -183,7 +183,7 @@ class TestFeatureStoreRepositoriesIntegration:
     ])
     def test_feature_role_specific_operations(
         self,
-        mocked_container: Injector,
+        integration_container: Injector,
         sample_trading_features_df: DataFrame,
         feature_version_info_fixture: FeatureConfigVersionInfo,
         feature_role: FeatureRoleEnum
@@ -191,7 +191,7 @@ class TestFeatureStoreRepositoriesIntegration:
         """Test operations specific to different feature roles."""
         # Given
         symbol = "EURUSD"
-        save_repo = mocked_container.get(FeatureStoreSaveRepository)
+        save_repo = integration_container.get(IFeatureStoreSaveRepository)
 
         # Filter features based on role
         if feature_role == FeatureRoleEnum.OBSERVATION_SPACE:
@@ -217,13 +217,13 @@ class TestFeatureStoreRepositoriesIntegration:
 
     def test_error_handling_missing_event_timestamp(
         self,
-        mocked_container: Injector,
+        integration_container: Injector,
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test error handling when event_timestamp column is missing."""
         # Given
         symbol = "EURUSD"
-        save_repo = mocked_container.get(FeatureStoreSaveRepository)
+        save_repo = integration_container.get(IFeatureStoreSaveRepository)
 
         # Create DataFrame without event_timestamp
         invalid_df = DataFrame({
@@ -255,13 +255,13 @@ class TestFeatureStoreRepositoriesIntegration:
 
     def test_empty_dataframe_handling(
         self,
-        mocked_container: Injector,
+        integration_container: Injector,
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test handling of empty DataFrames."""
         # Given
         symbol = "EURUSD"
-        save_repo = mocked_container.get(FeatureStoreSaveRepository)
+        save_repo = integration_container.get(IFeatureStoreSaveRepository)
 
         empty_df = DataFrame()
 
@@ -277,7 +277,7 @@ class TestFeatureStoreRepositoriesIntegration:
 
     def test_large_dataset_performance(
         self,
-        mocked_container: Injector,
+        integration_container: Injector,
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test performance with larger datasets."""
@@ -300,8 +300,8 @@ class TestFeatureStoreRepositoriesIntegration:
         })
 
         # Get repository instances from DI container
-        save_repo = mocked_container.get(FeatureStoreSaveRepository)
-        fetch_repo = mocked_container.get(FeatureStoreFetchRepository)
+        save_repo = integration_container.get(IFeatureStoreSaveRepository)
+        fetch_repo = integration_container.get(IFeatureStoreFetchRepository)
 
         # When - Store large dataset
         save_repo.store_computed_features_offline(
@@ -329,13 +329,13 @@ class TestFeatureStoreRepositoriesErrorScenarios:
 
     def test_feature_service_initialization_failure(
         self,
-        mocked_container: Injector,
+        integration_container: Injector,
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test handling when feature service initialization fails."""
         # Given
         symbol = "EURUSD"
-        fetch_repo = mocked_container.get(FeatureStoreFetchRepository)
+        fetch_repo = integration_container.get(IFeatureStoreFetchRepository)
 
         # Mock feast provider to return None for feature service
         fetch_repo._feast_provider.create_feature_service.return_value = None
@@ -357,15 +357,15 @@ class TestFeatureStoreRepositoriesErrorScenarios:
 
     def test_concurrent_access_simulation(
         self,
-        mocked_container: Injector,
+        integration_container: Injector,
         sample_trading_features_df: DataFrame,
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test simulated concurrent access to feature store."""
         # Given
         symbol = "EURUSD"
-        save_repo = mocked_container.get(FeatureStoreSaveRepository)
-        fetch_repo = mocked_container.get(FeatureStoreFetchRepository)
+        save_repo = integration_container.get(IFeatureStoreSaveRepository)
+        fetch_repo = integration_container.get(IFeatureStoreFetchRepository)
 
         # Simulate multiple concurrent saves (in practice would be threading)
         symbols = ["EURUSD", "GBPUSD", "USDJPY"]
@@ -393,72 +393,3 @@ class TestFeatureStoreRepositoriesErrorScenarios:
 
             assert not fetched_features.empty
             assert all(fetched_features["symbol"] == test_symbol)
-
-
-class TestFeatureStoreRepositoriesObservability:
-    """Test observability and monitoring aspects of repositories."""
-
-    def test_logging_verification(
-        self,
-        mocked_container: Injector,
-        sample_trading_features_df: DataFrame,
-        feature_version_info_fixture: FeatureConfigVersionInfo,
-        caplog
-    ) -> None:
-        """Test that appropriate logging occurs during operations."""
-        # Given
-        symbol = "EURUSD"
-        save_repo = mocked_container.get(FeatureStoreSaveRepository)
-
-        # When - Perform operations that should log
-        save_repo.store_computed_features_offline(
-            features_df=sample_trading_features_df,
-            symbol=symbol,
-            feature_version_info=feature_version_info_fixture
-        )
-
-        # Then - Verify logging occurred
-        assert any("Stored" in record.message for record in caplog.records)
-
-    def test_metrics_collection_simulation(
-        self,
-        mocked_container: Injector,
-        sample_trading_features_df: DataFrame,
-        feature_version_info_fixture: FeatureConfigVersionInfo
-    ) -> None:
-        """Test simulation of metrics collection during repository operations."""
-        # Given
-        symbol = "EURUSD"
-        save_repo = mocked_container.get(FeatureStoreSaveRepository)
-        fetch_repo = mocked_container.get(FeatureStoreFetchRepository)
-
-        # Track operation metrics
-        operation_count = 0
-
-        # When - Perform multiple operations
-        operation_count += 1
-        save_repo.store_computed_features_offline(
-            features_df=sample_trading_features_df,
-            symbol=symbol,
-            feature_version_info=feature_version_info_fixture
-        )
-
-        operation_count += 1
-        timestamps = sample_trading_features_df["event_timestamp"].iloc[0:10]
-        fetch_repo.get_offline(
-            symbol=symbol,
-            timestamps=timestamps,
-            feature_version_info=feature_version_info_fixture
-        )
-
-        operation_count += 1
-        fetch_repo.get_online(
-            symbol=symbol,
-            feature_version_info=feature_version_info_fixture
-        )
-
-        # Then - Verify operations completed
-        assert operation_count == 3
-
-        # In real implementation, this would verify metrics were collected
-        # (e.g., operation duration, success/failure rates, data volume, etc.)

@@ -155,10 +155,15 @@ class CoreModule(Module):
             FeatureComputingService,
             IFeatureComputer,
         )
-
-        # next time:
-        # feast provider unit test fixen
-        # dann richtigen feature_store_repositories neu testen
+        from drl_trading_core.preprocess.feature_store.mapper.feature_view_name_mapper import (
+            FeatureViewNameMapper,
+        )
+        from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo import (
+            OfflineFeatureLocalRepo,
+        )
+        from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_repo_interface import (
+            IOfflineFeatureRepository,
+        )
 
         # Auto-wire services that use @inject decorator
         binder.bind(DataImportManager, to=DataImportManager, scope=singleton)
@@ -177,6 +182,12 @@ class CoreModule(Module):
             IFeatureConfigRepository, to=FeatureConfigPostgresRepo, scope=singleton
         )
         binder.bind(FeastProvider, to=FeastProvider, scope=singleton)
+        binder.bind(
+            IOfflineFeatureRepository, to=OfflineFeatureLocalRepo, scope=singleton
+        )
+        binder.bind(
+            FeatureViewNameMapper, to=FeatureViewNameMapper, scope=singleton
+        )
         binder.bind(
             IFeatureStoreSaveRepository, to=FeatureStoreSaveRepository, scope=singleton
         )

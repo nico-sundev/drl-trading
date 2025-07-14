@@ -33,13 +33,13 @@ class TaLippIndicatorService(ITechnicalIndicatorFacade):
         self.registry = registry
         self._lock = threading.RLock()  # Reentrant lock for nested calls
 
-    def register_instance(self, name: str, indicator_type: IndicatorTypeEnum, **params) -> None:
+    def register_instance(self, name: str, indicator_type: str, **params) -> None:
         """
         Thread-safe registration of indicator instances.
 
         Args:
             name: Unique name for the indicator instance
-            indicator_type: Type of indicator to create
+            indicator_type: String identifier for indicator type (e.g., "rsi", "ema", "macd")
             **params: Parameters to pass to indicator constructor
 
         Raises:
@@ -48,10 +48,16 @@ class TaLippIndicatorService(ITechnicalIndicatorFacade):
         with self._lock:
             # Atomic check for existing instance
             if name in self.instances:
-                raise ValueError(f"Indicator with name {name} already exists.")
+                raise ValueError(f"Indicator with name '{name}' already exists")
+
+            # Convert string to enum for internal processing
+            try:
+                enum_type = IndicatorTypeEnum(indicator_type)
+            except ValueError:
+                raise ValueError(f"Unsupported indicator type: '{indicator_type}'") from None
 
             # Get indicator class (registry is thread-safe)
-            indicator_class = self.registry.get_indicator_class(indicator_type)
+            indicator_class = self.registry.get_indicator_class(enum_type)
             if not indicator_class:
                 raise ValueError(f"No indicator class found for type {indicator_type}")
 

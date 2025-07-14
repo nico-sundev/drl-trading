@@ -84,7 +84,7 @@ class TestFeatureTypeConverter:
 
         assert "invalid_feature" in str(exc_info.value)
         assert "not a valid FeatureTypeEnum value" in str(exc_info.value)
-        assert "Available types: ['rsi']" in str(exc_info.value)
+        assert "Available types: ['rsi', 'close_price']" in str(exc_info.value)
 
     def test_string_to_enum_with_empty_string_raises_value_error(self) -> None:
         """Test that empty string raises ValueError."""
@@ -109,7 +109,7 @@ class TestFeatureTypeConverter:
     def test_get_all_feature_names_returns_correct_list(self) -> None:
         """Test that get_all_feature_names returns all enum values as strings."""
         # Given
-        expected_names = ["rsi"]
+        expected_names = ["rsi", "close_price"]
 
         # When
         result = FeatureTypeConverter.get_all_feature_names()

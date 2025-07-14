@@ -8,6 +8,7 @@ from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     ITechnicalIndicatorFacade,
 )
+from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 
 
 class MockMacdFeature(BaseFeature):
@@ -16,10 +17,11 @@ class MockMacdFeature(BaseFeature):
     def __init__(
         self,
         config: BaseParameterSetConfig,
+        dataset_id: DatasetIdentifier,
         indicator_service: ITechnicalIndicatorFacade,
         postfix: str = "",
     ) -> None:
-        super().__init__(config, indicator_service, postfix)
+        super().__init__(config, dataset_id, indicator_service, postfix)
         self.df_source = None
         self.feature_name = f"macd{postfix}"
 
@@ -71,10 +73,11 @@ class MockRsiFeature(BaseFeature):
     def __init__(
         self,
         config: BaseParameterSetConfig,
+        dataset_id: DatasetIdentifier,
         indicator_service: ITechnicalIndicatorFacade,
         postfix: str = "",
     ) -> None:
-        super().__init__(config, indicator_service, postfix)
+        super().__init__(config, dataset_id, indicator_service, postfix)
         self.df_source = None
         self.feature_name = f"rsi{postfix}"
 

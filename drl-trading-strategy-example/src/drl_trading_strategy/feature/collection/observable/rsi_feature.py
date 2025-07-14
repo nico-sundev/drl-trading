@@ -14,7 +14,6 @@ from drl_trading_strategy.decorator.feature_type_decorator import (
     get_feature_type_from_class,
 )
 from drl_trading_strategy.enum.feature_type_enum import FeatureTypeEnum
-from drl_trading_strategy.enum.indicator_type_enum import IndicatorTypeEnum
 from drl_trading_strategy.feature.config import RsiConfig
 from drl_trading_strategy.mapper.mapper import TypeMapper
 from pandas import DataFrame
@@ -57,8 +56,10 @@ class RsiFeature(BaseFeature):
     def _get_feature_type(self) -> FeatureTypeEnum:
         return get_feature_type_from_class(self.__class__)
 
-    def _get_indicator_type(self) -> IndicatorTypeEnum:
-        return TypeMapper.map_feature_to_indicator(self._get_feature_type())
+    def _get_indicator_type(self) -> str:
+        """Get the indicator type as a string for decoupling from enums."""
+        enum_type = TypeMapper.map_feature_to_indicator(self._get_feature_type())
+        return enum_type.value
 
     def get_feature_name(self) -> str:
         return self._get_feature_type().value

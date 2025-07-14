@@ -73,7 +73,13 @@
     "ttl_days": 1,
     "online_enabled": false,
     "service_name": "ai_trading_feature_definitions",
-    "service_version": "0.0.1"
+    "service_version": "0.0.1",
+    "s3_bucket_name": "drl-trading-features-test",
+    "s3_prefix": "features",
+    "s3_endpoint_url": null,
+    "s3_region": "us-east-1",
+    "s3_access_key_id": null,
+    "s3_secret_access_key": null
   },
   "contextFeatureConfig": {
     "primaryContextColumns": ["High", "Low", "Close"],

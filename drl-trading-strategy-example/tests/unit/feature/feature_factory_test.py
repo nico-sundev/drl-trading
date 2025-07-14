@@ -1,13 +1,13 @@
 from typing import Type
 from unittest.mock import MagicMock
 
-import pandas as pd
 import pytest
 from drl_trading_common import BaseParameterSetConfig
 from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     ITechnicalIndicatorFacade,
 )
+from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from drl_trading_strategy.feature.feature_factory import FeatureFactory
 from drl_trading_strategy.feature.registry.feature_class_registry_interface import (
     IFeatureClassRegistry,
@@ -79,8 +79,8 @@ def config_registry() -> IFeatureConfigRegistry:
 
 
 @pytest.fixture
-def factory(class_registry, config_registry) -> FeatureFactory:
-    return FeatureFactory(class_registry, config_registry)
+def factory(class_registry, config_registry, mock_indicator_service) -> FeatureFactory:
+    return FeatureFactory(class_registry, config_registry, mock_indicator_service)
 
 
 def test_create_feature(
@@ -89,31 +89,34 @@ def test_create_feature(
     mock_rsi_feature_class: Type[BaseFeature],
     mock_macd_feature_class: Type[BaseFeature],
 ) -> None:
-    """Test that feature instances can be created using the factory."""  # Given
-    source_data = pd.DataFrame({"Close": [1, 2, 3, 4, 5]})
-    config = MockConfig()  # When & Then
+    """Test that feature instances can be created using the factory."""
+    # Given
+    dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe="H1")
+    config = MockConfig()
+
+    # When & Then
     macd_feature = factory.create_feature(
-        "macd", source_data, config, mock_indicator_service
+        "macd", dataset_id, config
     )
     assert macd_feature is not None
     assert isinstance(macd_feature, mock_macd_feature_class)
 
     rsi_feature = factory.create_feature(
-        "rsi", source_data, config, mock_indicator_service
+        "rsi", dataset_id, config
     )
     assert rsi_feature is not None
     assert isinstance(rsi_feature, mock_rsi_feature_class)
 
     # Test with postfix
     rsi_feature_with_postfix = factory.create_feature(
-        "rsi", source_data, config, mock_indicator_service, postfix="_14"
+        "rsi", dataset_id, config, postfix="_14"
     )
     assert rsi_feature_with_postfix is not None
     assert isinstance(rsi_feature_with_postfix, mock_rsi_feature_class)
 
     # Test nonexistent feature
     nonexistent_feature = factory.create_feature(
-        "nonexistent", source_data, config, mock_indicator_service
+        "nonexistent", dataset_id, config
     )
     assert nonexistent_feature is None
 

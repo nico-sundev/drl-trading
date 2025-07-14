@@ -7,7 +7,7 @@ organized in a datetime-based directory structure for efficient access.
 
 import logging
 import os
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 from drl_trading_common.config.feature_config import FeatureStoreConfig
@@ -35,7 +35,7 @@ class OfflineFeatureLocalRepo(IOfflineFeatureRepository):
 
     def __init__(self, config: FeatureStoreConfig):
         self.config = config
-        self.base_path = config.offline_store_path
+        self.base_path = config.repo_path
 
     def store_features_incrementally(
         self,
@@ -64,6 +64,9 @@ class OfflineFeatureLocalRepo(IOfflineFeatureRepository):
         features_df = features_df.copy()
         features_df["event_timestamp"] = to_datetime(features_df["event_timestamp"])
         features_df = features_df.sort_values("event_timestamp").reset_index(drop=True)
+
+        # Deduplicate within the incoming batch first
+        features_df = features_df.drop_duplicates(subset=["event_timestamp"]).reset_index(drop=True)
 
         # Load existing features to check for duplicates
         existing_df = self.load_existing_features(symbol)
@@ -114,15 +117,16 @@ class OfflineFeatureLocalRepo(IOfflineFeatureRepository):
         """
         dataset_path = self._get_dataset_base_path(symbol)
 
-        if not os.path.exists(dataset_path):
-            return None
-
         parquet_files = []
         # Recursively find all parquet files
-        for root, _, files in os.walk(dataset_path):
-            for file in files:
-                if file.endswith('.parquet'):
-                    parquet_files.append(os.path.join(root, file))
+        try:
+            for root, _, files in os.walk(dataset_path):
+                for file in files:
+                    if file.endswith('.parquet'):
+                        parquet_files.append(os.path.join(root, file))
+        except OSError:
+            # Directory doesn't exist or can't be accessed
+            return None
 
         if not parquet_files:
             return None
@@ -212,7 +216,7 @@ class OfflineFeatureLocalRepo(IOfflineFeatureRepository):
         missing_cols = existing_cols - new_cols
         if missing_cols:
             raise ValueError(
-                f"Schema validation failed for {symbol}: "
+                f"Schema mismatch for {symbol}: "
                 f"New features missing columns: {sorted(missing_cols)}"
             )
 
@@ -308,3 +312,127 @@ class OfflineFeatureLocalRepo(IOfflineFeatureRepository):
                 f"Stored {len(store_df)} features for {year}-{month:02d}-{day:02d} in {file_path} "
                 f"({symbol})"
             )
+
+    def store_features_batch(
+        self,
+        feature_batches: List[Dict[str, Any]]
+    ) -> Dict[str, int]:
+        """
+        Store multiple feature datasets in a batch operation.
+
+        Args:
+            feature_batches: List of dicts with 'features_df' and 'symbol' keys
+
+        Returns:
+            Dict mapping symbol to number of records stored
+
+        Raises:
+            ValueError: For invalid batch data structure
+        """
+        results = {}
+
+        for batch in feature_batches:
+            if 'features_df' not in batch or 'symbol' not in batch:
+                raise ValueError("Each batch must contain 'features_df' and 'symbol' keys")
+
+            symbol = batch['symbol']
+            features_df = batch['features_df']
+
+            try:
+                stored_count = self.store_features_incrementally(features_df, symbol)
+                results[symbol] = stored_count
+                logger.info(f"Batch stored {stored_count} features for {symbol}")
+            except Exception as e:
+                logger.error(f"Failed to store batch for {symbol}: {e}")
+                results[symbol] = 0
+
+        return results
+
+    def delete_features(
+        self,
+        symbol: str,
+    ) -> bool:
+        """
+        Delete all features for a given symbol.
+
+        Args:
+            symbol: Symbol identifier for the dataset
+
+        Returns:
+            True if deletion was successful, False if symbol didn't exist
+
+        Raises:
+            OSError: For filesystem operation failures
+        """
+        import shutil
+
+        dataset_path = self._get_dataset_base_path(symbol)
+
+        if not os.path.exists(dataset_path):
+            logger.info(f"No features found to delete for {symbol}")
+            return False
+
+        try:
+            shutil.rmtree(dataset_path)
+            logger.info(f"Successfully deleted all features for {symbol}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delete features for {symbol}: {e}")
+            raise
+
+    def get_storage_metrics(
+        self,
+        symbol: str,
+    ) -> Dict[str, Any]:
+        """
+        Get storage metrics for a dataset (size, object count, etc.).
+
+        Args:
+            symbol: Symbol identifier for the dataset
+
+        Returns:
+            Dict with metrics like 'size_bytes', 'object_count', 'last_modified'
+
+        Raises:
+            OSError: For filesystem access failures
+        """
+        dataset_path = self._get_dataset_base_path(symbol)
+
+        if not os.path.exists(dataset_path):
+            return {
+                'size_bytes': 0,
+                'object_count': 0,
+                'last_modified': None
+            }
+
+        try:
+            total_size = 0
+            object_count = 0
+            last_modified = None
+
+            for root, _, files in os.walk(dataset_path):
+                for file in files:
+                    if file.endswith('.parquet'):
+                        file_path = os.path.join(root, file)
+                        file_stat = os.stat(file_path)
+                        total_size += file_stat.st_size
+                        object_count += 1
+
+                        file_mtime = file_stat.st_mtime
+                        if last_modified is None or file_mtime > last_modified:
+                            last_modified = file_mtime
+
+            # Convert timestamp to ISO format if available
+            if last_modified is not None:
+                from datetime import datetime
+                last_modified = datetime.fromtimestamp(last_modified).isoformat()
+
+            return {
+                'size_bytes': total_size,
+                'object_count': object_count,
+                'last_modified': last_modified
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to get storage metrics for {symbol}: {e}")
+            raise

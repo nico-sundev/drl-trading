@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from drl_trading_common.model.timeframe import Timeframe
 from pydantic import Field
@@ -15,6 +15,14 @@ class FeatureStoreConfig(BaseSchema):
     online_enabled: bool = False
     service_name: str
     service_version: str
+
+    # S3-specific configuration fields
+    s3_bucket_name: str = "drl-trading-features"
+    s3_prefix: str = "features"
+    s3_endpoint_url: Optional[str] = None  # Optional for custom S3-compatible services
+    s3_region: str = "us-east-1"
+    s3_access_key_id: Optional[str] = None  # Optional, can use AWS credentials chain
+    s3_secret_access_key: Optional[str] = None  # Optional, can use AWS credentials chain
 
 class FeatureDefinition(BaseSchema):
     """Feature definition configuration.

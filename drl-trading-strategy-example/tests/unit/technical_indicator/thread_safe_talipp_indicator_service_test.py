@@ -74,7 +74,7 @@ class TestThreadSafeTaLippIndicatorService:
         def register_indicator(indicator_name: str) -> None:
             barrier.wait()
             try:
-                service.register_instance(indicator_name, IndicatorTypeEnum.RSI, length=14)
+                service.register_instance(indicator_name, "rsi", length=14)
                 results.append(f"success_{indicator_name}")
             except Exception as e:
                 results.append(f"error_{indicator_name}_{type(e).__name__}")
@@ -107,7 +107,7 @@ class TestThreadSafeTaLippIndicatorService:
         def register_indicator() -> None:
             barrier.wait()
             try:
-                service.register_instance(indicator_name, IndicatorTypeEnum.RSI, length=14)
+                service.register_instance(indicator_name, "rsi", length=14)
                 results.append("success")
             except ValueError as e:
                 results.append("error_ValueError")
@@ -139,7 +139,7 @@ class TestThreadSafeTaLippIndicatorService:
         # Given
         indicator_names = [f"rsi_{i}" for i in range(5)]
         for name in indicator_names:
-            service.register_instance(name, IndicatorTypeEnum.RSI, length=14)
+            service.register_instance(name, "rsi", length=14)
 
         num_threads = 50
         read_results = []
