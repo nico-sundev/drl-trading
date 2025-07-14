@@ -156,6 +156,10 @@ class CoreModule(Module):
             IFeatureComputer,
         )
 
+        # next time:
+        # feast provider unit test fixen
+        # dann richtigen feature_store_repositories neu testen
+
         # Auto-wire services that use @inject decorator
         binder.bind(DataImportManager, to=DataImportManager, scope=singleton)
         binder.bind(MergeServiceInterface, to=MergeService, scope=singleton)
