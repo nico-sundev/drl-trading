@@ -1,5 +1,4 @@
 todo features:
-- cleanup tests/*/conftest.py
 - normalize features before training
     - add normalization_method enum to baseparametersetconfig, e.g.: NONE, ATR
         - add a normalization step somewhere in between the process
@@ -8,7 +7,7 @@ todo features:
 - optimize training multiple environments concurrently
     - check if whether dummyvecenv or subprocvecenv is better for training performance in class AgentTrainingService
 
-next sprint:
+backlog:
 - impl opentelemetry, jaeger, grafana
 - model save checkpoints
 - MLFlow integration -> investigate gitlab model -> configure to use local service

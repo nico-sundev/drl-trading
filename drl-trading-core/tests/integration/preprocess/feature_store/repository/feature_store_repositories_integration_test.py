@@ -22,6 +22,10 @@ from drl_trading_core.preprocess.feature_store.repository.feature_store_save_rep
     IFeatureStoreSaveRepository,
 )
 
+# next time:
+# make this test running
+# and then cleanup pyproject toml files -> move redundant config to parent pyproject.toml
+
 
 class TestFeatureStoreRepositoriesIntegration:
     """Integration tests for both FeatureStoreSaveRepository and FeatureStoreFetchRepository."""
