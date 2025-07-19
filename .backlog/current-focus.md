@@ -3,17 +3,29 @@
 ## Active Work: Week of July 19, 2025
 
 ### Primary Focus
-- Complete Feature Pipeline Infrastructure epic
+- 🔄 **FINISHING:** Feature Pipeline Infrastructure epic (Integration tests debugging)
 - Begin MLflow Model Management Integration epic
 - Setup foundational ML lifecycle management
 - Prepare for Microservice Integration Pipeline epic
 
 ### Next Up (Priority Order)
-1. [ ] `feast-implementation/004-online-store.md` - Online store integration
-2. [ ] `feast-implementation/005-s3-backend.md` - S3 backend implementation
-3. [ ] `mlflow-integration/001-gitlab-mlflow-setup.md` - Setup GitLab MLflow hosting
-4. [ ] `mlflow-integration/002-core-mlflow-integration.md` - Core framework integration
-5. [ ] `microservice-integration/001-preprocessing-service-setup.md` - Setup preprocessing service
+1. [ ] Fix Feast integration tests - fixture setup and conftest dependencies
+2. [ ] `mlflow-integration/001-gitlab-mlflow-setup.md` - Setup GitLab MLflow hosting
+3. [ ] `mlflow-integration/002-core-mlflow-integration.md` - Core framework integration
+4. [ ] `microservice-integration/001-preprocessing-service-setup.md` - Setup preprocessing service
+
+### Currently Working On
+- [ ] Debug `feast_integration_test.py` and `feature_store_repositories_integration_test.py`
+- [ ] Fix missing conftest dependencies and test fixtures
+- [ ] Resolve integration container DI setup
+
+### Recently Completed
+- ✅ **Core Feast Implementation** - 95% complete
+  - Feast save/fetch repositories
+  - Local Parquet and S3 backend storage
+  - Online/offline feature store integration
+  - Comprehensive unit testing
+  - **Remaining:** Integration test debugging
 
 ### Currently Working On
 - [ ] _Add current ticket here when you start working_
@@ -21,13 +33,14 @@
 ### Blocked/Waiting
 - **Training Service Integration** blocked until MLflow epic complete
 - **Inference Service Integration** blocked until MLflow epic complete
-- Microservice integration tickets depend on both Feature Pipeline + MLflow completion
+- Microservice integration tickets depend on MLflow completion (Feature Pipeline 95% DONE - just integration tests)
 
 ### Notes & Context
-- Feature Pipeline Infrastructure must complete before microservice integration
+- 🔄 **Feature Pipeline Infrastructure 95% COMPLETE** - Core Feast ready, integration tests need debugging
 - Architecture documentation critical for AI agent context and team understanding
 - E2E diagram will clarify service interactions and help validate design
 - Preprocessing service is key bottleneck - prioritize setup and feature integration
+- **Can start MLflow integration in parallel** - core Feast dependencies resolved
 
 ---
 
