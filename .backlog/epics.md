@@ -32,3 +32,39 @@ Priority top down
 **Description:** Comprehensive architecture documentation including E2E ML pipeline flow diagrams and service dependency maps. Critical for team understanding and AI agent context.
 
 **Tickets:** See `tickets/architecture-documentation/` for documentation tasks
+
+## ML Pipeline Enhancement
+**Status:** 📝 Planned
+**Priority:** High
+**Description:** Enhance DRL training pipeline with feature normalization, RNN/LSTM encoding, and training optimization. Improves model performance and training efficiency.
+
+**Focus Areas:** Feature normalization (ATR), RNN feature embeddings, vectorized environment optimization.
+
+**Tickets:** See `tickets/ml-pipeline-enhancement/` for implementation details
+
+## Data Infrastructure Expansion
+**Status:** 📝 Planned
+**Priority:** High
+**Description:** Expand data ingestion with multiple providers (Binance, TwelveData) and implement robust data pipeline infrastructure for comprehensive market coverage.
+
+**Focus Areas:** Multi-provider APIs, data catchup mechanisms, unified data abstraction.
+
+**Tickets:** See `tickets/data-infrastructure-expansion/` for implementation details
+
+## Observability & Monitoring
+**Status:** 📝 Planned
+**Priority:** Medium
+**Description:** Implement comprehensive observability stack with OpenTelemetry, Jaeger, and Grafana for production monitoring and performance optimization.
+
+**Focus Areas:** Distributed tracing, metrics collection, performance dashboards, alerting.
+
+**Tickets:** See `tickets/observability-monitoring/` for implementation details
+
+## Advanced ML Research
+**Status:** 📝 Planned
+**Priority:** Future (Research)
+**Description:** Explore cutting-edge ML techniques including Graph Neural Networks for pattern recognition and SBX optimization for enhanced trading performance.
+
+**Focus Areas:** GNN pattern recognition, SBX training optimization, advanced feature embeddings.
+
+**Tickets:** See `tickets/advanced-ml-research/` for research initiatives

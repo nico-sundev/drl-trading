@@ -11,8 +11,9 @@
 ### Next Up (Priority Order)
 1. [ ] Fix Feast integration tests - fixture setup and conftest dependencies
 2. [ ] `mlflow-integration/001-gitlab-mlflow-setup.md` - Setup GitLab MLflow hosting
-3. [ ] `mlflow-integration/002-core-mlflow-integration.md` - Core framework integration
-4. [ ] `microservice-integration/001-preprocessing-service-setup.md` - Setup preprocessing service
+3. [ ] `ml-pipeline-enhancement/001-feature-normalization.md` - Feature normalization system
+4. [ ] `data-infrastructure-expansion/001-binance-data-provider.md` - Binance API integration
+5. [ ] `microservice-integration/001-preprocessing-service-setup.md` - Setup preprocessing service
 
 ### Currently Working On
 - [ ] Debug `feast_integration_test.py` and `feature_store_repositories_integration_test.py`
@@ -37,10 +38,11 @@
 
 ### Notes & Context
 - 🔄 **Feature Pipeline Infrastructure 95% COMPLETE** - Core Feast ready, integration tests need debugging
+- **NEW: 4 Additional Epics Created** from legacy todo analysis
 - Architecture documentation critical for AI agent context and team understanding
 - E2E diagram will clarify service interactions and help validate design
-- Preprocessing service is key bottleneck - prioritize setup and feature integration
-- **Can start MLflow integration in parallel** - core Feast dependencies resolved
+- **ML Pipeline Enhancement** can start in parallel with MLflow integration
+- **Data Infrastructure** critical for production readiness
 
 ---
 
