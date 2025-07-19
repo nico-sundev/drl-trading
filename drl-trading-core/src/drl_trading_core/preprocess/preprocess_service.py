@@ -7,10 +7,10 @@ import pandas as pd
 from dask import delayed
 from drl_trading_common.config.feature_config import FeaturesConfig
 from drl_trading_common.utils import ensure_datetime_index
-from drl_trading_strategy.feature.context.context_feature_service import (
+from drl_trading_strategy_example.feature.context.context_feature_service import (
     ContextFeatureServiceInterface,
 )
-from drl_trading_strategy.feature.feature_factory import (
+from drl_trading_strategy_example.feature.feature_factory import (
     IFeatureFactory,
 )
 from injector import inject

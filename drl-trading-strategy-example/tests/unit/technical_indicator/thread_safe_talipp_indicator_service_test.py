@@ -12,11 +12,11 @@ from typing import Optional
 
 import pytest
 from drl_trading_common.base.base_indicator import BaseIndicator
-from drl_trading_strategy.enum.indicator_type_enum import IndicatorTypeEnum
-from drl_trading_strategy.technical_indicator.registry.indicator_class_registry import (
+from drl_trading_strategy_example.enum.indicator_type_enum import IndicatorTypeEnum
+from drl_trading_strategy_example.technical_indicator.registry.indicator_class_registry import (
     IndicatorClassRegistry,
 )
-from drl_trading_strategy.technical_indicator.talipp_indicator_service import (
+from drl_trading_strategy_example.technical_indicator.talipp_indicator_service import (
     TaLippIndicatorService,
 )
 from pandas import DataFrame
@@ -109,7 +109,7 @@ class TestThreadSafeTaLippIndicatorService:
             try:
                 service.register_instance(indicator_name, "rsi", length=14)
                 results.append("success")
-            except ValueError as e:
+            except ValueError:
                 results.append("error_ValueError")
             except Exception as e:
                 results.append(f"error_{type(e).__name__}")
@@ -310,7 +310,7 @@ class TestThreadSafeTaLippIndicatorService:
         # When
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             futures = [executor.submit(reset_and_check) for _ in range(num_threads)]
-            results = [future.result() for future in as_completed(futures)]
+            [future.result() for future in as_completed(futures)]
 
         # Then
         # Service should be empty after all resets

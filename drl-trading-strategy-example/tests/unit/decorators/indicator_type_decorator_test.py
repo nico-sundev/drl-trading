@@ -7,11 +7,11 @@ to ensure proper indicator type registration and extraction.
 
 import pytest
 from drl_trading_common.base.base_indicator import BaseIndicator
-from drl_trading_strategy.decorator.indicator_type_decorator import (
+from drl_trading_strategy_example.decorator.indicator_type_decorator import (
     get_indicator_type_from_class,
     indicator_type,
 )
-from drl_trading_strategy.enum.indicator_type_enum import IndicatorTypeEnum
+from drl_trading_strategy_example.enum.indicator_type_enum import IndicatorTypeEnum
 from pandas import DataFrame
 
 

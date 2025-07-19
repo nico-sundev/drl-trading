@@ -11,8 +11,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Type
 
 from drl_trading_common.base.base_indicator import BaseIndicator
-from drl_trading_strategy.enum.indicator_type_enum import IndicatorTypeEnum
-from drl_trading_strategy.technical_indicator.registry.indicator_class_registry import (
+from drl_trading_strategy_example.enum.indicator_type_enum import IndicatorTypeEnum
+from drl_trading_strategy_example.technical_indicator.registry.indicator_class_registry import (
     IndicatorClassRegistry,
 )
 
@@ -224,7 +224,7 @@ class TestThreadSafeIndicatorClassRegistry:
         # When
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             futures = [executor.submit(reset_and_check) for _ in range(num_threads)]
-            results = [future.result() for future in as_completed(futures)]
+            [future.result() for future in as_completed(futures)]
 
         # Then
         # Registry should be empty after all resets

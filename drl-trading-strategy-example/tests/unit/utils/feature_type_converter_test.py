@@ -6,8 +6,8 @@ including edge cases and error handling.
 """
 
 import pytest
-from drl_trading_strategy.enum.feature_type_enum import FeatureTypeEnum
-from drl_trading_strategy.utils.feature_type_converter import FeatureTypeConverter
+from drl_trading_strategy_example.enum.feature_type_enum import FeatureTypeEnum
+from drl_trading_strategy_example.utils.feature_type_converter import FeatureTypeConverter
 
 
 class TestFeatureTypeConverter:

@@ -11,7 +11,7 @@ from drl_trading_common.config.config_loader import ConfigLoader
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     ITechnicalIndicatorFacade,
 )
-from drl_trading_strategy.feature.feature_factory import (
+from drl_trading_strategy_example.feature.feature_factory import (
     IFeatureFactory,
 )
 from injector import Injector

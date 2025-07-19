@@ -1,33 +1,39 @@
+# DRL Trading Core Package Configuration
+# This package inherits shared tool configurations from workspace pyproject.toml
+
 [build-system]
-# Modified to remove setuptools_scm dependency
-requires = ["setuptools>=46.1.0"]
-build-backend = "setuptools.build_meta"
+# Hatchling - fast, modern build backend for large packages
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 # Project metadata
 [project]
 name = "drl_trading_core"
+version = "0.1.0"
 description = "AI-powered trading system with reinforcement learning capabilities"
 authors = [
     {name = "sonntagnico", email = "nico-tor@hotmail.com"},
 ]
 readme = "README.md"
 requires-python = ">=3.12"
-license = {text = "MIT"}
+license = "MIT"
 classifiers = [
     "Development Status :: 4 - Beta",
-    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.12",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Topic :: Office/Business :: Financial :: Investment",
 ]
-version = "0.1.0"
-# Comment out dynamic version for now
-# dynamic = ["version"]
+
+# Core package dependencies
 dependencies = [
-    # Common library
+    # Workspace dependencies
     "drl-trading-common",
-    # Core dependencies for runtime
-    "numpy",
-    "pandas",
+    # Core ML and data processing
+    "numpy>=1.24.0",
+    "pandas>=2.0.0",
     "pandas_ta",
-    "stable_baselines3",
+    "stable_baselines3>=2.0.0",
+    "gymnasium>=0.29.0",
     "yfinance",
     # Feature storage and management
     "feast",
@@ -35,7 +41,7 @@ dependencies = [
     # API and services
     "click",
     # Dependency injection framework
-    "injector",
+    "injector>=0.22.0",
     "pandas-stubs",
     "boto3>=1.38.30",
 ]
@@ -45,106 +51,25 @@ drl-trading-common = { workspace = true }
 
 [project.optional-dependencies]
 testing = [
-    "pytest",
-    "pytest-cov",
-    "pytest-benchmark",
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-benchmark>=4.0.0",
+    "pytest-mock>=3.12.0",
 ]
 production = [
+    "pika>=1.3.0",  # RabbitMQ client
 ]
 dev = [
-    "mypy",
-    "ruff",
-    "ipython",
+    "mypy>=1.8.0",
+    "ruff>=0.1.0",
+    "ipython>=8.0.0",
 ]
 
-# Disable setuptools_scm configuration for now
-# [tool.setuptools_scm]
-# For smarter version schemes and other configuration options,
-# check out https://github.com/pypa/setuptools_scm
-# version_scheme = "no-guess-dev"
-
-[tool.ruff]
-target-version = "py38"
-line-length = 88
-
-[tool.ruff.lint]
-select = [
-    "E",    # pycodestyle errors
-    "F",    # pyflakes
-    "B",    # flake8-bugbear
-    "I",    # isort
-]
-ignore = ["E501"]  # Line length is handled by black
-
-[tool.ruff.lint.per-file-ignores]
-"notebooks/*.ipynb" = ["E402", "F403"]
-"tests/**/*" = ["F841"]  # Allow unused variables in tests
-"src/drl_trading_core/preprocess/feature/todo_*.py" = ["B019"]
-
+# Project-specific ruff configuration (overrides workspace defaults where needed)
 [tool.ruff.lint.isort]
-known-first-party = ["drl_trading_core"]
+known-first-party = ["drl_trading_core", "drl_trading_common"]
 
-[tool.mypy]
-python_version = "3.12"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = false
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = false
-warn_no_return = true
-warn_unreachable = true
-strict_optional = true
-ignore_missing_imports = true
-# Suppress import-untyped warnings for workspace modules
-disable_error_code = ["import-untyped"]
-# Cache improvements from mypy.ini
-cache_dir = ".mypy_cache"
-incremental = true
-follow_imports = "silent"
-# Exclude all test files in the tests directory and files including "TODO" in filename
-exclude = "(.*tests/.*)|(.*todo.*)\\.py$"
-
-[[tool.mypy.overrides]]
-module = ["pandas.*", "numpy.*", "pytest.*", "drl_trading_common.*"]
-ignore_missing_imports = true
-
-[tool.pytest.ini_options]
-testpaths = [
-    "tests/integration",
-    "tests/unit"
-]
-python_files = "*_test.py *_it.py"
-#python_classes = "Test*"
-python_functions = "test_*"
-log_cli = true
-log_cli_level = "INFO"
-log_cli_format = "%(asctime)s %(levelname)s %(message)s"
-log_cli_date_format = "%Y-%m-%d %H:%M:%S"
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')"
-]
-addopts = [
-    # "--verbose",
-    "-ra",
-    "-m not slow"
-    # "--cov=drl_trading_core",
-    # "--cov-report=term-missing"
-]
-
-# Package discovery configuration
-[tool.setuptools]
-zip-safe = false
-include-package-data = true
-
-[tool.setuptools.packages.find]
-where = ["src"]
-exclude = ["tests"]
-
-# Coverage configuration (migrated from .coveragerc)
+# Project-specific coverage configuration
 [tool.coverage.run]
 source = ["drl_trading_core"]
 branch = true
@@ -153,17 +78,18 @@ omit = [
     "*/setup.py",
 ]
 
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "raise NotImplementedError",
-    "if __name__ == .__main__.:",
-    "pass",
-    "raise ImportError",
-    "if False:",
+# Project-specific pytest configuration (extends workspace defaults)
+[tool.pytest.ini_options]
+addopts = [
+    "-ra",
+    "-m not slow",
+    "--strict-markers"
+    # Uncomment for coverage reporting:
+    # "--cov=drl_trading_core",
+    # "--cov-report=term-missing"
 ]
 
+# Project-specific dependency groups (can reference workspace groups)
 [dependency-groups]
 dev = [
     "injector>=0.22.0",

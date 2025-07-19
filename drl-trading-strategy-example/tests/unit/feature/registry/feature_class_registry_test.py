@@ -14,9 +14,9 @@ from drl_trading_common.base.base_parameter_set_config import BaseParameterSetCo
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     ITechnicalIndicatorFacade,
 )
-from drl_trading_strategy.decorator.feature_type_decorator import feature_type
-from drl_trading_strategy.enum.feature_type_enum import FeatureTypeEnum
-from drl_trading_strategy.feature.registry.feature_class_registry import (
+from drl_trading_strategy_example.decorator.feature_type_decorator import feature_type
+from drl_trading_strategy_example.enum.feature_type_enum import FeatureTypeEnum
+from drl_trading_strategy_example.feature.registry.feature_class_registry import (
     FeatureClassRegistry,
 )
 from pandas import DataFrame

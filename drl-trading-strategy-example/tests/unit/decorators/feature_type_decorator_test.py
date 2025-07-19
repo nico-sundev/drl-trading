@@ -9,11 +9,11 @@ from unittest.mock import Mock
 
 import pytest
 from drl_trading_common.base.base_feature import BaseFeature
-from drl_trading_strategy.decorator.feature_type_decorator import (
+from drl_trading_strategy_example.decorator.feature_type_decorator import (
     feature_type,
     get_feature_type_from_class,
 )
-from drl_trading_strategy.enum.feature_type_enum import FeatureTypeEnum
+from drl_trading_strategy_example.enum.feature_type_enum import FeatureTypeEnum
 from pandas import DataFrame
 
 

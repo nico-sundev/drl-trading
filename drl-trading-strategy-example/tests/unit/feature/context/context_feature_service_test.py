@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 from drl_trading_common.config.context_feature_config import ContextFeatureConfig
-from drl_trading_strategy.feature.context.context_feature_service import (
+from drl_trading_strategy_example.feature.context.context_feature_service import (
     ContextFeatureService,
 )
 from pandas import DataFrame

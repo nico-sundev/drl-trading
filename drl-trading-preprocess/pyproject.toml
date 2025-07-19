@@ -1,7 +1,65 @@
+# DRL Trading Preprocess Package Configuration
+# This package inherits shared tool configurations from workspace pyproject.toml
+
+[build-system]
+# Hatchling - fast, modern build backend for large packages
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "drl-trading-preprocess"
 version = "0.1.0"
-description = "Add your description here"
+description = "Data preprocessing service for AI-powered trading system"
+authors = [
+    {name = "sonntagnico", email = "nico-tor@hotmail.com"},
+]
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+license = "MIT"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3.12",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+
+# Preprocessing service specific dependencies
+dependencies = [
+    # Workspace dependencies
+    "drl-trading-common",
+    "drl-trading-core",
+    # Core data processing
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    # Dependency injection
+    "injector>=0.22.0",
+]
+
+[tool.uv.sources]
+drl-trading-common = { workspace = true }
+drl-trading-core = { workspace = true }
+
+[project.optional-dependencies]
+testing = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-benchmark>=4.0.0",
+]
+dev = [
+    "mypy>=1.8.0",
+    "ruff>=0.1.0",
+    "ipython>=8.0.0",
+]
+
+# Project-specific ruff configuration (overrides workspace defaults where needed)
+[tool.ruff.lint.isort]
+known-first-party = ["drl_trading_preprocess", "drl_trading_core", "drl_trading_common"]
+
+# Project-specific coverage configuration
+[tool.coverage.run]
+source = ["drl_trading_preprocess"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/setup.py",
+]

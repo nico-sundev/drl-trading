@@ -16,7 +16,7 @@ from drl_trading_core.preprocess.data_set_utils.split_service import SplitServic
 from drl_trading_core.training.services.agent_training_service import (
     AgentTrainingService,
 )
-from drl_trading_strategy.module.example_strategy_module import ExampleStrategyModule
+from drl_trading_strategy_example.module.example_strategy_module import ExampleStrategyModule
 
 logger = logging.getLogger(__name__)
 

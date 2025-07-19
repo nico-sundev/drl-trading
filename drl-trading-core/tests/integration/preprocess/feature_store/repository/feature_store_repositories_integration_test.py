@@ -22,11 +22,6 @@ from drl_trading_core.preprocess.feature_store.repository.feature_store_save_rep
     IFeatureStoreSaveRepository,
 )
 
-# next time:
-# make this test running
-# and then cleanup pyproject toml files -> move redundant config to parent pyproject.toml
-
-
 class TestFeatureStoreRepositoriesIntegration:
     """Integration tests for both FeatureStoreSaveRepository and FeatureStoreFetchRepository."""
 
@@ -367,7 +362,6 @@ class TestFeatureStoreRepositoriesErrorScenarios:
     ) -> None:
         """Test simulated concurrent access to feature store."""
         # Given
-        symbol = "EURUSD"
         save_repo = integration_container.get(IFeatureStoreSaveRepository)
         fetch_repo = integration_container.get(IFeatureStoreFetchRepository)
 

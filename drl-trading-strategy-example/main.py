@@ -1,6 +1,6 @@
 from drl_trading_core import bootstrap_agent_training, bootstrap_inference
 
-from src.drl_trading_strategy import MyCustomTradingEnv
+from src.drl_trading_strategy_example import MyCustomTradingEnv
 
 CONFIG_PATH = (
     "c:/Users/nico-/Documents/git/ai_trading/drl-trading-strategy-example/app_config.json"

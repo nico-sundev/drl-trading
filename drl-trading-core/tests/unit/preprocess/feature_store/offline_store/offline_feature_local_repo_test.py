@@ -277,12 +277,6 @@ class TestOfflineFeatureLocalRepoDatetimeOrganization:
     ) -> None:
         """Test loading features from multiple datetime partitions."""
         # Given
-        # Mock directory structure with multiple partitions
-        test_files = [
-            "/test/EURUSD/year=2024/month=01/day=01/features_part1.parquet",
-            "/test/EURUSD/year=2024/month=01/day=02/features_part2.parquet"
-        ]
-
         mock_walk.return_value = [
             ("/test/EURUSD/year=2024/month=01/day=01", [], ["features_part1.parquet"]),
             ("/test/EURUSD/year=2024/month=01/day=02", [], ["features_part2.parquet"])

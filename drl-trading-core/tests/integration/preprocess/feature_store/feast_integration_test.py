@@ -196,7 +196,7 @@ class TestFeastDataPersistence:
         from .conftest import TestFeatureFactory, TestRsiConfig
 
         feature_factory = integration_container.get(TestFeatureFactory)
-        feast_provider = integration_container.get(FeastProvider)
+        _ = integration_container.get(FeastProvider)
 
         dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe="1H")
         rsi_config = TestRsiConfig(period=14)

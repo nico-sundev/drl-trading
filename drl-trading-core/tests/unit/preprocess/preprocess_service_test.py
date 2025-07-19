@@ -4,10 +4,10 @@ import pandas as pd
 import pytest
 from dask import delayed
 from drl_trading_common.config.feature_config import FeaturesConfig
-from drl_trading_strategy.feature.context.context_feature_service import (
+from drl_trading_strategy_example.feature.context.context_feature_service import (
     ContextFeatureService,
 )
-from drl_trading_strategy.feature.feature_factory import (
+from drl_trading_strategy_example.feature.feature_factory import (
     IFeatureFactory,
 )
 
@@ -317,7 +317,7 @@ def test_preprocess_data_no_features(
         with pytest.raises(
             ValueError, match="No valid computed datasets were produced"
         ):
-            result = preprocess_service.preprocess_data(mock_symbol_container)
+            preprocess_service.preprocess_data(mock_symbol_container)
 
 
 def test_preprocess_data_no_base_dataset(
@@ -337,7 +337,7 @@ def test_preprocess_data_no_base_dataset(
     ):
         # This should raise a ValueError because base_computed_container is None
         with pytest.raises(ValueError, match="No base dataset found"):
-            result = preprocess_service.preprocess_data(mock_symbol_container)
+            preprocess_service.preprocess_data(mock_symbol_container)
 
 
 def test_compute_features_for_dataset_no_tasks(

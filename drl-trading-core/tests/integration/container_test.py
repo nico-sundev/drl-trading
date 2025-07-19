@@ -9,7 +9,7 @@ from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
 def test_injector_loads_successfully(mocked_container):
     """Test that the mocked_container can load application config successfully."""
     # When: We get the application config from the injector
-    module = mocked_container.get(CoreModule)
+    _ = mocked_container.get(CoreModule)
     config = mocked_container.get(ApplicationConfig)
     feature_manager = mocked_container.get(FeatureManager)
 

@@ -9,8 +9,8 @@ from typing import Optional, Type
 
 import pytest
 from drl_trading_common.base.base_indicator import BaseIndicator
-from drl_trading_strategy.enum.indicator_type_enum import IndicatorTypeEnum
-from drl_trading_strategy.technical_indicator.registry.indicator_class_registry import (
+from drl_trading_strategy_example.enum.indicator_type_enum import IndicatorTypeEnum
+from drl_trading_strategy_example.technical_indicator.registry.indicator_class_registry import (
     IndicatorClassRegistry,
 )
 from pandas import DataFrame

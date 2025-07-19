@@ -446,7 +446,7 @@ class TestFeatureRetrieval:
         assert feature1 in result
         assert feature2 in result
 
-    def test_get_all_features_empty(self, feature_manager):
+    def test_get_all_features_empty(self, feature_manager) -> None:
         """
         Given: No features exist in the manager
         When: get_all_features is called
@@ -454,7 +454,8 @@ class TestFeatureRetrieval:
         """
         # When
         result = feature_manager.get_all_features()
-          # Then        assert result == []
+        # Then
+        assert result == []
 
 
 class TestFeatureDataUpdates:

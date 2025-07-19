@@ -1,7 +1,74 @@
+# DRL Trading Inference Package Configuration
+# This package inherits shared tool configurations from workspace pyproject.toml
+
+[build-system]
+# Hatchling - fast, modern build backend for large packages
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "drl-trading-inference"
 version = "0.1.0"
-description = "Add your description here"
+description = "Real-time inference service for AI-powered trading system"
+authors = [
+    {name = "sonntagnico", email = "nico-tor@hotmail.com"},
+]
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+license = "MIT"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3.12",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+
+# Inference service specific dependencies
+dependencies = [
+    # Workspace dependencies
+    "drl-trading-common",
+    "drl-trading-core",
+    # Real-time processing
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    # Messaging
+    "pika>=1.3.0",
+]
+
+[tool.uv.sources]
+drl-trading-common = { workspace = true }
+drl-trading-core = { workspace = true }
+
+[project.optional-dependencies]
+testing = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-benchmark>=4.0.0",
+]
+dev = [
+    "mypy>=1.8.0",
+    "ruff>=0.1.0",
+    "ipython>=8.0.0",
+]
+
+# Package discovery configuration
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = ["tests*"]
+
+# Project-specific ruff configuration (overrides workspace defaults where needed)
+[tool.ruff.lint.isort]
+known-first-party = ["drl_trading_inference", "drl_trading_core", "drl_trading_common"]
+
+# Project-specific coverage configuration
+[tool.coverage.run]
+source = ["drl_trading_inference"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/setup.py",
+]

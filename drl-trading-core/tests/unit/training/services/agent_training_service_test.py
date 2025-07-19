@@ -107,7 +107,7 @@ def test_create_env_and_train_agents(
         AgentFactory, "create_multiple_agents"
     ) as mock_create_agents, mock.patch.object(
         DummyVecEnv, "__init__", return_value=None
-    ) as mock_env_init, mock.patch.object(
+    ) as _, mock.patch.object(
         DummyVecEnv, "reset"
     ), mock.patch.object(
         DummyVecEnv, "step"
