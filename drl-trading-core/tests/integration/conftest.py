@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import shutil
 import tempfile
@@ -28,6 +29,34 @@ from injector import Injector
 from pandas import DataFrame
 
 
+@pytest.fixture(scope="session", autouse=True)
+def configure_logging():
+    """Configure logging for integration tests with debug level."""
+    # Set up logging configuration for integration tests
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        force=True  # Override any existing logging configuration
+    )
+
+    # Set specific loggers to DEBUG level
+    loggers = [
+        'drl_trading_core',
+        'drl_trading_common',
+        'feast',
+        'root'
+    ]
+
+    for logger_name in loggers:
+        logger = logging.getLogger(logger_name)
+        logger.setLevel(logging.DEBUG)
+
+    # Also set the root logger
+    logging.getLogger().setLevel(logging.DEBUG)
+
+    print("DEBUG: Integration test logging configured to DEBUG level")
+
+
 # Test Feature Implementations for Core Integration Testing
 class MockTechnicalIndicatorFacade(ITechnicalIndicatorFacade):
     """Mock technical indicator facade that returns controlled test data for integration testing."""
@@ -37,8 +66,8 @@ class MockTechnicalIndicatorFacade(ITechnicalIndicatorFacade):
 
     def register_instance(self, name: str, indicator_type, **params) -> None:
         """Register a mock indicator that returns predictable test data."""
-        # Create predictable test data based on indicator type
-        dates = pd.date_range(start="2024-01-01", periods=100, freq="1H")
+        # Create predictable test data based on indicator type with UTC timezone
+        dates = pd.date_range(start="2024-01-01", periods=100, freq="1H", tz="UTC")
 
         if "rsi" in name.lower():
             # Generate RSI-like values between 30-70
@@ -53,6 +82,20 @@ class MockTechnicalIndicatorFacade(ITechnicalIndicatorFacade):
             self._indicators[name] = pd.DataFrame({
                 "event_timestamp": dates,
                 name: values
+            })
+        elif name == "reward":
+            # Generate reward-like values between -0.1 and 0.1
+            values = [0.01 * (i % 20 - 10) for i in range(100)]
+            self._indicators[name] = pd.DataFrame({
+                "event_timestamp": dates,
+                "reward": values
+            })
+        elif name == "cumulative_return":
+            # Generate cumulative return values
+            values = [0.001 * i for i in range(100)]
+            self._indicators[name] = pd.DataFrame({
+                "event_timestamp": dates,
+                "cumulative_return": values
             })
         else:
             # Default values
@@ -96,6 +139,17 @@ class TestClosePriceConfig(BaseParameterSetConfig):
 
     def hash_id(self) -> str:
         return f"close_{self.lookback}"
+
+
+class TestRewardConfig(BaseParameterSetConfig):
+    """Test configuration for reward feature that follows the existing pattern."""
+
+    type: str = "reward"
+    enabled: bool = True
+    horizon: int = 1
+
+    def hash_id(self) -> str:
+        return f"reward_{self.horizon}"
 
 
 @feature_role(FeatureRoleEnum.OBSERVATION_SPACE)
@@ -144,7 +198,7 @@ class TestRsiFeature(BaseFeature):
         return result
 
 
-@feature_role(FeatureRoleEnum.REWARD_ENGINEERING)
+@feature_role(FeatureRoleEnum.OBSERVATION_SPACE)
 class TestClosePriceFeature(BaseFeature):
     """Test close price feature implementation adapted from existing MockFeature pattern."""
 
@@ -190,6 +244,58 @@ class TestClosePriceFeature(BaseFeature):
         return result
 
 
+@feature_role(FeatureRoleEnum.REWARD_ENGINEERING)
+class TestRewardFeature(BaseFeature):
+    """Test reward feature implementation that produces reward and cumulative_return."""
+
+    def __init__(self, config: TestRewardConfig, dataset_id: DatasetIdentifier, indicator_service: MockTechnicalIndicatorFacade, postfix: str = ""):
+        super().__init__(config, dataset_id, indicator_service, postfix)
+        self._feature_name = "reward"
+        # Register the indicators when feature is created
+        self.indicator_service.register_instance("reward", "reward", horizon=config.horizon)
+        self.indicator_service.register_instance("cumulative_return", "cumulative_return", horizon=config.horizon)
+
+    def get_feature_name(self) -> str:
+        return self._feature_name
+
+    def get_sub_features_names(self) -> list[str]:
+        return ["reward", "cumulative_return"]
+
+    def compute_all(self) -> Optional[DataFrame]:
+        """Compute reward features using the mock indicator service."""
+        # Get both reward and cumulative return data
+        reward_data = self.indicator_service.get_all("reward")
+        cumulative_data = self.indicator_service.get_all("cumulative_return")
+
+        if reward_data is None or cumulative_data is None:
+            return None
+
+        # Combine both into a single DataFrame
+        result = reward_data.copy()
+        result["cumulative_return"] = cumulative_data["cumulative_return"]
+
+        # Add the required symbol column for Feast compatibility
+        result[self.dataset_id.symbol] = self.dataset_id.symbol
+        return result
+
+    def add(self, df: DataFrame) -> None:
+        """Mock incremental computation - not implemented for current testing."""
+        pass
+
+    def compute_latest(self) -> Optional[DataFrame]:
+        """Get latest reward feature values."""
+        reward_data = self.indicator_service.get_latest("reward")
+        cumulative_data = self.indicator_service.get_latest("cumulative_return")
+
+        if reward_data is None or cumulative_data is None:
+            return None
+
+        result = reward_data.copy()
+        result["cumulative_return"] = cumulative_data["cumulative_return"]
+        result[self.dataset_id.symbol] = self.dataset_id.symbol
+        return result
+
+
 class TestFeatureFactory(IFeatureFactory):
     """Test feature factory adapted from existing patterns that creates minimal features for integration testing."""
 
@@ -208,6 +314,8 @@ class TestFeatureFactory(IFeatureFactory):
             return TestRsiFeature(config, dataset_id, self.indicator_service, postfix)
         elif feature_name == "close_price" and isinstance(config, TestClosePriceConfig):
             return TestClosePriceFeature(config, dataset_id, self.indicator_service, postfix)
+        elif feature_name == "reward" and isinstance(config, TestRewardConfig):
+            return TestRewardFeature(config, dataset_id, self.indicator_service, postfix)
         return None
 
     def create_config_instance(
@@ -220,6 +328,9 @@ class TestFeatureFactory(IFeatureFactory):
         elif feature_name == "close_price":
             lookback = config_data.get("lookback", 1)
             return TestClosePriceConfig(lookback=lookback)
+        elif feature_name == "reward":
+            horizon = config_data.get("horizon", 1)
+            return TestRewardConfig(horizon=horizon)
         return None
 
 
@@ -349,7 +460,9 @@ def feature_version_info_fixture() -> FeatureConfigVersionInfo:
         created_at=datetime.fromisoformat("2024-01-01T00:00:00"),
         feature_definitions=[
             {"name": "rsi_14", "enabled": True, "role": "observation_space"},
-            {"name": "close_price_1", "enabled": True, "role": "reward_engineering"}
+            {"name": "close_1", "enabled": True, "role": "observation_space"},
+            {"name": "reward", "enabled": True, "role": "reward_engineering"},
+            {"name": "cumulative_return", "enabled": True, "role": "reward_engineering"}
         ]
     )
 
@@ -396,6 +509,48 @@ def real_feast_container(test_feature_factory: TestFeatureFactory, config_fixtur
             "service_version": config_fixture.feature_store_config.service_version
         }
 
+        # Override the features configuration to include test features
+        config_dict["featuresConfig"] = {
+            "datasetDefinitions": {
+                "EURUSD": ["1h"]
+            },
+            "featureDefinitions": [
+                {
+                    "name": "rsi",
+                    "enabled": True,
+                    "derivatives": [],
+                    "parameterSets": [
+                        {
+                            "enabled": True,
+                            "period": 14
+                        }
+                    ]
+                },
+                {
+                    "name": "close_price",
+                    "enabled": True,
+                    "derivatives": [],
+                    "parameterSets": [
+                        {
+                            "enabled": True,
+                            "lookback": 1
+                        }
+                    ]
+                },
+                {
+                    "name": "reward",
+                    "enabled": True,
+                    "derivatives": [],
+                    "parameterSets": [
+                        {
+                            "enabled": True,
+                            "horizon": 1
+                        }
+                    ]
+                }
+            ]
+        }
+
         json.dump(config_dict, config_file, indent=2)
 
     # Create injector with the real Feast configuration and CORE test modules only
@@ -405,6 +560,11 @@ def real_feast_container(test_feature_factory: TestFeatureFactory, config_fixtur
     # Override the feature factory with our test implementation
     # This maintains the dependency boundary - core tests don't depend on strategy
     injector.binder.bind(IFeatureFactory, to=test_feature_factory)
+
+    # Initialize the feature manager with test features
+    from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
+    feature_manager = injector.get(FeatureManager)
+    feature_manager.initialize_features()
 
     # Store the config path on the injector so we can clean it up later
     # We need to use a workaround for type checking since Injector doesn't have this attribute
@@ -445,18 +605,19 @@ def sample_trading_features_df() -> DataFrame:
     This fixture provides a realistic set of trading features with proper column names
     and data types that match what the feature store repositories expect.
     """
-    # Create realistic time series data
+    # Create realistic time series data with UTC timezone to avoid Feast timezone issues
     timestamps = pd.date_range(
         start="2024-01-01 09:00:00",
         periods=50,
-        freq="H"
+        freq="H",
+        tz="UTC"  # Add UTC timezone to match Feast expectations
     )
 
     # Generate realistic trading feature data
     return DataFrame({
         "event_timestamp": timestamps,
         "symbol": ["EURUSD"] * len(timestamps),
-        # Technical indicators - observation space features
+        # Technical indicators - observation space features (match sub-feature names)
         "rsi_14": [30.0 + (i % 40) + (i * 0.5) for i in range(len(timestamps))],
         "rsi_21": [35.0 + (i % 35) + (i * 0.4) for i in range(len(timestamps))],
         "sma_20": [1.0850 + (i % 30) * 0.0001 for i in range(len(timestamps))],
@@ -464,8 +625,8 @@ def sample_trading_features_df() -> DataFrame:
         "bb_upper": [1.0870 + (i % 20) * 0.0001 for i in range(len(timestamps))],
         "bb_lower": [1.0830 + (i % 15) * 0.0001 for i in range(len(timestamps))],
         "bb_middle": [1.0850 + (i % 18) * 0.0001 for i in range(len(timestamps))],
-        # OHLCV data - observation space features
-        "close": [1.0850 + (i % 20) * 0.0001 for i in range(len(timestamps))],
+        # OHLCV data - observation space features (match sub-feature names)
+        "close_1": [1.0850 + (i % 20) * 0.0001 for i in range(len(timestamps))],  # Fixed: close -> close_1
         "high": [1.0855 + (i % 20) * 0.0001 for i in range(len(timestamps))],
         "low": [1.0845 + (i % 20) * 0.0001 for i in range(len(timestamps))],
         "volume": [1000 + (i % 500) for i in range(len(timestamps))],

@@ -31,17 +31,16 @@ class TestFeatureStoreFetchRepositoryInit:
         """Test successful initialization with valid dependencies."""
         # Given
         mock_feature_store = Mock(spec=FeatureStore)
+        mock_feast_provider.get_feature_store.return_value = mock_feature_store
 
         # When
-        repo = FeatureStoreFetchRepository(
-            feature_store=mock_feature_store,
-            feast_provider=mock_feast_provider
-        )
+        repo = FeatureStoreFetchRepository(feast_provider=mock_feast_provider)
 
         # Then
         assert repo._fs == mock_feature_store
         assert repo._feast_provider == mock_feast_provider
         assert repo._feature_service is None
+        mock_feast_provider.get_feature_store.assert_called_once()
 
     def test_implements_interface(
         self,
@@ -50,12 +49,10 @@ class TestFeatureStoreFetchRepositoryInit:
         """Test that FeatureStoreFetchRepository implements the correct interface."""
         # Given
         mock_feature_store = Mock(spec=FeatureStore)
+        mock_feast_provider.get_feature_store.return_value = mock_feature_store
 
         # When
-        repo = FeatureStoreFetchRepository(
-            feature_store=mock_feature_store,
-            feast_provider=mock_feast_provider
-        )
+        repo = FeatureStoreFetchRepository(feast_provider=mock_feast_provider)
 
         # Then
         assert isinstance(repo, IFeatureStoreFetchRepository)
@@ -67,19 +64,25 @@ class TestFeatureStoreFetchRepositoryGetOnline:
     @pytest.fixture
     def repository(
         self,
-        mock_feature_store: Mock,
         mock_feast_provider: Mock
     ) -> FeatureStoreFetchRepository:
         """Create a FeatureStoreFetchRepository for testing."""
-        return FeatureStoreFetchRepository(
-            feature_store=mock_feature_store,
-            feast_provider=mock_feast_provider
-        )
+        mock_feature_store = Mock(spec=FeatureStore)
+        mock_feast_provider.get_feature_store.return_value = mock_feature_store
+
+        # Set up default mock responses to return actual DataFrames
+        mock_online_response = Mock()
+        mock_online_response.to_df.return_value = DataFrame({
+            "symbol": ["EURUSD"],
+            "rsi_14": [45.2]
+        })
+        mock_feature_store.get_online_features.return_value = mock_online_response
+
+        return FeatureStoreFetchRepository(feast_provider=mock_feast_provider)
 
     def test_get_online_first_call_creates_feature_service(
         self,
         repository: FeatureStoreFetchRepository,
-        mock_feature_store: Mock,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
         feature_version_info: FeatureConfigVersionInfo
@@ -101,7 +104,7 @@ class TestFeatureStoreFetchRepositoryGetOnline:
             symbol=symbol,
             feature_version_info=feature_version_info
         )
-        mock_feature_store.get_online_features.assert_called_once_with(
+        repository._fs.get_online_features.assert_called_once_with(
             features=mock_feature_service,
             entity_rows=expected_entity_rows
         )
@@ -111,7 +114,6 @@ class TestFeatureStoreFetchRepositoryGetOnline:
     def test_get_online_reuses_existing_feature_service(
         self,
         repository: FeatureStoreFetchRepository,
-        mock_feature_store: Mock,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
         feature_version_info: FeatureConfigVersionInfo
@@ -130,7 +132,7 @@ class TestFeatureStoreFetchRepositoryGetOnline:
 
         # Then
         mock_feast_provider.create_feature_service.assert_not_called()
-        mock_feature_store.get_online_features.assert_called_once_with(
+        repository._fs.get_online_features.assert_called_once_with(
             features=mock_feature_service,
             entity_rows=expected_entity_rows
         )
@@ -157,7 +159,6 @@ class TestFeatureStoreFetchRepositoryGetOnline:
     def test_get_online_with_different_symbol(
         self,
         repository: FeatureStoreFetchRepository,
-        mock_feature_store: Mock,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
         feature_version_info: FeatureConfigVersionInfo
@@ -175,7 +176,7 @@ class TestFeatureStoreFetchRepositoryGetOnline:
         )
 
         # Then
-        mock_feature_store.get_online_features.assert_called_once_with(
+        repository._fs.get_online_features.assert_called_once_with(
             features=mock_feature_service,
             entity_rows=expected_entity_rows
         )
@@ -184,7 +185,6 @@ class TestFeatureStoreFetchRepositoryGetOnline:
     def test_get_online_returns_dataframe_from_feast_response(
         self,
         repository: FeatureStoreFetchRepository,
-        mock_feature_store: Mock,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
         feature_version_info: FeatureConfigVersionInfo
@@ -201,7 +201,7 @@ class TestFeatureStoreFetchRepositoryGetOnline:
         })
         mock_response = Mock()
         mock_response.to_df.return_value = expected_df
-        mock_feature_store.get_online_features.return_value = mock_response
+        repository._fs.get_online_features.return_value = mock_response
 
         # When
         result = repository.get_online(
@@ -219,14 +219,22 @@ class TestFeatureStoreFetchRepositoryGetOffline:
     @pytest.fixture
     def repository(
         self,
-        mock_feature_store: Mock,
         mock_feast_provider: Mock
     ) -> FeatureStoreFetchRepository:
         """Create a FeatureStoreFetchRepository for testing."""
-        return FeatureStoreFetchRepository(
-            feature_store=mock_feature_store,
-            feast_provider=mock_feast_provider
-        )
+        mock_feature_store = Mock(spec=FeatureStore)
+        mock_feast_provider.get_feature_store.return_value = mock_feature_store
+
+        # Set up default mock responses to return actual DataFrames
+        mock_offline_response = Mock()
+        mock_offline_response.to_df.return_value = DataFrame({
+            "event_timestamp": [pd.Timestamp("2024-01-01 09:00:00")],
+            "symbol": ["EURUSD"],
+            "rsi_14": [45.2]
+        })
+        mock_feature_store.get_historical_features.return_value = mock_offline_response
+
+        return FeatureStoreFetchRepository(feast_provider=mock_feast_provider)
 
     @pytest.fixture
     def sample_timestamps(self) -> pd.Series:
@@ -240,7 +248,6 @@ class TestFeatureStoreFetchRepositoryGetOffline:
     def test_get_offline_first_call_creates_feature_service(
         self,
         repository: FeatureStoreFetchRepository,
-        mock_feature_store: Mock,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
         feature_version_info: FeatureConfigVersionInfo,
@@ -265,7 +272,7 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         )
 
         # Verify entity_df structure
-        call_args = mock_feature_store.get_historical_features.call_args
+        call_args = repository._fs.get_historical_features.call_args
         assert call_args[1]["features"] == mock_feature_service
         entity_df = call_args[1]["entity_df"]
 
@@ -278,7 +285,6 @@ class TestFeatureStoreFetchRepositoryGetOffline:
     def test_get_offline_reuses_existing_feature_service(
         self,
         repository: FeatureStoreFetchRepository,
-        mock_feature_store: Mock,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
         feature_version_info: FeatureConfigVersionInfo,
@@ -298,7 +304,7 @@ class TestFeatureStoreFetchRepositoryGetOffline:
 
         # Then
         mock_feast_provider.create_feature_service.assert_not_called()
-        mock_feature_store.get_historical_features.assert_called_once()
+        repository._fs.get_historical_features.assert_called_once()
         assert isinstance(result, DataFrame)
 
     def test_get_offline_raises_error_when_feature_service_is_none(
@@ -324,7 +330,6 @@ class TestFeatureStoreFetchRepositoryGetOffline:
     def test_get_offline_with_different_symbol(
         self,
         repository: FeatureStoreFetchRepository,
-        mock_feature_store: Mock,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
         feature_version_info: FeatureConfigVersionInfo,
@@ -343,7 +348,7 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         )
 
         # Then
-        call_args = mock_feature_store.get_historical_features.call_args
+        call_args = repository._fs.get_historical_features.call_args
         entity_df = call_args[1]["entity_df"]
 
         assert all(entity_df["symbol"] == symbol)
@@ -352,7 +357,6 @@ class TestFeatureStoreFetchRepositoryGetOffline:
     def test_get_offline_with_empty_timestamps(
         self,
         repository: FeatureStoreFetchRepository,
-        mock_feature_store: Mock,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
         feature_version_info: FeatureConfigVersionInfo
@@ -371,7 +375,7 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         )
 
         # Then
-        call_args = mock_feature_store.get_historical_features.call_args
+        call_args = repository._fs.get_historical_features.call_args
         entity_df = call_args[1]["entity_df"]
 
         assert len(entity_df) == 0
@@ -382,7 +386,6 @@ class TestFeatureStoreFetchRepositoryGetOffline:
     def test_get_offline_returns_dataframe_from_feast_response(
         self,
         repository: FeatureStoreFetchRepository,
-        mock_feature_store: Mock,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
         feature_version_info: FeatureConfigVersionInfo,
@@ -400,7 +403,7 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         })
         mock_response = Mock()
         mock_response.to_df.return_value = expected_df
-        mock_feature_store.get_historical_features.return_value = mock_response
+        repository._fs.get_historical_features.return_value = mock_response
 
         # When
         result = repository.get_offline(
@@ -423,10 +426,8 @@ class TestFeatureStoreFetchRepositoryErrorHandling:
     ) -> FeatureStoreFetchRepository:
         """Create a FeatureStoreFetchRepository for testing."""
         mock_feature_store = Mock(spec=FeatureStore)
-        return FeatureStoreFetchRepository(
-            feature_store=mock_feature_store,
-            feast_provider=mock_feast_provider
-        )
+        mock_feast_provider.get_feature_store.return_value = mock_feature_store
+        return FeatureStoreFetchRepository(feast_provider=mock_feast_provider)
 
     def test_get_online_handles_feast_provider_exception(
         self,
@@ -526,10 +527,8 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         })
         mock_feature_store.get_online_features.return_value = mock_response
         mock_feature_store.get_historical_features.return_value = mock_response
-        return FeatureStoreFetchRepository(
-            feature_store=mock_feature_store,
-            feast_provider=mock_feast_provider
-        )
+        mock_feast_provider.get_feature_store.return_value = mock_feature_store
+        return FeatureStoreFetchRepository(feast_provider=mock_feast_provider)
 
     def test_feature_service_created_once_for_multiple_online_calls(
         self,

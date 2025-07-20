@@ -15,30 +15,41 @@ class FeatureStoreWrapper:
     def __init__(self, feature_store_config: FeatureStoreConfig):
         self._feature_store_config = feature_store_config
 
-    def get_feature_store(self):
+    def get_feature_store(self) -> FeatureStore:
         """Get the underlying feature store instance."""
         if self._feature_store is None:
-            self._feature_store = FeatureStore(repo_path=self._resolve_feature_store_path())
+            repo_path = self._resolve_feature_store_path()
+            if repo_path is None:
+                raise ValueError("Feature store is not enabled or repo_path is not configured")
+            self._feature_store = FeatureStore(repo_path=repo_path)
         return self._feature_store
 
     def _resolve_feature_store_path(self) -> Optional[str]:
         """
         Resolve the feature store path based on configuration.
-        If the path is relative, it will be resolved against the project root directory.
+
+        For relative paths, resolves against the current working directory.
+        For absolute paths, uses the path as-is.
 
         Returns:
-            Optional[str]: Absolute path to the feature store repository, or None if not enabled
+            Optional[str]: Path to the feature store repository, or None if not enabled
         """
         if not self._feature_store_config.enabled:
             return None
 
-        project_root = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
-        )
-        if not os.path.isabs(self._feature_store_config.repo_path):
-            abs_file_path = os.path.join(
-                project_root, self._feature_store_config.repo_path
-            )
+        repo_path = self._feature_store_config.repo_path
+
+
+        # Use absolute paths as-is
+        if os.path.isabs(repo_path):
+            resolved_path = repo_path
         else:
-            abs_file_path = self._feature_store_config.repo_path
-        return abs_file_path
+            # For relative paths, resolve against current working directory
+            # This works for both development and test scenarios
+            resolved_path = os.path.abspath(repo_path)
+
+        if os.path.exists(resolved_path):
+            yaml_path = os.path.join(resolved_path, "feature_store.yaml")
+            print(f"DEBUG: feature_store.yaml exists: {os.path.exists(yaml_path)}")
+
+        return resolved_path

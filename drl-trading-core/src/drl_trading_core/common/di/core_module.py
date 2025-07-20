@@ -15,7 +15,7 @@ from drl_trading_common.config.feature_config_repo import (
 )
 from drl_trading_common.config.local_data_import_config import LocalDataImportConfig
 from drl_trading_common.config.rl_model_config import RlModelConfig
-from injector import Module, provider, singleton
+from injector import Module, provider, singleton, Binder
 
 from drl_trading_core.common.data_import.data_import_manager import (
     DataImportManager,
@@ -149,7 +149,7 @@ class CoreModule(Module):
         return (
             application_config.context_feature_config
         )
-    def configure(self, binder) -> None:
+    def configure(self, binder: Binder) -> None:  # type: ignore[misc]
         """Configure interface bindings for auto-wiring services with @inject decorators."""
         from drl_trading_core.preprocess.compute.computing_service import (
             FeatureComputingService,
