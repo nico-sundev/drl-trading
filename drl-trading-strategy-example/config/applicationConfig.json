@@ -62,17 +62,24 @@
   },
   "featureStoreConfig": {
     "enabled": true,
-    "repo_path": "tests/resources/test_feature_repo",
-    "offline_store_path": "tests/resources/test_feature_store_data",
+    "config_directory": "tests/resources/test_feature_repo",
     "entity_name": "symbol",
     "ttl_days": 1,
     "online_enabled": false,
-    "s3_bucket_name": "drl-trading-features",
-    "s3_prefix": "features",
-    "s3_endpoint_url": null,
-    "s3_region": "us-east-1",
-    "s3_access_key_id": null,
-    "s3_secret_access_key": null
+    "service_name": "ai_trading_feature_definitions",
+    "service_version": "0.0.1",
+    "offline_repo_strategy": "local",
+    "local_repo_config": {
+      "repo_path": "tests/resources/test_feature_store_data"
+    },
+    "s3_repo_config": {
+      "bucket_name": "drl-trading-features",
+      "prefix": "features",
+      "endpoint_url": null,
+      "region": "us-east-1",
+      "access_key_id": null,
+      "secret_access_key": null
+    }
   },
   "contextFeatureConfig": {
     "primaryContextColumns": ["High", "Low", "Close"],

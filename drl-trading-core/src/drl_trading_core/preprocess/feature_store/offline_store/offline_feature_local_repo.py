@@ -34,7 +34,6 @@ class OfflineFeatureLocalRepo(IOfflineFeatureRepository):
     """
 
     def __init__(self, config: FeatureStoreConfig):
-        self.config = config
         self.base_path = config.repo_path
 
     def store_features_incrementally(
@@ -436,3 +435,37 @@ class OfflineFeatureLocalRepo(IOfflineFeatureRepository):
         except Exception as e:
             logger.error(f"Failed to get storage metrics for {symbol}: {e}")
             raise
+
+    def get_repo_path(self, symbol: str) -> str:
+        """
+        Get the repository path for storing features for a given symbol.
+
+        For local repository, this returns the symbol-specific directory path
+        where partitioned parquet files are stored.
+
+        Args:
+            symbol: Symbol identifier for the dataset
+
+        Returns:
+            str: The local filesystem path for this symbol's features
+
+        Raises:
+            ValueError: If symbol is invalid
+            OSError: If directory creation fails
+        """
+        if not symbol or not symbol.strip():
+            raise ValueError("Symbol cannot be empty or None")
+
+        # Construct the symbol-specific directory path
+        # Structure: base_path/symbol/year=YYYY/month=MM/day=DD/features_*.parquet
+        symbol_path = os.path.join(self.base_path, symbol.strip())
+
+        # Ensure the symbol directory exists
+        try:
+            os.makedirs(symbol_path, exist_ok=True)
+        except OSError as e:
+            raise OSError(
+                f"Failed to create symbol directory {symbol_path}: {e}"
+            ) from e
+
+        return symbol_path

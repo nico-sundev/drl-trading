@@ -43,10 +43,13 @@ class CloseFeature(BaseFeature):
         return self.source_data["Close"].to_frame()
 
     def get_sub_features_names(self) -> list[str]:
-        return ["close"]
+        return ["value"]
 
     def _get_feature_type(self) -> FeatureTypeEnum:
         return get_feature_type_from_class(self.__class__)
 
     def get_feature_name(self) -> str:
         return self._get_feature_type().value
+
+    def get_config_to_string(self) -> str:
+        return "-"

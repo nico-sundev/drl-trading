@@ -42,6 +42,9 @@ class TestFeatureTypeDecorator:
             def get_feature_name(self) -> str:
                 return "test"
 
+            def get_config_to_string(self) -> str:
+                return "A1b2c3"
+
         # Then
         assert hasattr(TestFeature, '_feature_type')
         assert TestFeature._feature_type == sample_feature_enum
@@ -63,6 +66,9 @@ class TestFeatureTypeDecorator:
 
             def get_feature_name(self) -> str:
                 return "test"
+
+            def get_config_to_string(self) -> str:
+                return "A1b2c3"
 
         # Then
         assert hasattr(TestFeature, '_feature_type')
@@ -101,6 +107,9 @@ class TestFeatureTypeDecorator:
             def custom_method(self) -> str:
                 return "custom_result"
 
+            def get_config_to_string(self) -> str:
+                return "A1b2c3"
+
         # Then
         instance = TestFeature(Mock(), Mock(), Mock())
         assert instance.custom_attribute == "test_value"
@@ -137,6 +146,9 @@ class TestFeatureTypeDecorator:
             def get_feature_name(self) -> str:
                 return "rsi"
 
+            def get_config_to_string(self) -> str:
+                return "A1b2c3"
+
         # Then
         assert RsiFeature._feature_type == FeatureTypeEnum.RSI
 
@@ -156,6 +168,9 @@ class TestFeatureTypeDecorator:
 
             def get_feature_name(self) -> str:
                 return "base"
+
+            def get_config_to_string(self) -> str:
+                return "A1b2c3"
 
         @feature_type(FeatureTypeEnum.RSI)
         class DerivedTestFeature(BaseTestFeature):
@@ -204,6 +219,9 @@ class TestGetFeatureTypeFromClass:
             def get_feature_name(self) -> str:
                 return "decorated"
 
+            def get_config_to_string(self) -> str:
+                return "A1b2c3"
+
         # When
         result = get_feature_type_from_class(DecoratedFeature)
 
@@ -223,6 +241,9 @@ class TestGetFeatureTypeFromClass:
 
             def get_feature_name(self) -> str:
                 return "undecorated"
+
+            def get_config_to_string(self) -> str:
+                return "A1b2c3"
 
         # When & Then
         with pytest.raises(AttributeError, match="has no feature type information"):
@@ -274,6 +295,9 @@ class TestGetFeatureTypeFromClass:
             def get_feature_name(self) -> str:
                 return "test"
 
+            def get_config_to_string(self) -> str:
+                return "A1b2c3"
+
         result = get_feature_type_from_class(TestFeature)
 
         # Then
@@ -321,6 +345,9 @@ class TestFeatureTypeDecoratorEdgeCases:
             def get_feature_name(self) -> str:
                 return "original"
 
+            def get_config_to_string(self) -> str:
+                return "A1b2c3"
+
         # When
         # Test that the decorator returns the same class, not a wrapper
         # This is important for inheritance and isinstance checks
@@ -341,6 +368,9 @@ class TestFeatureTypeDecoratorEdgeCases:
             def get_feature_name(self) -> str:
                 return "first"
 
+            def get_config_to_string(self) -> str:
+                return "A1b2c3"
+
         @feature_type(FeatureTypeEnum.RSI)
         class SecondFeature(BaseFeature):
             def compute(self) -> DataFrame:
@@ -351,6 +381,9 @@ class TestFeatureTypeDecoratorEdgeCases:
 
             def get_feature_name(self) -> str:
                 return "second"
+
+            def get_config_to_string(self) -> str:
+                return "A1b2c3"
 
         # Then
         assert FirstFeature._feature_type == FeatureTypeEnum.RSI

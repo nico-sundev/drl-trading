@@ -51,7 +51,7 @@ class RsiFeature(BaseFeature):
         return df
 
     def get_sub_features_names(self) -> list[str]:
-        return [f"rsi_{self.config.length}{self.postfix}"]
+        return ["value"]
 
     def _get_feature_type(self) -> FeatureTypeEnum:
         return get_feature_type_from_class(self.__class__)
@@ -63,3 +63,6 @@ class RsiFeature(BaseFeature):
 
     def get_feature_name(self) -> str:
         return self._get_feature_type().value
+
+    def get_config_to_string(self) -> str:
+        return f"{self.config.length}"

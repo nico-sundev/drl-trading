@@ -69,11 +69,24 @@ def temp_config_file():
         },
         "featureStoreConfig": {
             "enabled": False,
-            "repo_path": "testrepo",
-            "offline_store_path": "test",
-            "entity_name": "symbol",
-            "ttl_days": 365,
-            "online_enabled": True,
+            "configDirectory": "testrepo",
+            "entityName": "symbol",
+            "ttlDays": 365,
+            "onlineEnabled": True,
+            "serviceName": "test_service",
+            "serviceVersion": "1.0.0",
+            "offlineRepoStrategy": "local",
+            "localRepoConfig": {
+                "repoPath": "test_data"
+            },
+            "s3RepoConfig": {
+                "bucketName": "drl-trading-features-test",
+                "prefix": "features",
+                "endpointUrl": None,
+                "region": "us-east-1",
+                "accessKeyId": None,
+                "secretAccessKey": None
+            }
         },
         "contextFeatureConfig": {
             "primaryContextColumns": ["High", "Low", "Close"],

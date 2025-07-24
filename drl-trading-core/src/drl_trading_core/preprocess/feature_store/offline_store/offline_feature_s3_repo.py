@@ -543,3 +543,26 @@ class OfflineFeatureS3Repo(IOfflineFeatureRepository):
                 f"Stored {len(store_df)} features for {year}-{month:02d}-{day:02d} in s3://{self.bucket_name}/{s3_key} "
                 f"({symbol})"
             )
+
+    def get_repo_path(self, symbol: str) -> str:
+        """
+        Get the repository path for storing features for a given symbol.
+
+        For S3 repository, this returns the S3 URI path where the symbol's
+        partitioned parquet files are stored.
+
+        Args:
+            symbol: Symbol identifier for the dataset
+
+        Returns:
+            str: The S3 URI path for this symbol's features
+
+        Raises:
+            ValueError: If symbol is invalid
+        """
+        if not symbol or not symbol.strip():
+            raise ValueError("Symbol cannot be empty or None")
+
+        # Construct the S3 URI path for the symbol
+        # Structure: s3://bucket/prefix/symbol/year=YYYY/month=MM/day=DD/features_*.parquet
+        return f"s3://{self.bucket_name}/{self.s3_prefix}/{symbol.strip()}"

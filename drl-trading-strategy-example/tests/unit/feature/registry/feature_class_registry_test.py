@@ -47,6 +47,9 @@ class SampleRsiFeature(BaseFeature):
     def get_sub_features_names(self) -> list[str]:
         return ["rsi"]
 
+    def get_config_to_string(self) -> str:
+        return "A1b2c3"
+
 
 class RsiFeature(BaseFeature):
     """Feature class without @feature_type decorator (should cause errors)."""
@@ -65,6 +68,9 @@ class RsiFeature(BaseFeature):
 
     def get_sub_features_names(self) -> list[str]:
         return ["undecorated"]
+
+    def get_config_to_string(self) -> str:
+        return "A1b2c3"
 
 
 class InvalidFeatureClass:

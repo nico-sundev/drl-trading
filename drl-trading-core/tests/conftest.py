@@ -90,6 +90,9 @@ class RsiFeature(BaseFeature):
         """Get feature name."""
         return "rsi"
 
+    def get_config_to_string(self) -> str:
+        return f"{self.config.length}"
+
 @pytest.fixture(scope="session")
 def mock_rsi_config_class() -> Type[RsiConfig]:
     """Mock RSI configuration class for testing."""

@@ -66,6 +66,9 @@ class MockMacdFeature(BaseFeature):
         """Get the feature name."""
         return "macd"
 
+    def get_config_to_string(self) -> str:
+        return "A1b2c3"
+
 
 class MockRsiFeature(BaseFeature):
     """Mock RSI feature implementation for testing."""
@@ -113,6 +116,9 @@ class MockRsiFeature(BaseFeature):
     def get_feature_name(self) -> str:
         """Get the feature name."""
         return "rsi"
+
+    def get_config_to_string(self) -> str:
+        return "A1b2c3"
 
 
 @pytest.fixture

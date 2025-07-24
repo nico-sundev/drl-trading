@@ -18,4 +18,7 @@ class ${FeatureName}Feature(BaseFeature):
         return df
 
     def get_sub_features_names(self) -> list[str]:
-        return [f"feature_{self.config.length}{self.postfix}"]
+        return ["value"]
+
+    def get_config_to_string(self) -> str:
+        return f"{self.config.length}"

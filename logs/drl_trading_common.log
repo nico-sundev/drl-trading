@@ -1593,3 +1593,57 @@
 2025-07-14 19:29:14,101 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 1 new features out of 1 total for GBPUSD
 2025-07-14 19:29:14,105 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
 2025-07-14 19:29:14,115 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 1 existing feature records from 1 S3 objects
+2025-07-23 21:34:29,335 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-23 21:34:29,400 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpl7dydiq2\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-23 21:34:29,400 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-23 21:34:29,771 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-07-23 21:34:29,777 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-23 21:34:29,782 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpv5gook5v\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-23 21:34:29,783 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-23 21:34:29,792 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-07-23 21:34:29,795 [WARNING] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Found 3 overlapping timestamps for EURUSD. These will be skipped to prevent data corruption.
+2025-07-23 21:34:29,800 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 1 features for 2024-01-05 in C:\Users\nico-\AppData\Local\Temp\tmpv5gook5v\EURUSD\year=2024\month=01\day=05\features_20240105_100000_100000.parquet (EURUSD)
+2025-07-23 21:34:29,800 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 1 new features out of 4 total for EURUSD
+2025-07-23 21:34:29,820 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 4 existing feature records from 2 files
+2025-07-23 21:34:29,829 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-23 21:34:29,829 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No new features to store for EURUSD
+2025-07-23 21:34:29,838 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-23 21:34:29,843 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpro3w6fuf\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-23 21:34:29,843 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-23 21:34:29,848 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-07-23 21:34:29,859 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-23 21:34:29,865 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpuipbwjuz\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-23 21:34:29,865 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-23 21:34:29,876 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-23 21:34:29,881 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpyw19rkdl\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-23 21:34:29,881 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-23 21:34:29,888 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-07-23 21:34:29,893 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-23 21:34:29,899 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmphwlkiuij\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-23 21:34:29,899 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-23 21:34:29,907 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 2 existing feature records from 2 files
+2025-07-23 21:34:29,920 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-23 21:34:29,928 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmp7of1mmlv\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-23 21:34:29,929 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-23 21:34:29,937 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-07-23 21:34:29,943 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 1 features for 2024-01-05 in C:\Users\nico-\AppData\Local\Temp\tmp7of1mmlv\EURUSD\year=2024\month=01\day=05\features_20240105_100000_100000.parquet (EURUSD)
+2025-07-23 21:34:29,943 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 1 new features out of 1 total for EURUSD
+2025-07-23 21:34:29,949 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-23 21:34:29,957 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpf_uhu43s\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-23 21:34:29,957 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-23 21:34:29,963 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-07-23 22:56:15,436 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy: Creating local offline repository with path: /test/local/path
+2025-07-23 22:56:15,439 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy: Creating local offline repository with path: /legacy/path
+2025-07-23 22:56:15,674 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy: Creating S3 offline repository with bucket: test-bucket
+2025-07-23 22:56:15,678 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy: Creating S3 offline repository with bucket: legacy-bucket
+2025-07-23 22:56:15,684 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy: Creating S3 offline repository with bucket: drl-trading-features
+2025-07-23 23:12:13,291 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy: Creating local offline repository with path: C:\Users\nico-\AppData\Local\Temp\tmp_upv03fs
+2025-07-23 23:16:36,457 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy: Creating local offline repository with path: C:\Users\nico-\AppData\Local\Temp\tmpvgmjzdkf
+2025-07-23 23:16:36,469 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy: Creating local offline repository with path: C:\Users\nico-\AppData\Local\Temp\tmppifd4h80
+2025-07-23 23:23:43,765 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy: Creating local offline repository with path: /test/local/path
+2025-07-23 23:23:43,770 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy: Creating local offline repository with path: /legacy/path
+2025-07-23 23:23:44,017 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy: Creating S3 offline repository with bucket: test-bucket
+2025-07-23 23:23:44,020 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy: Creating S3 offline repository with bucket: legacy-bucket
+2025-07-23 23:23:44,028 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy: Creating S3 offline repository with bucket: drl-trading-features
+2025-07-23 23:47:20,651 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy: Creating local offline repository with path: /test/local/path
+2025-07-23 23:47:20,928 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy: Creating S3 offline repository with bucket: test-bucket

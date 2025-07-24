@@ -1,10 +1,8 @@
 import logging
-import os
 from datetime import timedelta
 from typing import Optional
 
 from drl_trading_common.base.base_feature import BaseFeature
-from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.config.feature_config import FeatureStoreConfig
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.model.feature_config_version_info import (
@@ -24,6 +22,9 @@ from injector import inject
 
 from drl_trading_core.common.model.feature_view_request import FeatureViewRequest
 from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
+from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_repo_interface import (
+    IOfflineFeatureRepository,
+)
 from drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper import (
     FeatureStoreWrapper,
 )
@@ -42,10 +43,12 @@ class FeastProvider:
         feature_store_config: FeatureStoreConfig,
         feature_manager: FeatureManager,
         feature_store_wrapper: FeatureStoreWrapper,
+        offline_feature_repo: IOfflineFeatureRepository,
     ):
         self.feature_manager = feature_manager
         self.feature_store_config = feature_store_config
         self.feature_store = feature_store_wrapper.get_feature_store()
+        self.offline_feature_repo = offline_feature_repo
 
     def get_feature_store(self) -> FeatureStore:
         """
@@ -164,11 +167,9 @@ class FeastProvider:
         if self.feature_store is None:
             raise RuntimeError("Feature store is not initialized")
 
-        if (
-            not hasattr(self.feature_store, "repo_path")
-            or not self.feature_store.repo_path
-        ):
-            raise RuntimeError("Feature store repository path is not configured")
+        # Validate that offline repository is available
+        if self.offline_feature_repo is None:
+            raise RuntimeError("Offline feature repository is not configured")
 
         # Validate TTL configuration
         if (
@@ -218,17 +219,12 @@ class FeastProvider:
         self, feature_view_name: str, feature_version_info: FeatureConfigVersionInfo, symbol: str
     ) -> FileSource:
         """Create file source with error handling."""
-        repo_path = self.feature_store.repo_path
-        # Point to the symbol-specific directory where partitioned parquet files are stored
-        # Structure: repo_path/symbol/year=YYYY/month=MM/day=DD/features_*.parquet
-        offline_store_path = os.path.join(repo_path, symbol)
-
-        # Ensure the symbol directory exists
+        # Delegate path resolution to the offline repository implementation
         try:
-            os.makedirs(offline_store_path, exist_ok=True)
-        except OSError as e:
-            raise OSError(
-                f"Failed to create symbol directory {offline_store_path}: {e}"
+            offline_store_path = self.offline_feature_repo.get_repo_path(symbol)
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to get repository path for symbol '{symbol}': {e}"
             ) from e
 
         # Create file source with error handling
@@ -306,7 +302,7 @@ class FeastProvider:
                 entities=[entity],
                 ttl=timedelta(days=self.feature_store_config.ttl_days),
                 schema=fields,
-                online=True,  # Enable online mode for online store operations
+                online=self.feature_store_config.online_enabled,  # Use config setting
                 source=source,
                 tags={
                     "symbol": symbol,
@@ -362,20 +358,17 @@ class FeastProvider:
             description=f"Entity for {symbol} asset price data",
         )
 
-    def _get_feature_name(
-        self, feature_name: str, feature_config: BaseParameterSetConfig
-    ) -> str:
+    def _get_feature_name(self, feature: BaseFeature) -> str:
         """
         Create a unique feature name based on the feature name and its config hash.
 
         Args:
-            feature_name: Name of the feature
-            feature_config: Configuration of the feature
+            feature: The feature object
 
         Returns:
             str: A unique name for the feature
         """
-        return f"{feature_name}_{feature_config.hash_id()}"
+        return f"{feature.get_feature_name()}_{feature.get_config_to_string()}_{feature.get_config().hash_id()}"
 
     def _create_fields(self, feature: BaseFeature) -> list[Field]:
         """
@@ -388,14 +381,12 @@ class FeastProvider:
             list[Field]: List of fields for the feature view
         """
         fields = []
-        feature_name = self._get_feature_name(
-            feature.get_feature_name(), feature.get_config()
-        )
+        feature_name = self._get_feature_name(feature)
         logger.debug(f"Feast fields will be created for feature: {feature_name}")
 
         for sub_feature in feature.get_sub_features_names():
-            # Use sub_feature name directly to match actual data column names
-            feast_field_name = sub_feature
+            # Combine feature name with sub-feature name to create unique field names
+            feast_field_name = f"{feature_name}_{sub_feature}"
             logger.debug(f"Creating feast field:{feast_field_name}")
             fields.append(Field(name=feast_field_name, dtype=Float32))
 

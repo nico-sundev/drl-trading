@@ -6,14 +6,21 @@ import tempfile
 from datetime import datetime
 from typing import Generator, Optional
 
+import boto3
 import pandas as pd
 import pytest
 from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.config.application_config import ApplicationConfig
 from drl_trading_common.config.config_loader import ConfigLoader
+from drl_trading_common.config.feature_config import (
+    FeatureStoreConfig,
+    LocalRepoConfig,
+    S3RepoConfig,
+)
 from drl_trading_common.decorator.feature_role_decorator import feature_role
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
 from drl_trading_common.interface.feature.feature_factory_interface import (
     IFeatureFactory,
 )
@@ -27,6 +34,7 @@ from drl_trading_common.model.feature_config_version_info import (
 from feast import FeatureStore
 from injector import Injector
 from pandas import DataFrame
+from testcontainers.minio import MinioContainer
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -35,17 +43,12 @@ def configure_logging():
     # Set up logging configuration for integration tests
     logging.basicConfig(
         level=logging.DEBUG,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        force=True  # Override any existing logging configuration
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        force=True,  # Override any existing logging configuration
     )
 
     # Set specific loggers to DEBUG level
-    loggers = [
-        'drl_trading_core',
-        'drl_trading_common',
-        'feast',
-        'root'
-    ]
+    loggers = ["drl_trading_core", "drl_trading_common", "feast", "root"]
 
     for logger_name in loggers:
         logger = logging.getLogger(logger_name)
@@ -72,38 +75,33 @@ class MockTechnicalIndicatorFacade(ITechnicalIndicatorFacade):
         if "rsi" in name.lower():
             # Generate RSI-like values between 30-70
             values = [50.0 + (i % 20) for i in range(100)]
-            self._indicators[name] = pd.DataFrame({
-                "event_timestamp": dates,
-                name: values
-            })
-        elif "close" in name.lower():
+            self._indicators[name] = pd.DataFrame(
+                {"event_timestamp": dates, name: values}
+            )
+        elif "close_price" in name.lower():
             # Generate price-like values
             values = [1.1000 + (i % 50) * 0.0001 for i in range(100)]
-            self._indicators[name] = pd.DataFrame({
-                "event_timestamp": dates,
-                name: values
-            })
+            self._indicators[name] = pd.DataFrame(
+                {"event_timestamp": dates, name: values}
+            )
         elif name == "reward":
             # Generate reward-like values between -0.1 and 0.1
             values = [0.01 * (i % 20 - 10) for i in range(100)]
-            self._indicators[name] = pd.DataFrame({
-                "event_timestamp": dates,
-                "reward": values
-            })
+            self._indicators[name] = pd.DataFrame(
+                {"event_timestamp": dates, "reward": values}
+            )
         elif name == "cumulative_return":
             # Generate cumulative return values
             values = [0.001 * i for i in range(100)]
-            self._indicators[name] = pd.DataFrame({
-                "event_timestamp": dates,
-                "cumulative_return": values
-            })
+            self._indicators[name] = pd.DataFrame(
+                {"event_timestamp": dates, "cumulative_return": values}
+            )
         else:
             # Default values
             values = [float(i) for i in range(100)]
-            self._indicators[name] = pd.DataFrame({
-                "event_timestamp": dates,
-                name: values
-            })
+            self._indicators[name] = pd.DataFrame(
+                {"event_timestamp": dates, name: values}
+            )
 
     def add(self, name: str, value: DataFrame) -> None:
         """Mock incremental computation - not needed for current tests."""
@@ -127,7 +125,7 @@ class TestRsiConfig(BaseParameterSetConfig):
     period: int = 14
 
     def hash_id(self) -> str:
-        return f"rsi_{self.period}"
+        return "A1b2c3"
 
 
 class TestClosePriceConfig(BaseParameterSetConfig):
@@ -138,7 +136,7 @@ class TestClosePriceConfig(BaseParameterSetConfig):
     lookback: int = 1
 
     def hash_id(self) -> str:
-        return f"close_{self.lookback}"
+        return "A1b2c3"
 
 
 class TestRewardConfig(BaseParameterSetConfig):
@@ -149,24 +147,32 @@ class TestRewardConfig(BaseParameterSetConfig):
     horizon: int = 1
 
     def hash_id(self) -> str:
-        return f"reward_{self.horizon}"
+        return "A1b2c3"
 
 
 @feature_role(FeatureRoleEnum.OBSERVATION_SPACE)
 class TestRsiFeature(BaseFeature):
     """Test RSI feature implementation adapted from existing MockFeature pattern."""
 
-    def __init__(self, config: TestRsiConfig, dataset_id: DatasetIdentifier, indicator_service: MockTechnicalIndicatorFacade, postfix: str = ""):
+    def __init__(
+        self,
+        config: TestRsiConfig,
+        dataset_id: DatasetIdentifier,
+        indicator_service: MockTechnicalIndicatorFacade,
+        postfix: str = "",
+    ):
         super().__init__(config, dataset_id, indicator_service, postfix)
         self._feature_name = "rsi"
         # Register the indicator when feature is created
-        self.indicator_service.register_instance(f"rsi_{config.period}", "rsi", period=config.period)
+        self.indicator_service.register_instance(
+            f"rsi_{config.period}", "rsi", period=config.period
+        )
 
     def get_feature_name(self) -> str:
         return self._feature_name
 
     def get_sub_features_names(self) -> list[str]:
-        return [f"rsi_{self.config.period}"]
+        return ["value"]
 
     def compute_all(self) -> Optional[DataFrame]:
         """Compute RSI using the mock indicator service."""
@@ -197,26 +203,37 @@ class TestRsiFeature(BaseFeature):
         result[self.dataset_id.symbol] = self.dataset_id.symbol
         return result
 
+    def get_config_to_string(self) -> str:
+        return f"{self.config.period}"
+
 
 @feature_role(FeatureRoleEnum.OBSERVATION_SPACE)
 class TestClosePriceFeature(BaseFeature):
     """Test close price feature implementation adapted from existing MockFeature pattern."""
 
-    def __init__(self, config: TestClosePriceConfig, dataset_id: DatasetIdentifier, indicator_service: MockTechnicalIndicatorFacade, postfix: str = ""):
+    def __init__(
+        self,
+        config: TestClosePriceConfig,
+        dataset_id: DatasetIdentifier,
+        indicator_service: MockTechnicalIndicatorFacade,
+        postfix: str = "",
+    ):
         super().__init__(config, dataset_id, indicator_service, postfix)
         self._feature_name = "close_price"
         # Register the indicator when feature is created
-        self.indicator_service.register_instance(f"close_{config.lookback}", "close", lookback=config.lookback)
+        self.indicator_service.register_instance(
+            "close_price", "close_price", lookback=config.lookback
+        )
 
     def get_feature_name(self) -> str:
         return self._feature_name
 
     def get_sub_features_names(self) -> list[str]:
-        return [f"close_{self.config.lookback}"]
+        return ["value"]
 
     def compute_all(self) -> Optional[DataFrame]:
         """Compute close prices using the mock indicator service."""
-        indicator_name = f"close_{self.config.lookback}"
+        indicator_name = "close_price"
         indicator_data = self.indicator_service.get_all(indicator_name)
 
         if indicator_data is None:
@@ -243,17 +260,30 @@ class TestClosePriceFeature(BaseFeature):
         result[self.dataset_id.symbol] = self.dataset_id.symbol
         return result
 
+    def get_config_to_string(self) -> str:
+        return "-"
+
 
 @feature_role(FeatureRoleEnum.REWARD_ENGINEERING)
 class TestRewardFeature(BaseFeature):
     """Test reward feature implementation that produces reward and cumulative_return."""
 
-    def __init__(self, config: TestRewardConfig, dataset_id: DatasetIdentifier, indicator_service: MockTechnicalIndicatorFacade, postfix: str = ""):
+    def __init__(
+        self,
+        config: TestRewardConfig,
+        dataset_id: DatasetIdentifier,
+        indicator_service: MockTechnicalIndicatorFacade,
+        postfix: str = "",
+    ):
         super().__init__(config, dataset_id, indicator_service, postfix)
         self._feature_name = "reward"
         # Register the indicators when feature is created
-        self.indicator_service.register_instance("reward", "reward", horizon=config.horizon)
-        self.indicator_service.register_instance("cumulative_return", "cumulative_return", horizon=config.horizon)
+        self.indicator_service.register_instance(
+            "reward", "reward", horizon=config.horizon
+        )
+        self.indicator_service.register_instance(
+            "cumulative_return", "cumulative_return", horizon=config.horizon
+        )
 
     def get_feature_name(self) -> str:
         return self._feature_name
@@ -295,6 +325,9 @@ class TestRewardFeature(BaseFeature):
         result[self.dataset_id.symbol] = self.dataset_id.symbol
         return result
 
+    def get_config_to_string(self) -> str:
+        return "-"
+
 
 class TestFeatureFactory(IFeatureFactory):
     """Test feature factory adapted from existing patterns that creates minimal features for integration testing."""
@@ -307,15 +340,19 @@ class TestFeatureFactory(IFeatureFactory):
         feature_name: str,
         dataset_id: DatasetIdentifier,
         config: BaseParameterSetConfig,
-        postfix: str = ""
+        postfix: str = "",
     ) -> Optional[BaseFeature]:
         """Create test feature instances using the same pattern as real factories."""
         if feature_name == "rsi" and isinstance(config, TestRsiConfig):
             return TestRsiFeature(config, dataset_id, self.indicator_service, postfix)
         elif feature_name == "close_price" and isinstance(config, TestClosePriceConfig):
-            return TestClosePriceFeature(config, dataset_id, self.indicator_service, postfix)
+            return TestClosePriceFeature(
+                config, dataset_id, self.indicator_service, postfix
+            )
         elif feature_name == "reward" and isinstance(config, TestRewardConfig):
-            return TestRewardFeature(config, dataset_id, self.indicator_service, postfix)
+            return TestRewardFeature(
+                config, dataset_id, self.indicator_service, postfix
+            )
         return None
 
     def create_config_instance(
@@ -357,8 +394,19 @@ def config_fixture(temp_feast_repo: str) -> ApplicationConfig:
     )
     config = ConfigLoader.get_config(ApplicationConfig, path=config_path)
 
-    # Override feature store configuration to use temp directory
-    config.feature_store_config.repo_path = temp_feast_repo
+    # Override feature store configuration to use temp directory with new structure
+    from drl_trading_common.config.feature_config import LocalRepoConfig
+    from drl_trading_common.enum.offline_repo_strategy_enum import (
+        OfflineRepoStrategyEnum,
+    )
+
+    # Create new local repo config
+    local_repo_config = LocalRepoConfig(repo_path=temp_feast_repo)
+
+    # Set the strategy and local config
+    config.feature_store_config.offline_repo_strategy = OfflineRepoStrategyEnum.LOCAL
+    config.feature_store_config.local_repo_config = local_repo_config
+    config.feature_store_config.config_directory = str(temp_feast_repo)
     config.feature_store_config.enabled = True
 
     return config
@@ -400,7 +448,9 @@ entity_key_serialization_version: 2
 
 
 @pytest.fixture(scope="function")
-def clean_feature_store(feature_store_fixture: FeatureStore, temp_feast_repo: str) -> Generator[FeatureStore, None, None]:
+def clean_feature_store(
+    feature_store_fixture: FeatureStore, temp_feast_repo: str
+) -> Generator[FeatureStore, None, None]:
     """Provide a clean feature store for each test function.
 
     This fixture ensures each test starts with a clean slate by clearing
@@ -445,10 +495,36 @@ def _clear_feature_store_data(temp_repo_path: str) -> None:
         if os.path.exists(config_file):
             # Don't remove - we need it for the FeatureStore to work
             pass
-
     except Exception as e:
         # Log the error but don't fail the test
         print(f"Warning: Could not clear feature store data: {e}")
+
+
+def _initialize_feast_repository(repo_path: str) -> None:
+    """Initialize a Feast repository with feature_store.yaml configuration.
+
+    Args:
+        repo_path: Path to the directory where the Feast repository should be created
+    """
+    # Ensure the directory exists
+    os.makedirs(repo_path, exist_ok=True)
+
+    # Create feature_store.yaml file with relative paths to avoid Windows issues
+    feature_store_yaml = """
+project: test_trading_project
+registry: registry.db
+provider: local
+online_store:
+    type: sqlite
+    path: online_store.db
+offline_store:
+    type: file
+entity_key_serialization_version: 2
+"""
+
+    config_path = os.path.join(repo_path, "feature_store.yaml")
+    with open(config_path, "w") as f:
+        f.write(feature_store_yaml)
 
 
 @pytest.fixture(scope="function")
@@ -462,13 +538,21 @@ def feature_version_info_fixture() -> FeatureConfigVersionInfo:
             {"name": "rsi_14", "enabled": True, "role": "observation_space"},
             {"name": "close_1", "enabled": True, "role": "observation_space"},
             {"name": "reward", "enabled": True, "role": "reward_engineering"},
-            {"name": "cumulative_return", "enabled": True, "role": "reward_engineering"}
-        ]
+            {
+                "name": "cumulative_return",
+                "enabled": True,
+                "role": "reward_engineering",
+            },
+        ],
     )
 
 
 @pytest.fixture(scope="function")
-def real_feast_container(test_feature_factory: TestFeatureFactory, config_fixture: ApplicationConfig, temp_feast_repo: str) -> Injector:
+def real_feast_container(
+    test_feature_factory: TestFeatureFactory,
+    config_fixture: ApplicationConfig,
+    temp_feast_repo: str,
+) -> Injector:
     """Create a dependency injection container with REAL Feast integration.
 
     This fixture provides a configured injector instance with real services
@@ -487,68 +571,61 @@ def real_feast_container(test_feature_factory: TestFeatureFactory, config_fixtur
 
     # Write config to a temporary JSON file so CoreModule can load it
     # Use a temp file that won't be auto-deleted until we're done
-    temp_fd, config_path = tempfile.mkstemp(suffix='.json', text=True)
+    temp_fd, config_path = tempfile.mkstemp(suffix=".json", text=True)
 
-    with os.fdopen(temp_fd, 'w') as config_file:
+    with os.fdopen(temp_fd, "w") as config_file:
         # Load the existing test config and modify it for the temp Feast repo
         test_config_path = os.path.join(
             os.path.dirname(__file__), "../resources/applicationConfig-test.json"
         )
 
-        with open(test_config_path, 'r') as test_config_file:
+        with open(test_config_path, "r") as test_config_file:
             config_dict = json.load(test_config_file)
 
         # Override the feature store configuration to use temp directory
         config_dict["featureStoreConfig"] = {
             "enabled": True,
-            "repo_path": temp_feast_repo,
-            "entity_name": config_fixture.feature_store_config.entity_name,
-            "ttl_days": config_fixture.feature_store_config.ttl_days,
-            "online_enabled": False,
-            "service_name": config_fixture.feature_store_config.service_name,
-            "service_version": config_fixture.feature_store_config.service_version
+            "configDirectory": temp_feast_repo,
+            "entityName": config_fixture.feature_store_config.entity_name,
+            "ttlDays": config_fixture.feature_store_config.ttl_days,
+            "onlineEnabled": False,
+            "serviceName": config_fixture.feature_store_config.service_name,
+            "serviceVersion": config_fixture.feature_store_config.service_version,
+            "offlineRepoStrategy": "local",
+            "localRepoConfig": {"repoPath": str(temp_feast_repo) + "_data"},
+            "s3RepoConfig": {
+                "bucketName": "drl-trading-features-test",
+                "prefix": "features",
+                "endpointUrl": None,
+                "region": "us-east-1",
+                "accessKeyId": None,
+                "secretAccessKey": None,
+            },
         }
 
         # Override the features configuration to include test features
         config_dict["featuresConfig"] = {
-            "datasetDefinitions": {
-                "EURUSD": ["1h"]
-            },
+            "datasetDefinitions": {"EURUSD": ["1h"]},
             "featureDefinitions": [
                 {
                     "name": "rsi",
                     "enabled": True,
                     "derivatives": [],
-                    "parameterSets": [
-                        {
-                            "enabled": True,
-                            "period": 14
-                        }
-                    ]
+                    "parameterSets": [{"enabled": True, "period": 14}],
                 },
                 {
                     "name": "close_price",
                     "enabled": True,
                     "derivatives": [],
-                    "parameterSets": [
-                        {
-                            "enabled": True,
-                            "lookback": 1
-                        }
-                    ]
+                    "parameterSets": [{"enabled": True, "lookback": 1}],
                 },
                 {
                     "name": "reward",
                     "enabled": True,
                     "derivatives": [],
-                    "parameterSets": [
-                        {
-                            "enabled": True,
-                            "horizon": 1
-                        }
-                    ]
-                }
-            ]
+                    "parameterSets": [{"enabled": True, "horizon": 1}],
+                },
+            ],
         }
 
         json.dump(config_dict, config_file, indent=2)
@@ -563,6 +640,7 @@ def real_feast_container(test_feature_factory: TestFeatureFactory, config_fixtur
 
     # Initialize the feature manager with test features
     from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
+
     feature_manager = injector.get(FeatureManager)
     feature_manager.initialize_features()
 
@@ -574,7 +652,9 @@ def real_feast_container(test_feature_factory: TestFeatureFactory, config_fixtur
 
 
 @pytest.fixture(scope="function")
-def integration_container(real_feast_container: Injector, clean_feature_store: FeatureStore) -> Generator[Injector, None, None]:
+def integration_container(
+    real_feast_container: Injector, clean_feature_store: FeatureStore
+) -> Generator[Injector, None, None]:
     """Provide container with clean feature store for each test.
 
     This ensures each test gets a fresh, clean feature store state while
@@ -590,7 +670,7 @@ def integration_container(real_feast_container: Injector, clean_feature_store: F
     yield real_feast_container
 
     # Cleanup the temporary config file if it exists
-    config_path = getattr(real_feast_container, '_test_config_path', None)
+    config_path = getattr(real_feast_container, "_test_config_path", None)
     if config_path:
         try:
             os.unlink(config_path)
@@ -610,27 +690,200 @@ def sample_trading_features_df() -> DataFrame:
         start="2024-01-01 09:00:00",
         periods=50,
         freq="H",
-        tz="UTC"  # Add UTC timezone to match Feast expectations
+        tz="UTC",  # Add UTC timezone to match Feast expectations
     )
 
     # Generate realistic trading feature data
-    return DataFrame({
-        "event_timestamp": timestamps,
-        "symbol": ["EURUSD"] * len(timestamps),
-        # Technical indicators - observation space features (match sub-feature names)
-        "rsi_14": [30.0 + (i % 40) + (i * 0.5) for i in range(len(timestamps))],
-        "rsi_21": [35.0 + (i % 35) + (i * 0.4) for i in range(len(timestamps))],
-        "sma_20": [1.0850 + (i % 30) * 0.0001 for i in range(len(timestamps))],
-        "sma_50": [1.0845 + (i % 25) * 0.0001 for i in range(len(timestamps))],
-        "bb_upper": [1.0870 + (i % 20) * 0.0001 for i in range(len(timestamps))],
-        "bb_lower": [1.0830 + (i % 15) * 0.0001 for i in range(len(timestamps))],
-        "bb_middle": [1.0850 + (i % 18) * 0.0001 for i in range(len(timestamps))],
-        # OHLCV data - observation space features (match sub-feature names)
-        "close_1": [1.0850 + (i % 20) * 0.0001 for i in range(len(timestamps))],  # Fixed: close -> close_1
-        "high": [1.0855 + (i % 20) * 0.0001 for i in range(len(timestamps))],
-        "low": [1.0845 + (i % 20) * 0.0001 for i in range(len(timestamps))],
-        "volume": [1000 + (i % 500) for i in range(len(timestamps))],
-        # Reward engineering features
-        "reward": [0.01 * (i % 20 - 10) for i in range(len(timestamps))],
-        "cumulative_return": [0.001 * i for i in range(len(timestamps))]
-    })
+    return DataFrame(
+        {
+            "event_timestamp": timestamps,
+            "symbol": ["EURUSD"] * len(timestamps),
+            # Technical indicators - observation space features (match sub-feature names)
+            "rsi_14_A1b2c3_value": [30.0 + (i % 40) + (i * 0.5) for i in range(len(timestamps))],
+            "rsi_21": [35.0 + (i % 35) + (i * 0.4) for i in range(len(timestamps))],
+            "sma_20": [1.0850 + (i % 30) * 0.0001 for i in range(len(timestamps))],
+            "sma_50": [1.0845 + (i % 25) * 0.0001 for i in range(len(timestamps))],
+            "bb_upper": [1.0870 + (i % 20) * 0.0001 for i in range(len(timestamps))],
+            "bb_lower": [1.0830 + (i % 15) * 0.0001 for i in range(len(timestamps))],
+            "bb_middle": [1.0850 + (i % 18) * 0.0001 for i in range(len(timestamps))],
+            # OHLCV data - observation space features (match sub-feature names)
+            "close_price_-_A1b2c3_value": [
+                1.0850 + (i % 20) * 0.0001 for i in range(len(timestamps))
+            ],  # Fixed: close -> close_1
+            "high": [1.0855 + (i % 20) * 0.0001 for i in range(len(timestamps))],
+            "low": [1.0845 + (i % 20) * 0.0001 for i in range(len(timestamps))],
+            "volume": [1000 + (i % 500) for i in range(len(timestamps))],
+            # Reward engineering features
+            "reward_-_A1b2c3_reward": [0.01 * (i % 20 - 10) for i in range(len(timestamps))],
+            "reward_-_A1b2c3_cumulative_return": [0.001 * i for i in range(len(timestamps))],
+        }
+    )
+
+
+# S3/MinIO TestContainer Fixtures for Integration Testing
+
+
+@pytest.fixture(scope="session")
+def minio_container() -> Generator[MinioContainer, None, None]:
+    """
+    Start a MinIO container for S3-compatible testing.
+
+    MinIO is lighter and faster than LocalStack for pure S3 testing.
+    """
+    with MinioContainer() as minio:
+        yield minio
+
+
+@pytest.fixture
+def s3_client_minio(minio_container: MinioContainer) -> boto3.client:
+    """Create a boto3 S3 client connected to MinIO container."""
+    return boto3.client(
+        "s3",
+        endpoint_url=f"http://{minio_container.get_container_host_ip()}:{minio_container.get_exposed_port(9000)}",
+        aws_access_key_id=minio_container.access_key,
+        aws_secret_access_key=minio_container.secret_key,
+        region_name="us-east-1",
+    )
+
+
+@pytest.fixture
+def s3_test_bucket(s3_client_minio: boto3.client) -> str:
+    """Create a test bucket for feature storage testing."""
+    import uuid
+
+    # Use a unique bucket name per test session to ensure isolation
+    bucket_name = f"test-feature-store-{uuid.uuid4().hex[:8]}"
+
+    # Try to create bucket, ignore if it already exists
+    try:
+        s3_client_minio.create_bucket(Bucket=bucket_name)
+    except s3_client_minio.exceptions.BucketAlreadyOwnedByYou:
+        # Bucket already exists, which is fine for our tests
+        pass
+    except s3_client_minio.exceptions.BucketAlreadyExists:
+        # Bucket exists but owned by someone else (shouldn't happen in MinIO)
+        pass
+
+    return bucket_name
+
+
+@pytest.fixture
+def s3_feature_store_config(
+    s3_client_minio: boto3.client,
+    s3_test_bucket: str,
+    minio_container: MinioContainer,
+    temp_feast_repo: str,
+) -> FeatureStoreConfig:
+    """Create FeatureStoreConfig for S3 testing."""
+    s3_config = S3RepoConfig(
+        bucket_name=s3_test_bucket,
+        prefix="features",
+        endpoint_url=f"http://{minio_container.get_container_host_ip()}:{minio_container.get_exposed_port(9000)}",
+        region="us-east-1",
+        access_key_id=minio_container.access_key,
+        secret_access_key=minio_container.secret_key,
+    )
+
+    return FeatureStoreConfig(
+        enabled=True,
+        entity_name="test_entity",
+        ttl_days=30,
+        online_enabled=False,
+        service_name="test_service",
+        service_version="1.0.0",
+        offline_repo_strategy=OfflineRepoStrategyEnum.S3,
+        s3_repo_config=s3_config,
+        config_directory=temp_feast_repo,
+    )
+
+
+@pytest.fixture
+def local_feature_store_config(temp_feast_repo: str) -> FeatureStoreConfig:
+    """Create FeatureStoreConfig for local filesystem testing."""
+    local_config = LocalRepoConfig(repo_path=str(temp_feast_repo / "data"))
+
+    return FeatureStoreConfig(
+        enabled=True,
+        entity_name="test_entity",
+        ttl_days=30,
+        online_enabled=False,
+        service_name="test_service",
+        service_version="1.0.0",
+        offline_repo_strategy=OfflineRepoStrategyEnum.LOCAL,
+        local_repo_config=local_config,
+        config_directory=temp_feast_repo,
+    )
+
+
+@pytest.fixture(params=["local", "s3"])
+def parametrized_feature_store_config(
+    request,
+    local_feature_store_config: FeatureStoreConfig,
+    s3_feature_store_config: FeatureStoreConfig,
+) -> FeatureStoreConfig:
+    """Parametrized fixture that provides both local and S3 feature store configurations."""
+    if request.param == "local":
+        return local_feature_store_config
+    elif request.param == "s3":
+        return s3_feature_store_config
+    else:
+        raise ValueError(f"Unknown parameter: {request.param}")
+
+
+@pytest.fixture
+def parametrized_integration_container(
+    parametrized_feature_store_config: FeatureStoreConfig,
+    config_fixture: ApplicationConfig,
+    test_feature_factory: TestFeatureFactory,
+    clean_feature_store: FeatureStore,
+) -> Generator[Injector, None, None]:
+    """Create integration container with parametrized offline repository strategy."""
+    from drl_trading_core.common.di.core_module import CoreModule
+
+    # Override the feature store config in the application config
+    config_fixture.feature_store_config = parametrized_feature_store_config
+
+    # Initialize Feast repository for local configurations
+    if (
+        parametrized_feature_store_config.offline_repo_strategy
+        == OfflineRepoStrategyEnum.LOCAL
+        and parametrized_feature_store_config.local_repo_config is not None
+    ):
+        _initialize_feast_repository(
+            parametrized_feature_store_config.local_repo_config.repo_path
+        )
+
+    # Convert to dict for JSON serialization with JSON-safe mode
+    config_dict = config_fixture.model_dump(mode="json")
+
+    # Create temporary config file
+    config_file = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+    try:
+        json.dump(config_dict, config_file, indent=2)
+        config_file.flush()
+        config_path = config_file.name
+    finally:
+        config_file.close()
+
+    try:
+        # Create the injector container with the temporary config
+        module = CoreModule(config_path=config_path)
+        container = Injector([module])
+
+        # Override the feature factory with our test implementation
+        # This is essential to prevent abstract interface instantiation errors
+        container.binder.bind(IFeatureFactory, to=test_feature_factory)
+
+        # Initialize the feature manager with test features
+        from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
+
+        feature_manager = container.get(FeatureManager)
+        feature_manager.initialize_features()
+
+        yield container
+    finally:
+        # Clean up the temporary config file
+        try:
+            os.unlink(config_path)
+        except OSError:
+            pass  # File might already be deleted

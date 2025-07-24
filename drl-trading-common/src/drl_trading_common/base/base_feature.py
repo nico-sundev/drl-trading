@@ -62,3 +62,7 @@ class BaseFeature(Computable):
     @abstractmethod
     def get_feature_name(self) -> str:
         pass
+
+    @abstractmethod
+    def get_config_to_string(self) -> str:
+        ...

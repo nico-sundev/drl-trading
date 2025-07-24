@@ -52,6 +52,9 @@ class MockFeature(BaseFeature):
         """Return the base name of the feature."""
         return self.feature_name
 
+    def get_config_to_string(self) -> str:
+        return "Test"
+
 
 @pytest.fixture
 def mock_feature_factory() -> MagicMock:

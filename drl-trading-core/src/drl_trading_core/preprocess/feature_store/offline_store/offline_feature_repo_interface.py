@@ -159,3 +159,24 @@ class IOfflineFeatureRepository(ABC):
             StorageException: For metrics retrieval failures
         """
         pass
+
+    @abstractmethod
+    def get_repo_path(self, symbol: str) -> str:
+        """
+        Get the repository path for storing features for a given symbol.
+
+        This method abstracts the path construction logic from the caller,
+        allowing different repository implementations to handle path generation
+        according to their specific requirements (local filesystem, S3, etc.).
+
+        Args:
+            symbol: Symbol identifier for the dataset
+
+        Returns:
+            str: The repository path where features for this symbol should be stored
+
+        Raises:
+            ValueError: If symbol is invalid
+            StorageException: For backend-specific path resolution failures
+        """
+        pass

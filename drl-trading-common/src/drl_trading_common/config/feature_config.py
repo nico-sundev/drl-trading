@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional
 
+from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
 from drl_trading_common.model.timeframe import Timeframe
 from pydantic import Field
 
@@ -7,22 +8,38 @@ from ..base.base_parameter_set_config import BaseParameterSetConfig
 from ..base.base_schema import BaseSchema
 
 
+class LocalRepoConfig(BaseSchema):
+    """Configuration for local filesystem-based offline feature repository."""
+    repo_path: str
+
+
+class S3RepoConfig(BaseSchema):
+    """Configuration for S3-based offline feature repository."""
+    bucket_name: str = "drl-trading-features"
+    prefix: str = "features"
+    endpoint_url: Optional[str] = None  # Optional for custom S3-compatible services
+    region: str = "us-east-1"
+    access_key_id: Optional[str] = None  # Optional, can use AWS credentials chain
+    secret_access_key: Optional[str] = None  # Optional, can use AWS credentials chain
+
+
 class FeatureStoreConfig(BaseSchema):
     enabled: bool
-    repo_path: str
     entity_name: str
     ttl_days: int
     online_enabled: bool = False
     service_name: str
     service_version: str
 
-    # S3-specific configuration fields
-    s3_bucket_name: str = "drl-trading-features"
-    s3_prefix: str = "features"
-    s3_endpoint_url: Optional[str] = None  # Optional for custom S3-compatible services
-    s3_region: str = "us-east-1"
-    s3_access_key_id: Optional[str] = None  # Optional, can use AWS credentials chain
-    s3_secret_access_key: Optional[str] = None  # Optional, can use AWS credentials chain
+    # Feast configuration directory (where feature_store.yaml is stored)
+    config_directory: str
+
+    # Strategy selection for offline repository
+    offline_repo_strategy: OfflineRepoStrategyEnum = OfflineRepoStrategyEnum.LOCAL
+
+    # Repository-specific configurations
+    local_repo_config: Optional[LocalRepoConfig] = None
+    s3_repo_config: Optional[S3RepoConfig] = None
 
 class FeatureDefinition(BaseSchema):
     """Feature definition configuration.

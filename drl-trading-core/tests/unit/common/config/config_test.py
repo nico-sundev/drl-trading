@@ -41,8 +41,8 @@ def test_load_config_from_json(temp_config_file, feature_factory, mock_rsi_confi
 
     features_store_config = config.feature_store_config
     assert features_store_config.enabled is False
-    assert features_store_config.repo_path == "testrepo"
-    assert features_store_config.offline_store_path == "test"
+    assert features_store_config.config_directory == "testrepo"
+    assert features_store_config.local_repo_config.repo_path == "test_data"
     assert features_store_config.entity_name == "symbol"
     assert features_store_config.ttl_days == 365
     assert features_store_config.online_enabled is True
