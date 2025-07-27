@@ -218,6 +218,37 @@ class TestFeatureInitialization:
         # Then
         assert len(configurations) == 0
 
+    def test_generate_feature_configurations_with_empty_parameter_sets(self, mock_feature_factory):
+        """
+        Given: FeatureManager with feature having empty parameter sets
+        When: _generate_feature_configurations is called
+        Then: Feature is included with None config
+        """
+        # Given
+        mock_feature_def = MagicMock(spec=FeatureDefinition)
+        mock_feature_def.name = "CloseFeature"
+        mock_feature_def.enabled = True
+        mock_feature_def.parameter_sets = []  # Empty parameter sets
+        mock_feature_def.parsed_parameter_sets = []  # Empty parameter sets
+
+        config = MagicMock(spec=FeaturesConfig)
+        config.feature_definitions = [mock_feature_def]
+        config.dataset_definitions = {
+            "BTCUSD": [Timeframe.MINUTE_1]
+        }
+
+        manager = FeatureManager(config=config, feature_factory=mock_feature_factory)
+
+        # When
+        configurations = manager._generate_feature_configurations()
+
+        # Then
+        assert len(configurations) == 1
+        feature_name, dataset_id, param_set = configurations[0]
+        assert feature_name == "CloseFeature"
+        assert isinstance(dataset_id, DatasetIdentifier)
+        assert param_set is None  # Should be None for features without config
+
     def test_create_features_batch_success(self, feature_manager):
         """
         Given: Valid feature configurations
@@ -320,16 +351,17 @@ class TestFeatureCreation:
     def test_create_feature_instance_with_postfix(self, feature_manager):
         """
         Given: Valid feature parameters with postfix
-        When: _create_feature_instance is called
-        Then: Feature instance is created with correct postfix
+        When: _create_feature_instance is called with postfix
+        Then: Feature instance is created with postfix
         """
         # Given
         dataset_id = DatasetIdentifier("BTCUSD", Timeframe.MINUTE_1)
         param_set = MagicMock(spec=BaseParameterSetConfig)
-        postfix = "_custom"
 
         # When
-        feature = feature_manager._create_feature_instance("TestFeature", dataset_id, param_set, postfix)
+        feature = feature_manager._create_feature_instance(
+            "TestFeature", dataset_id, param_set, postfix="_custom"
+        )
 
         # Then
         assert feature is not None
@@ -337,7 +369,30 @@ class TestFeatureCreation:
             feature_name="TestFeature",
             dataset_id=dataset_id,
             config=param_set,
-            postfix=postfix
+            postfix="_custom"
+        )
+
+    def test_create_feature_instance_without_config(self, feature_manager):
+        """
+        Given: Feature that doesn't require configuration
+        When: _create_feature_instance is called with None config
+        Then: Feature instance is created successfully without config
+        """
+        # Given
+        dataset_id = DatasetIdentifier("BTCUSD", Timeframe.MINUTE_1)
+        feature_manager.feature_factory.reset_mock()  # Reset the mock to clear previous calls
+
+        # When
+        feature = feature_manager._create_feature_instance("TestFeature", dataset_id, None)
+
+        # Then
+        assert feature is not None
+        assert isinstance(feature, MockFeature)
+        feature_manager.feature_factory.create_feature.assert_called_once_with(
+            feature_name="TestFeature",
+            dataset_id=dataset_id,
+            config=None,
+            postfix=""
         )
 
     def test_create_feature_instance_factory_returns_none(self, feature_manager):

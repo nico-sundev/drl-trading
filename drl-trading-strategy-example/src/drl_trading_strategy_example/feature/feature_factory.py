@@ -52,7 +52,7 @@ class FeatureFactory(IFeatureFactory):
         self,
         feature_name: str,
         dataset_id: DatasetIdentifier,
-        config: BaseParameterSetConfig,
+        config: Optional[BaseParameterSetConfig] = None,
         postfix: str = "",
     ) -> Optional[BaseFeature]:
         """
@@ -60,10 +60,9 @@ class FeatureFactory(IFeatureFactory):
 
         Args:
             feature_name: The name of the feature to create
-            source_data: The source data for the feature computation
-            config: The configuration for the feature
+            dataset_id: The dataset identifier for the feature
+            config: The configuration for the feature (optional)
             postfix: Optional postfix for the feature name
-            indicators_service: Indicators service for the feature
 
         Returns:
             The created feature instance if successful, None otherwise
@@ -78,9 +77,9 @@ class FeatureFactory(IFeatureFactory):
         try:
             # Create the feature instance with the provided parameters
             feature_instance = feature_class(
-                config=config,
                 dataset_id=dataset_id,
                 indicator_service=self._technical_indicator_facade,
+                config=config,
                 postfix=postfix,
             )
             logger.debug(f"Created feature instance for '{feature_name}'")
@@ -110,7 +109,7 @@ class FeatureFactory(IFeatureFactory):
         """
         config_class = self._config_registry.get_config_class(feature_name)
         if not config_class:
-            logger.warning(f"No config class found for feature '{feature_name}'")
+            logger.debug(f"No config class found for feature '{feature_name}'")
             return None
 
         try:

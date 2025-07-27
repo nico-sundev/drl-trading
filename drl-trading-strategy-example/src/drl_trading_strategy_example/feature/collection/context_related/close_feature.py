@@ -25,12 +25,12 @@ class CloseFeature(BaseFeature):
 
     def __init__(
         self,
-        config: BaseParameterSetConfig,
         dataset_id: DatasetIdentifier,
         indicator_service: ITechnicalIndicatorFacade,
+        config: Optional[BaseParameterSetConfig] = None,
         postfix: str = ""
     ) -> None:
-        super().__init__(config, dataset_id, indicator_service, postfix)
+        super().__init__(dataset_id, indicator_service, config, postfix)
         self.feature_name = "close"
 
     def add(self, df: DataFrame) -> None:

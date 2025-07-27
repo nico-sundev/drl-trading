@@ -361,6 +361,16 @@ class FeastProvider:
     def _get_feature_name(self, feature: BaseFeature) -> str:
         """
         Create a unique feature name based on the feature name and its config hash.
+        Current schema looks like:
+        [feature_name]_[config_to_string]_[config_hash]
+
+        Example 1: A feature relying on a config
+        If feature name is "rsi", config_to_string is "14" and config_hash is "abc123",
+        the resulting name will be "rsi_14_abc123".
+
+        Example 2: A feature without a config
+        If feature name is "close_price",
+        the resulting name will be "close_price_-_-".
 
         Args:
             feature: The feature object

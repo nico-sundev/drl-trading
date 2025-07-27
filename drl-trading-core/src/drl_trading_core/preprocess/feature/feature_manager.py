@@ -20,6 +20,8 @@ from drl_trading_core.common.config.utils import parse_all_parameters
 
 logger = logging.getLogger(__name__)
 
+NO_CONFIG_HASH = "no_config"
+
 
 @dataclass(frozen=True)
 class FeatureKey:
@@ -190,26 +192,48 @@ class FeatureManager(Computable):
 
     def _generate_feature_configurations(
         self,
-    ) -> List[Tuple[str, DatasetIdentifier, BaseParameterSetConfig]]:
+    ) -> List[Tuple[str, DatasetIdentifier, Optional[BaseParameterSetConfig]]]:
         """
-        Generate all valid feature configurations using functional programming.
+        Generate all combinations of features that need to be computed.
 
-        Flattens the nested loop structure into a single list comprehension
-        with proper filtering.
+        Takes the feature definitions from the configuration and creates individual
+        computation tasks for each enabled feature on each symbol/timeframe combination.
+        Features with multiple parameter sets (like RSI with different lengths) will
+        generate multiple configurations, while simple features (like close price)
+        generate one configuration per dataset.
 
         Returns:
-            List of tuples containing (feature_name, dataset_id, param_set)
+            List of tuples where each tuple represents one feature computation task:
+            - feature_name: The name of the feature to compute (e.g., "rsi", "close_price")
+            - dataset_id: Which symbol and timeframe to compute it for
+            - config: The parameters for this feature instance, or None for simple features
+
+        Example:
+            If configured with RSI (lengths 14,21) and close_price on BTCUSD/H1 and ETHUSD/M5:
+            Returns 6 configurations:
+            - RSI with length=14 on BTCUSD/H1
+            - RSI with length=21 on BTCUSD/H1
+            - RSI with length=14 on ETHUSD/M5
+            - RSI with length=21 on ETHUSD/M5
+            - close_price on BTCUSD/H1 (no config needed)
+            - close_price on ETHUSD/M5 (no config needed)
         """
         from itertools import product
 
         # Get enabled feature definitions and their parameter sets
-        enabled_features = [
-            (feature_def.name, param_set)
-            for feature_def in self.config.feature_definitions
-            if feature_def.enabled
-            for param_set in feature_def.parsed_parameter_sets
-            if param_set.enabled
-        ]
+        enabled_features = []
+        for feature_def in self.config.feature_definitions:
+            if not feature_def.enabled:
+                continue
+
+            # If feature has no parameter sets, include it with None config
+            if not feature_def.parsed_parameter_sets:
+                enabled_features.append((feature_def.name, None))
+            else:
+                # Include enabled parameter sets
+                for param_set in feature_def.parsed_parameter_sets:
+                    if param_set.enabled:
+                        enabled_features.append((feature_def.name, param_set))
 
         # Get dataset identifiers
         dataset_ids = [
@@ -231,7 +255,7 @@ class FeatureManager(Computable):
 
     def _create_features_batch(
         self,
-        feature_configs: List[Tuple[str, DatasetIdentifier, BaseParameterSetConfig]],
+        feature_configs: List[Tuple[str, DatasetIdentifier, Optional[BaseParameterSetConfig]]],
     ) -> List[Tuple[FeatureKey, BaseFeature]]:
         """
         Create feature instances in batch.
@@ -257,7 +281,8 @@ class FeatureManager(Computable):
                 )
 
                 if feature_instance:
-                    param_hash = param_set.hash_id()
+                    # Generate hash for the parameter set (handle None case)
+                    param_hash = param_set.hash_id() if param_set else NO_CONFIG_HASH
                     feature_key = FeatureKey(
                         feature_name=feature_name,
                         dataset_id=dataset_id,
@@ -320,7 +345,7 @@ class FeatureManager(Computable):
         self,
         feature_name: str,
         dataset_id: DatasetIdentifier,
-        param_set: BaseParameterSetConfig,
+        param_set: Optional[BaseParameterSetConfig],
         postfix: str = "",
     ) -> Optional[BaseFeature]:
         """

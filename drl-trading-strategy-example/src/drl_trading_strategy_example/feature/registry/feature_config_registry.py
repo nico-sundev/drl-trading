@@ -25,7 +25,10 @@ class FeatureConfigRegistry(ThreadSafeDiscoverableRegistry[FeatureTypeEnum, Base
     """
 
     def get_config_class(self, feature_type_string: str) -> Optional[Type[BaseParameterSetConfig]]:
-        return self.get_class(FeatureTypeConverter.string_to_enum(feature_type_string))
+        result = self.get_class(FeatureTypeConverter.string_to_enum(feature_type_string))
+        if result is not None and not isinstance(result, type):
+            return None
+        return result  # type: ignore[return-value]
 
     def register_config_class(
         self, feature_type_string: str, config_class: Type[BaseParameterSetConfig]
@@ -39,7 +42,7 @@ class FeatureConfigRegistry(ThreadSafeDiscoverableRegistry[FeatureTypeEnum, Base
         Discover and register configuration classes from a specified package.
         This implementation delegates to the base class discovery method.
         """
-        return self.discover_classes(package_name)
+        return dict(self.discover_classes(package_name))  # type: ignore
 
     def _validate_class(self, class_type: Type[BaseParameterSetConfig]) -> None:
         """Validate that the class extends BaseParameterSetConfig."""
@@ -48,14 +51,14 @@ class FeatureConfigRegistry(ThreadSafeDiscoverableRegistry[FeatureTypeEnum, Base
                 f"Config class {class_type.__name__} must extend BaseParameterSetConfig"
             )
 
-    def _should_discover_class(self, class_obj) -> bool:
+    def _should_discover_class(self, class_obj: type) -> bool:
         """Check if a class is a valid config class for discovery."""
         return (
             issubclass(class_obj, BaseParameterSetConfig)
             and class_obj is not BaseParameterSetConfig
         )
 
-    def _extract_key_from_class(self, class_obj) -> FeatureTypeEnum:
+    def _extract_key_from_class(self, class_obj: type) -> FeatureTypeEnum:
         """
         Extract feature type using the decorator utility function which handles
         the @feature_type decorator.

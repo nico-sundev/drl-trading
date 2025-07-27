@@ -21,7 +21,7 @@ class IFeatureFactory(ABC):
         self,
         feature_name: str,
         dataset_id: DatasetIdentifier,
-        config: BaseParameterSetConfig,
+        config: Optional[BaseParameterSetConfig] = None,
         postfix: str = ""
     ) -> Optional[BaseFeature]:
         """
@@ -29,10 +29,9 @@ class IFeatureFactory(ABC):
 
         Args:
             feature_name: The name of the feature to create
-            source_data: The source data for the feature computation
-            config: The configuration for the feature
+            dataset_id: The dataset identifier for the feature
+            config: The configuration for the feature (optional)
             postfix: Optional postfix for the feature name
-            metrics_service: Optional metrics service for the feature
 
         Returns:
             The created feature instance if successful, None otherwise

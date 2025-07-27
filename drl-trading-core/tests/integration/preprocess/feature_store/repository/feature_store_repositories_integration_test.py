@@ -138,17 +138,8 @@ class TestFeatureStoreRepositoriesIntegration:
             "event_timestamp": [pd.Timestamp("2024-01-01 15:30:00", tz="UTC")],  # Add UTC timezone
             "symbol": [symbol],
             # Include all OBSERVATION_SPACE features to match the feature view schema
-            "rsi_14": [45.2],
-            "rsi_21": [46.5],
-            "sma_20": [1.0855],
-            "sma_50": [1.0850],
-            "bb_upper": [1.0870],
-            "bb_lower": [1.0840],
-            "bb_middle": [1.0855],
-            "close_1": [1.0855],  # Required field that was missing
-            "high": [1.0860],
-            "low": [1.0850],
-            "volume": [1200],
+            "rsi_14_A1b2c3_value": [45.2],
+            "close_price_-_A1b2c3_value": [1.0855],
             "reward": [0.15]  # This will be filtered out for OBSERVATION_SPACE
         })
 

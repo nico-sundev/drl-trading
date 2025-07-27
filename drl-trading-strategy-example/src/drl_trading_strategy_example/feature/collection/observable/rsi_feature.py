@@ -25,13 +25,17 @@ class RsiFeature(BaseFeature):
 
     def __init__(
         self,
-        config: BaseParameterSetConfig,
         dataset_id: DatasetIdentifier,
         indicator_service: ITechnicalIndicatorFacade,
+        config: Optional[BaseParameterSetConfig] = None,
         postfix: str = ""
     ) -> None:
-        super().__init__(config, dataset_id, indicator_service, postfix)
-        self.config: RsiConfig = self.config
+        super().__init__(dataset_id, indicator_service, config, postfix)
+        if config is None:
+            raise ValueError("RsiFeature requires a configuration with length parameter")
+        if not isinstance(config, RsiConfig):
+            raise TypeError(f"RsiFeature requires config to be of type RsiConfig, got {type(config).__name__}")
+        self.config: RsiConfig = config
         self.feature_name = f"rsi_{self.config.length}{self.postfix}"
         self.indicator_service.register_instance(self.feature_name, self._get_indicator_type(), period=self.config.length)
 

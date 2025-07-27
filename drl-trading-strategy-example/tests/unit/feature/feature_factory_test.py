@@ -121,6 +121,62 @@ def test_create_feature(
     assert nonexistent_feature is None
 
 
+def test_create_feature_without_config() -> None:
+    """Test that features can be created without a config parameter."""
+    # Given
+    dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe="H1")
+
+    # Create a mock feature class that accepts None config
+    class MockNoConfigFeature(BaseFeature):
+        def __init__(self, dataset_id, indicator_service, config=None, postfix=""):
+            super().__init__(dataset_id, indicator_service, config, postfix)
+
+        def get_sub_features_names(self):
+            return []
+
+        def get_feature_name(self):
+            return "close"
+
+        def get_config_to_string(self):
+            return ""
+
+        def compute_all(self):
+            return None
+
+        def add(self, df):
+            pass
+
+        def compute_latest(self):
+            return None
+
+    # Create mock registries
+    mock_class_registry = MagicMock(spec=IFeatureClassRegistry)
+    mock_class_registry.get_feature_class.return_value = MockNoConfigFeature
+
+    mock_config_registry = MagicMock(spec=IFeatureConfigRegistry)
+    mock_config_registry.get_config_class.return_value = None  # No config class needed
+
+    mock_indicator_service = MagicMock(spec=ITechnicalIndicatorFacade)
+
+    # Create factory with mocked dependencies
+    factory = FeatureFactory(mock_class_registry, mock_config_registry, mock_indicator_service)
+
+    # Test that registry returns the class
+    feature_class = factory._registry.get_feature_class("close")
+    assert feature_class == MockNoConfigFeature
+
+    # Test creating instance directly
+    test_instance = MockNoConfigFeature(dataset_id, mock_indicator_service, config=None)
+    assert test_instance is not None
+
+    # When & Then - Test with None config explicitly
+    feature_with_none = factory.create_feature(
+        "close", dataset_id, config=None
+    )
+    assert feature_with_none is not None
+    assert isinstance(feature_with_none, MockNoConfigFeature)
+
+
 def test_create_config_instance(factory: FeatureFactory) -> None:
     """Test that the factory can create config instances."""
     # Given
