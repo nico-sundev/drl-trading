@@ -1879,3 +1879,358 @@
 2025-07-27 17:54:39,120 [INFO] drl_trading_core.preprocess.feature.feature_manager: Computing latest values for 1 features using Dask delayed execution...
 2025-07-27 17:54:39,121 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error during Dask delayed computation for latest values: Dask compute failed
 2025-07-27 17:54:39,145 [ERROR] drl_trading_core.preprocess.feature.feature_manager: Error combining DataFrames with concat: Concat failed
+2025-07-27 18:31:44,276 [ERROR] drl_trading_common.utils.utils: invalid dataframe must have a 'Time' column or a DatetimeIndex.
+2025-07-27 18:31:44,281 [ERROR] drl_trading_common.utils.utils: Could not convert 'Time' column to datetime for invalid time format dataframe: Unknown datetime string format, unable to parse: not-a-date, at position 0
+2025-07-27 19:36:30,660 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-27 19:36:30,776 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpq71rqc6x\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-27 19:36:30,777 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-27 19:36:30,808 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-07-27 19:36:30,814 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-27 19:36:30,822 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmppwzb_12x\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-27 19:36:30,822 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-27 19:36:30,830 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-07-27 19:36:30,831 [WARNING] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Found 3 overlapping timestamps for EURUSD. These will be skipped to prevent data corruption.
+2025-07-27 19:36:30,838 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 1 features for 2024-01-05 in C:\Users\nico-\AppData\Local\Temp\tmppwzb_12x\EURUSD\year=2024\month=01\day=05\features_20240105_100000_100000.parquet (EURUSD)
+2025-07-27 19:36:30,839 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 1 new features out of 4 total for EURUSD
+2025-07-27 19:36:30,856 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 4 existing feature records from 2 files
+2025-07-27 19:36:30,865 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-27 19:36:30,865 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No new features to store for EURUSD
+2025-07-27 19:36:30,875 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-27 19:36:30,881 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpkykdkjw4\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-27 19:36:30,881 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-27 19:36:30,888 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-07-27 19:36:30,898 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-27 19:36:30,906 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmp8o264voe\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-27 19:36:30,907 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-27 19:36:30,916 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-27 19:36:30,955 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmp7whgq2uc\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-27 19:36:30,956 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-27 19:36:30,961 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-07-27 19:36:30,967 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-27 19:36:30,974 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmppcxlhpy9\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-27 19:36:30,974 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-27 19:36:30,981 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 2 existing feature records from 2 files
+2025-07-27 19:36:31,008 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-27 19:36:31,013 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpk2e7m885\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-27 19:36:31,013 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-27 19:36:31,022 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-07-27 19:36:31,029 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 1 features for 2024-01-05 in C:\Users\nico-\AppData\Local\Temp\tmpk2e7m885\EURUSD\year=2024\month=01\day=05\features_20240105_100000_100000.parquet (EURUSD)
+2025-07-27 19:36:31,029 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 1 new features out of 1 total for EURUSD
+2025-07-27 19:36:31,037 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-27 19:36:31,042 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmptygjlnyi\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-27 19:36:31,043 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-27 19:36:31,065 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-07-27 19:36:47,700 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-27 19:36:47,827 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpormtukww\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-27 19:36:47,828 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-27 19:36:47,849 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-07-27 19:36:47,856 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-27 19:36:47,861 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpka3xote9\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-27 19:36:47,861 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-27 19:36:47,870 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-07-27 19:36:47,871 [WARNING] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Found 3 overlapping timestamps for EURUSD. These will be skipped to prevent data corruption.
+2025-07-27 19:36:47,877 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 1 features for 2024-01-05 in C:\Users\nico-\AppData\Local\Temp\tmpka3xote9\EURUSD\year=2024\month=01\day=05\features_20240105_100000_100000.parquet (EURUSD)
+2025-07-27 19:36:47,877 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 1 new features out of 4 total for EURUSD
+2025-07-27 19:36:47,884 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 4 existing feature records from 2 files
+2025-07-27 19:36:47,894 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-27 19:36:47,894 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No new features to store for EURUSD
+2025-07-27 19:36:47,902 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-27 19:36:47,909 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpewkbytso\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-27 19:36:47,909 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-27 19:36:47,914 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-07-27 19:36:47,924 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-27 19:36:47,929 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpbn7os8uq\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-27 19:36:47,929 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-27 19:36:47,939 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-27 19:36:47,944 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpavz1p45c\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-27 19:36:47,945 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-27 19:36:47,950 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-07-27 19:36:47,957 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-27 19:36:47,962 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpvajyo8fa\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-27 19:36:47,962 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-27 19:36:47,971 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 2 existing feature records from 2 files
+2025-07-27 19:36:47,976 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-27 19:36:47,981 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpd3oyeaw8\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-27 19:36:47,982 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-27 19:36:47,990 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-07-27 19:36:47,995 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 1 features for 2024-01-05 in C:\Users\nico-\AppData\Local\Temp\tmpd3oyeaw8\EURUSD\year=2024\month=01\day=05\features_20240105_100000_100000.parquet (EURUSD)
+2025-07-27 19:36:47,995 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 1 new features out of 1 total for EURUSD
+2025-07-27 19:36:48,001 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: No existing features found for EURUSD
+2025-07-27 19:36:48,008 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 features for 2024-01-01 in C:\Users\nico-\AppData\Local\Temp\tmpx9kpfu5a\EURUSD\year=2024\month=01\day=01\features_20240101_090000_110000.parquet (EURUSD)
+2025-07-27 19:36:48,008 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-27 19:36:48,015 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo: Loaded 3 existing feature records from 1 files
+2025-07-27 19:38:34,084 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy: Creating local offline repository with path: /test/local/path
+2025-07-27 19:38:34,331 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy: Creating S3 offline repository with bucket: test-bucket
+2025-07-27 19:38:51,045 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy: Creating local offline repository with path: /test/local/path
+2025-07-27 19:38:51,299 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy: Creating S3 offline repository with bucket: test-bucket
+2025-07-27 19:39:05,499 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:39:05,591 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Created S3 bucket: drl-trading-features
+2025-07-27 19:39:05,597 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:39:05,601 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: No existing features found for EURUSD
+2025-07-27 19:39:05,614 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 3 features for 2024-01-01 in s3://drl-trading-features/features/EURUSD/year=2024/month=01/day=01/features_20240101_090000_110000.parquet (EURUSD)
+2025-07-27 19:39:05,614 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-27 19:39:05,617 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:39:05,644 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 2 existing feature records from 1 S3 objects
+2025-07-27 19:39:05,645 [WARNING] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Found 2 overlapping timestamps for EURUSD. These will be skipped to prevent data corruption.
+2025-07-27 19:39:05,649 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 1 features for 2024-01-01 in s3://drl-trading-features/features/EURUSD/year=2024/month=01/day=01/features_20240101_110000_110000.parquet (EURUSD)
+2025-07-27 19:39:05,653 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 1 features for 2024-01-05 in s3://drl-trading-features/features/EURUSD/year=2024/month=01/day=05/features_20240105_100000_100000.parquet (EURUSD)
+2025-07-27 19:39:05,653 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 2 new features out of 4 total for EURUSD
+2025-07-27 19:39:05,657 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:39:05,662 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:39:05,663 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: No features to store for EURUSD
+2025-07-27 19:39:05,666 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:39:05,673 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:39:05,677 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:39:05,682 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 3 existing feature records from 1 S3 objects
+2025-07-27 19:39:05,688 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:39:05,698 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 2 existing feature records from 2 S3 objects
+2025-07-27 19:39:05,703 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:39:05,707 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:39:05,711 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:39:05,714 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:39:05,719 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:39:05,727 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 3 existing feature records from 1 S3 objects
+2025-07-27 19:39:05,730 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:39:05,731 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Deleted 2 feature objects for EURUSD
+2025-07-27 19:39:05,734 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:39:05,739 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:39:05,744 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:39:05,746 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: No existing features found for EURUSD
+2025-07-27 19:39:05,749 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 2 features for 2024-01-01 in s3://drl-trading-features/features/EURUSD/year=2024/month=01/day=01/features_20240101_090000_100000.parquet (EURUSD)
+2025-07-27 19:39:05,749 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 2 new features out of 2 total for EURUSD
+2025-07-27 19:39:05,750 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: No existing features found for GBPUSD
+2025-07-27 19:39:05,755 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 1 features for 2024-01-01 in s3://drl-trading-features/features/GBPUSD/year=2024/month=01/day=01/features_20240101_110000_110000.parquet (GBPUSD)
+2025-07-27 19:39:05,755 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 1 new features out of 1 total for GBPUSD
+2025-07-27 19:39:05,758 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:39:05,765 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 1 existing feature records from 1 S3 objects
+2025-07-27 19:40:12,503 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:40:12,622 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Created S3 bucket: drl-trading-features
+2025-07-27 19:40:12,631 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:40:12,635 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: No existing features found for EURUSD
+2025-07-27 19:40:12,648 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 3 features for 2024-01-01 in s3://drl-trading-features/features/EURUSD/year=2024/month=01/day=01/features_20240101_090000_110000.parquet (EURUSD)
+2025-07-27 19:40:12,648 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-27 19:40:12,653 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:40:12,682 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 2 existing feature records from 1 S3 objects
+2025-07-27 19:40:12,684 [WARNING] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Found 2 overlapping timestamps for EURUSD. These will be skipped to prevent data corruption.
+2025-07-27 19:40:12,689 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 1 features for 2024-01-01 in s3://drl-trading-features/features/EURUSD/year=2024/month=01/day=01/features_20240101_110000_110000.parquet (EURUSD)
+2025-07-27 19:40:12,692 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 1 features for 2024-01-05 in s3://drl-trading-features/features/EURUSD/year=2024/month=01/day=05/features_20240105_100000_100000.parquet (EURUSD)
+2025-07-27 19:40:12,692 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 2 new features out of 4 total for EURUSD
+2025-07-27 19:40:12,696 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:40:12,700 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:40:12,701 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: No features to store for EURUSD
+2025-07-27 19:40:12,707 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:40:12,712 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:40:12,716 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:40:12,724 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 3 existing feature records from 1 S3 objects
+2025-07-27 19:40:12,728 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:40:12,739 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 2 existing feature records from 2 S3 objects
+2025-07-27 19:40:12,742 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:40:12,746 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:40:12,750 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:40:12,756 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:40:12,760 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:40:12,766 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 3 existing feature records from 1 S3 objects
+2025-07-27 19:40:12,771 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:40:12,772 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Deleted 2 feature objects for EURUSD
+2025-07-27 19:40:12,776 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:40:12,780 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:40:12,784 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:40:12,788 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: No existing features found for EURUSD
+2025-07-27 19:40:12,791 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 2 features for 2024-01-01 in s3://drl-trading-features/features/EURUSD/year=2024/month=01/day=01/features_20240101_090000_100000.parquet (EURUSD)
+2025-07-27 19:40:12,792 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 2 new features out of 2 total for EURUSD
+2025-07-27 19:40:12,793 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: No existing features found for GBPUSD
+2025-07-27 19:40:12,795 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 1 features for 2024-01-01 in s3://drl-trading-features/features/GBPUSD/year=2024/month=01/day=01/features_20240101_110000_110000.parquet (GBPUSD)
+2025-07-27 19:40:12,796 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 1 new features out of 1 total for GBPUSD
+2025-07-27 19:40:12,799 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: drl-trading-features
+2025-07-27 19:40:12,808 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 1 existing feature records from 1 S3 objects
+2025-07-27 19:41:31,385 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: custom-bucket
+2025-07-27 19:41:46,702 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: custom-bucket
+2025-07-27 19:42:11,647 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: custom-bucket
+2025-07-27 19:45:41,463 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:45:41,466 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: custom-bucket
+2025-07-27 19:45:41,470 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Created S3 bucket: test-bucket
+2025-07-27 19:45:41,478 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:45:41,482 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: No existing features found for EURUSD
+2025-07-27 19:45:41,495 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 3 features for 2024-01-01 in s3://test-bucket/test-prefix/EURUSD/year=2024/month=01/day=01/features_20240101_090000_110000.parquet (EURUSD)
+2025-07-27 19:45:41,495 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-27 19:45:41,500 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:45:41,532 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 2 existing feature records from 1 S3 objects
+2025-07-27 19:45:41,534 [WARNING] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Found 2 overlapping timestamps for EURUSD. These will be skipped to prevent data corruption.
+2025-07-27 19:45:41,540 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 1 features for 2024-01-01 in s3://test-bucket/test-prefix/EURUSD/year=2024/month=01/day=01/features_20240101_110000_110000.parquet (EURUSD)
+2025-07-27 19:45:41,543 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 1 features for 2024-01-05 in s3://test-bucket/test-prefix/EURUSD/year=2024/month=01/day=05/features_20240105_100000_100000.parquet (EURUSD)
+2025-07-27 19:45:41,543 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 2 new features out of 4 total for EURUSD
+2025-07-27 19:45:41,547 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:45:41,551 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:45:41,553 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: No features to store for EURUSD
+2025-07-27 19:45:41,557 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:45:41,563 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:45:41,566 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:45:41,573 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 3 existing feature records from 1 S3 objects
+2025-07-27 19:45:41,578 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:45:41,606 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 2 existing feature records from 2 S3 objects
+2025-07-27 19:45:41,610 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:45:41,614 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:45:41,628 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:45:41,632 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:45:41,642 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:45:41,648 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 3 existing feature records from 1 S3 objects
+2025-07-27 19:45:41,653 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:45:41,655 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Deleted 2 feature objects for EURUSD
+2025-07-27 19:45:41,662 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:45:41,666 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:45:41,687 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:45:41,690 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: No existing features found for EURUSD
+2025-07-27 19:45:41,705 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 2 features for 2024-01-01 in s3://test-bucket/test-prefix/EURUSD/year=2024/month=01/day=01/features_20240101_090000_100000.parquet (EURUSD)
+2025-07-27 19:45:41,705 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 2 new features out of 2 total for EURUSD
+2025-07-27 19:45:41,725 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: No existing features found for GBPUSD
+2025-07-27 19:45:41,728 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 1 features for 2024-01-01 in s3://test-bucket/test-prefix/GBPUSD/year=2024/month=01/day=01/features_20240101_110000_110000.parquet (GBPUSD)
+2025-07-27 19:45:41,729 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 1 new features out of 1 total for GBPUSD
+2025-07-27 19:45:41,733 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:45:41,743 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 1 existing feature records from 1 S3 objects
+2025-07-27 19:46:26,863 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:46:26,866 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: custom-bucket
+2025-07-27 19:46:26,870 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Created S3 bucket: test-bucket
+2025-07-27 19:46:26,878 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:46:26,881 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: No existing features found for EURUSD
+2025-07-27 19:46:26,895 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 3 features for 2024-01-01 in s3://test-bucket/test-prefix/EURUSD/year=2024/month=01/day=01/features_20240101_090000_110000.parquet (EURUSD)
+2025-07-27 19:46:26,895 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 3 new features out of 3 total for EURUSD
+2025-07-27 19:46:26,900 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:46:26,928 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 2 existing feature records from 1 S3 objects
+2025-07-27 19:46:26,930 [WARNING] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Found 2 overlapping timestamps for EURUSD. These will be skipped to prevent data corruption.
+2025-07-27 19:46:26,933 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 1 features for 2024-01-01 in s3://test-bucket/test-prefix/EURUSD/year=2024/month=01/day=01/features_20240101_110000_110000.parquet (EURUSD)
+2025-07-27 19:46:26,938 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 1 features for 2024-01-05 in s3://test-bucket/test-prefix/EURUSD/year=2024/month=01/day=05/features_20240105_100000_100000.parquet (EURUSD)
+2025-07-27 19:46:26,938 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 2 new features out of 4 total for EURUSD
+2025-07-27 19:46:26,941 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:46:26,946 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:46:26,947 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: No features to store for EURUSD
+2025-07-27 19:46:26,950 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:46:26,957 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:46:26,962 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:46:26,967 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 3 existing feature records from 1 S3 objects
+2025-07-27 19:46:26,975 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:46:26,983 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 2 existing feature records from 2 S3 objects
+2025-07-27 19:46:26,989 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:46:26,993 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:46:26,996 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:46:27,000 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:46:27,006 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:46:27,012 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 3 existing feature records from 1 S3 objects
+2025-07-27 19:46:27,016 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:46:27,017 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Deleted 2 feature objects for EURUSD
+2025-07-27 19:46:27,022 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:46:27,026 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:46:27,031 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:46:27,033 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: No existing features found for EURUSD
+2025-07-27 19:46:27,039 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 2 features for 2024-01-01 in s3://test-bucket/test-prefix/EURUSD/year=2024/month=01/day=01/features_20240101_090000_100000.parquet (EURUSD)
+2025-07-27 19:46:27,039 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 2 new features out of 2 total for EURUSD
+2025-07-27 19:46:27,040 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: No existing features found for GBPUSD
+2025-07-27 19:46:27,044 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 1 features for 2024-01-01 in s3://test-bucket/test-prefix/GBPUSD/year=2024/month=01/day=01/features_20240101_110000_110000.parquet (GBPUSD)
+2025-07-27 19:46:27,044 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Stored 1 new features out of 1 total for GBPUSD
+2025-07-27 19:46:27,047 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Successfully validated access to S3 bucket: test-bucket
+2025-07-27 19:46:27,056 [INFO] drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo: Loaded 1 existing feature records from 1 S3 objects
+2025-07-27 19:47:13,717 [WARNING] drl_trading_core.preprocess.feature_store.repository.feature_store_fetch_repo: No valid timestamps to fetch for EURUSD
+2025-07-27 19:49:17,951 [WARNING] drl_trading_core.preprocess.feature_store.repository.feature_store_fetch_repo: No valid timestamps to fetch for EURUSD
+2025-07-27 19:49:34,446 [WARNING] drl_trading_core.preprocess.feature_store.repository.feature_store_fetch_repo: No valid timestamps to fetch for EURUSD
+2025-07-27 19:49:34,467 [ERROR] drl_trading_core.preprocess.feature_store.repository.feature_store_fetch_repo: Unexpected error during historical features fetch for EURUSD: Feature store error
+2025-07-27 19:51:11,166 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-07-27 19:51:11,166 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast entity: <Mock name='mock.get_entity().name' id='2366704702704'>
+2025-07-27 19:51:11,167 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.create_feature_view().name' id='2366704702560'>, <Mock name='mock.create_feature_view().name' id='2366704702560'>
+2025-07-27 19:51:11,167 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: <Mock name='mock.create_feature_service().name' id='2366704703040'>
+2025-07-27 19:51:11,486 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: No features to store for EURUSD
+2025-07-27 19:51:11,496 [WARNING] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: No new features stored for EURUSD
+2025-07-27 19:51:11,497 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast entity: <Mock name='mock.get_entity().name' id='2366704106192'>
+2025-07-27 19:51:11,497 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.create_feature_view().name' id='2366704105184'>, <Mock name='mock.create_feature_view().name' id='2366704105184'>
+2025-07-27 19:51:11,498 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: <Mock name='mock.create_feature_service().name' id='2366704104848'>
+2025-07-27 19:51:11,588 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Materialized features for online serving: EURUSD
+2025-07-27 19:51:11,761 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-07-27 19:51:11,762 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast entity: <Mock name='mock.get_entity().name' id='2366704883648'>
+2025-07-27 19:51:11,762 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.name' id='2366702497872'>, <Mock name='mock.name' id='2366702887728'>
+2025-07-27 19:51:11,762 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: test_service
+2025-07-27 19:51:11,767 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-07-27 19:55:13,930 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-07-27 19:55:13,931 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast entity: <Mock name='mock.get_entity().name' id='1864790235456'>
+2025-07-27 19:55:13,931 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.create_feature_view().name' id='1864789636256'>, <Mock name='mock.create_feature_view().name' id='1864789636256'>
+2025-07-27 19:55:13,931 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: <Mock name='mock.create_feature_service().name' id='1864790235120'>
+2025-07-27 19:55:14,207 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: No features to store for EURUSD
+2025-07-27 19:55:14,217 [WARNING] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: No new features stored for EURUSD
+2025-07-27 19:55:14,217 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast entity: <Mock name='mock.get_entity().name' id='1864790240352'>
+2025-07-27 19:55:14,217 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.create_feature_view().name' id='1864790236704'>, <Mock name='mock.create_feature_view().name' id='1864790236704'>
+2025-07-27 19:55:14,218 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: <Mock name='mock.create_feature_service().name' id='1864790232336'>
+2025-07-27 19:55:14,310 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Materialized features for online serving: EURUSD
+2025-07-27 19:55:14,463 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-07-27 19:55:14,464 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast entity: <Mock name='mock.get_entity().name' id='1864788448112'>
+2025-07-27 19:55:14,464 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.name' id='1864791671776'>, <Mock name='mock.name' id='1864791672064'>
+2025-07-27 19:55:14,464 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: test_service
+2025-07-27 19:55:14,472 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-07-27 19:59:12,801 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-07-27 19:59:12,801 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.create_feature_view().name' id='1887112784512'>, <Mock name='mock.create_feature_view().name' id='1887112784512'>
+2025-07-27 19:59:12,801 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: <Mock name='mock.create_feature_service().name' id='1887109618848'>
+2025-07-27 19:59:12,808 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: No features to store for EURUSD
+2025-07-27 19:59:12,817 [WARNING] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: No new features stored for EURUSD
+2025-07-27 19:59:12,818 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.create_feature_view().name' id='1887112161392'>, <Mock name='mock.create_feature_view().name' id='1887112161392'>
+2025-07-27 19:59:12,818 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: <Mock name='mock.create_feature_service().name' id='1887114679872'>
+2025-07-27 19:59:12,829 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Materialized features for online serving: EURUSD
+2025-07-27 19:59:13,290 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-07-27 19:59:13,290 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.name' id='1887115506320'>, <Mock name='mock.name' id='1887115497728'>
+2025-07-27 19:59:13,290 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: test_service
+2025-07-27 19:59:13,295 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-07-27 20:01:10,445 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-07-27 20:01:10,445 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast entity: <Mock name='mock.get_entity().name' id='1891558170240'>
+2025-07-27 20:01:10,445 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.create_feature_view().name' id='1891560362768'>, <Mock name='mock.create_feature_view().name' id='1891560362768'>
+2025-07-27 20:01:10,446 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: <Mock name='mock.create_feature_service().name' id='1891560363152'>
+2025-07-27 20:01:10,757 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: No features to store for EURUSD
+2025-07-27 20:01:10,768 [WARNING] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: No new features stored for EURUSD
+2025-07-27 20:01:10,768 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast entity: <Mock name='mock.get_entity().name' id='1891560365744'>
+2025-07-27 20:01:10,769 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.create_feature_view().name' id='1891560368048'>, <Mock name='mock.create_feature_view().name' id='1891560368048'>
+2025-07-27 20:01:10,769 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: <Mock name='mock.create_feature_service().name' id='1891560193488'>
+2025-07-27 20:01:10,874 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Materialized features for online serving: EURUSD
+2025-07-27 20:01:11,645 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-07-27 20:01:11,647 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast entity: <Mock name='mock.get_entity().name' id='1891561406880'>
+2025-07-27 20:01:11,647 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.name' id='1891561407120'>, <Mock name='mock.name' id='1891561406784'>
+2025-07-27 20:01:11,647 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: test_service
+2025-07-27 20:01:11,657 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-07-27 20:02:37,882 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-07-27 20:02:37,882 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast entity: <Mock name='mock.get_entity().name' id='2562318732128'>
+2025-07-27 20:02:37,882 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.create_feature_view().name' id='2562318732272'>, <Mock name='mock.create_feature_view().name' id='2562318732272'>
+2025-07-27 20:02:37,883 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: <Mock name='mock.create_feature_service().name' id='2562318735104'>
+2025-07-27 20:02:38,222 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: No features to store for EURUSD
+2025-07-27 20:02:38,234 [WARNING] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: No new features stored for EURUSD
+2025-07-27 20:02:38,234 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast entity: <Mock name='mock.get_entity().name' id='2562318917536'>
+2025-07-27 20:02:38,235 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.create_feature_view().name' id='2562314408288'>, <Mock name='mock.create_feature_view().name' id='2562314408288'>
+2025-07-27 20:02:38,236 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: <Mock name='mock.create_feature_service().name' id='2562318918256'>
+2025-07-27 20:02:38,327 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Materialized features for online serving: EURUSD
+2025-07-27 20:02:38,873 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-07-27 20:02:38,874 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast entity: <Mock name='mock.get_entity().name' id='2562320220672'>
+2025-07-27 20:02:38,874 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.name' id='2562320220288'>, <Mock name='mock.name' id='2562320222064'>
+2025-07-27 20:02:38,874 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: test_service
+2025-07-27 20:02:38,879 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-07-27 20:04:18,399 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-07-27 20:04:18,400 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast entity: <Mock name='mock.get_entity().name' id='2267547436288'>
+2025-07-27 20:04:18,400 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.create_feature_view().name' id='2267547436624'>, <Mock name='mock.create_feature_view().name' id='2267547436624'>
+2025-07-27 20:04:18,400 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: <Mock name='mock.create_feature_service().name' id='2267547439696'>
+2025-07-27 20:04:18,407 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: No features to store for EURUSD
+2025-07-27 20:04:18,416 [WARNING] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: No new features stored for EURUSD
+2025-07-27 20:04:18,417 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast entity: <Mock name='mock.get_entity().name' id='2267546842272'>
+2025-07-27 20:04:18,417 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.create_feature_view().name' id='2267546843904'>, <Mock name='mock.create_feature_view().name' id='2267546843904'>
+2025-07-27 20:04:18,417 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: <Mock name='mock.create_feature_service().name' id='2267546843856'>
+2025-07-27 20:04:18,430 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Materialized features for online serving: EURUSD
+2025-07-27 20:04:18,475 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-07-27 20:04:18,475 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast entity: <Mock name='mock.get_entity().name' id='2267547835120'>
+2025-07-27 20:04:18,476 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.name' id='2267547835408'>, <Mock name='mock.name' id='2267545132432'>
+2025-07-27 20:04:18,476 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: test_service
+2025-07-27 20:04:18,481 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-07-27 20:05:32,540 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-07-27 20:05:32,541 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast entity: <Mock name='mock.get_entity().name' id='1939827805120'>
+2025-07-27 20:05:32,541 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.create_feature_view().name' id='1939830275584'>, <Mock name='mock.create_feature_view().name' id='1939830275584'>
+2025-07-27 20:05:32,541 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: <Mock name='mock.create_feature_service().name' id='1939830871760'>
+2025-07-27 20:05:32,547 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: No features to store for EURUSD
+2025-07-27 20:05:32,559 [WARNING] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: No new features stored for EURUSD
+2025-07-27 20:05:32,559 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast entity: <Mock name='mock.get_entity().name' id='1939830874592'>
+2025-07-27 20:05:32,560 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.create_feature_view().name' id='1939830874784'>, <Mock name='mock.create_feature_view().name' id='1939830874784'>
+2025-07-27 20:05:32,560 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: <Mock name='mock.create_feature_service().name' id='1939830874256'>
+2025-07-27 20:05:32,572 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Materialized features for online serving: EURUSD
+2025-07-27 20:05:32,621 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-07-27 20:05:32,621 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast entity: <Mock name='mock.get_entity().name' id='1939831266512'>
+2025-07-27 20:05:32,622 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.name' id='1939831266752'>, <Mock name='mock.name' id='1939473534848'>
+2025-07-27 20:05:32,622 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: test_service
+2025-07-27 20:05:32,627 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD

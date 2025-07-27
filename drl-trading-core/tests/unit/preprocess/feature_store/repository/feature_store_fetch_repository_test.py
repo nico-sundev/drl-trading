@@ -238,11 +238,11 @@ class TestFeatureStoreFetchRepositoryGetOffline:
 
     @pytest.fixture
     def sample_timestamps(self) -> pd.Series:
-        """Create sample timestamps for testing."""
+        """Create sample timestamps for testing (UTC)."""
         return pd.Series([
-            pd.Timestamp("2024-01-01 09:00:00"),
-            pd.Timestamp("2024-01-01 10:00:00"),
-            pd.Timestamp("2024-01-01 11:00:00")
+            pd.Timestamp("2024-01-01 09:00:00", tz="UTC"),
+            pd.Timestamp("2024-01-01 10:00:00", tz="UTC"),
+            pd.Timestamp("2024-01-01 11:00:00", tz="UTC")
         ])
 
     def test_get_offline_first_call_creates_feature_service(
@@ -375,13 +375,10 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         )
 
         # Then
-        call_args = repository._fs.get_historical_features.call_args
-        entity_df = call_args[1]["entity_df"]
-
-        assert len(entity_df) == 0
-        assert "event_timestamp" in entity_df.columns
-        assert "symbol" in entity_df.columns
+        # Should return empty DataFrame without calling get_historical_features
         assert isinstance(result, DataFrame)
+        assert len(result) == 0
+        repository._fs.get_historical_features.assert_not_called()
 
     def test_get_offline_returns_dataframe_from_feast_response(
         self,

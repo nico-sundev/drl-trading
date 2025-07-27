@@ -53,9 +53,15 @@ class OfflineFeatureS3Repo(IOfflineFeatureRepository):
         Raises:
             S3StorageException: If S3 configuration is invalid or credentials missing
         """
+        if config.offline_repo_strategy.value != "s3":
+            raise ValueError(f"OfflineFeatureS3Repo requires S3 strategy, got {config.offline_repo_strategy}")
+
+        if not config.s3_repo_config:
+            raise ValueError("s3_repo_config is required for S3 offline repository strategy")
+
         self.config = config
-        self.bucket_name = getattr(config, 's3_bucket_name', 'drl-trading-features')
-        self.s3_prefix = getattr(config, 's3_prefix', 'features')
+        self.bucket_name = config.s3_repo_config.bucket_name
+        self.s3_prefix = config.s3_repo_config.prefix
 
         # Initialize S3 client with proper error handling
         self._s3_client = self._initialize_s3_client()
@@ -332,20 +338,20 @@ class OfflineFeatureS3Repo(IOfflineFeatureRepository):
     def _initialize_s3_client(self) -> boto3.client:
         """Initialize boto3 S3 client with proper configuration."""
         try:
-            # Get S3 configuration from feature store config
+            # Get S3 configuration from s3_repo_config
             s3_config = {
                 "service_name": "s3",
-                "region_name": getattr(self.config, 's3_region', 'us-east-1')
+                "region_name": self.config.s3_repo_config.region
             }
 
             # Add endpoint URL if specified (for LocalStack/MinIO testing)
-            if hasattr(self.config, 's3_endpoint_url') and self.config.s3_endpoint_url:
-                s3_config["endpoint_url"] = self.config.s3_endpoint_url
+            if self.config.s3_repo_config.endpoint_url:
+                s3_config["endpoint_url"] = self.config.s3_repo_config.endpoint_url
 
             # Add credentials if specified
-            if hasattr(self.config, 's3_access_key_id') and self.config.s3_access_key_id:
-                s3_config["aws_access_key_id"] = self.config.s3_access_key_id
-                s3_config["aws_secret_access_key"] = self.config.s3_secret_access_key
+            if self.config.s3_repo_config.access_key_id:
+                s3_config["aws_access_key_id"] = self.config.s3_repo_config.access_key_id
+                s3_config["aws_secret_access_key"] = self.config.s3_repo_config.secret_access_key
 
             return boto3.client(**s3_config)
 

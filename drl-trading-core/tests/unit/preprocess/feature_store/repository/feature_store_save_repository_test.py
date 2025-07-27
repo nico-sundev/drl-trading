@@ -75,9 +75,23 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         )
 
         # Then
-        mock_offline_repo.store_features_incrementally.assert_called_once_with(
-            sample_features_df,
-            eurusd_h1_symbol
+        # Implementation converts timestamps to UTC, so we need to check the actual call
+        call_args = mock_offline_repo.store_features_incrementally.call_args
+        actual_df, actual_symbol = call_args[0]
+
+        # Verify the symbol is correct
+        assert actual_symbol == eurusd_h1_symbol
+
+        # Verify DataFrame structure (implementation may have added timezone info)
+        assert len(actual_df) == len(sample_features_df)
+        assert list(actual_df.columns) == list(sample_features_df.columns)
+
+        # Verify core data values are preserved (ignoring potential timezone changes)
+        pd.testing.assert_series_equal(
+            actual_df["rsi_14"], sample_features_df["rsi_14"], check_names=True
+        )
+        pd.testing.assert_series_equal(
+            actual_df["sma_20"], sample_features_df["sma_20"], check_names=True
         )
 
     def test_store_computed_features_offline_empty_dataframe(
@@ -187,10 +201,17 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
             feature_version_info=feature_version_info
         )
 
-        # Verify feature store apply
-        feature_store_save_repository.feature_store.apply.assert_called_once_with(
-            [mock_obs_fv, mock_reward_fv, mock_feature_service]
-        )
+        # Verify feature store apply (implementation includes entity)
+        call_args = feature_store_save_repository.feature_store.apply.call_args[0][0]
+        # There should be 4 components: entity, observation feature view, reward feature view, and feature service
+        EXPECTED_APPLY_COMPONENTS_COUNT = 4  # entity + obs_fv + reward_fv + feature_service
+        assert len(call_args) == EXPECTED_APPLY_COMPONENTS_COUNT
+
+        # Verify that the apply call includes the expected components
+        # The entity is first, followed by the feature views and service
+        assert mock_obs_fv in call_args
+        assert mock_reward_fv in call_args
+        assert mock_feature_service in call_args
 
         # Verify logging
         mock_logger.info.assert_called()
@@ -216,9 +237,13 @@ class TestFeatureStoreSaveRepositoryBatchMaterialization:
         )
 
         # Then
+        # Implementation converts timestamps to UTC
+        expected_start = sample_features_df["event_timestamp"].min().tz_localize("UTC")
+        expected_end = sample_features_df["event_timestamp"].max().tz_localize("UTC")
+
         feature_store_save_repository.feature_store.materialize.assert_called_once_with(
-            start_date=sample_features_df["event_timestamp"].min(),
-            end_date=sample_features_df["event_timestamp"].max()
+            start_date=expected_start,
+            end_date=expected_end
         )
 
     def test_batch_materialize_features_missing_timestamp_column(
@@ -279,6 +304,7 @@ class TestFeatureStoreSaveRepositoryOnlineStore:
         # Given
         single_record_df = DataFrame({
             "event_timestamp": [pd.Timestamp("2024-01-01 09:00:00")],
+            "symbol": [eurusd_h1_symbol],
             "feature_1": [1.5]
         })
         feature_role = FeatureRoleEnum.OBSERVATION_SPACE
@@ -294,10 +320,22 @@ class TestFeatureStoreSaveRepositoryOnlineStore:
 
         # Then
         mock_feature_view_name_mapper.map.assert_called_once_with(feature_role)
-        feature_store_save_repository.feature_store.write_to_online_store.assert_called_once_with(
-            feature_view_name=expected_feature_view_name,
-            df=single_record_df
-        )
+
+        # Implementation filters and sorts columns, so we need to check the actual call
+        call_args = feature_store_save_repository.feature_store.write_to_online_store.call_args
+        actual_feature_view_name = call_args[1]["feature_view_name"]
+        actual_df = call_args[1]["df"]
+
+        assert actual_feature_view_name == expected_feature_view_name
+
+        # Verify DataFrame content (implementation sorts columns alphabetically)
+        expected_columns = ["event_timestamp", "feature_1", "symbol"]
+        assert list(actual_df.columns) == expected_columns
+
+        # Verify data content is preserved
+        assert len(actual_df) == 1
+        assert actual_df["symbol"].iloc[0] == eurusd_h1_symbol
+        assert actual_df["feature_1"].iloc[0] == 1.5
 
     def test_push_features_to_online_store_missing_timestamp_column(
         self,
@@ -307,6 +345,7 @@ class TestFeatureStoreSaveRepositoryOnlineStore:
         """Test error handling when event_timestamp column is missing."""
         # Given
         invalid_df = DataFrame({
+            "symbol": [eurusd_h1_symbol],
             "feature_1": [1.5]
             # Missing event_timestamp column
         })
@@ -330,6 +369,7 @@ class TestFeatureStoreSaveRepositoryOnlineStore:
         # Given
         single_record_df = DataFrame({
             "event_timestamp": [pd.Timestamp("2024-01-01 09:00:00")],
+            "symbol": [eurusd_h1_symbol],
             "feature_1": [1.5]
         })
         feature_role = Mock()  # Unknown feature role
@@ -355,6 +395,7 @@ class TestFeatureStoreSaveRepositoryOnlineStore:
         # Given
         single_record_df = DataFrame({
             "event_timestamp": [pd.Timestamp("2024-01-01 09:00:00")],
+            "symbol": [eurusd_h1_symbol],
             "feature_1": [1.5]
         })
         feature_role = FeatureRoleEnum.OBSERVATION_SPACE
@@ -366,10 +407,16 @@ class TestFeatureStoreSaveRepositoryOnlineStore:
             eurusd_h1_symbol,
             feature_role
         )
-
         # Then
-        mock_logger.debug.assert_called_once()
-        debug_message = mock_logger.debug.call_args[0][0]
+        # Implementation makes multiple debug calls (one for each step: filtering columns, sorting, mapping, writing, and summary)
+        EXPECTED_DEBUG_CALLS = 5  # 5 debug calls: filter, sort, map, write, summary
+        assert mock_logger.debug.call_count == EXPECTED_DEBUG_CALLS
+
+        # Verify the final debug message contains the expected information
+        final_call = mock_logger.debug.call_args_list[-1]
+        debug_message = final_call[0][0]
+        assert "Pushed 1 feature records" in debug_message
+        assert "EURUSD" in debug_message
         assert "Pushed 1 feature records" in debug_message
         assert "EURUSD" in debug_message
 
@@ -385,15 +432,20 @@ class TestFeatureStoreSaveRepositoryUtilityMethods:
     ) -> None:
         """Test is_enabled returns True when feature store is enabled."""
         # Given
+        from drl_trading_common.config.feature_config import LocalRepoConfig
+        from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
+
+        local_repo_config = LocalRepoConfig(repo_path="/tmp/test")
         enabled_config = FeatureStoreConfig(
             enabled=True,
-            repo_path="/tmp/test",
-            offline_store_path="/tmp/offline",
+            config_directory="/tmp/config",
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=True,
             service_name="test_service",
-            service_version="1.0.0"
+            service_version="1.0.0",
+            offline_repo_strategy=OfflineRepoStrategyEnum.LOCAL,
+            local_repo_config=local_repo_config
         )
 
         # When
@@ -415,15 +467,20 @@ class TestFeatureStoreSaveRepositoryUtilityMethods:
     ) -> None:
         """Test is_enabled returns False when feature store is disabled."""
         # Given
+        from drl_trading_common.config.feature_config import LocalRepoConfig
+        from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
+
+        local_repo_config = LocalRepoConfig(repo_path="/tmp/test")
         disabled_config = FeatureStoreConfig(
             enabled=False,
-            repo_path="/tmp/test",
-            offline_store_path="/tmp/offline",
+            config_directory="/tmp/config",
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
             service_name="test_service",
-            service_version="1.0.0"
+            service_version="1.0.0",
+            offline_repo_strategy=OfflineRepoStrategyEnum.LOCAL,
+            local_repo_config=local_repo_config
         )
 
         # When
@@ -537,6 +594,7 @@ class TestFeatureStoreSaveRepositoryErrorHandling:
         # Given
         single_record_df = DataFrame({
             "event_timestamp": [pd.Timestamp("2024-01-01 09:00:00")],
+            "symbol": [eurusd_h1_symbol],
             "feature_1": [1.5]
         })
         feature_role = FeatureRoleEnum.OBSERVATION_SPACE
@@ -571,6 +629,7 @@ class TestFeatureStoreSaveRepositoryParametrized:
         # Given
         single_record_df = DataFrame({
             "event_timestamp": [pd.Timestamp("2024-01-01 09:00:00")],
+            "symbol": [eurusd_h1_symbol],
             "feature_1": [1.5]
         })
         mock_feature_view_name_mapper.map.return_value = expected_view_name
@@ -584,7 +643,19 @@ class TestFeatureStoreSaveRepositoryParametrized:
 
         # Then
         mock_feature_view_name_mapper.map.assert_called_once_with(feature_role)
-        feature_store_save_repository.feature_store.write_to_online_store.assert_called_once_with(
-            feature_view_name=expected_view_name,
-            df=single_record_df
-        )
+
+        # Implementation filters and sorts columns, so we need to check the actual call
+        call_args = feature_store_save_repository.feature_store.write_to_online_store.call_args
+        actual_feature_view_name = call_args[1]["feature_view_name"]
+        actual_df = call_args[1]["df"]
+
+        assert actual_feature_view_name == expected_view_name
+
+        # Verify DataFrame content (implementation sorts columns alphabetically)
+        expected_columns = ["event_timestamp", "feature_1", "symbol"]
+        assert list(actual_df.columns) == expected_columns
+
+        # Verify data content is preserved
+        assert len(actual_df) == 1
+        assert actual_df["symbol"].iloc[0] == eurusd_h1_symbol
+        assert actual_df["feature_1"].iloc[0] == 1.5

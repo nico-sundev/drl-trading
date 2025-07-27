@@ -34,7 +34,13 @@ class OfflineFeatureLocalRepo(IOfflineFeatureRepository):
     """
 
     def __init__(self, config: FeatureStoreConfig):
-        self.base_path = config.repo_path
+        if config.offline_repo_strategy.value != "local":
+            raise ValueError(f"OfflineFeatureLocalRepo requires LOCAL strategy, got {config.offline_repo_strategy}")
+
+        if not config.local_repo_config:
+            raise ValueError("local_repo_config is required for LOCAL offline repository strategy")
+
+        self.base_path = config.local_repo_config.repo_path
 
     def store_features_incrementally(
         self,

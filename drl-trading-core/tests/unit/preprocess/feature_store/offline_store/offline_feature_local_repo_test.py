@@ -30,7 +30,7 @@ class TestOfflineFeatureLocalRepoInit:
         repo = OfflineFeatureLocalRepo(feature_store_config)
 
         # Then
-        assert repo.base_path == feature_store_config.repo_path
+        assert repo.base_path == feature_store_config.local_repo_config.repo_path
 
 
 class TestOfflineFeatureLocalRepoStoreIncremental:

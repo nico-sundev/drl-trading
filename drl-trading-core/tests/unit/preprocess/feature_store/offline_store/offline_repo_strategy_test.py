@@ -24,6 +24,7 @@ class TestOfflineRepoStrategy:
         local_config = LocalRepoConfig(repo_path="/test/local/path")
         config = FeatureStoreConfig(
             enabled=True,
+            config_directory="/test/config",
             entity_name="test_entity",
             ttl_days=30,
             service_name="test_service",
@@ -63,6 +64,7 @@ class TestOfflineRepoStrategy:
         )
         config = FeatureStoreConfig(
             enabled=True,
+            config_directory="/test/config",
             entity_name="test_entity",
             ttl_days=30,
             service_name="test_service",
@@ -104,6 +106,7 @@ class TestOfflineRepoStrategy:
         # Given - Create config with valid enum but test runtime error handling
         config = FeatureStoreConfig(
             enabled=True,
+            config_directory="/test/config",
             entity_name="test_entity",
             ttl_days=30,
             service_name="test_service",
@@ -125,6 +128,7 @@ class TestOfflineRepoStrategy:
         # Given
         config = FeatureStoreConfig(
             enabled=True,
+            config_directory="/test/config",
             entity_name="test_entity",
             ttl_days=30,
             service_name="test_service",
@@ -144,6 +148,7 @@ class TestOfflineRepoStrategy:
         # Given
         config = FeatureStoreConfig(
             enabled=True,
+            config_directory="/test/config",
             entity_name="test_entity",
             ttl_days=30,
             service_name="test_service",

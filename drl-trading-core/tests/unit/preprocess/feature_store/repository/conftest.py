@@ -11,7 +11,8 @@ from unittest.mock import Mock
 
 import pandas as pd
 import pytest
-from drl_trading_common.config.feature_config import FeatureStoreConfig
+from drl_trading_common.config.feature_config import FeatureStoreConfig, LocalRepoConfig
+from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
@@ -33,15 +34,18 @@ def temp_dir() -> Generator[str, None, None]:
 @pytest.fixture
 def feature_store_config(temp_dir: str) -> FeatureStoreConfig:
     """Create a test feature store configuration."""
+    local_repo_config = LocalRepoConfig(repo_path=temp_dir)
+
     return FeatureStoreConfig(
         enabled=True,
-        repo_path=temp_dir,
-        offline_store_path=f"{temp_dir}/offline_store.parquet",
+        config_directory=temp_dir,
         entity_name="trading_entity",
         ttl_days=30,
         online_enabled=True,
         service_name="test_service",
-        service_version="1.0.0"
+        service_version="1.0.0",
+        offline_repo_strategy=OfflineRepoStrategyEnum.LOCAL,
+        local_repo_config=local_repo_config
     )
 
 
@@ -64,7 +68,22 @@ def sample_features_df() -> DataFrame:
 def mock_feast_provider() -> Mock:
     """Create a mock FeastProvider for testing."""
     mock_provider = Mock()
-    mock_provider.get_feature_store.return_value = Mock()
+
+    # Create mock feature store with proper schema mocking
+    mock_feature_store = Mock()
+
+    # Mock feature view with schema
+    mock_feature_view = Mock()
+    mock_schema_field = Mock()
+    mock_schema_field.name = "feature_1"
+    mock_feature_view.schema = [mock_schema_field]  # Make schema iterable
+
+    mock_feature_store.get_feature_view.return_value = mock_feature_view
+    mock_feature_store.materialize.return_value = None
+    mock_feature_store.write_to_online_store.return_value = None
+    mock_feature_store.apply.return_value = None
+
+    mock_provider.get_feature_store.return_value = mock_feature_store
     mock_provider.create_feature_view.return_value = Mock()
     mock_provider.create_feature_service.return_value = Mock()
     return mock_provider

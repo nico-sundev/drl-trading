@@ -29,7 +29,7 @@ class TestFeatureStoreWrapper:
         """Create an enabled feature store config for testing."""
         return FeatureStoreConfig(
             enabled=True,
-            repo_path="/test/path/feature_store",
+            config_directory="/test/path/feature_store",
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
@@ -42,7 +42,7 @@ class TestFeatureStoreWrapper:
         """Create a disabled feature store config for testing."""
         return FeatureStoreConfig(
             enabled=False,
-            repo_path="/test/path/feature_store",
+            config_directory="/test/path/feature_store",
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
@@ -79,7 +79,7 @@ class TestFeatureStoreWrapper:
         """Test get_feature_store with enabled config."""
         config = FeatureStoreConfig(
             enabled=True,
-            repo_path=temp_feature_store_dir,
+            config_directory=temp_feature_store_dir,
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
@@ -100,8 +100,8 @@ class TestFeatureStoreWrapper:
         """Test get_feature_store returns None when feature store is disabled."""
         wrapper = FeatureStoreWrapper(disabled_config)
 
-        # This should return None due to disabled config in _resolve_feature_store_path
-        result = wrapper._resolve_feature_store_path()
+        # This should return None due to disabled config in _resolve_feature_store_config_directory
+        result = wrapper._resolve_feature_store_config_directory()
 
         assert result is None
 
@@ -114,7 +114,7 @@ class TestFeatureStoreWrapper:
         """Test get_feature_store with absolute path to config file."""
         config = FeatureStoreConfig(
             enabled=True,
-            repo_path=temp_feature_store_dir,  # This is already absolute
+            config_directory=temp_feature_store_dir,  # This is already absolute
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
@@ -140,7 +140,7 @@ class TestFeatureStoreWrapper:
         relative_path = "test_config/feature_store"
         config = FeatureStoreConfig(
             enabled=True,
-            repo_path=relative_path,
+            config_directory=relative_path,
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
@@ -171,7 +171,7 @@ class TestFeatureStoreWrapper:
         """Test that FeatureStore instance is cached after first creation."""
         config = FeatureStoreConfig(
             enabled=True,
-            repo_path=temp_feature_store_dir,
+            config_directory=temp_feature_store_dir,
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
@@ -203,7 +203,7 @@ class TestFeatureStoreWrapper:
         """Test error handling when FeatureStore creation fails."""
         config = FeatureStoreConfig(
             enabled=True,
-            repo_path="/nonexistent/path/feature_store",
+            config_directory="/nonexistent/path/feature_store",
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
@@ -218,19 +218,19 @@ class TestFeatureStoreWrapper:
         with pytest.raises(Exception, match="Failed to create FeatureStore"):
             wrapper.get_feature_store()
 
-    def test_resolve_feature_store_path_disabled(self, disabled_config: FeatureStoreConfig) -> None:
-        """Test _resolve_feature_store_path returns None when disabled."""
+    def test_resolve_feature_store_config_directory_disabled(self, disabled_config: FeatureStoreConfig) -> None:
+        """Test _resolve_feature_store_config_directory returns None when disabled."""
         wrapper = FeatureStoreWrapper(disabled_config)
 
-        result = wrapper._resolve_feature_store_path()
+        result = wrapper._resolve_feature_store_config_directory()
 
         assert result is None
 
-    def test_resolve_feature_store_path_absolute(self, temp_feature_store_dir: str) -> None:
-        """Test _resolve_feature_store_path with absolute path."""
+    def test_resolve_feature_store_config_directory_absolute(self, temp_feature_store_dir: str) -> None:
+        """Test _resolve_feature_store_config_directory with absolute path."""
         config = FeatureStoreConfig(
             enabled=True,
-            repo_path=temp_feature_store_dir,
+            config_directory=temp_feature_store_dir,
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
@@ -239,17 +239,17 @@ class TestFeatureStoreWrapper:
         )
 
         wrapper = FeatureStoreWrapper(config)
-        result = wrapper._resolve_feature_store_path()
+        result = wrapper._resolve_feature_store_config_directory()
 
         assert result == temp_feature_store_dir
         assert os.path.isabs(result)
 
-    def test_resolve_feature_store_path_relative(self) -> None:
-        """Test _resolve_feature_store_path with relative path."""
+    def test_resolve_feature_store_config_directory_relative(self) -> None:
+        """Test _resolve_feature_store_config_directory with relative path."""
         relative_path = "test_config/feature_store"
         config = FeatureStoreConfig(
             enabled=True,
-            repo_path=relative_path,
+            config_directory=relative_path,
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
@@ -258,7 +258,7 @@ class TestFeatureStoreWrapper:
         )
 
         wrapper = FeatureStoreWrapper(config)
-        result = wrapper._resolve_feature_store_path()
+        result = wrapper._resolve_feature_store_config_directory()
 
         assert result is not None
         assert os.path.isabs(result)
@@ -279,7 +279,7 @@ class TestFeatureStoreWrapper:
         # Create two configs with the same path
         config1 = FeatureStoreConfig(
             enabled=True,
-            repo_path=temp_feature_store_dir,
+            config_directory=temp_feature_store_dir,
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
@@ -289,7 +289,7 @@ class TestFeatureStoreWrapper:
 
         config2 = FeatureStoreConfig(
             enabled=True,
-            repo_path=temp_feature_store_dir,
+            config_directory=temp_feature_store_dir,
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
@@ -319,7 +319,7 @@ class TestFeatureStoreWrapper:
         special_path = "config/test-feature_store@v1"
         config = FeatureStoreConfig(
             enabled=True,
-            repo_path=special_path,
+            config_directory=special_path,
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
@@ -345,7 +345,7 @@ class TestFeatureStoreWrapper:
         wrapper = FeatureStoreWrapper(enabled_config)
 
         assert wrapper._feature_store_config.enabled is True
-        assert wrapper._feature_store_config.repo_path == "/test/path/feature_store"
+        assert wrapper._feature_store_config.config_directory == "/test/path/feature_store"
         assert wrapper._feature_store_config.entity_name == "test_entity"
         assert wrapper._feature_store_config.ttl_days == 30
         assert wrapper._feature_store_config.online_enabled is False
@@ -360,7 +360,7 @@ class TestFeatureStoreWrapper:
         """Test path resolution with parametrized enabled/disabled states."""
         config = FeatureStoreConfig(
             enabled=enabled,
-            repo_path="test/path",
+            config_directory="test/path",
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
@@ -369,7 +369,7 @@ class TestFeatureStoreWrapper:
         )
 
         wrapper = FeatureStoreWrapper(config)
-        result = wrapper._resolve_feature_store_path()
+        result = wrapper._resolve_feature_store_config_directory()
 
         if expected_none:
             assert result is None
@@ -388,7 +388,7 @@ class TestFeatureStoreWrapper:
         """Test path resolution with various path types."""
         config = FeatureStoreConfig(
             enabled=True,
-            repo_path=repo_path,
+            config_directory=repo_path,
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
@@ -397,7 +397,7 @@ class TestFeatureStoreWrapper:
         )
 
         wrapper = FeatureStoreWrapper(config)
-        result = wrapper._resolve_feature_store_path()
+        result = wrapper._resolve_feature_store_config_directory()
 
         assert result is not None
         assert os.path.isabs(result)

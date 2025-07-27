@@ -9,7 +9,8 @@ from typing import Generator
 
 import pandas as pd
 import pytest
-from drl_trading_common.config.feature_config import FeatureStoreConfig
+from drl_trading_common.config.feature_config import FeatureStoreConfig, LocalRepoConfig, S3RepoConfig
+from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
 from pandas import DataFrame
 
 from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo import (
@@ -29,13 +30,39 @@ def feature_store_config(temp_dir: str) -> FeatureStoreConfig:
     """Create a feature store configuration for testing."""
     return FeatureStoreConfig(
         enabled=True,
-        repo_path=temp_dir,
-        offline_store_path=temp_dir,  # Use temp_dir as offline store path
+        config_directory=temp_dir,
         entity_name="test_entity",
         ttl_days=30,
         online_enabled=False,
         service_name="test_service",
-        service_version="1.0.0"
+        service_version="1.0.0",
+        offline_repo_strategy=OfflineRepoStrategyEnum.LOCAL,
+        local_repo_config=LocalRepoConfig(repo_path=temp_dir)
+    )
+
+
+@pytest.fixture
+def s3_feature_store_config(temp_dir: str) -> FeatureStoreConfig:
+    """Create an S3 feature store configuration for testing."""
+    s3_config = S3RepoConfig(
+        bucket_name="test-bucket",
+        prefix="test-prefix",
+        region="us-east-1",
+        endpoint_url=None,
+        access_key_id=None,
+        secret_access_key=None
+    )
+
+    return FeatureStoreConfig(
+        enabled=True,
+        config_directory=temp_dir,
+        entity_name="test_entity",
+        ttl_days=30,
+        online_enabled=False,
+        service_name="test_service",
+        service_version="1.0.0",
+        offline_repo_strategy=OfflineRepoStrategyEnum.S3,
+        s3_repo_config=s3_config
     )
 
 

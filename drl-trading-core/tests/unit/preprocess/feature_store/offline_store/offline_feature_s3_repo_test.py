@@ -27,7 +27,7 @@ class TestOfflineFeatureS3RepoInit:
     def test_init_with_valid_config(
         self,
         mock_boto_client: Mock,
-        feature_store_config: FeatureStoreConfig
+        s3_feature_store_config: FeatureStoreConfig
     ) -> None:
         """Test successful initialization with valid configuration."""
         # Given
@@ -36,14 +36,14 @@ class TestOfflineFeatureS3RepoInit:
         mock_s3_client.head_bucket.return_value = {"ResponseMetadata": {"HTTPStatusCode": 200}}
 
         # When
-        repo = OfflineFeatureS3Repo(feature_store_config)
+        repo = OfflineFeatureS3Repo(s3_feature_store_config)
 
         # Then
-        assert repo.config == feature_store_config
-        assert repo.bucket_name == 'drl-trading-features'  # Default value
-        assert repo.s3_prefix == 'features'  # Default value
+        assert repo.config == s3_feature_store_config
+        assert repo.bucket_name == 'test-bucket'  # From S3 config
+        assert repo.s3_prefix == 'test-prefix'  # From S3 config
         assert repo._s3_client == mock_s3_client
-        mock_s3_client.head_bucket.assert_called_once_with(Bucket='drl-trading-features')
+        mock_s3_client.head_bucket.assert_called_once_with(Bucket='test-bucket')
 
     @patch('drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo.boto3.client')
     def test_init_with_custom_s3_config(
@@ -52,22 +52,29 @@ class TestOfflineFeatureS3RepoInit:
     ) -> None:
         """Test initialization with custom S3 configuration."""
         # Given
+        from drl_trading_common.config.feature_config import S3RepoConfig
+        from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
+
+        s3_config = S3RepoConfig(
+            bucket_name="custom-bucket",
+            prefix="custom-prefix",
+            region="us-west-2",
+            endpoint_url="http://localhost:9000",
+            access_key_id="test-key",
+            secret_access_key="test-secret"
+        )
+
         config = FeatureStoreConfig(
             enabled=True,
-            repo_path="/test/repo",
+            config_directory="/test/config",
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
             service_name="test_service",
-            service_version="1.0.0"
+            service_version="1.0.0",
+            offline_repo_strategy=OfflineRepoStrategyEnum.S3,
+            s3_repo_config=s3_config
         )
-        # Add S3-specific attributes
-        config.s3_bucket_name = "custom-bucket"
-        config.s3_prefix = "custom-prefix"
-        config.s3_endpoint_url = "http://localhost:9000"
-        config.s3_access_key_id = "test-key"
-        config.s3_secret_access_key = "test-secret"
-        config.s3_region = "us-west-2"
 
         mock_s3_client = Mock()
         mock_boto_client.return_value = mock_s3_client
@@ -91,7 +98,7 @@ class TestOfflineFeatureS3RepoInit:
     def test_init_bucket_creation_on_404(
         self,
         mock_boto_client: Mock,
-        feature_store_config: FeatureStoreConfig
+        s3_feature_store_config: FeatureStoreConfig
     ) -> None:
         """Test bucket creation when bucket doesn't exist."""
         # Given
@@ -104,18 +111,18 @@ class TestOfflineFeatureS3RepoInit:
         mock_s3_client.create_bucket.return_value = {"ResponseMetadata": {"HTTPStatusCode": 200}}
 
         # When
-        repo = OfflineFeatureS3Repo(feature_store_config)
+        repo = OfflineFeatureS3Repo(s3_feature_store_config)
 
         # Then
         assert repo._s3_client == mock_s3_client
-        mock_s3_client.head_bucket.assert_called_once_with(Bucket='drl-trading-features')
-        mock_s3_client.create_bucket.assert_called_once_with(Bucket='drl-trading-features')
+        mock_s3_client.head_bucket.assert_called_once_with(Bucket='test-bucket')
+        mock_s3_client.create_bucket.assert_called_once_with(Bucket='test-bucket')
 
     @patch('drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo.boto3.client')
     def test_init_no_credentials_error(
         self,
         mock_boto_client: Mock,
-        feature_store_config: FeatureStoreConfig
+        s3_feature_store_config: FeatureStoreConfig
     ) -> None:
         """Test error handling when no AWS credentials are available."""
         # Given
@@ -125,17 +132,17 @@ class TestOfflineFeatureS3RepoInit:
 
         # When & Then
         with pytest.raises(S3StorageException, match="No AWS credentials found"):
-            OfflineFeatureS3Repo(feature_store_config)
+            OfflineFeatureS3Repo(s3_feature_store_config)
 
 
 class TestOfflineFeatureS3RepoStoreIncremental:
     """Test class for incremental feature storage operations."""
 
     @pytest.fixture
-    def mock_s3_repo(self, feature_store_config: FeatureStoreConfig) -> OfflineFeatureS3Repo:
+    def mock_s3_repo(self, s3_feature_store_config: FeatureStoreConfig) -> OfflineFeatureS3Repo:
         """Create a mocked S3 repository for testing."""
         with patch('drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo.boto3.client'):
-            repo = OfflineFeatureS3Repo(feature_store_config)
+            repo = OfflineFeatureS3Repo(s3_feature_store_config)
             repo._s3_client = Mock()
             return repo
 
@@ -262,10 +269,10 @@ class TestOfflineFeatureS3RepoLoadExisting:
     """Test class for loading existing features."""
 
     @pytest.fixture
-    def mock_s3_repo(self, feature_store_config: FeatureStoreConfig) -> OfflineFeatureS3Repo:
+    def mock_s3_repo(self, s3_feature_store_config: FeatureStoreConfig) -> OfflineFeatureS3Repo:
         """Create a mocked S3 repository for testing."""
         with patch('drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo.boto3.client'):
-            repo = OfflineFeatureS3Repo(feature_store_config)
+            repo = OfflineFeatureS3Repo(s3_feature_store_config)
             repo._s3_client = Mock()
             return repo
 
@@ -373,10 +380,10 @@ class TestOfflineFeatureS3RepoUtilityMethods:
     """Test class for utility methods."""
 
     @pytest.fixture
-    def mock_s3_repo(self, feature_store_config: FeatureStoreConfig) -> OfflineFeatureS3Repo:
+    def mock_s3_repo(self, s3_feature_store_config: FeatureStoreConfig) -> OfflineFeatureS3Repo:
         """Create a mocked S3 repository for testing."""
         with patch('drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo.boto3.client'):
-            repo = OfflineFeatureS3Repo(feature_store_config)
+            repo = OfflineFeatureS3Repo(s3_feature_store_config)
             repo._s3_client = Mock()
             return repo
 
@@ -551,10 +558,10 @@ class TestOfflineFeatureS3RepoErrorHandling:
     """Test class for error handling scenarios."""
 
     @pytest.fixture
-    def mock_s3_repo(self, feature_store_config: FeatureStoreConfig) -> OfflineFeatureS3Repo:
+    def mock_s3_repo(self, s3_feature_store_config: FeatureStoreConfig) -> OfflineFeatureS3Repo:
         """Create a mocked S3 repository for testing."""
         with patch('drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo.boto3.client'):
-            repo = OfflineFeatureS3Repo(feature_store_config)
+            repo = OfflineFeatureS3Repo(s3_feature_store_config)
             repo._s3_client = Mock()
             return repo
 
