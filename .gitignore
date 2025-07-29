@@ -62,9 +62,7 @@ MANIFEST
 .python-version
 
 # feature stores
-tests/resources/test_feature_repo/*
-tests/resources/test_feature_store_data/*
-tests/resources/test_feature_repo/data/registry.db
+tests/resources/test/data/
 
 # CI/CD artifacts
 .gitlab-ci-local/

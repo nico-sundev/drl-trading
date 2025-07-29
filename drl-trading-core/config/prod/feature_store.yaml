@@ -1,0 +1,15 @@
+# Feast Feature Store Configuration - Production Environment
+# Uses PostgreSQL registry for enterprise-grade reliability and backup support
+# Redis online store for high-performance feature serving
+# S3 offline store for scalable, distributed compute access
+project: drl_trading_prod
+registry:
+  type: sql
+  path: ${FEAST_REGISTRY_DB_URL:postgresql://user:pass@localhost:5432/feast_registry}
+online_store:
+  type: redis
+  connection_string: ${FEAST_REDIS_URL:redis://localhost:6379}
+offline_store:
+  type: s3
+  path: ${FEAST_S3_PATH:s3://your-feast-bucket/features}
+entity_key_serialization_version: 2

@@ -68,7 +68,7 @@
   },
   "featureStoreConfig": {
     "enabled": true,
-    "configDirectory": "tests/resources",
+    "configDirectory": "tests/resources/test",
     "entityName": "symbol",
     "ttlDays": 1,
     "onlineEnabled": false,

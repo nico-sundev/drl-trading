@@ -1,0 +1,12 @@
+# Feast Feature Store Configuration - CI/CD Environment
+# Uses SQLite registry for simplicity in CI but Redis online store to test real caching
+# Offline store uses file-based with environment variables for flexible backend testing
+project: drl_trading_cicd
+registry:
+  path: registry.db
+provider: local
+online_store:
+  type: redis
+  connection_string: ${REDIS_CONNECTION_STRING:redis://localhost:6379}
+offline_store:
+  type: file

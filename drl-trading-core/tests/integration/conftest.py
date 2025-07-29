@@ -31,7 +31,6 @@ from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
-from feast import FeatureStore
 from injector import Injector
 from pandas import DataFrame
 from testcontainers.minio import MinioContainer
@@ -373,114 +372,88 @@ def config_fixture(temp_feast_repo: str) -> ApplicationConfig:
     )
     config = ConfigLoader.get_config(ApplicationConfig, path=config_path)
 
-    # Override feature store configuration to use temp directory with new structure
+    # Override feature store configuration to use static test config with environment variables
     from drl_trading_common.config.feature_config import LocalRepoConfig
     from drl_trading_common.enum.offline_repo_strategy_enum import (
         OfflineRepoStrategyEnum,
     )
 
-    # Create new local repo config
-    local_repo_config = LocalRepoConfig(repo_path=temp_feast_repo)
+    # Set the config_directory to point to our static test configuration
+    test_config_dir = os.path.join(os.path.dirname(__file__), "../resources")
 
-    # Set the strategy and local config
+    # Create new local repo config pointing to test config directory
+    # This allows Feast to use relative paths like "data/registry.db"
+    local_repo_config = LocalRepoConfig(repo_path=test_config_dir)
+
+    # Set the strategy and config
     config.feature_store_config.offline_repo_strategy = OfflineRepoStrategyEnum.LOCAL
     config.feature_store_config.local_repo_config = local_repo_config
-    config.feature_store_config.config_directory = str(temp_feast_repo)
+    config.feature_store_config.config_directory = str(test_config_dir)  # Points to tests/resources
     config.feature_store_config.enabled = True
 
     return config
 
 
-@pytest.fixture(scope="session")
-def feature_store_fixture(temp_feast_repo: str) -> FeatureStore:
-    """Initialize the Feast feature store for testing with file-based configuration.
-
-    Uses file-based configuration with relative paths to avoid Windows
-    drive letter issues in Feast's URI parsing.
-
-    Args:
-        temp_feast_repo: Path to the temporary Feast repository
-
-    Returns:
-        FeatureStore: Initialized feature store instance with real backend
-    """
-    # Create feature_store.yaml file with relative paths to avoid Windows issues
-    feature_store_yaml = """
-project: test_trading_project
-registry: registry.db
-provider: local
-online_store:
-    type: sqlite
-    path: online_store.db
-offline_store:
-    type: file
-entity_key_serialization_version: 2
-"""
-
-    config_path = os.path.join(temp_feast_repo, "feature_store.yaml")
-    with open(config_path, "w") as f:
-        f.write(feature_store_yaml)
-
-    # Initialize the feature store with the repository path
-    feature_store = FeatureStore(repo_path=temp_feast_repo)
-    return feature_store
-
-
 @pytest.fixture(scope="function")
-def clean_feature_store(
-    feature_store_fixture: FeatureStore, temp_feast_repo: str
-) -> Generator[FeatureStore, None, None]:
-    """Provide a clean feature store for each test function.
+def clean_integration_environment() -> Generator[None, None, None]:
+    """Clean integration test environment before and after each test.
 
-    This fixture ensures each test starts with a clean slate by clearing
-    the feature store data before and after each test.
+    This sets up environment variables for Feast's config substitution
+    and ensures each test starts with a clean repository state.
     """
-    # Clean before test
-    _clear_feature_store_data(temp_feast_repo)
+    # Set STAGE environment variable for consistent testing
+    os.environ.setdefault("STAGE", "test")
 
-    yield feature_store_fixture
+    # Set Feast environment variables to use data subdirectory
+    # Feast expects relative paths for registry, not absolute Windows paths
+    # Since the FeatureStore is initialized with repo_path pointing to tests/resources,
+    # relative paths will be resolved relative to that directory
+    # Using 'data/' subdirectory for easy cleanup after tests
+    os.environ["FEAST_REGISTRY_PATH"] = "data/registry.db"
+    os.environ["FEAST_ONLINE_STORE_PATH"] = "data/online_store.db"
+
+    # Clean before test (no need for temp_repo_path - we know the location)
+    _clear_feature_store_data()
+
+    yield
 
     # Clean after test
-    _clear_feature_store_data(temp_feast_repo)
+    _clear_feature_store_data()
+
+    # Clean up environment variables
+    for env_var in ["FEAST_REGISTRY_PATH", "FEAST_ONLINE_STORE_PATH", "FEAST_OFFLINE_STORE_PATH"]:
+        os.environ.pop(env_var, None)
 
 
-def _clear_feature_store_data(temp_repo_path: str) -> None:
-    """Clear all data from the feature store by removing database files.
+def _clear_feature_store_data() -> None:
+    """Clear all data from the feature store by removing the data directory.
 
-    Since we're using a temporary directory with relative paths in Feast config,
-    we need to remove the database files from the repository directory.
-
-    Args:
-        temp_repo_path: Path to the temporary Feast repository
+    This removes the entire 'data' subdirectory from the test config directory,
+    which contains all Feast database files and offline store data.
     """
     try:
-        # Remove registry database (relative to repo path)
-        registry_db = os.path.join(temp_repo_path, "registry.db")
-        if os.path.exists(registry_db):
-            os.remove(registry_db)
+        # Get the actual test config directory path
+        test_config_dir = os.path.join(os.path.dirname(__file__), "../resources")
+        data_dir = os.path.join(test_config_dir, "data")
 
-        # Remove online store database (relative to repo path)
-        online_store_db = os.path.join(temp_repo_path, "online_store.db")
-        if os.path.exists(online_store_db):
-            os.remove(online_store_db)
-
-        # Remove any data directories
-        data_dir = os.path.join(temp_repo_path, "data")
+        # Remove the entire data directory
         if os.path.exists(data_dir):
             shutil.rmtree(data_dir)
+            print(f"DEBUG: Cleaned up Feast data directory: {data_dir}")
+        else:
+            print(f"DEBUG: Data directory does not exist: {data_dir}")
 
-        # Remove feature_store.yaml to force fresh config on next test
-        config_file = os.path.join(temp_repo_path, "feature_store.yaml")
-        if os.path.exists(config_file):
-            # Don't remove - we need it for the FeatureStore to work
-            pass
     except Exception as e:
         # Log the error but don't fail the test
         print(f"Warning: Could not clear feature store data: {e}")
 
 
+
 def _initialize_feast_repository(repo_path: str) -> None:
-    """Initialize a Feast repository with feature_store.yaml configuration.
+    """Initialize a Feast repository with staged configuration.
+
+    For integration tests, this simply ensures the STAGE environment variable
+    is set to 'test' to use the existing test configuration.
 
     Args:
         repo_path: Path to the directory where the Feast repository should be created
@@ -488,22 +461,11 @@ def _initialize_feast_repository(repo_path: str) -> None:
     # Ensure the directory exists
     os.makedirs(repo_path, exist_ok=True)
 
-    # Create feature_store.yaml file with relative paths to avoid Windows issues
-    feature_store_yaml = """
-project: test_trading_project
-registry: registry.db
-provider: local
-online_store:
-    type: sqlite
-    path: online_store.db
-offline_store:
-    type: file
-entity_key_serialization_version: 2
-"""
+    # Set STAGE for test if not already set
+    os.environ.setdefault("STAGE", "test")
 
-    config_path = os.path.join(repo_path, "feature_store.yaml")
-    with open(config_path, "w") as f:
-        f.write(feature_store_yaml)
+    # No need to copy configs - the test configuration already exists at
+    # tests/resources/test/feature_store.yaml and will be used by FeatureStoreWrapper
 
 
 @pytest.fixture(scope="function")
@@ -548,6 +510,9 @@ def real_feast_container(
     """
     from drl_trading_core.common.di.core_module import CoreModule
 
+    # Ensure STAGE is set for consistent testing
+    os.environ.setdefault("STAGE", "test")
+
     # Write config to a temporary JSON file so CoreModule can load it
     # Use a temp file that won't be auto-deleted until we're done
     temp_fd, config_path = tempfile.mkstemp(suffix=".json", text=True)
@@ -561,17 +526,18 @@ def real_feast_container(
         with open(test_config_path, "r") as test_config_file:
             config_dict = json.load(test_config_file)
 
-        # Override the feature store configuration to use temp directory
+        # Override the feature store configuration to use static test config with env vars
+        test_config_dir = os.path.join(os.path.dirname(__file__), "../resources")
         config_dict["featureStoreConfig"] = {
             "enabled": True,
-            "configDirectory": temp_feast_repo,
+            "configDirectory": test_config_dir,  # Use static config directory
             "entityName": config_fixture.feature_store_config.entity_name,
             "ttlDays": config_fixture.feature_store_config.ttl_days,
             "onlineEnabled": True,
             "serviceName": config_fixture.feature_store_config.service_name,
             "serviceVersion": config_fixture.feature_store_config.service_version,
-            "offlineRepoStrategy": "s3",
-            "localRepoConfig": {"repoPath": str(temp_feast_repo) + "_data"},
+            "offlineRepoStrategy": "local",
+            "localRepoConfig": {"repoPath": str(temp_feast_repo)},
             "s3RepoConfig": {
                 "bucketName": "drl-trading-features-test",
                 "prefix": "features",
@@ -632,16 +598,16 @@ def real_feast_container(
 
 @pytest.fixture(scope="function")
 def integration_container(
-    real_feast_container: Injector, clean_feature_store: FeatureStore
+    real_feast_container: Injector, clean_integration_environment: None
 ) -> Generator[Injector, None, None]:
-    """Provide container with clean feature store for each test.
+    """Provide container with clean integration environment for each test.
 
-    This ensures each test gets a fresh, clean feature store state while
-    using real Feast infrastructure throughout the integration test.
+    This ensures each test gets a fresh, clean state while using real
+    services created through dependency injection.
 
     Args:
         real_feast_container: DI container with real services
-        clean_feature_store: Clean feature store instance
+        clean_integration_environment: Clean environment setup
 
     Returns:
         Injector: Ready-to-use DI container for integration testing
@@ -806,10 +772,13 @@ def parametrized_integration_container(
     parametrized_feature_store_config: FeatureStoreConfig,
     config_fixture: ApplicationConfig,
     test_feature_factory: TestFeatureFactory,
-    clean_feature_store: FeatureStore,
+    clean_integration_environment: None,
 ) -> Generator[Injector, None, None]:
     """Create integration container with parametrized offline repository strategy."""
     from drl_trading_core.common.di.core_module import CoreModule
+
+    # Ensure STAGE is set for consistent testing
+    os.environ.setdefault("STAGE", "test")
 
     # Override the feature store config in the application config
     config_fixture.feature_store_config = parametrized_feature_store_config
@@ -820,9 +789,8 @@ def parametrized_integration_container(
         == OfflineRepoStrategyEnum.LOCAL
         and parametrized_feature_store_config.local_repo_config is not None
     ):
-        _initialize_feast_repository(
-            parametrized_feature_store_config.local_repo_config.repo_path
-        )
+        repo_path = parametrized_feature_store_config.local_repo_config.repo_path
+        _initialize_feast_repository(repo_path)
 
     # Convert to dict for JSON serialization with JSON-safe mode
     config_dict = config_fixture.model_dump(mode="json")

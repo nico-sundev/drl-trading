@@ -1,10 +1,10 @@
 project: ai_trading_test
-registry: feast/data/registry.db
+registry:
+  path: ${FEAST_REGISTRY_PATH}
 provider: local
 online_store:
   type: sqlite
-  path: feast/data/online_store.db
+  path: ${FEAST_ONLINE_STORE_PATH}
 offline_store:
   type: file
-  path: feast/data/offline_store.db
 entity_key_serialization_version: 2

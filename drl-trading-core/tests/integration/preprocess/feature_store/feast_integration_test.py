@@ -1,10 +1,4 @@
-"""
-Example integration test demonstrating proper use of the Feast integration test setup.
 
-This test demonstrates how to use real Feast functionality with minimal mocking
-for true integration testing of the feature store pipeline. Uses test features
-that don't depend on strategy modules to maintain proper dependency boundaries.
-"""
 import pytest
 from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from feast import FeatureStore
@@ -21,11 +15,30 @@ from drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper im
 class TestFeastIntegration:
     """Integration tests for Feast feature store functionality."""
 
+    def test_feature_store_wrapper_provides_real_feature_store(
+        self,
+        integration_container: Injector,
+        clean_integration_environment: None
+    ) -> None:
+        """Test that FeatureStoreWrapper provides a real FeatureStore instance."""
+        # Given
+        feature_store_wrapper = integration_container.get(FeatureStoreWrapper)
+
+        # When
+        feature_store = feature_store_wrapper.get_feature_store()
+
+        # Then
+        assert isinstance(feature_store, FeatureStore)
+        assert feature_store is not None
+
+        # Verify it's properly configured for test environment
+        assert feature_store.repo_path is not None
+
     def test_feast_provider_can_create_feature_views(
         self,
         integration_container: Injector,
         feature_version_info_fixture,
-        clean_feature_store: FeatureStore
+        clean_integration_environment: None
     ) -> None:
         """Test that FeastProvider can create feature views with real Feast backend."""
         # Given
@@ -118,7 +131,7 @@ class TestFeastIntegration:
     def test_feature_store_wrapper_provides_real_store(
         self,
         integration_container: Injector,
-        clean_feature_store: FeatureStore
+        clean_integration_environment: None
     ) -> None:
         """Test that FeatureStoreWrapper provides a real FeatureStore instance."""
         # Given
@@ -131,13 +144,13 @@ class TestFeastIntegration:
         assert isinstance(feature_store, FeatureStore)
         assert feature_store is not None
 
-        # Verify it's the same instance as our clean fixture
-        assert feature_store.repo_path == clean_feature_store.repo_path
+        # Verify it's properly configured for test environment
+        assert feature_store.repo_path is not None
 
     def test_clean_feature_store_isolation(
         self,
         integration_container: Injector,
-        clean_feature_store: FeatureStore
+        clean_integration_environment: None
     ) -> None:
         """Test that each test gets a clean feature store state."""
         # Given
@@ -181,7 +194,7 @@ class TestFeastDataPersistence:
     def test_feature_data_can_be_stored_and_retrieved(
         self,
         integration_container: Injector,
-        clean_feature_store: FeatureStore,
+        clean_integration_environment: None,
         test_feature_factory,
         test_rsi_config,
     ) -> None:

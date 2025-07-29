@@ -1,0 +1,14 @@
+# Feast Feature Store Configuration - Development Environment
+# Uses local SQLite for both registry and online store for maximum simplicity
+# Offline store uses local file system for fast iteration during development
+project: drl_trading_dev
+registry:
+  path: registry.db
+provider: local
+online_store:
+  type: sqlite
+  path: online_store.db
+offline_store:
+  type: file
+  path: offline_store.db
+entity_key_serialization_version: 2
