@@ -9,7 +9,8 @@ from typing import Generator
 import boto3
 import pandas as pd
 import pytest
-from drl_trading_common.config.feature_config import FeatureStoreConfig
+from drl_trading_common.config.feature_config import FeatureStoreConfig, S3RepoConfig
+from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
 from pandas import DataFrame
 from testcontainers.minio import MinioContainer
 
@@ -63,20 +64,24 @@ def s3_feature_store_config(
     minio_container: MinioContainer
 ) -> FeatureStoreConfig:
     """Create FeatureStoreConfig for S3 testing."""
+    s3_repo_config = S3RepoConfig(
+        endpoint_url=f"http://{minio_container.get_container_host_ip()}:{minio_container.get_exposed_port(9000)}",
+        bucket_name=s3_test_bucket,
+        access_key_id=minio_container.access_key,
+        secret_access_key=minio_container.secret_key,
+        region="us-east-1"
+    )
+
     return FeatureStoreConfig(
         enabled=True,
-        repo_path="/tmp/test_repo",  # Local path for Feast metadata
+        config_directory="/tmp/test_repo",  # Required field for new structure
         entity_name="test_entity",
         ttl_days=30,
         online_enabled=False,
         service_name="test_service",
         service_version="1.0.0",
-        # S3-specific settings
-        s3_endpoint_url=f"http://{minio_container.get_container_host_ip()}:{minio_container.get_exposed_port(9000)}",
-        s3_bucket_name=s3_test_bucket,
-        s3_access_key_id=minio_container.access_key,
-        s3_secret_access_key=minio_container.secret_key,
-        s3_region="us-east-1"
+        offline_repo_strategy=OfflineRepoStrategyEnum.S3,
+        s3_repo_config=s3_repo_config
     )
 
 

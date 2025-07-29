@@ -46,10 +46,11 @@ class TestOfflineRepoStrategy:
             assert result == mock_instance
             mock_local_repo.assert_called_once()
 
-            # Verify the config passed to the repository has the repo_path attribute
+            # Verify the config passed to the repository has the correct structure
             call_args = mock_local_repo.call_args[0][0]
-            assert hasattr(call_args, 'repo_path')
-            assert call_args.repo_path == "/test/local/path"
+            assert isinstance(call_args, FeatureStoreConfig)
+            assert call_args.local_repo_config is not None
+            assert call_args.local_repo_config.repo_path == "/test/local/path"
 
     def test_create_s3_repository_with_new_config(self) -> None:
         """Test creating S3 repository using new configuration structure."""
@@ -86,20 +87,16 @@ class TestOfflineRepoStrategy:
             assert result == mock_instance
             mock_s3_repo.assert_called_once()
 
-            # Verify the config passed to the repository has the S3 attributes
+            # Verify the config passed to the repository has the correct structure
             call_args = mock_s3_repo.call_args[0][0]
-            assert hasattr(call_args, 's3_bucket_name')
-            assert call_args.s3_bucket_name == "test-bucket"
-            assert hasattr(call_args, 's3_prefix')
-            assert call_args.s3_prefix == "test-prefix"
-            assert hasattr(call_args, 's3_region')
-            assert call_args.s3_region == "eu-west-1"
-            assert hasattr(call_args, 's3_endpoint_url')
-            assert call_args.s3_endpoint_url == "http://localhost:9000"
-            assert hasattr(call_args, 's3_access_key_id')
-            assert call_args.s3_access_key_id == "test-key"
-            assert hasattr(call_args, 's3_secret_access_key')
-            assert call_args.s3_secret_access_key == "test-secret"
+            assert isinstance(call_args, FeatureStoreConfig)
+            assert call_args.s3_repo_config is not None
+            assert call_args.s3_repo_config.bucket_name == "test-bucket"
+            assert call_args.s3_repo_config.prefix == "test-prefix"
+            assert call_args.s3_repo_config.region == "eu-west-1"
+            assert call_args.s3_repo_config.endpoint_url == "http://localhost:9000"
+            assert call_args.s3_repo_config.access_key_id == "test-key"
+            assert call_args.s3_repo_config.secret_access_key == "test-secret"
 
     def test_unsupported_strategy_raises_error(self) -> None:
         """Test that unsupported strategy raises ValueError."""

@@ -138,8 +138,8 @@ class TestFeatureStoreRepositoriesIntegration:
             "event_timestamp": [pd.Timestamp("2024-01-01 15:30:00", tz="UTC")],  # Add UTC timezone
             "symbol": [symbol],
             # Include all OBSERVATION_SPACE features to match the feature view schema
-            "rsi_14_A1b2c3_value": [45.2],
-            "close_price_-_A1b2c3_value": [1.0855],
+            "rsi_14_A1b2c3": [45.2],
+            "close_price": [1.0855],
             "reward": [0.15]  # This will be filtered out for OBSERVATION_SPACE
         })
 
@@ -214,12 +214,12 @@ class TestFeatureStoreRepositoriesIntegration:
         # Filter features based on role
         if feature_role == FeatureRoleEnum.OBSERVATION_SPACE:
             role_features_df = sample_trading_features_df[[
-                "event_timestamp", "symbol", "rsi_14", "rsi_21", "sma_20", "sma_50",
-                "bb_upper", "bb_lower", "bb_middle", "close_1", "high", "low", "volume"  # Fixed: close -> close_1
+                "event_timestamp", "symbol", "rsi_14_A1b2c3",
+                "close_price",
             ]].copy()
         else:  # REWARD_ENGINEERING
             role_features_df = sample_trading_features_df[[
-                "event_timestamp", "symbol", "reward", "cumulative_return"
+                "event_timestamp", "symbol", "reward_reward", "reward_cumulative_return"
             ]].copy()
 
         # When - Push features for specific role
@@ -314,19 +314,10 @@ class TestFeatureStoreRepositoriesIntegration:
             "event_timestamp": timestamps,
             "symbol": [symbol] * len(timestamps),
             # Include all columns that match the schema from sample_trading_features_df
-            "rsi_14": [30.5 + i * 0.1 for i in range(len(timestamps))],
-            "rsi_21": [35.0 + (i % 35) + (i * 0.4) for i in range(len(timestamps))],
-            "sma_20": [1.0850 + i * 0.00001 for i in range(len(timestamps))],
-            "sma_50": [1.0845 + (i % 25) * 0.0001 for i in range(len(timestamps))],
-            "bb_upper": [1.0870 + (i % 20) * 0.0001 for i in range(len(timestamps))],
-            "bb_lower": [1.0830 + (i % 15) * 0.0001 for i in range(len(timestamps))],
-            "bb_middle": [1.0850 + (i % 18) * 0.0001 for i in range(len(timestamps))],
-            "close_1": [1.0850 + (i % 20) * 0.0001 for i in range(len(timestamps))],
-            "high": [1.0855 + (i % 20) * 0.0001 for i in range(len(timestamps))],
-            "low": [1.0845 + (i % 20) * 0.0001 for i in range(len(timestamps))],
-            "volume": [1000 + (i % 500) for i in range(len(timestamps))],
-            "reward": [0.01 * (i % 20 - 10) for i in range(len(timestamps))],
-            "cumulative_return": [0.001 * i for i in range(len(timestamps))]
+            "rsi_14_A1b2c3": [30.5 + i * 0.1 for i in range(len(timestamps))],
+            "close_price": [1.0850 + (i % 20) * 0.0001 for i in range(len(timestamps))],
+            "reward_reward": [0.01 * (i % 20 - 10) for i in range(len(timestamps))],
+            "reward_cumulative_return": [0.001 * i for i in range(len(timestamps))]
         })
 
         # Get repository instances from DI container

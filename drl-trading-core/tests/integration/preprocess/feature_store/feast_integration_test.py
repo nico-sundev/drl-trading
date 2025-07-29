@@ -53,53 +53,50 @@ class TestFeastIntegration:
     def test_feature_factory_creates_real_features(
         self,
         integration_container: Injector,
+        test_feature_factory,
+        test_rsi_config,
     ) -> None:
         """Test that the feature factory creates real feature instances."""
         # Given
-        from .conftest import TestClosePriceConfig, TestFeatureFactory, TestRsiConfig
-
-        feature_factory = integration_container.get(TestFeatureFactory)
+        feature_factory = integration_container.get(test_feature_factory.__class__)
         dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe="1H")
-        rsi_config = TestRsiConfig(period=14)
-        close_price_config = TestClosePriceConfig(lookback=1)
 
         # When
         rsi_feature = feature_factory.create_feature(
             feature_name="rsi",
             dataset_id=dataset_id,
-            config=rsi_config
+            config=test_rsi_config
         )
         close_price_feature = feature_factory.create_feature(
             feature_name="close_price",
             dataset_id=dataset_id,
-            config=close_price_config
+            config=None
         )
 
         # Then
         assert rsi_feature is not None
         assert rsi_feature.get_feature_name() == "rsi"
-        assert rsi_feature.get_sub_features_names() == ["rsi_14"]
+        assert rsi_feature.get_sub_features_names() == []
 
         assert close_price_feature is not None
         assert close_price_feature.get_feature_name() == "close_price"
-        assert close_price_feature.get_sub_features_names() == ["close_1"]
+        assert close_price_feature.get_sub_features_names() == []
 
     def test_feature_computation_returns_real_data(
         self,
         integration_container: Injector,
+        test_feature_factory,
+        test_rsi_config,
     ) -> None:
         """Test that features can compute real data."""
         # Given
-        from .conftest import TestFeatureFactory, TestRsiConfig
-
-        feature_factory = integration_container.get(TestFeatureFactory)
+        feature_factory = integration_container.get(test_feature_factory.__class__)
         dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe="1H")
-        rsi_config = TestRsiConfig(period=14)
 
         rsi_feature = feature_factory.create_feature(
             feature_name="rsi",
             dataset_id=dataset_id,
-            config=rsi_config
+            config=test_rsi_config
         )
         assert rsi_feature is not None, "Feature creation should not return None"
 
@@ -154,20 +151,18 @@ class TestFeastIntegration:
 
     @pytest.mark.parametrize("feature_name,config_data,expected_config_type", [
         ("rsi", {"period": 21}, "TestRsiConfig"),
-        ("close_price", {"lookback": 3}, "TestClosePriceConfig"),
     ])
     def test_feature_factory_config_creation(
         self,
         integration_container: Injector,
+        test_feature_factory,
         feature_name: str,
         config_data: dict,
         expected_config_type: str
     ) -> None:
         """Test parameterized feature configuration creation."""
         # Given
-        from .conftest import TestClosePriceConfig, TestFeatureFactory, TestRsiConfig
-
-        feature_factory = integration_container.get(TestFeatureFactory)
+        feature_factory = integration_container.get(test_feature_factory.__class__)
 
         # When
         config = feature_factory.create_config_instance(feature_name, config_data)
@@ -176,11 +171,8 @@ class TestFeastIntegration:
         assert config is not None
         assert type(config).__name__ == expected_config_type
         if feature_name == "rsi":
-            assert isinstance(config, TestRsiConfig)
+            assert type(config).__name__ == "TestRsiConfig"
             assert config.period == config_data["period"]
-        elif feature_name == "close_price":
-            assert isinstance(config, TestClosePriceConfig)
-            assert config.lookback == config_data["lookback"]
 
 
 class TestFeastDataPersistence:
@@ -189,18 +181,17 @@ class TestFeastDataPersistence:
     def test_feature_data_can_be_stored_and_retrieved(
         self,
         integration_container: Injector,
-        clean_feature_store: FeatureStore
+        clean_feature_store: FeatureStore,
+        test_feature_factory,
+        test_rsi_config,
     ) -> None:
         """Test end-to-end feature data storage and retrieval."""
         # Given
-        from .conftest import TestFeatureFactory, TestRsiConfig
-
-        feature_factory = integration_container.get(TestFeatureFactory)
+        feature_factory = integration_container.get(test_feature_factory.__class__)
         _ = integration_container.get(FeastProvider)
 
         dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe="1H")
-        rsi_config = TestRsiConfig(period=14)
-        rsi_feature = feature_factory.create_feature("rsi", dataset_id, rsi_config)
+        rsi_feature = feature_factory.create_feature("rsi", dataset_id, test_rsi_config)
         assert rsi_feature is not None, "Feature creation should not return None"
 
         # When

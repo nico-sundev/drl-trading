@@ -70,14 +70,8 @@ class OfflineRepoStrategy:
 
         local_config = self.feature_store_config.local_repo_config
 
-        # Create a temporary config object with the repo_path for backward compatibility
-        # This will be removed once the repository classes are updated to use the new configuration structure
-        from types import SimpleNamespace
-        temp_config = SimpleNamespace()
-        temp_config.repo_path = local_config.repo_path
-
-        logger.info(f"Creating local offline repository with path: {temp_config.repo_path}")
-        return OfflineFeatureLocalRepo(temp_config)
+        logger.info(f"Creating local offline repository with path: {local_config.repo_path}")
+        return OfflineFeatureLocalRepo(self.feature_store_config)
 
     def _create_s3_repository(self) -> IOfflineFeatureRepository:
         """Create S3 repository with appropriate configuration."""
@@ -94,16 +88,5 @@ class OfflineRepoStrategy:
 
         s3_config = self.feature_store_config.s3_repo_config
 
-        # Create a temporary config object with the S3 attributes for backward compatibility
-        # This will be removed once the repository classes are updated to use the new configuration structure
-        from types import SimpleNamespace
-        temp_config = SimpleNamespace()
-        temp_config.s3_bucket_name = s3_config.bucket_name
-        temp_config.s3_prefix = s3_config.prefix
-        temp_config.s3_endpoint_url = s3_config.endpoint_url
-        temp_config.s3_region = s3_config.region
-        temp_config.s3_access_key_id = s3_config.access_key_id
-        temp_config.s3_secret_access_key = s3_config.secret_access_key
-
-        logger.info(f"Creating S3 offline repository with bucket: {temp_config.s3_bucket_name}")
-        return OfflineFeatureS3Repo(temp_config)
+        logger.info(f"Creating S3 offline repository with bucket: {s3_config.bucket_name}")
+        return OfflineFeatureS3Repo(self.feature_store_config)

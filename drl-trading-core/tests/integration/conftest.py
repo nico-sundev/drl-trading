@@ -128,40 +128,18 @@ class TestRsiConfig(BaseParameterSetConfig):
         return "A1b2c3"
 
 
-class TestClosePriceConfig(BaseParameterSetConfig):
-    """Test configuration for close price feature that follows the existing pattern."""
-
-    type: str = "close_price"
-    enabled: bool = True
-    lookback: int = 1
-
-    def hash_id(self) -> str:
-        return "A1b2c3"
-
-
-class TestRewardConfig(BaseParameterSetConfig):
-    """Test configuration for reward feature that follows the existing pattern."""
-
-    type: str = "reward"
-    enabled: bool = True
-    horizon: int = 1
-
-    def hash_id(self) -> str:
-        return "A1b2c3"
-
-
 @feature_role(FeatureRoleEnum.OBSERVATION_SPACE)
 class TestRsiFeature(BaseFeature):
     """Test RSI feature implementation adapted from existing MockFeature pattern."""
 
     def __init__(
         self,
-        config: TestRsiConfig,
         dataset_id: DatasetIdentifier,
         indicator_service: MockTechnicalIndicatorFacade,
+        config: TestRsiConfig,
         postfix: str = "",
     ):
-        super().__init__(config, dataset_id, indicator_service, postfix)
+        super().__init__(dataset_id, indicator_service, config, postfix)
         self._feature_name = "rsi"
         # Register the indicator when feature is created
         self.indicator_service.register_instance(
@@ -172,7 +150,7 @@ class TestRsiFeature(BaseFeature):
         return self._feature_name
 
     def get_sub_features_names(self) -> list[str]:
-        return ["value"]
+        return []
 
     def compute_all(self) -> Optional[DataFrame]:
         """Compute RSI using the mock indicator service."""
@@ -213,23 +191,19 @@ class TestClosePriceFeature(BaseFeature):
 
     def __init__(
         self,
-        config: TestClosePriceConfig,
         dataset_id: DatasetIdentifier,
         indicator_service: MockTechnicalIndicatorFacade,
+        config: Optional[BaseParameterSetConfig] = None,
         postfix: str = "",
     ):
-        super().__init__(config, dataset_id, indicator_service, postfix)
+        super().__init__(dataset_id, indicator_service, config, postfix)
         self._feature_name = "close_price"
-        # Register the indicator when feature is created
-        self.indicator_service.register_instance(
-            "close_price", "close_price", lookback=config.lookback
-        )
 
     def get_feature_name(self) -> str:
         return self._feature_name
 
     def get_sub_features_names(self) -> list[str]:
-        return ["value"]
+        return []
 
     def compute_all(self) -> Optional[DataFrame]:
         """Compute close prices using the mock indicator service."""
@@ -260,8 +234,8 @@ class TestClosePriceFeature(BaseFeature):
         result[self.dataset_id.symbol] = self.dataset_id.symbol
         return result
 
-    def get_config_to_string(self) -> str:
-        return "-"
+    def get_config_to_string(self) -> Optional[str]:
+        return None
 
 
 @feature_role(FeatureRoleEnum.REWARD_ENGINEERING)
@@ -270,19 +244,19 @@ class TestRewardFeature(BaseFeature):
 
     def __init__(
         self,
-        config: TestRewardConfig,
         dataset_id: DatasetIdentifier,
         indicator_service: MockTechnicalIndicatorFacade,
+        config: Optional[BaseParameterSetConfig] = None,
         postfix: str = "",
     ):
-        super().__init__(config, dataset_id, indicator_service, postfix)
+        super().__init__(dataset_id, indicator_service, config, postfix)
         self._feature_name = "reward"
         # Register the indicators when feature is created
         self.indicator_service.register_instance(
-            "reward", "reward", horizon=config.horizon
+            "reward", "reward"
         )
         self.indicator_service.register_instance(
-            "cumulative_return", "cumulative_return", horizon=config.horizon
+            "cumulative_return", "cumulative_return"
         )
 
     def get_feature_name(self) -> str:
@@ -325,8 +299,8 @@ class TestRewardFeature(BaseFeature):
         result[self.dataset_id.symbol] = self.dataset_id.symbol
         return result
 
-    def get_config_to_string(self) -> str:
-        return "-"
+    def get_config_to_string(self) -> Optional[str]:
+        return None
 
 
 class TestFeatureFactory(IFeatureFactory):
@@ -344,14 +318,15 @@ class TestFeatureFactory(IFeatureFactory):
     ) -> Optional[BaseFeature]:
         """Create test feature instances using the same pattern as real factories."""
         if feature_name == "rsi" and isinstance(config, TestRsiConfig):
-            return TestRsiFeature(config, dataset_id, self.indicator_service, postfix)
-        elif feature_name == "close_price" and isinstance(config, TestClosePriceConfig):
+            return TestRsiFeature(dataset_id, self.indicator_service, config, postfix)
+        elif feature_name == "close_price":
+            # Close price feature can handle None config
             return TestClosePriceFeature(
-                config, dataset_id, self.indicator_service, postfix
+                dataset_id, self.indicator_service, config, postfix
             )
-        elif feature_name == "reward" and isinstance(config, TestRewardConfig):
+        elif feature_name == "reward":
             return TestRewardFeature(
-                config, dataset_id, self.indicator_service, postfix
+                dataset_id, self.indicator_service, config, postfix
             )
         return None
 
@@ -363,11 +338,10 @@ class TestFeatureFactory(IFeatureFactory):
             period = config_data.get("period", 14)
             return TestRsiConfig(period=period)
         elif feature_name == "close_price":
-            lookback = config_data.get("lookback", 1)
-            return TestClosePriceConfig(lookback=lookback)
+            # Close price feature can handle None config
+            return None
         elif feature_name == "reward":
-            horizon = config_data.get("horizon", 1)
-            return TestRewardConfig(horizon=horizon)
+            return None
         return None
 
 
@@ -376,6 +350,11 @@ def test_feature_factory() -> TestFeatureFactory:
     """Provide a test feature factory for integration testing."""
     return TestFeatureFactory()
 
+
+@pytest.fixture
+def test_rsi_config() -> TestRsiConfig:
+    """Fixture providing test RSI configuration."""
+    return TestRsiConfig()
 
 @pytest.fixture(scope="session")
 def temp_feast_repo() -> Generator[str, None, None]:
@@ -588,10 +567,10 @@ def real_feast_container(
             "configDirectory": temp_feast_repo,
             "entityName": config_fixture.feature_store_config.entity_name,
             "ttlDays": config_fixture.feature_store_config.ttl_days,
-            "onlineEnabled": False,
+            "onlineEnabled": True,
             "serviceName": config_fixture.feature_store_config.service_name,
             "serviceVersion": config_fixture.feature_store_config.service_version,
-            "offlineRepoStrategy": "local",
+            "offlineRepoStrategy": "s3",
             "localRepoConfig": {"repoPath": str(temp_feast_repo) + "_data"},
             "s3RepoConfig": {
                 "bucketName": "drl-trading-features-test",
@@ -617,13 +596,13 @@ def real_feast_container(
                     "name": "close_price",
                     "enabled": True,
                     "derivatives": [],
-                    "parameterSets": [{"enabled": True, "lookback": 1}],
+                    "parameterSets": [],
                 },
                 {
                     "name": "reward",
                     "enabled": True,
                     "derivatives": [],
-                    "parameterSets": [{"enabled": True, "horizon": 1}],
+                    "parameterSets": [],
                 },
             ],
         }
@@ -699,23 +678,14 @@ def sample_trading_features_df() -> DataFrame:
             "event_timestamp": timestamps,
             "symbol": ["EURUSD"] * len(timestamps),
             # Technical indicators - observation space features (match sub-feature names)
-            "rsi_14_A1b2c3_value": [30.0 + (i % 40) + (i * 0.5) for i in range(len(timestamps))],
-            "rsi_21": [35.0 + (i % 35) + (i * 0.4) for i in range(len(timestamps))],
-            "sma_20": [1.0850 + (i % 30) * 0.0001 for i in range(len(timestamps))],
-            "sma_50": [1.0845 + (i % 25) * 0.0001 for i in range(len(timestamps))],
-            "bb_upper": [1.0870 + (i % 20) * 0.0001 for i in range(len(timestamps))],
-            "bb_lower": [1.0830 + (i % 15) * 0.0001 for i in range(len(timestamps))],
-            "bb_middle": [1.0850 + (i % 18) * 0.0001 for i in range(len(timestamps))],
+            "rsi_14_A1b2c3": [30.0 + (i % 40) + (i * 0.5) for i in range(len(timestamps))],
             # OHLCV data - observation space features (match sub-feature names)
-            "close_price_-_A1b2c3_value": [
+            "close_price": [
                 1.0850 + (i % 20) * 0.0001 for i in range(len(timestamps))
             ],  # Fixed: close -> close_1
-            "high": [1.0855 + (i % 20) * 0.0001 for i in range(len(timestamps))],
-            "low": [1.0845 + (i % 20) * 0.0001 for i in range(len(timestamps))],
-            "volume": [1000 + (i % 500) for i in range(len(timestamps))],
             # Reward engineering features
-            "reward_-_A1b2c3_reward": [0.01 * (i % 20 - 10) for i in range(len(timestamps))],
-            "reward_-_A1b2c3_cumulative_return": [0.001 * i for i in range(len(timestamps))],
+            "reward_reward": [0.01 * (i % 20 - 10) for i in range(len(timestamps))],
+            "reward_cumulative_return": [0.001 * i for i in range(len(timestamps))],
         }
     )
 
@@ -800,7 +770,8 @@ def s3_feature_store_config(
 @pytest.fixture
 def local_feature_store_config(temp_feast_repo: str) -> FeatureStoreConfig:
     """Create FeatureStoreConfig for local filesystem testing."""
-    local_config = LocalRepoConfig(repo_path=str(temp_feast_repo / "data"))
+    import os
+    local_config = LocalRepoConfig(repo_path=os.path.join(temp_feast_repo, "data"))
 
     return FeatureStoreConfig(
         enabled=True,

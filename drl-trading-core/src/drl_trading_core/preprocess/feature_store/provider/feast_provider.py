@@ -358,9 +358,9 @@ class FeastProvider:
             description=f"Entity for {symbol} asset price data",
         )
 
-    def _get_feature_name(self, feature: BaseFeature) -> str:
+    def _get_field_base_name(self, feature: BaseFeature) -> str:
         """
-        Create a unique feature name based on the feature name and its config hash.
+        Create a unique field name based on the feature name and its config hash.
         Current schema looks like:
         [feature_name]_[config_to_string]_[config_hash]
 
@@ -370,30 +370,38 @@ class FeastProvider:
 
         Example 2: A feature without a config
         If feature name is "close_price",
-        the resulting name will be "close_price_-_-".
+        the resulting name will be "close_price".
 
         Args:
             feature: The feature object
 
         Returns:
-            str: A unique name for the feature
+            str: A unique name for the field
         """
-        return f"{feature.get_feature_name()}_{feature.get_config_to_string()}_{feature.get_config().hash_id()}"
+        config = feature.get_config()
+        config_string = f"_{feature.get_config_to_string()}_{config.hash_id()}" if config else ""
+        return f"{feature.get_feature_name()}{config_string}"
 
     def _create_fields(self, feature: BaseFeature) -> list[Field]:
         """
         Create fields for the feature view based on the feature's type and role.
-
+        Current schema looks like:
+        [field_base_name][_[sub_feature_name]] if sub-features exist
         Args:
             feature: The feature for which fields are created
 
         Returns:
             list[Field]: List of fields for the feature view
         """
-        fields = []
-        feature_name = self._get_feature_name(feature)
+        feature_name = self._get_field_base_name(feature)
         logger.debug(f"Feast fields will be created for feature: {feature_name}")
 
+        if len(feature.get_sub_features_names()) == 0:
+            # If no sub-features, create a single field for the feature
+            logger.debug(f"Creating feast field:{feature_name}")
+            return [Field(name=feature_name, dtype=Float32)]
+
+        fields = []
         for sub_feature in feature.get_sub_features_names():
             # Combine feature name with sub-feature name to create unique field names
             feast_field_name = f"{feature_name}_{sub_feature}"

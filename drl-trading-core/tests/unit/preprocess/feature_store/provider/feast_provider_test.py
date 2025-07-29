@@ -428,14 +428,13 @@ class TestFeastProvider:
         mock_config.hash_id.return_value = "a1b2c3"
         mock_feature.get_feature_name.return_value = "feature"
         mock_feature.get_config.return_value = mock_config
-        mock_feature.get_sub_features_names.return_value = ["sub_1"]
-        mock_feature.get_config_to_string.return_value = "-"
+        mock_feature.get_config_to_string.return_value = "12_2"
 
         # When
-        result = provider._get_feature_name(mock_feature)
+        result = provider._get_field_base_name(mock_feature)
 
         # Then
-        assert result == "feature_-_a1b2c3"
+        assert result == "feature_12_2_a1b2c3"
         mock_feature.get_config.assert_called_once()
         mock_feature.get_config_to_string.assert_called_once()
         mock_config.hash_id.assert_called_once()
@@ -632,12 +631,13 @@ class TestFeastProviderEdgeCases:
         mock_feature.get_feature_name.return_value = "empty_feature"
         mock_feature.get_config.return_value = mock_feature_config
         mock_feature.get_sub_features_names.return_value = []  # Empty sub-features
+        mock_feature.get_config_to_string.return_value = "10_2"
 
         # When
         fields = provider._create_fields(mock_feature)
 
         # Then
-        assert len(fields) == 0
+        assert len(fields) == 1
 
     def test_create_feature_view_no_features_for_role(
         self,

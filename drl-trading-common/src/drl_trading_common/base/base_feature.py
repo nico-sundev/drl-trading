@@ -15,9 +15,9 @@ class BaseFeature(Computable):
 
     def __init__(
         self,
-        config: BaseParameterSetConfig,
         dataset_id: DatasetIdentifier,
         indicator_service: ITechnicalIndicatorFacade,
+        config: Optional[BaseParameterSetConfig] = None,
         postfix: str = "",
     ) -> None:
         self.config = config
@@ -38,7 +38,7 @@ class BaseFeature(Computable):
         feature_name = description or self.get_feature_name()
         return ensure_datetime_index(source, f"{feature_name} source data")
 
-    def get_config(self) -> BaseParameterSetConfig:
+    def get_config(self) -> Optional[BaseParameterSetConfig]:
         """Get the configuration for the feature."""
         return self.config
 
@@ -64,5 +64,5 @@ class BaseFeature(Computable):
         pass
 
     @abstractmethod
-    def get_config_to_string(self) -> str:
+    def get_config_to_string(self) -> Optional[str]:
         ...
