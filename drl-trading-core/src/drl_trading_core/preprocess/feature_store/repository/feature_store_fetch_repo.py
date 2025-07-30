@@ -99,8 +99,15 @@ class FeatureStoreFetchRepository(IFeatureStoreFetchRepository):
             return pd.DataFrame()
 
         # Ensure timestamps are timezone-aware to prevent Feast timezone issues
-        if timestamps.dt.tz is None:
-            timestamps = timestamps.dt.tz_localize("UTC")
+        # Handle both Series and DatetimeIndex cases
+        if hasattr(timestamps, 'dt'):
+            # timestamps is a Series
+            if timestamps.dt.tz is None:
+                timestamps = timestamps.dt.tz_localize("UTC")
+        else:
+            # timestamps is a DatetimeIndex
+            if timestamps.tz is None:
+                timestamps = timestamps.tz_localize("UTC")
 
         entity_df = pd.DataFrame()
         entity_df["event_timestamp"] = timestamps

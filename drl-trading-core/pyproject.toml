@@ -98,6 +98,9 @@ dev = [
     "testcontainers>=4.10.0",
     "minio>=7.0.0",  # Required for testcontainers MinIO support
 ]
+test = [
+    "moto[s3]>=5.1.9",
+]
 
 [project.scripts]
 add-feature = "drl_trading_core.scripts.add_feature:main"

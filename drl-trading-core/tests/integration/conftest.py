@@ -37,6 +37,35 @@ from testcontainers.minio import MinioContainer
 
 
 @pytest.fixture(scope="session", autouse=True)
+def register_cleanup_on_exit():
+    """Register cleanup to run when Python exits - much simpler and more reliable.
+
+    Since we use unique database files per test, we don't need complex session cleanup.
+    The atexit handler runs when all file handles are guaranteed to be closed.
+    """
+    import atexit
+
+    test_config_dir = os.path.join(os.path.dirname(__file__), "../resources/test")
+    data_dir = os.path.join(test_config_dir, "data")
+
+    # Register cleanup to run when Python process exits
+    atexit.register(_cleanup_on_exit, data_dir)
+
+    yield  # Let tests run
+
+
+def _cleanup_on_exit(data_dir: str) -> None:
+    """Clean up test data when Python exits - all file handles are closed by then."""
+    try:
+        if os.path.exists(data_dir):
+            import shutil
+            shutil.rmtree(data_dir, ignore_errors=True)
+            print(f"DEBUG: Exit cleanup completed for: {data_dir}")
+    except Exception as e:
+        print(f"DEBUG: Exit cleanup best effort: {e}")  # Log but don't fail
+
+
+@pytest.fixture(scope="session", autouse=True)
 def configure_logging():
     """Configure logging for integration tests with debug level."""
     # Set up logging configuration for integration tests
@@ -396,57 +425,27 @@ def config_fixture(temp_feast_repo: str) -> ApplicationConfig:
 
 @pytest.fixture(scope="function")
 def clean_integration_environment() -> Generator[None, None, None]:
-    """Clean integration test environment before and after each test.
+    """Clean integration test environment with proper isolation.
 
-    This sets up environment variables for Feast's config substitution
-    and ensures each test starts with a clean repository state.
+    Uses unique database paths per test to avoid file locking issues.
+    This is the proper way to handle stateful resources in testing.
     """
+    import uuid
+
     # Set STAGE environment variable for consistent testing
     os.environ.setdefault("STAGE", "test")
 
-    # Set Feast environment variables to use data subdirectory
-    # Feast expects relative paths for registry, not absolute Windows paths
-    # Since the FeatureStore is initialized with repo_path pointing to tests/resources,
-    # relative paths will be resolved relative to that directory
-    # Using 'data/' subdirectory for easy cleanup after tests
-    os.environ["FEAST_REGISTRY_PATH"] = "data/registry.db"
-    os.environ["FEAST_ONLINE_STORE_PATH"] = "data/online_store.db"
-
-    # Clean before test (no need for temp_repo_path - we know the location)
-    _clear_feature_store_data()
+    # Use unique database paths per test to avoid file locking completely
+    # This is the standard approach for database testing
+    test_uuid = uuid.uuid4().hex[:8]
+    os.environ["FEAST_REGISTRY_PATH"] = f"data/registry_{test_uuid}.db"
+    os.environ["FEAST_ONLINE_STORE_PATH"] = f"data/online_store_{test_uuid}.db"
 
     yield
 
-    # Clean after test
-    _clear_feature_store_data()
-
-    # Clean up environment variables
+    # Clean up environment variables (files will be cleaned up by session fixture)
     for env_var in ["FEAST_REGISTRY_PATH", "FEAST_ONLINE_STORE_PATH", "FEAST_OFFLINE_STORE_PATH"]:
         os.environ.pop(env_var, None)
-
-
-def _clear_feature_store_data() -> None:
-    """Clear all data from the feature store by removing the data directory.
-
-    This removes the entire 'data' subdirectory from the test config directory,
-    which contains all Feast database files and offline store data.
-    """
-    try:
-        # Get the actual test config directory path
-        test_config_dir = os.path.join(os.path.dirname(__file__), "../resources")
-        data_dir = os.path.join(test_config_dir, "data")
-
-        # Remove the entire data directory
-        if os.path.exists(data_dir):
-            shutil.rmtree(data_dir)
-            print(f"DEBUG: Cleaned up Feast data directory: {data_dir}")
-        else:
-            print(f"DEBUG: Data directory does not exist: {data_dir}")
-
-    except Exception as e:
-        # Log the error but don't fail the test
-        print(f"Warning: Could not clear feature store data: {e}")
-
 
 
 def _initialize_feast_repository(repo_path: str) -> None:
@@ -750,6 +749,172 @@ def local_feature_store_config(temp_feast_repo: str) -> FeatureStoreConfig:
         local_repo_config=local_config,
         config_directory=temp_feast_repo,
     )
+
+
+@pytest.fixture
+def s3_integration_container(
+    s3_feature_store_config: FeatureStoreConfig,
+    test_feature_factory: TestFeatureFactory,
+    clean_integration_environment: None,
+    minio_container: MinioContainer,
+    s3_client_minio: boto3.client,
+    s3_test_bucket: str,
+) -> Generator[Injector, None, None]:
+    """Create a dependency injection container specifically for S3 integration testing.
+
+    This follows the updated Feast initialization pattern with proper S3 configuration.
+    Creates a temporary feature_store.yaml with S3 offline store configuration.
+
+    Args:
+        s3_feature_store_config: S3-specific feature store configuration
+        test_feature_factory: Test feature factory for integration testing
+        clean_integration_environment: Clean environment setup
+        minio_container: MinIO container for S3-compatible testing
+        s3_client_minio: Boto3 S3 client connected to MinIO
+        s3_test_bucket: Test bucket for feature storage
+
+    Returns:
+        Injector: DI container configured for S3 integration testing
+    """
+    from drl_trading_core.common.di.core_module import CoreModule
+
+    # Create a temporary directory for S3 Feast configuration
+    temp_feast_dir = tempfile.mkdtemp(prefix="feast_s3_integration_")
+
+    # Create the 'test' subdirectory to match STAGE-based convention
+    stage_dir = os.path.join(temp_feast_dir, "test")
+    os.makedirs(stage_dir, exist_ok=True)
+
+    # Create S3-specific feature_store.yaml in the stage directory
+    feast_config_content = f"""project: ai_trading_s3_test
+registry:
+  path: ${{FEAST_REGISTRY_PATH}}
+provider: local
+online_store:
+  type: sqlite
+  path: ${{FEAST_ONLINE_STORE_PATH}}
+offline_store:
+  type: s3
+  path: s3://{s3_test_bucket}/features
+  s3_endpoint_url: {s3_feature_store_config.s3_repo_config.endpoint_url}
+entity_key_serialization_version: 2
+"""
+
+    feast_config_path = os.path.join(stage_dir, "feature_store.yaml")
+    with open(feast_config_path, "w") as f:
+        f.write(feast_config_content)
+
+    # Set environment variables for S3 credentials (required by pyarrow/Feast)
+    original_env = {}
+    s3_env_vars = {
+        "AWS_ACCESS_KEY_ID": s3_feature_store_config.s3_repo_config.access_key_id,
+        "AWS_SECRET_ACCESS_KEY": s3_feature_store_config.s3_repo_config.secret_access_key,
+        "AWS_DEFAULT_REGION": s3_feature_store_config.s3_repo_config.region,
+        "AWS_ENDPOINT_URL_S3": s3_feature_store_config.s3_repo_config.endpoint_url,
+    }
+
+    for key, value in s3_env_vars.items():
+        original_env[key] = os.environ.get(key)
+        os.environ[key] = value
+
+    # Create temp config with S3-specific overrides
+    temp_fd, config_path = tempfile.mkstemp(suffix=".json", text=True)
+
+    with os.fdopen(temp_fd, "w") as config_file:
+        # Load base test config
+        base_config_path = os.path.join(
+            os.path.dirname(__file__), "../resources/applicationConfig-test.json"
+        )
+        with open(base_config_path, "r") as base_config_file:
+            config_dict = json.load(base_config_file)
+
+        # Override with S3-specific configuration
+        config_dict["featureStoreConfig"] = {
+            "enabled": True,
+            "configDirectory": temp_feast_dir,  # Use temp directory with S3 config
+            "entityName": s3_feature_store_config.entity_name,
+            "ttlDays": s3_feature_store_config.ttl_days,
+            "onlineEnabled": s3_feature_store_config.online_enabled,
+            "serviceName": s3_feature_store_config.service_name,
+            "serviceVersion": s3_feature_store_config.service_version,
+            "offlineRepoStrategy": "s3",
+            "s3RepoConfig": {
+                "bucketName": s3_feature_store_config.s3_repo_config.bucket_name,
+                "prefix": s3_feature_store_config.s3_repo_config.prefix,
+                "endpointUrl": s3_feature_store_config.s3_repo_config.endpoint_url,
+                "region": s3_feature_store_config.s3_repo_config.region,
+                "accessKeyId": s3_feature_store_config.s3_repo_config.access_key_id,
+                "secretAccessKey": s3_feature_store_config.s3_repo_config.secret_access_key,
+            },
+        }
+
+        # Test features configuration
+        config_dict["featuresConfig"] = {
+            "datasetDefinitions": {"EURUSD": ["1h"]},
+            "featureDefinitions": [
+                {
+                    "name": "rsi",
+                    "enabled": True,
+                    "derivatives": [],
+                    "parameterSets": [{"enabled": True, "period": 14}],
+                },
+                {
+                    "name": "close_price",
+                    "enabled": True,
+                    "derivatives": [],
+                    "parameterSets": [],
+                },
+                {
+                    "name": "reward",
+                    "enabled": True,
+                    "derivatives": [],
+                    "parameterSets": [],
+                },
+            ],
+        }
+
+        json.dump(config_dict, config_file, indent=2)
+
+    try:
+        # Create injector with S3 configuration
+        app_module = CoreModule(config_path=config_path)
+        injector = Injector([app_module])
+
+        # Override feature factory
+        injector.binder.bind(IFeatureFactory, to=test_feature_factory)
+
+        # Initialize Feast repository for S3 configurations
+        _initialize_feast_repository(temp_feast_dir)
+
+        # Initialize feature manager
+        from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
+
+        feature_manager = injector.get(FeatureManager)
+        feature_manager.initialize_features()
+
+        # Store paths for cleanup
+        injector._test_config_path = config_path
+        injector._temp_feast_dir = temp_feast_dir
+
+        yield injector
+
+    finally:
+        # Cleanup environment variables
+        for key, original_value in original_env.items():
+            if original_value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = original_value
+
+        # Cleanup temporary files
+        try:
+            os.unlink(config_path)
+        except OSError:
+            pass
+        try:
+            shutil.rmtree(temp_feast_dir, ignore_errors=True)
+        except OSError:
+            pass
 
 
 @pytest.fixture(params=["local", "s3"])
