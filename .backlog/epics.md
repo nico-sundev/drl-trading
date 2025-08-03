@@ -1,6 +1,22 @@
 # Epics
 Priority top down
 
+## Service Standardization & Configuration Architecture
+**Status:** 📝 Planned
+**Priority:** High
+**Description:** Establish uniform design patterns and architectural standards across all microservices. Creates consistent configuration management, logging, dependency injection, and service bootstrapping patterns for maintainable and scalable microservice architecture.
+
+**Focus Areas:**
+- Unified configuration management with environment-specific variants
+- Standardized sensitive data handling (.env files, substitution patterns)
+- Common service entry point patterns and DI container usage
+- Consistent logging configuration across all services
+- Battle-tested configuration library evaluation and standardization
+
+**Impact:** Critical foundation for all services - enables consistent development patterns, reduces cognitive load, improves maintainability, and ensures production readiness.
+
+**Tickets:** See `tickets/service-standardization/` for implementation details
+
 ## Feature Pipeline Infrastructure
 **Status:** ✅ Complete
 **Priority:** High

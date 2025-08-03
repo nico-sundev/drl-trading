@@ -45,8 +45,6 @@ testing = [
     "pytest-cov>=4.0.0",
     "pytest-benchmark>=4.0.0",
 ]
-production = [
-]
 dev = [
     "mypy>=1.8.0",
     "ruff>=0.1.0",

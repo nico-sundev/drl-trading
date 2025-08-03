@@ -1,10 +1,10 @@
-"""Example of using the ServiceConfigLoader in a microservice."""
+"""Example of using the EnhancedServiceConfigLoader in a microservice."""
 import logging
 import os
 from typing import Optional
 
 from drl_trading_common.config.logging_config import configure_unified_logging
-from drl_trading_common.config.service_config_loader import ServiceConfigLoader
+from drl_trading_common.config.enhanced_service_config_loader import EnhancedServiceConfigLoader
 
 # Local import with proper type ignoring for mypy during development
 from drl_trading_inference.config.inference_config import (
@@ -34,7 +34,7 @@ def setup_logging(config: Optional[InferenceConfig] = None) -> None:
     logger.info("Logging configured using unified configuration approach")
 
 
-def bootstrap_inference_service():
+def bootstrap_inference_service() -> None:
     """Bootstrap the inference service with proper configuration."""
     # Load configuration with smart path discovery and environment detection
     try:
@@ -42,16 +42,20 @@ def bootstrap_inference_service():
         config_path = os.environ.get("SERVICE_CONFIG_PATH")
         if config_path:
             logger.info(f"Loading configuration from SERVICE_CONFIG_PATH: {config_path}")
-            config = ServiceConfigLoader.load_config(
+            config = EnhancedServiceConfigLoader.load_config(
                 InferenceConfig,
-                config_path=config_path
+                config_path=config_path,
+                secret_substitution=True,
+                env_override=True
             )
         else:
             # Use service-specific logic to locate config
             logger.info("Discovering configuration for inference service")
-            config = ServiceConfigLoader.load_config(
+            config = EnhancedServiceConfigLoader.load_config(
                 InferenceConfig,
-                service="inference"
+                service="inference",
+                secret_substitution=True,
+                env_override=True
             )
 
         # Now that we have the config, reconfigure logging properly
@@ -83,7 +87,7 @@ def bootstrap_inference_service():
         exit(2)
 
 
-def setup_model(config: InferenceConfig):
+def setup_model(config: InferenceConfig) -> None:
     """Set up the ML model for inference."""
     # Example of accessing typed configuration
     model_path = config.model_config["model_path"]
@@ -93,7 +97,7 @@ def setup_model(config: InferenceConfig):
     # ... model loading logic here
 
 
-def setup_messaging(config: InferenceConfig):
+def setup_messaging(config: InferenceConfig) -> None:
     """Set up message bus connections."""
     # Example of combining infrastructure and service-specific config
     # provider = config.infrastructure.message_bus.provider
@@ -107,7 +111,7 @@ def setup_messaging(config: InferenceConfig):
     # ... messaging setup logic here
 
 
-def setup_monitoring(config: InferenceConfig):
+def setup_monitoring(config: InferenceConfig) -> None:
     """Set up monitoring and health checks."""
     if config.infrastructure.monitoring.prometheus_enabled:
         port = config.infrastructure.monitoring.prometheus_port
@@ -130,8 +134,15 @@ def setup_monitoring(config: InferenceConfig):
             # Don't fail the application if monitoring setup fails
 
 
-def start_inference_loop(config: InferenceConfig):
+def start_inference_loop(config: InferenceConfig) -> None:
     """Start the main inference processing loop."""
     prediction_frequency = config.processing_config["prediction_frequency"]
     logger.info(f"Starting inference loop with {prediction_frequency} prediction frequency")
     # ... inference loop logic here
+
+def main() -> None:
+    """Main entry point for the inference service bootstrap."""
+    bootstrap_inference_service()
+
+if __name__ == "__main__":
+    main()

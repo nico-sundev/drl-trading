@@ -1,7 +1,7 @@
 import logging
 import os
 
-from drl_trading_common.config.service_config_loader import ServiceConfigLoader
+from drl_trading_common.config.enhanced_service_config_loader import EnhancedServiceConfigLoader
 from drl_trading_common.db.database_connection_interface import (
     DatabaseConnectionInterface,
 )
@@ -10,7 +10,7 @@ from drl_trading_common.db.postgresql_connection_service import (
 )
 from flask import Flask
 from injector import Module, provider, singleton
-from kafka import KafkaProducer
+from confluent_kafka import Producer
 
 from drl_trading_ingest.adapter.migration.alembic_migration_service import (
     AlembicMigrationService,
@@ -50,8 +50,11 @@ class IngestModule(Module):
             raise ValueError("SERVICE_CONFIG_PATH environment variable is not set.")
 
         logger.info(f"Loading configuration from SERVICE_CONFIG_PATH: {config_path}")
-        config = ServiceConfigLoader.load_config(
-            DataIngestionConfig, config_path=config_path
+        config = EnhancedServiceConfigLoader.load_config(
+            DataIngestionConfig,
+            config_path=config_path,
+            secret_substitution=True,
+            env_override=True
         )
         return config
 
@@ -59,12 +62,12 @@ class IngestModule(Module):
     @singleton
     def provide_kafka_producer(
         self, application_config: DataIngestionConfig
-    ) -> KafkaProducer:
+    ) -> Producer:
         """Provide a Kafka producer instance."""
         # KAFKA_BROKER = os.getenv("KAFKA_BROKER", "kafka:29092")
-        producer = KafkaProducer(
-            bootstrap_servers=[application_config.infrastructure.messaging.host]
-        )
+        producer = Producer({
+            'bootstrap.servers': application_config.infrastructure.messaging.host
+        })
         return producer
 
     @provider

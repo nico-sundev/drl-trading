@@ -1,0 +1,58 @@
+# DRL Trading Inference Service - Development Configuration
+# Enhanced YAML configuration demonstrating secret substitution and environment variables
+
+# Basic Application Information
+app_name: "drl-trading-inference"
+version: "1.0.0"
+deployment_mode: "development"
+
+# Infrastructure Configuration
+infrastructure:
+  service_name: "drl-trading-inference"
+  deployment_mode: "development"
+
+  # Logging Configuration with Environment Variables
+  logging:
+    level: "${LOG_LEVEL:INFO}"              # Environment variable with default
+    file_path: "logs/inference.log"
+    console_enabled: true
+    max_file_size: "10MB"
+    backup_count: 5
+
+  # Message Bus Configuration
+  message_bus:
+    provider: "in_memory"                   # in_memory for development, rabbitmq for production
+    connection_retry_attempts: 3
+    connection_url: "${MESSAGE_BUS_URL:amqp://localhost:5672}"
+
+  # Database Configuration with Secret Substitution
+  database:
+    host: "${DB_HOST:localhost}"
+    port: 5432
+    username: "${DB_USER:trading_user}"
+    password: "${DB_PASSWORD}"              # Required secret, no default
+    database: "${DB_NAME:trading_db}"
+    ssl_enabled: false
+
+  # Monitoring Configuration
+  monitoring:
+    prometheus_enabled: false
+    health_check_enabled: true
+    health_check_port: 8081
+    metrics_port: "${METRICS_PORT:9090}"
+
+# Model Configuration
+model_config:
+  model_path: "${MODEL_PATH:experiments/models/latest}"
+  model_format: "pickle"                    # pickle | onnx | joblib
+  batch_size: 1
+  timeout_seconds: 30
+  cache_enabled: true
+  cache_size: "${MODEL_CACHE_SIZE:100}"
+
+# Performance Configuration
+performance:
+  worker_threads: "${WORKER_THREADS:4}"
+  queue_size: "${QUEUE_SIZE:1000}"
+  batch_processing: true
+  max_memory_usage: "${MAX_MEMORY_MB:2048}"

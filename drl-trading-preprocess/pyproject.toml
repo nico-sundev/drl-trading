@@ -26,29 +26,48 @@ classifiers = [
 # Preprocessing service specific dependencies
 dependencies = [
     # Workspace dependencies
-    "drl-trading-common",
+    "drl-trading-common",  # Provides confluent-kafka
     "drl-trading-core",
     # Core data processing
     "pandas>=2.0.0",
     "numpy>=1.24.0",
     # Dependency injection
     "injector>=0.22.0",
+    # Configuration support - required by drl-trading-common
+    "PyYAML>=6.0",
 ]
 
 [tool.uv.sources]
 drl-trading-common = { workspace = true }
 drl-trading-core = { workspace = true }
 
-[project.optional-dependencies]
-testing = [
+[dependency-groups]
+# Testing dependencies (following workspace standards)
+test = [
     "pytest>=8.0.0",
     "pytest-cov>=4.0.0",
     "pytest-benchmark>=4.0.0",
+    "pytest-mock>=3.12.0",
 ]
+# Development dependencies (following workspace standards)
 dev = [
     "mypy>=1.8.0",
     "ruff>=0.1.0",
     "ipython>=8.0.0",
+]
+dev-full = [
+    # Development dependencies
+    "mypy>=1.8.0",
+    "ruff>=0.1.0",
+    "ipython>=8.0.0",
+    # Testing dependencies
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-benchmark>=4.0.0",
+    "pytest-mock>=3.12.0",
+    # Core dependencies for preprocessing
+    "numpy>=1.24.0",
+    "pandas>=2.0.0",
 ]
 
 # Project-specific ruff configuration (overrides workspace defaults where needed)

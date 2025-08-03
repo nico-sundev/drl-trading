@@ -1,0 +1,84 @@
+# DRL Trading Strategy Example - Main Application Configuration
+# This file demonstrates the enhanced YAML configuration format with comprehensive documentation
+
+# Data Import Configuration
+localDataImportConfig:
+  symbols:
+  - symbol: EURUSD                       # Primary trading pair
+    datasets:
+    - timeframe: H1                      # Base timeframe (1 hour)
+      base_dataset: true                 # Primary dataset for training
+      file_path: data/raw/test_H1.csv
+    - timeframe: H4                      # Higher timeframe (4 hours)
+      base_dataset: false                # Used for context features
+      file_path: data/raw/test_H4.csv
+  limit: 100                             # Limit for testing (remove for full dataset)
+  strategy: csv                          # Data source strategy
+featuresConfig:
+  featureDefinitions:
+  - name: rsi
+    enabled: true
+    derivatives:
+    - 1
+    parameterSets:
+    - enabled: true
+      length: 7
+rlModelConfig:
+  agents:
+  - PPO
+  - A2C
+  - DDPG
+  - SAC
+  - TD3
+  - Ensemble
+  trainingSplitRatio: 0.8
+  validatingSplitRatio: 0.1
+  testingSplitRatio: 0.1
+  agent_threshold: 0.1
+  total_timesteps: 10000
+environmentConfig:
+  fee: 0.005
+  slippageAtrBased: 0.01
+  slippageAgainstTradeProbability: 0.6
+  startBalance: 10000.0
+  maxDailyDrawdown: 0.02
+  maxAlltimeDrawdown: 0.05
+  maxPercentageOpenPosition: 100.0
+  minPercentageOpenPosition: 1.0
+  inMoneyFactor: 1.0
+  outOfMoneyFactor: 1.0
+  liquidationPenaltyFactor: 2.0
+  minLiquidationPenalty: 100.0
+  maxTimeInTrade: 10
+  optimalExitTime: 3
+  variancePenaltyWeight: 0.5
+  atrPenaltyWeight: 0.3
+featureStoreConfig:
+  enabled: true
+  config_directory: tests/resources/test_feature_repo
+  entity_name: symbol
+  ttl_days: 1
+  online_enabled: false
+  service_name: ai_trading_feature_definitions
+  service_version: 0.0.1
+  offline_repo_strategy: local
+  local_repo_config:
+    repo_path: tests/resources/test_feature_store_data
+  s3_repo_config:
+    bucket_name: drl-trading-features
+    prefix: features
+    endpoint_url: null
+    region: us-east-1
+    access_key_id: null
+    secret_access_key: null
+contextFeatureConfig:
+  primaryContextColumns:
+  - High
+  - Low
+  - Close
+  derivedContextColumns:
+  - Atr
+  optionalContextColumns:
+  - Open
+  - Volume
+  timeColumn: Time

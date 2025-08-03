@@ -197,7 +197,7 @@ class TestDependencyInjectionIntegration:
         """Test that migration service can be injected from the DI container."""
         # Given
         # Mock the config loading to avoid file dependencies
-        with patch('drl_trading_ingest.infrastructure.di.ingest_module.ServiceConfigLoader') as mock_loader:
+        with patch('drl_trading_ingest.infrastructure.di.ingest_module.EnhancedServiceConfigLoader') as mock_loader:
             mock_config = Mock(spec=DataIngestionConfig)
             mock_config.infrastructure = Mock()
             mock_config.infrastructure.database = Mock()

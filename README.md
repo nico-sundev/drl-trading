@@ -1,189 +1,240 @@
-# DRL Trading System
-**AI-Driven Financial Trading with Deep Reinforcement Learning**
+# DRL Trading Framework
 
+> **A production-ready Deep Reinforcement Learning framework for algorithmic trading, showcasing modern ML engineering practices and enterprise software architecture.**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
-[![uv](https://img.shields.io/badge/uv-package%20manager-green.svg)](https://github.com/astral-sh/uv)
+[![uv](https://img.shields.io/badge/dependency%20manager-uv-blue)](https://github.com/astral-sh/uv)
 
-## 🎯 Overview
+## 🎯 Project Vision
 
-A comprehensive AI trading system using Deep Reinforcement Learning for automated financial market trading. The system features a modern microservice architecture with ML pipeline automation, real-time inference, and production-grade observability.
+This project demonstrates the intersection of **financial domain expertise**, **cutting-edge ML engineering**, and **enterprise software architecture**. It combines:
 
-### Key Features
-- **Deep Reinforcement Learning**: Support for multiple algorithms (PPO, A2C, SAC, TD3, DQN) via Stable-Baselines3
-- **Feature Engineering**: Decoupled feature implementations with custom technical indicator backends and Feast API integration
-- **Microservice Architecture**: Event-driven pipeline with message bus communication
-- **Risk Management**: Built-in risk controls and compliance framework
-- **Production Ready**: MLflow integration, observability, and monitoring
+- **Deep Reinforcement Learning** applied to financial markets
+- **Python mastery** through complex real-world implementation
+- **ML Operations** with Feast feature store, MLflow model management
+- **Microservices architecture** with hexagonal design patterns
+- **Event-driven systems** with pluggable messaging infrastructure
+- **AI-assisted development** workflows and best practices
 
-## 🏗️ System Architecture
+## 🏗️ Architecture
 
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Data Ingest   │───▶│   Preprocessing  │───▶│    Training     │
-│   (Market Data) │    │ (Feature Pipeline)│    │  (ML Pipeline)  │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-         │                        │                        │
-         ▼                        ▼                        ▼
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Execution     │◀───│    Inference     │◀───│   Model Store   │
-│ (Order Engine)  │    │  (Predictions)   │    │   (MLflow)      │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Data Ingest   │───▶│   Preprocessing │───▶│    Training     │
+│                 │    │                 │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                                        │
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Execution     │◄───│   Inference     │◄───│   Strategy      │
+│                 │    │                 │    │   (Pluggable)   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## 📦 System Components
+**Key Principles:**
+- **Strategy Isolation**: Framework open-source, strategies proprietary
+- **Hexagonal Architecture**: Clean business logic separation
+- **Event-Driven**: Scalable messaging (in-memory → Kafka)
+- **Cloud-Native**: Containerized AWS-ready services
 
-### Core Libraries
-| Component | Purpose | Status | Documentation |
-|-----------|---------|--------|---------------|
-| **drl-trading-core** | Framework backbone & feature engineering framework | ✅ Stable | [README](./drl-trading-core/README.md) |
-| **drl-trading-common** | Shared messaging infrastructure & data models | ✅ Stable | [README](./drl-trading-common/README.md) |
-| **drl-trading-strategy-***| Strategy modules (pluggable trading logic) | 🔄 Active Dev | [Example](./drl-trading-strategy-example/README.md) |
+## 🚀 Quick Start
 
-### Microservices (Deployable Units)
-| Service | Purpose | Status | Documentation |
-|---------|---------|--------|---------------|
-| **drl-trading-preprocessing** | Feature computation & pipeline processing | 📝 Planned | [README](./drl-trading-preprocessing/README.md) |
-| **drl-trading-training** | Model training service | 🔄 Active Dev | [README](./drl-trading-training/README.md) |
-| **drl-trading-inference** | Real-time prediction service | 📝 Planned | [README](./drl-trading-inference/README.md) |
-| **drl-trading-ingest** | Market data ingestion service | 📝 Planned | [README](./drl-trading-ingest/README.md) |
-| **drl-trading-execution** | Trade execution service | 📝 Planned | [README](./drl-trading-execution/README.md) |
+```bash
+# Clone and setup
+git clone https://github.com/yourusername/drl-trading.git
+cd drl-trading
+uv sync --group dev-full
+
+# Run example training
+cd drl-trading-strategy-example
+uv run python -m drl_trading_strategy_example.main
+
+# End-to-end test
+docker-compose -f docker-compose.training.yml up
+```
+
+## 📚 Documentation
+
+- **[Developer Guide](docs/DEVELOPER_GUIDE.md)** - Setup and development
+- **[Strategy Development](docs/STRATEGY_DEVELOPMENT.md)** - Custom strategies
+- **[Learning Journey](docs/LEARNING_JOURNEY.md)** - Skills and progression
+
+## 🛠️ Technology Stack
+
+| **ML** | **Architecture** | **Infrastructure** |
+|--------|------------------|-------------------|
+| Stable Baselines3 | Hexagonal patterns | Docker |
+| Feast | Microservices | AWS |
+| MLflow | Event-driven | uv |
+
+## 🎯 Professional Skills Demonstrated
+
+- **Software Architecture**: Microservices, hexagonal patterns, dependency injection
+- **ML Engineering**: Feature stores, model management, real-time inference
+- **DevOps & Cloud**: Containerization, CI/CD, AWS deployment
+- **Financial Domain**: Technical analysis, risk management, backtesting
+
+> **Strategy Separation**: Production strategies in private repo. Example strategy for learning/integration.
+
+## 🤝 Contributing
+
+See [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) for setup and [STRATEGY_DEVELOPMENT.md](docs/STRATEGY_DEVELOPMENT.md) for custom strategies.
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file.
+
+## 🎤 About
+
+Combining **financial markets expertise** with **modern software engineering** to explore algorithmic trading and machine learning integration.
+
+**Connect**: [LinkedIn] | [GitHub]
+
+---
+
+*"Where financial domain knowledge meets cutting-edge ML engineering."*
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Python 3.11+
-- Docker & Docker Compose
 - [uv](https://github.com/astral-sh/uv) package manager
+- Docker & Docker Compose (optional)
 
-### Development Setup
+### Setup
 ```bash
-# Clone and setup workspace
-git clone <repository>
-cd ai_trading
+# Clone the repository
+git clone https://github.com/yourusername/drl-trading.git
+cd drl-trading
 
-# Install core framework
-cd drl-trading-core
-pip install uv
-uv venv
-source .venv/Scripts/activate  # Windows
-# source .venv/bin/activate     # Linux/Mac
-uv pip install -e .
+# Install dependencies for all services
+uv sync --group dev-full
 
-# Install strategy module
-cd ../drl-trading-strategy-example
-uv pip install -e .
-
-# Run preprocessing pipeline
-python -m drl_trading_core.cli.preprocessing_cli
+# Run example strategy training
+cd drl-trading-strategy-example
+uv run python -m drl_trading_strategy_example.main
 ```
 
-### Training a Model
+### End-to-End Test
 ```bash
-# Setup training service
-cd drl-trading-training
-uv pip install -e .
-
-# Run training with example strategy
-python -m drl_trading_training --config config/default.json
-```
-
-### Docker Development
-```bash
-# Start training environment
+# Start all services (docker-compose)
 docker-compose -f docker-compose.training.yml up
 
-# Or full development stack (when available)
-docker-compose -f docker-compose.production.yml up
+# Verify pipeline
+./scripts/e2e_test.sh
 ```
+
+## 📚 Documentation
+
+- **[Developer Guide](docs/DEVELOPER_GUIDE.md)** - Technical setup and development workflows
+- **[Architecture Guide](docs/ARCHITECTURE.md)** - System design and patterns
+- **[Strategy Development](docs/STRATEGY_DEVELOPMENT.md)** - How to create custom strategies
+- **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment patterns
+- **[Learning Journey](docs/LEARNING_JOURNEY.md)** - Skills developed and lessons learned
+
+## 🏛️ Framework Components
+
+### Core Services
+- **[drl-trading-core](drl-trading-core/)** - Framework foundation and preprocessing pipeline
+- **[drl-trading-common](drl-trading-common/)** - Shared messaging and data models
+- **[drl-trading-ingest](drl-trading-ingest/)** - Market data ingestion service
+- **[drl-trading-training](drl-trading-training/)** - Model training orchestration
+- **[drl-trading-inference](drl-trading-inference/)** - Real-time prediction service
+- **[drl-trading-execution](drl-trading-execution/)** - Trade execution management
+- **[drl-trading-preprocess](drl-trading-preprocess/)** - Feature computation service
+
+### Strategy Module
+- **[drl-trading-strategy-example](drl-trading-strategy-example/)** - Reference implementation
+
+## 🛠️ Technology Stack
+
+| Category | Technology | Purpose |
+|----------|------------|---------|
+| **Language** | Python 3.11+ | Core development |
+| **Package Management** | uv | Fast, reliable dependency management |
+| **ML Framework** | Stable Baselines3 | Deep Reinforcement Learning |
+| **Feature Store** | Feast | ML feature management |
+| **Model Management** | MLflow | Experiment tracking and model registry |
+| **Messaging** | Confluent Kafka | Event-driven communication |
+| **Database** | PostgreSQL | Data persistence |
+| **Containerization** | Docker | Service deployment |
+| **Cloud Platform** | AWS | Production infrastructure |
+
+## 🎯 Professional Skills Demonstrated
+
+### Software Architecture
+- **Microservices Design** with clear service boundaries
+- **Hexagonal Architecture** for testability and maintainability
+- **Event-Driven Patterns** for scalable system integration
+- **Dependency Injection** for modular, testable code
+
+### ML Engineering
+- **Feature Engineering** pipelines with proper versioning
+- **Model Training** orchestration and experiment management
+- **Real-time Inference** with low-latency requirements
+- **A/B Testing** framework for strategy comparison
+
+### DevOps & Cloud
+- **Infrastructure as Code** with Docker and docker-compose
+- **CI/CD Pipelines** for automated testing and deployment
+- **Monitoring & Observability** with structured logging
+- **Cloud Deployment** patterns for AWS
 
 ## 🔧 Development
 
 ### Project Structure
 ```
-ai_trading/
-├── drl-trading-core/              # Framework backbone & feature engineering
-├── drl-trading-common/            # Shared messaging & data models
-├── drl-trading-strategy-example/  # Example strategy implementation
-├── drl-trading-preprocessing/     # Feature computation microservice (planned)
-├── drl-trading-training/          # Training microservice
-├── drl-trading-inference/         # Inference microservice (planned)
-├── drl-trading-ingest/           # Data ingestion microservice (planned)
-├── drl-trading-execution/        # Execution microservice (planned)
-├── .backlog/                     # Project management & documentation
+drl-trading/
+├── drl-trading-core/              # Framework foundation
+├── drl-trading-common/            # Shared infrastructure
+├── drl-trading-strategy-example/  # Example strategy (minimal)
+├── drl-trading-training/          # Training service
+├── drl-trading-inference/         # Inference service
+├── drl-trading-ingest/           # Data ingestion service
+├── drl-trading-execution/        # Trade execution service
+├── drl-trading-preprocess/       # Feature computation service
+├── docs/                         # Documentation
 ├── scripts/                      # Utility scripts
 └── docker-compose.*.yml         # Deployment configurations
 ```
 
+> **Strategy Separation**: Production trading strategies are maintained in a separate private repository (`drl-trading-strategy`). The example strategy provides minimal functionality for integration testing and learning.
+
 ### Development Workflow
-1. **Strategy Development**: Create/modify strategy modules in `drl-trading-strategy-*/`
-2. **Framework Development**: Extend core functionality in `drl-trading-core/`
-3. **Service Development**: Build/modify microservices in `drl-trading-*/`
+1. **Framework Development**: Extend core functionality in `drl-trading-core/`
+2. **Service Development**: Build/modify microservices following hexagonal architecture
+3. **Strategy Development**: Create custom strategy modules (see [Strategy Development Guide](docs/STRATEGY_DEVELOPMENT.md))
 4. **Integration Testing**: Use Docker Compose for full system testing
 5. **Deployment**: Production deployment via containerized microservices
 
-### Code Quality
-```bash
-# Formatting and linting
-ruff check <path> --fix
-mypy <path>
-
-# Testing
-pytest tests/
-```
-
-## 📚 Documentation
-
-- **[Project Management](./.backlog/README.md)** - Epics, tickets, and progress tracking
-- **[Architecture Documentation](./.backlog/tickets/architecture-documentation/)** - Detailed system design
-- **[API Documentation](./docs/api/)** - Service APIs and contracts
-- **[Development Guide](./docs/development.md)** - Contribution guidelines
-
-## 🎯 Current Status & Roadmap
-
-### ✅ Completed
-- Core feature engineering framework with Feast integration
-- Strategy module system with dependency injection
-- Training service with CLI interface
-- Comprehensive testing infrastructure
-- Feature engineering framework with pluggable indicators
-- **Feast Feature Store Integration** - Complete implementation with offline/online storage
-
-### 🔄 In Progress
-- MLflow model management integration
-- Feature normalization and encoding enhancements
-- Data provider API expansion (Binance, TwelveData)
-
-### 📝 Planned
-- Real-time inference microservice
-- Production deployment automation
-- Advanced ML features (GNN pattern recognition)
-- Observability stack (OpenTelemetry, Grafana)
-- Multi-exchange execution service
-
 ## 🤝 Contributing
 
-This project follows modern development practices with comprehensive testing and documentation standards.
-
-### Getting Started
-1. Fork the repository
-2. Set up development environment (see Development Setup above)
-3. Review [coding standards](./.github/instructions/) and [documentation guidelines](./docs/README-standards.md)
-4. Create feature branch for your changes
-5. Submit pull request with tests and documentation
+This framework is designed to be extended with custom strategies. See [STRATEGY_DEVELOPMENT.md](docs/STRATEGY_DEVELOPMENT.md) for guidelines on creating strategy modules.
 
 ### Development Standards
 - **Code Quality**: All code must pass `ruff check`, `mypy`, and `pytest`
 - **Testing**: Follow Given/When/Then structure for all tests
-- **Documentation**: Update relevant READMEs and API documentation
-- **Architecture**: Follow SOLID principles and dependency injection patterns
+- **Architecture**: Follow hexagonal architecture and SOLID principles
+- **Documentation**: Update relevant docs with architectural decisions
 
-## 📄 License
+## � License
 
-[Add your license here]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support
+## 🎤 About the Author
 
-- **Issues**: [GitHub Issues](link)
-- **Discussions**: [GitHub Discussions](link)
-- **Documentation**: [Wiki](link)
+Combining **financial markets expertise** with **modern software engineering** to explore the intersection of algorithmic trading and machine learning. This project represents a journey through Python mastery, ML operations, and enterprise architecture patterns.
+
+**Skills Demonstrated:**
+- Financial domain knowledge and quantitative trading
+- Modern software architecture and microservices design
+- Machine learning operations and MLOps best practices
+- AI-assisted development workflows and productivity
+
+**Connect:**
+- LinkedIn: [Your Profile]
+- GitHub: [Your Profile]
+
+---
+
+*"Where financial domain knowledge meets cutting-edge ML engineering."*

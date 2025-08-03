@@ -1,0 +1,26 @@
+app_name: "drl-trading-inference"
+version: "1.0.0"
+deployment_mode: "staging"
+
+messaging:
+  provider: "kafka"
+  host: "${KAFKA_HOST:localhost}"
+  port: ${KAFKA_PORT:9092}
+  username: "${KAFKA_USERNAME}"
+  password: "${KAFKA_PASSWORD}"
+  vhost: null
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+  file_path: "logs/inference.log"
+  console_enabled: false
+  rotation_enabled: true
+  max_bytes: 10485760
+  backup_count: 10
+
+# Inference-specific configuration
+inference:
+  model_path: "/tmp/models/"
+  batch_size: 32
+  timeout_seconds: 30

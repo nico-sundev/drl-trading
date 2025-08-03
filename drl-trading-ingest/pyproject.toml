@@ -26,7 +26,7 @@ classifiers = [
 # Ingest service specific dependencies
 dependencies = [
     # Workspace dependencies
-    "drl-trading-common",
+    "drl-trading-common",  # Provides confluent-kafka
     # Core data processing
     "pandas>=2.0.0",
     "numpy>=1.24.0",
@@ -38,21 +38,25 @@ dependencies = [
     "sqlalchemy>=2.0.0",
     # Data quality and validation
     "pydantic>=2.0.0",
-    # Messaging
-    "pika>=1.3.0",
     # Database migrations
     "alembic>=1.12.0",
     # Dependency injection
     "injector>=0.22.0",
+    "flask>=3.1.1",
+    # Configuration support - required by drl-trading-common
+    "PyYAML>=6.0",
 ]
 
 [tool.uv.sources]
 drl-trading-common = { workspace = true }
 
-[project.optional-dependencies]
-testing = [
+# Project-specific dependency groups
+# Note: These follow the workspace dependency standards for consistency
+[dependency-groups]
+test = [
     "pytest>=8.0.0",
     "pytest-cov>=4.0.0",
+    "pytest-benchmark>=4.0.0",
     "pytest-mock>=3.12.0",
     "testcontainers>=4.0.0",  # For database testing
 ]
@@ -60,6 +64,23 @@ dev = [
     "mypy>=1.8.0",
     "ruff>=0.1.0",
     "ipython>=8.0.0",
+]
+dev-full = [
+    # Development dependencies
+    "mypy>=1.8.0",
+    "ruff>=0.1.0",
+    "ipython>=8.0.0",
+    # Testing dependencies
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-benchmark>=4.0.0",
+    "pytest-mock>=3.12.0",
+    "testcontainers>=4.0.0",
+    # ML dependencies (for ingest processing)
+    "numpy>=1.24.0",
+    "pandas>=2.0.0",
+    # Configuration support - required by drl-trading-common
+    "PyYAML>=6.0",
 ]
 
 # Package discovery configuration

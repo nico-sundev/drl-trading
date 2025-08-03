@@ -82,7 +82,7 @@ module = [
     "yfinance.*",
     "feast.*",
     "talipp.*",
-    "pika.*",
+    "confluent_kafka.*",
     "psycopg2.*",
     "boto3.*",
     "minio.*",
@@ -164,40 +164,26 @@ extend-exclude = '''
 '''
 
 # ============================================================================
-# SHARED DEPENDENCY GROUPS
-# Projects can reference these via dependency-groups inheritance
+# SHARED DEPENDENCY STANDARDS
+# While uv doesn't currently support workspace-level dependency group inheritance,
+# these serve as version standards for consistency across all projects.
+# Individual projects should use these exact versions in their dependency-groups.
 # ============================================================================
-[dependency-groups]
-# Common development dependencies across all projects
-dev-common = [
-    "mypy>=1.8.0",
-    "ruff>=0.1.0",
-    "ipython>=8.0.0",
-]
 
-# Common testing dependencies
-test-common = [
-    "pytest>=8.0.0",
-    "pytest-cov>=4.0.0",
-    "pytest-benchmark>=4.0.0",
-    "pytest-mock>=3.12.0",
-]
+# Standard versions to use across all projects
+# Projects should copy these exact versions to maintain consistency
 
-# Common production messaging dependencies
-messaging-common = [
-    "pika>=1.3.0",  # RabbitMQ client
-]
+# Common development tools (copy to dev groups):
+# mypy>=1.8.0, ruff>=0.1.0, ipython>=8.0.0
 
-# Integration testing dependencies
-integration-test = [
-    "testcontainers>=4.0.0",
-    "minio>=7.0.0",  # For S3-compatible storage testing
-]
+# Common testing tools (copy to test groups):
+# pytest>=8.0.0, pytest-cov>=4.0.0, pytest-benchmark>=4.0.0, pytest-mock>=3.12.0
 
-# Data science and ML common dependencies
-ml-common = [
-    "numpy>=1.24.0",
-    "pandas>=2.0.0",
-    "gymnasium>=0.29.0",
-    "stable-baselines3>=2.0.0",
-]
+# Common messaging (provided by drl-trading-common):
+# confluent-kafka>=2.3.0
+
+# Common ML dependencies (copy to ml groups):
+# numpy>=1.24.0, pandas>=2.0.0, gymnasium>=0.29.0, stable-baselines3>=2.0.0
+
+# Integration testing (copy where needed):
+# testcontainers>=4.0.0, minio>=7.0.0

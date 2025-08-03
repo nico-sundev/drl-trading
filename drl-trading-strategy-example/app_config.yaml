@@ -1,0 +1,90 @@
+# DRL Trading Strategy Example - Application Configuration
+# This configuration demonstrates YAML format with enhanced readability and comments
+
+# Data Import Configuration
+localDataImportConfig:
+  symbols:
+  - symbol: MYSYMBOL  # Replace with your trading symbol (e.g., EURUSD, GBPUSD)
+    datasets:
+    - timeframe: H1         # Base timeframe for training
+      base_dataset: true
+      file_path: path/to/your/data_H1.csv
+    - timeframe: D1         # Higher timeframe for context
+      base_dataset: false
+      file_path: path/to/your/data_D1.csv
+  limit: 100               # Maximum number of records to load for testing
+
+# Feature Engineering Configuration
+featuresConfig:
+  featureDefinitions:
+  - name: rsi              # Relative Strength Index feature
+    enabled: true
+    derivatives:
+    - 1                    # First derivative (momentum)
+    parameterSets:
+    - enabled: true
+      length: 14           # Standard RSI period
+
+# Reinforcement Learning Model Configuration
+rlModelConfig:
+  agents:
+  - PPO                    # Proximal Policy Optimization
+  trainingSplitRatio: 0.8  # 80% for training
+  validatingSplitRatio: 0.1 # 10% for validation
+  testingSplitRatio: 0.1   # 10% for testing
+  agent_threshold: 0.1     # Performance threshold for agent selection
+  total_timesteps: 5000    # Total training steps
+# Trading Environment Configuration (FTMO Compliant)
+environmentConfig:
+  fee: 0.001                              # Trading fee per lot (0.1%)
+  slippageAtrBased: 0.01                  # Slippage as fraction of ATR
+  slippageAgainstTradeProbability: 0.5    # Probability slippage works against trade
+  startBalance: 10000.0                   # Starting account balance
+  maxDailyDrawdown: 0.03                  # Maximum daily loss (3%)
+  maxAlltimeDrawdown: 0.1                 # Maximum total drawdown (10%)
+  maxPercentageOpenPosition: 50.0         # Maximum position size (50%)
+  minPercentageOpenPosition: 1.0          # Minimum position size (1%)
+  inMoneyFactor: 1.0                      # Reward multiplier for profitable trades
+  outOfMoneyFactor: 1.0                   # Penalty multiplier for losing trades
+  liquidationPenaltyFactor: 2.0           # Extra penalty for account liquidation
+  minLiquidationPenalty: 50.0             # Minimum liquidation penalty
+  maxTimeInTrade: 20                      # Maximum candles in position
+  optimalExitTime: 5                      # Optimal exit time for bonus
+  variancePenaltyWeight: 0.5              # Penalty for high volatility trades
+  atrPenaltyWeight: 0.3                   # Penalty for high ATR entries
+
+# Feature Store Configuration (Feast Integration)
+featureStoreConfig:
+  enabled: false                          # Enable/disable feature store
+  configDirectory: path/to/your/feature_repo
+  entityName: symbol                      # Primary entity for feature views
+  ttlDays: 1                             # Time-to-live for features
+  onlineEnabled: false                    # Enable online feature serving
+  serviceName: ai_trading_feature_definitions
+  serviceVersion: 0.0.1
+  offlineRepoStrategy: local              # local | s3
+  # Local Repository Configuration
+  localRepoConfig:
+    repoPath: path/to/your/feature_store_data
+
+  # S3 Repository Configuration (for production)
+  s3RepoConfig:
+    bucketName: drl-trading-features
+    prefix: features
+    endpointUrl: null                     # Optional: custom S3 endpoint
+    region: us-east-1
+    accessKeyId: null                     # Use environment variables in production
+    secretAccessKey: null                 # Use environment variables in production
+
+# Context Feature Configuration
+contextFeatureConfig:
+  primaryContextColumns:                  # Core OHLC data
+  - High
+  - Low
+  - Close
+  derivedContextColumns:                  # Additional market data
+  - Open
+  - Volume
+  optionalContextColumns:                 # Technical indicators
+  - Atr
+  timeColumn: Time                        # Timestamp column name

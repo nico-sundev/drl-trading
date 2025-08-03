@@ -3,7 +3,7 @@ from typing import Tuple
 
 import pandas as pd
 from injector import inject
-from kafka import KafkaProducer
+from confluent_kafka import Producer
 
 from drl_trading_ingest.core.port.market_data_repo_interface import (
     TimescaleRepoInterface,
@@ -25,21 +25,28 @@ class IngestionServiceInterface(ABC):
 @inject
 class IngestionService(IngestionServiceInterface):
 
-    def __init__(self, db_repo: TimescaleRepoInterface, producer: KafkaProducer):
+    def __init__(self, db_repo: TimescaleRepoInterface, producer: Producer):
         self.db_repo = db_repo
         self.producer = producer
 
-    def batch_ingest(self, data) -> Tuple[dict, int]:
+    def batch_ingest(self, data: dict) -> Tuple[dict, int]:
         filename = data.get("filename")
         symbol = data.get("symbol")
 
         if not filename or not symbol:
             return {"error": "filename and symbol are required"}, 400
 
+        def delivery_report(err, msg):
+            if err is not None:
+                print(f"Delivery failed for message: {err}")
+            else:
+                print(f"Message delivered to {msg.topic()} [{msg.partition()}]")
+
         try:
             df = pd.read_csv(filename, parse_dates=["timestamp"])
             self.db_repo.save_market_data(symbol, df)
-            self.producer.send(TOPIC_BATCH, b"")
+            # Send message using confluent-kafka API with delivery report
+            self.producer.produce(TOPIC_BATCH, value=b"", callback=delivery_report)
             self.producer.flush()
             return {"status": "ok"}, 200
         except Exception as e:

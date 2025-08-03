@@ -1,0 +1,26 @@
+app_name: "drl-trading-training"
+version: "1.0.0"
+deployment_mode: "development"
+
+messaging:
+  provider: "in_memory"
+  host: null
+  port: null
+  username: null
+  password: null
+  vhost: null
+
+logging:
+  level: "DEBUG"
+  format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+  file_path: "logs/training.log"
+  console_enabled: true
+  rotation_enabled: true
+  max_bytes: 10485760
+  backup_count: 5
+
+# Training-specific configuration
+training:
+  model_output_path: "models/"
+  checkpoint_frequency: 1000
+  max_episodes: 10000

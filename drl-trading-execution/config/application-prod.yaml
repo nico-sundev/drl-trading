@@ -1,0 +1,28 @@
+app_name: "drl-trading-execution"
+version: "1.0.0"
+deployment_mode: "production"
+
+messaging:
+  provider: "kafka"
+  host: "${KAFKA_HOST}"
+  port: ${KAFKA_PORT:9092}
+  username: "${KAFKA_USERNAME}"
+  password: "${KAFKA_PASSWORD}"
+  vhost: null
+
+database:
+  provider: "postgresql"
+  host: "${DB_HOST}"
+  port: ${DB_PORT:5432}
+  database: "${DB_NAME}"
+  username: "${DB_USERNAME}"
+  password: "${DB_PASSWORD}"
+
+logging:
+  level: "WARNING"
+  format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+  file_path: "/var/log/execution/execution.log"
+  console_enabled: false
+  rotation_enabled: true
+  max_bytes: 52428800
+  backup_count: 20
