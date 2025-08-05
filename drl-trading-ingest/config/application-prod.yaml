@@ -1,6 +1,6 @@
 app_name: "drl-trading-ingest"
 version: "1.0.0"
-deployment_mode: "production"
+stage: "prod"
 
 messaging:
   provider: "kafka"

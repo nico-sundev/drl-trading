@@ -8,7 +8,7 @@ git clone https://github.com/your-org/ai-trading.git
 cd ai-trading
 
 REM 2. Set environment for training mode
-set DEPLOYMENT_MODE=training
+set STAGE=training
 set DRL_TRADING_CONFIG_PATH=%cd%\drl-trading-strategy-example\config\applicationConfig.json
 
 REM 3. Install framework and dependencies

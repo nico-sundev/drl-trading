@@ -4,7 +4,8 @@ import os
 import threading
 import time
 
-from drl_trading_common.messaging import DeploymentMode, TradingMessageBusFactory
+from drl_trading_common.messaging import DeploymentMode
+from drl_trading_common.messaging.factories import TradingMessageBusFactory
 
 
 def demo_training_mode():
@@ -182,17 +183,17 @@ def demo_production_mode_simulation():
     print("✅ Production mode simulation completed\n")
 
 
-def demo_deployment_mode_switching():
+def demo_stage_switching() -> None:
     """Demo switching between modes via environment variable."""
     print("=== DEPLOYMENT MODE SWITCHING DEMO ===")
 
-    # Test training mode
-    os.environ["DEPLOYMENT_MODE"] = "training"
+    # Test training stage
+    os.environ["STAGE"] = "training"
     bus1 = TradingMessageBusFactory.create_message_bus(DeploymentMode.TRAINING)
-    print(f"📋 Created bus for training mode: {type(bus1.transport).__name__}")
+    print(f"📋 Created bus for training stage: {type(bus1.transport).__name__}")
 
-    # Test production mode (will use in-memory since RabbitMQ not available)
-    os.environ["DEPLOYMENT_MODE"] = "production"
+    # Test production stage (will use in-memory since RabbitMQ not available)
+    os.environ["STAGE"] = "prod"
     try:
         bus2 = TradingMessageBusFactory.create_message_bus(DeploymentMode.PRODUCTION)
         print(f"📋 Created bus for production mode: {type(bus2.transport).__name__}")
@@ -201,8 +202,8 @@ def demo_deployment_mode_switching():
         print("📋 In real deployment, RabbitMQ would be available")
 
     # Cleanup
-    if "DEPLOYMENT_MODE" in os.environ:
-        del os.environ["DEPLOYMENT_MODE"]
+    if "STAGE" in os.environ:
+        del os.environ["STAGE"]
 
     print("✅ Mode switching demo completed\n")
 
@@ -214,7 +215,7 @@ if __name__ == "__main__":
 
     demo_training_mode()
     demo_production_mode_simulation()
-    demo_deployment_mode_switching()
+    demo_stage_switching()
 
     print("🎉 All demos completed!")
     print("\n💡 Key Benefits of drl-trading-common:")

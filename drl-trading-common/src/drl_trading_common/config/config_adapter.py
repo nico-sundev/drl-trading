@@ -128,7 +128,7 @@ class ConfigAdapter:
         Returns:
             Instance of the specified configuration class
         """
-        env_name = env_name or os.environ.get("DEPLOYMENT_MODE", "development")
+        env_name = env_name or os.environ.get("STAGE", "local")
 
         # Look for environment-specific config files first
         for ext in [".json", ".yaml", ".yml"]:

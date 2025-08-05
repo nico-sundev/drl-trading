@@ -4,12 +4,10 @@
 # Basic Application Information
 app_name: "drl-trading-inference"
 version: "1.0.0"
-deployment_mode: "development"
+stage: "local"
 
 # Infrastructure Configuration
 infrastructure:
-  service_name: "drl-trading-inference"
-  deployment_mode: "development"
 
   # Logging Configuration with Environment Variables
   logging:

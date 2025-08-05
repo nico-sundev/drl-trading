@@ -54,7 +54,6 @@ class MonitoringConfig(BaseSchema):
 
 class InfrastructureConfig(BaseSchema):
     """Infrastructure configuration for deployment environment."""
-    deployment_mode: str = "development"  # development | staging | production
     messaging: MessagingConfig = MessagingConfig()
     database: DatabaseConfig = DatabaseConfig()
     logging: LoggingConfig = LoggingConfig()

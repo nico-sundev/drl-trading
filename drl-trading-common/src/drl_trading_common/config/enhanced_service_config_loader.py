@@ -57,7 +57,7 @@ class EnhancedServiceConfigLoader:
     @staticmethod
     def get_env_name() -> str:
         """Get the current deployment environment name."""
-        return os.environ.get("DEPLOYMENT_MODE", "development")
+        return os.environ.get("STAGE", "local")
 
     @staticmethod
     def load_config(

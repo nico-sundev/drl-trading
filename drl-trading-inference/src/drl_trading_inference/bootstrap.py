@@ -66,7 +66,7 @@ def bootstrap_inference_service() -> None:
 
         # Log effective configuration for debugging
         logger.info(
-            f"Inference service initialized in {config.infrastructure.deployment_mode} mode "
+            f"Inference service initialized in {config.stage} mode "
             f"for {service_name} v{getattr(config.infrastructure, 'version', '1.0.0')}"
         )
 

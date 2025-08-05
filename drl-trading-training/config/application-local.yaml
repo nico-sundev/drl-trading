@@ -1,6 +1,6 @@
 app_name: "drl-trading-training"
 version: "1.0.0"
-deployment_mode: "development"
+stage: "local"
 
 messaging:
   provider: "in_memory"

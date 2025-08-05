@@ -8,4 +8,4 @@ class BaseApplicationConfig(BaseSchema):
     version: str = "1.0.0"
 
     # Common infrastructure settings that all services need
-    deployment_mode: str = "development"  # development | staging | production
+    stage: str = "local"  # local | cicd | prod

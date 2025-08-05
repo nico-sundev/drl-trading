@@ -1,6 +1,6 @@
 app_name: "drl-trading-preprocess"
 version: "1.0.0"
-deployment_mode: "staging"
+stage: "cicd"
 
 messaging:
   provider: "kafka"

@@ -7,7 +7,7 @@
 # INFRASTRUCTURE CONFIGURATION (maps to InfrastructureConfig)
 # =============================================================================
 infrastructure:
-  deployment_mode: "development"
+  stage: "local"
 
   messaging:
     provider: "in_memory"  # in_memory for training, rabbitmq for production

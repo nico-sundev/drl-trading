@@ -11,7 +11,7 @@ git clone "$REPO_URL"
 cd ai-trading
 
 # 2. Set environment for training mode
-export DEPLOYMENT_MODE=training
+export STAGE=training
 export DRL_TRADING_CONFIG_PATH=$(pwd)/drl-trading-strategy-example/config/applicationConfig.json
 
 # 3. Install framework and dependencies
