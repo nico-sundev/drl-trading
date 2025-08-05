@@ -1,0 +1,70 @@
+# DRL Trading Execution Service - Base Configuration
+# This file contains the common configuration that applies to all environments
+
+# Basic Application Information
+app_name: "drl-trading-execution"
+version: "1.0.0"
+stage: "local"
+
+# Infrastructure Configuration
+infrastructure:
+
+  # Logging Configuration
+  logging:
+    level: "INFO"
+    file_path: "logs/execution.log"
+    console_enabled: true
+    max_file_size: "10MB"
+    backup_count: 5
+
+  # Message Bus Configuration
+  messaging:
+    provider: "memory"  # memory | kafka | rabbitmq
+    serialization: "json"
+    timeout_seconds: 30
+
+# Broker Configuration
+broker:
+  provider: "paper_trading"  # paper_trading | ftmo | mt5 | binance
+  account_id: null
+  api_key_env: "BROKER_API_KEY"
+  api_secret_env: "BROKER_API_SECRET"
+  base_url: null
+  connection_timeout: 10
+  retry_attempts: 3
+
+# Risk Management Configuration
+risk_management:
+  # FTMO compliance settings
+  max_daily_loss_percent: 5.0
+  max_total_loss_percent: 10.0
+  max_positions: 5
+  require_stop_loss: true
+
+  # Position sizing
+  position_sizing_method: "fixed_risk"  # fixed_risk | fixed_lot | kelly
+  risk_per_trade_percent: 1.0
+  max_risk_per_trade_percent: 2.0
+
+  # Stop-loss and take-profit configuration
+  stop_loss_atr_multiplier: 1.5
+  take_profit_atr_multiplier: 2.0
+  use_trailing_stop: true
+  trailing_stop_activation_percent: 1.0
+  trailing_stop_step_percent: 0.5
+
+# Execution Parameters Configuration
+execution_params:
+  execution_mode: "market"  # market | limit
+  slippage_tolerance_pips: 2
+  execution_timeout_seconds: 5
+  cancel_failed_orders: true
+  max_spread_pips: 10
+  retry_execution_attempts: 2
+
+# Message Routing Configuration
+message_routing:
+  signal_topic: "trading_signals"
+  execution_topic: "trade_executions"
+  status_topic: "execution_status"
+  error_topic: "execution_errors"

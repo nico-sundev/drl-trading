@@ -1,0 +1,81 @@
+# =============================================================================
+# DRL Trading Data Ingestion Service - Base Configuration
+# =============================================================================
+# Base configuration that is common across all environments
+# Stage-specific overrides are in application-{STAGE}.yaml files
+
+# =============================================================================
+# APPLICATION CONFIGURATION (maps to BaseApplicationConfig)
+# =============================================================================
+app_name: "drl-trading-ingest"
+
+# =============================================================================
+# INFRASTRUCTURE CONFIGURATION (maps to InfrastructureConfig)
+# =============================================================================
+infrastructure:
+  messaging:
+    provider: "in_memory"  # Default for development/training
+    host: null
+    port: null
+    username: null
+    password: null
+    vhost: null
+
+  database:
+    provider: "postgresql"
+    host: "localhost"
+    port: 5432
+    database: "drl_trading"
+    username: "trading_user"
+    password: "${DB_PASSWORD:secure_password}"  # Secret substitution
+
+  logging:
+    level: "INFO"
+    format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    file_path: "logs/data-ingestion.log"
+
+# =============================================================================
+# DATA SOURCE CONFIGURATION (maps to DataSourceConfig)
+# =============================================================================
+data_source:
+  # MT5 configuration
+  mt5_enabled: true
+  mt5_symbols: ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD"]
+  mt5_timeframes: ["M1", "M5", "H1", "D1"]
+  mt5_max_bars: 10000
+
+  # Binance configuration
+  binance_enabled: false
+  binance_api_key_env: "BINANCE_API_KEY"
+  binance_secret_key_env: "BINANCE_SECRET_KEY"
+  binance_symbols: ["BTCUSDT", "ETHUSDT", "ADAUSDT"]
+
+  # Yahoo Finance configuration
+  yahoo_enabled: false
+  yahoo_symbols: ["SPY", "QQQ", "IWM", "VTI"]
+
+# =============================================================================
+# MESSAGE ROUTING CONFIGURATION (maps to MessageRoutingConfig)
+# =============================================================================
+message_routing:
+  market_data_topic: "market_data"
+  heartbeat_topic: "heartbeat"
+  error_topic: "ingest_errors"
+
+  heartbeat_interval: 30  # seconds
+  batch_size: 100
+  max_retry_attempts: 3
+  retry_delay: 5  # seconds
+
+# =============================================================================
+# DATA VALIDATION CONFIGURATION (maps to DataValidationConfig)
+# =============================================================================
+data_validation:
+  enable_validation: true
+  max_price_deviation: 0.1  # 10% max price change
+  min_volume_threshold: 0
+  max_age_seconds: 300  # 5 minutes max age
+
+  # Outlier detection
+  enable_outlier_detection: true
+  outlier_threshold: 3.0  # standard deviations

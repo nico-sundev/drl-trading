@@ -1,0 +1,43 @@
+# DRL Trading Preprocess Service - Base Configuration
+# This file contains the common configuration that applies to all environments
+
+# Basic Application Information
+app_name: "drl-trading-preprocess"
+version: "1.0.0"
+stage: "local"
+
+# Infrastructure Configuration
+infrastructure:
+
+  # Logging Configuration
+  logging:
+    level: "INFO"
+    file_path: "logs/preprocess.log"
+    console_enabled: true
+    max_file_size: "10MB"
+    backup_count: 5
+
+  # Message Bus Configuration
+  messaging:
+    provider: "memory"  # memory | kafka | rabbitmq
+    serialization: "json"
+    timeout_seconds: 30
+
+# Data Source Configuration
+data_source:
+  input_path: "data/raw/"
+  supported_formats: ["csv", "parquet", "json"]
+  batch_size: 1000
+
+# Feature Engineering Configuration
+feature_engineering:
+  enabled_features: ["technical_indicators", "market_data", "sentiment"]
+  lookback_period: 30
+  scaling_method: "standard"
+
+# Output Configuration
+output:
+  output_path: "data/processed/"
+  format: "parquet"
+  compression: "snappy"
+  validation_enabled: true

@@ -1,28 +1,30 @@
-app_name: "drl-trading-ingest"
-version: "1.0.0"
-stage: "cicd"
+# =============================================================================
+# DRL Trading Data Ingestion Service - CI/CD Configuration
+# =============================================================================
+# CI/CD overrides for automated testing and deployment
 
-messaging:
-  provider: "kafka"
-  host: "${KAFKA_HOST:localhost}"
-  port: ${KAFKA_PORT:9092}
-  username: "${KAFKA_USERNAME}"
-  password: "${KAFKA_PASSWORD}"
-  vhost: null
+infrastructure:
+  messaging:
+    provider: "kafka"
+    host: "${KAFKA_HOST:localhost}"
+    port: ${KAFKA_PORT:9092}
+    username: "${KAFKA_USERNAME}"
+    password: "${KAFKA_PASSWORD}"
+    vhost: null
 
-database:
-  provider: "postgresql"
-  host: "${DB_HOST}"
-  port: ${DB_PORT:5432}
-  database: "${DB_NAME}"
-  username: "${DB_USERNAME}"
-  password: "${DB_PASSWORD}"
+  database:
+    provider: "postgresql"
+    host: "${DB_HOST}"
+    port: ${DB_PORT:5432}
+    database: "${DB_NAME}"
+    username: "${DB_USERNAME}"
+    password: "${DB_PASSWORD}"
 
-logging:
-  level: "INFO"
-  format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-  file_path: "logs/ingest.log"
-  console_enabled: false
-  rotation_enabled: true
-  max_bytes: 10485760
-  backup_count: 10
+  logging:
+    level: "INFO"
+    format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    file_path: "logs/ingest.log"
+    console_enabled: false
+    rotation_enabled: true
+    max_bytes: 10485760
+    backup_count: 10

@@ -1,11 +1,10 @@
 """Bootstrap entrypoint for execution service."""
-from drl_trading_execution.infrastructure.bootstrap.execution_bootstrap import ExecutionBootstrap
+from drl_trading_execution.infrastructure.bootstrap.execution_bootstrap import bootstrap_execution_service
 
 
 def main() -> None:
     """Main entrypoint for execution service."""
-    bootstrap = ExecutionBootstrap()
-    bootstrap.start()
+    bootstrap_execution_service()
 
 
 if __name__ == "__main__":

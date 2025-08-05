@@ -1,4 +1,4 @@
-"""Service configuration loader with YAML preference and secret substitution support."""
+"""Lean service configuration loader for application.yaml with stage overrides."""
 import os
 import re
 import logging
@@ -16,235 +16,106 @@ logger = logging.getLogger(__name__)
 
 class EnhancedServiceConfigLoader:
     """
-    Service configuration loader with YAML preference and advanced features.
+    Lean configuration loader for service application configs.
 
-    This class provides methods to load service-specific configuration files
-    with intelligent environment detection and fallback paths, featuring:
-    - YAML-first configuration loading
-    - Secret substitution using ${VAR_NAME:default} syntax
-    - Enhanced environment variable override support
-    - Improved error messages and logging
-
-    Usage:
-        # Basic usage
-        config = EnhancedServiceConfigLoader.load_config(
-            InferenceConfig,
-            service="inference"
-        )
-
-        # With secret substitution and environment overrides
-        config = EnhancedServiceConfigLoader.load_config(
-            InferenceConfig,
-            service="inference",
-            secret_substitution=True,
-            env_override=True
-        )
+    Loads: .env file + application.yaml + application-{STAGE}.yaml + secret substitution
     """
-
-    DEFAULT_CONFIG_LOCATIONS = [
-        "config",               # ./config/ folder in current directory
-        "../config",            # ../config/ folder in parent directory
-        "src/{service}/config", # Service-specific config directory
-        "/app/config"           # Docker container standard location
-    ]
-
-    # YAML-first extension preference
-    PREFERRED_EXTENSIONS = [".yaml", ".yml", ".json"]
 
     # Pattern for secret substitution: ${SECRET_NAME:default_value}
     SECRET_PATTERN = re.compile(r'\$\{([^}:]+)(?::([^}]*))?\}')
 
     @staticmethod
-    def get_env_name() -> str:
-        """Get the current deployment environment name."""
-        return os.environ.get("STAGE", "local")
-
-    @staticmethod
-    def load_config(
-        config_class: Type[T],
-        service: Optional[str] = None,
-        config_path: Optional[str] = None,
-        config_file: Optional[str] = None,
-        env_prefix: Optional[str] = None,
-        secret_substitution: bool = True,
-        env_override: bool = True
-    ) -> T:
+    def load_config(config_class: Type[T]) -> T:
         """
-        Load configuration for a specific service with enhanced features.
+        Load service configuration with stage overrides and secret substitution.
 
         Args:
             config_class: The configuration class to instantiate
-            service: Service name (for path calculation)
-            config_path: Optional explicit config directory path
-            config_file: Optional specific config filename (without extension)
-            env_prefix: Optional prefix for environment variables
-            secret_substitution: Enable secret substitution (default: True)
-            env_override: Enable environment variable overrides (default: True)
 
         Returns:
             Instance of the specified configuration class
         """
-        # Check environment variable for config path override
-        env_config_path = os.environ.get("SERVICE_CONFIG_PATH")
-        if env_config_path and Path(env_config_path).exists():
-            logger.info(f"Loading configuration from environment variable: {env_config_path}")
-            return EnhancedServiceConfigLoader._load_explicit_path(
-                config_class,
-                env_config_path,
-                env_prefix,
-                secret_substitution,
-                env_override
+        # Load .env file if present (for local development)
+        EnhancedServiceConfigLoader._load_dotenv()
+
+        # Get config directory (12-factor app principle)
+        config_dir = os.environ.get("CONFIG_DIR")
+        if not config_dir:
+            raise ValueError(
+                "CONFIG_DIR environment variable must be set. "
+                "Example: CONFIG_DIR=/path/to/config or CONFIG_DIR=./config"
             )
 
-        # Use explicit path if provided
-        if config_path:
-            if Path(config_path).is_dir():
-                # It's a directory, we need to build the full path
-                return EnhancedServiceConfigLoader._discover_config_in_directory(
-                    config_class,
-                    config_path,
-                    service,
-                    config_file,
-                    env_prefix,
-                    secret_substitution,
-                    env_override
-                )
-            elif Path(config_path).is_file():
-                # It's a file path, load directly
-                return EnhancedServiceConfigLoader._load_explicit_path(
-                    config_class,
-                    config_path,
-                    env_prefix,
-                    secret_substitution,
-                    env_override
-                )
+        if not Path(config_dir).exists():
+            raise FileNotFoundError(f"Configuration directory not found: {config_dir}")
 
-        # Try to discover config in default locations
-        service_name = service or config_class.__name__.lower().replace("config", "")
+        # Get stage for overrides
+        stage = os.environ.get("STAGE", "local")
 
-        # Try each default location
-        for location in EnhancedServiceConfigLoader.DEFAULT_CONFIG_LOCATIONS:
-            # Insert service name if placeholder exists
-            search_path = location.format(service=service_name)
+        # Find base application config file (YAML preference)
+        base_file = EnhancedServiceConfigLoader._find_config_file(config_dir, "application")
+        if not base_file:
+            raise FileNotFoundError(f"Base configuration file not found: application.yaml in {config_dir}")
 
-            if Path(search_path).is_dir():
-                try:
-                    return EnhancedServiceConfigLoader._discover_config_in_directory(
-                        config_class,
-                        search_path,
-                        service_name,
-                        config_file,
-                        env_prefix,
-                        secret_substitution,
-                        env_override
-                    )
-                except FileNotFoundError:
-                    # Try next location
-                    continue
+        # Find stage override file (optional)
+        stage_file = EnhancedServiceConfigLoader._find_config_file(config_dir, f"application-{stage}")
 
-        # If we get here, no config was found
-        raise FileNotFoundError(
-            f"No configuration file found for service {service_name} "
-            f"in any of the default locations: {EnhancedServiceConfigLoader.DEFAULT_CONFIG_LOCATIONS}"
-        )
+        # Load base configuration
+        config = EnhancedServiceConfigLoader._load_single_file(config_class, base_file)
 
-    @staticmethod
-    def _load_explicit_path(
-        config_class: Type[T],
-        path: str,
-        env_prefix: Optional[str] = None,
-        secret_substitution: bool = True,
-        env_override: bool = True
-    ) -> T:
-        """Load configuration from an explicit file path with enhanced features."""
-        env_prefix = env_prefix or config_class.__name__.upper()
+        # Apply stage override if exists
+        if stage_file:
+            logger.info(f"Applying stage override: {stage_file}")
+            # Load stage override as raw YAML data (not as config object)
+            import yaml
+            with open(stage_file, 'r') as f:
+                stage_data = yaml.safe_load(f)
 
-        # Load base configuration using ConfigAdapter
-        config = ConfigAdapter.load_with_env_override(
-            config_class,
-            path,
-            env_prefix=env_prefix if env_override else None
-        )
+            # Apply secret substitution to stage data
+            if stage_data:
+                stage_data = EnhancedServiceConfigLoader._substitute_secrets(stage_data)
 
-        # Apply secret substitution if enabled
-        if secret_substitution:
-            config_dict = config.model_dump()
-            config_dict = EnhancedServiceConfigLoader._substitute_secrets(config_dict)
-            config = config_class.model_validate(config_dict)
+                # Merge stage data into base config
+                config_dict = config.model_dump()
+                EnhancedServiceConfigLoader._deep_update(config_dict, stage_data)
+                config = config_class.model_validate(config_dict)
 
         return config
 
     @staticmethod
-    def _discover_config_in_directory(
-        config_class: Type[T],
-        directory: str,
-        service_name: str,
-        config_name: Optional[str] = None,
-        env_prefix: Optional[str] = None,
-        secret_substitution: bool = True,
-        env_override: bool = True
-    ) -> T:
+    def _deep_update(base_dict: dict, update_dict: dict) -> None:
         """
-        Discover configuration file in a directory with environment-specific variants.
+        Deep update base_dict with update_dict, modifying base_dict in place.
 
-        This method checks for files in the following order:
-        1. {config_name}.{env}.{ext}
-        2. {service_name}.{env}.{ext}
-        3. {config_class_name}.{env}.{ext}
-        4. {config_name}.{ext}
-        5. {service_name}.{ext}
-        6. {config_class_name}.{ext}
-        7. config.{env}.{ext}
-        8. config.{ext}
-
-        For each pattern, it tries extensions in order: .yaml, .yml, .json (YAML preference)
+        Args:
+            base_dict: Base dictionary to update
+            update_dict: Dictionary with updates to apply
         """
-        env_name = EnhancedServiceConfigLoader.get_env_name()
-        base_names = []
+        for key, value in update_dict.items():
+            if isinstance(value, dict) and key in base_dict and isinstance(base_dict[key], dict):
+                EnhancedServiceConfigLoader._deep_update(base_dict[key], value)
+            else:
+                base_dict[key] = value
 
-        if config_name:
-            base_names.append(config_name)
+    @staticmethod
+    def _find_config_file(config_dir: str, filename: str) -> Optional[str]:
+        """Find YAML config file."""
+        file_path = os.path.join(config_dir, f"{filename}.yaml")
+        if Path(file_path).exists():
+            return file_path
+        return None
 
-        base_names.extend([
-            service_name,
-            config_class.__name__.lower().replace("config", "")
-        ])
+    @staticmethod
+    def _load_single_file(config_class: Type[T], file_path: str) -> T:
+        """Load configuration from a single file with secret substitution."""
+        # Load using ConfigAdapter with environment variable overrides
+        env_prefix = config_class.__name__.upper()
+        config = ConfigAdapter.load_with_env_override(config_class, file_path, env_prefix=env_prefix)
 
-        # Add generic "config" as fallback
-        base_names.append("config")
-
-        # YAML-first extension preference
-        extensions = EnhancedServiceConfigLoader.PREFERRED_EXTENSIONS
-
-        # Check environment-specific files first
-        for base_name in base_names:
-            for ext in extensions:
-                # Try env-specific file first
-                env_file = os.path.join(directory, f"{base_name}.{env_name}{ext}")
-                if Path(env_file).exists():
-                    logger.info(f"Found environment-specific config: {env_file}")
-                    return EnhancedServiceConfigLoader._load_explicit_path(
-                        config_class,
-                        env_file,
-                        env_prefix,
-                        secret_substitution,
-                        env_override
-                    )
-
-                # Then try generic file
-                generic_file = os.path.join(directory, f"{base_name}{ext}")
-                if Path(generic_file).exists():
-                    logger.info(f"Found generic config: {generic_file}")
-                    return EnhancedServiceConfigLoader._load_explicit_path(
-                        config_class,
-                        generic_file,
-                        env_prefix,
-                        secret_substitution,
-                        env_override
-                    )
-
-        # No configurations found in this directory
-        raise FileNotFoundError(f"No configuration files found in directory {directory}")
+        # Apply secret substitution
+        config_dict = config.model_dump()
+        config_dict = EnhancedServiceConfigLoader._substitute_secrets(config_dict)
+        return config_class.model_validate(config_dict)
 
     @staticmethod
     def _substitute_secrets(data: Union[Dict[str, Any], Any]) -> Union[Dict[str, Any], Any]:
@@ -252,9 +123,6 @@ class EnhancedServiceConfigLoader:
         Replace secret placeholders with environment variables.
 
         Supports syntax: ${SECRET_NAME:default_value}
-        - SECRET_NAME: Environment variable name
-        - default_value: Optional default value if environment variable is not set
-
         Examples:
             ${DB_PASSWORD}                    # Required secret, no default
             ${DB_PASSWORD:default_pass}       # Secret with default value
@@ -274,7 +142,6 @@ class EnhancedServiceConfigLoader:
                         logger.debug(f"Using default value for secret: {secret_name}")
                         return default_value
                     else:
-                        logger.error(f"Secret {secret_name} not found in environment and no default provided")
                         raise ValueError(f"Required secret '{secret_name}' not found in environment and no default provided")
 
                 return EnhancedServiceConfigLoader.SECRET_PATTERN.sub(replace_secret, value)
@@ -288,71 +155,22 @@ class EnhancedServiceConfigLoader:
         return substitute_value(data)
 
     @staticmethod
-    def validate_config_file(config_path: str) -> bool:
+    def _load_dotenv() -> None:
         """
-        Validate that a configuration file exists and is readable.
+        Load .env file from current working directory if it exists.
 
-        Args:
-            config_path: Path to configuration file
-
-        Returns:
-            True if file is valid, False otherwise
+        Uses python-dotenv if available, falls back to manual parsing if not.
+        This enables local development without requiring explicit environment setup.
         """
-        try:
-            path = Path(config_path)
-            if not path.exists():
-                logger.error(f"Configuration file does not exist: {config_path}")
-                return False
-
-            if not path.is_file():
-                logger.error(f"Configuration path is not a file: {config_path}")
-                return False
-
-            if path.suffix.lower() not in EnhancedServiceConfigLoader.PREFERRED_EXTENSIONS:
-                logger.warning(f"Configuration file has unsupported extension: {config_path}")
-                return False
-
-            # Try to read the file
-            with open(path, 'r') as f:
-                content = f.read()
-                if not content.strip():
-                    logger.error(f"Configuration file is empty: {config_path}")
-                    return False
-
-            return True
-        except Exception as e:
-            logger.error(f"Error validating configuration file {config_path}: {e}")
-            return False
-
-    @staticmethod
-    def list_available_configs(directory: str) -> Dict[str, list]:
-        """
-        List all available configuration files in a directory.
-
-        Args:
-            directory: Directory to search for configuration files
-
-        Returns:
-            Dictionary mapping config types to list of available files
-        """
-        configs = {"yaml": [], "json": [], "other": []}
+        env_file = Path(".env")
+        if not env_file.exists():
+            return
 
         try:
-            path = Path(directory)
-            if not path.exists() or not path.is_dir():
-                return configs
-
-            for file_path in path.iterdir():
-                if file_path.is_file():
-                    suffix = file_path.suffix.lower()
-                    if suffix in [".yaml", ".yml"]:
-                        configs["yaml"].append(str(file_path))
-                    elif suffix == ".json":
-                        configs["json"].append(str(file_path))
-                    else:
-                        configs["other"].append(str(file_path))
-
-        except Exception as e:
-            logger.error(f"Error listing configuration files in {directory}: {e}")
-
-        return configs
+            # Try to use python-dotenv if available
+            from dotenv import load_dotenv
+            load_dotenv(env_file, override=False)  # Don't override existing env vars
+            logger.debug(f"Loaded .env file using dotenv: {env_file}")
+        except ImportError:
+            # Fall back to manual parsing if python-dotenv not available
+            logger.debug("python-dotenv not available, using manual .env parsing")

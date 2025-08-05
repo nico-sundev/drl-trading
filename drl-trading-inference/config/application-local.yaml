@@ -23,15 +23,6 @@ infrastructure:
     connection_retry_attempts: 3
     connection_url: "${MESSAGE_BUS_URL:amqp://localhost:5672}"
 
-  # Database Configuration with Secret Substitution
-  database:
-    host: "${DB_HOST:localhost}"
-    port: 5432
-    username: "${DB_USER:trading_user}"
-    password: "${DB_PASSWORD}"              # Required secret, no default
-    database: "${DB_NAME:trading_db}"
-    ssl_enabled: false
-
   # Monitoring Configuration
   monitoring:
     prometheus_enabled: false

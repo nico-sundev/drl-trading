@@ -1,5 +1,4 @@
 import logging
-import os
 
 from drl_trading_common.config.enhanced_service_config_loader import EnhancedServiceConfigLoader
 from drl_trading_common.db.database_connection_interface import (
@@ -9,7 +8,7 @@ from drl_trading_common.db.postgresql_connection_service import (
     PostgreSQLConnectionService,
 )
 from flask import Flask
-from injector import Module, provider, singleton
+from injector import Binder, Injector, Module, provider, singleton
 from confluent_kafka import Producer
 
 from drl_trading_ingest.adapter.migration.alembic_migration_service import (
@@ -33,8 +32,8 @@ from drl_trading_ingest.core.service.ingestion_service import (
 from drl_trading_ingest.infrastructure.bootstrap.flask_app_factory import (
     FlaskAppFactory,
 )
-from drl_trading_ingest.infrastructure.config.data_ingestion_config import (
-    DataIngestionConfig,
+from drl_trading_ingest.infrastructure.config.ingest_config import (
+    IngestConfig,
 )
 
 logger = logging.getLogger(__name__)
@@ -43,25 +42,20 @@ logger = logging.getLogger(__name__)
 class IngestModule(Module):
 
     @provider
-    def provide_data_ingestion_config(self) -> DataIngestionConfig:
-        """Provide the DataIngestionConfig instance."""
-        config_path = os.environ.get("SERVICE_CONFIG_PATH")
-        if not config_path:
-            raise ValueError("SERVICE_CONFIG_PATH environment variable is not set.")
+    def provide_ingest_config(self) -> IngestConfig:
+        """Provide the IngestConfig instance."""
+        logger.info("Loading IngestConfig with lean EnhancedServiceConfigLoader")
 
-        logger.info(f"Loading configuration from SERVICE_CONFIG_PATH: {config_path}")
-        config = EnhancedServiceConfigLoader.load_config(
-            DataIngestionConfig,
-            config_path=config_path,
-            secret_substitution=True,
-            env_override=True
-        )
+        # Use the lean EnhancedServiceConfigLoader
+        # Loads: application.yaml + application-{STAGE}.yaml + secret substitution
+        config: IngestConfig = EnhancedServiceConfigLoader.load_config(IngestConfig)
+
         return config
 
     @provider
     @singleton
     def provide_kafka_producer(
-        self, application_config: DataIngestionConfig
+        self, application_config: IngestConfig
     ) -> Producer:
         """Provide a Kafka producer instance."""
         # KAFKA_BROKER = os.getenv("KAFKA_BROKER", "kafka:29092")
@@ -72,7 +66,7 @@ class IngestModule(Module):
 
     @provider
     @singleton
-    def provide_flask_app(self, injector) -> Flask:
+    def provide_flask_app(self, injector: Injector) -> Flask:
         """
         Provide a Flask application instance using the factory pattern.
 
@@ -81,7 +75,7 @@ class IngestModule(Module):
         """
         return FlaskAppFactory.create_app(injector)
 
-    def configure(self, binder) -> None:
+    def configure(self, binder: Binder) -> None:
         """Configure the module with necessary bindings."""
         # Core services
         binder.bind(IngestionServiceInterface, to=IngestionService, scope=singleton)

@@ -1,57 +1,36 @@
-import logging
+"""
+Main entry point for DRL Trading Ingest Service.
 
-from flask import Flask
-from injector import Injector
-
-from drl_trading_ingest.adapter.web.routes import register_routes
-from drl_trading_ingest.core.port.migration_service_interface import (
-    MigrationServiceInterface,
-)
-from drl_trading_ingest.infrastructure.di.ingest_module import IngestModule
-
-logger = logging.getLogger(__name__)
+HEXAGONAL ARCHITECTURE:
+- Minimal main.py (just infrastructure bootstrap)
+- Business logic lives in core layer
+- External interfaces live in adapter layer
+"""
+from drl_trading_ingest.infrastructure.bootstrap.ingest_function_bootstrap import bootstrap_ingest_service
 
 
-def create_app():
+def main() -> int:
     """
-    Create and configure the Flask application with dependency injection.
+    Main entry point for the ingest service.
 
-    This function sets up the complete application stack including:
-    - Dependency injection container
-    - Database migration management
-    - Route registration
+    Uses the standardized bootstrap pattern to start the service.
 
     Returns:
-        Flask: Configured Flask application instance
+        int: Exit code (0 for success, 1 for failure)
     """
-    app = Flask(__name__)
-
-    # Initialize dependency injection container
-    injector = Injector([IngestModule()])
-
-    # Ensure database migrations are applied on startup
     try:
-        migration_service = injector.get(MigrationServiceInterface)
-        migration_service.ensure_migrations_applied()
-        logger.info("Database migrations successfully ensured")
+        # Initialize and run the bootstrap
+        bootstrap_ingest_service()
+
+    except KeyboardInterrupt:
+        print("Service stopped by user")
+        return 0
     except Exception as e:
-        logger.error(f"Failed to ensure migrations on startup: {str(e)}")
-        # Consider whether to continue or fail hard based on your requirements
-        # For production, you might want to fail hard:
-        # raise
+        print(f"Failed to start ingest service: {e}")
+        return 1
 
-    # Register application routes
-    register_routes(app, injector)
-
-    return app
+    return 0
 
 
 if __name__ == "__main__":
-    # Configure logging for development
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-
-    app = create_app()
-    app.run(debug=True)
+    exit(main())

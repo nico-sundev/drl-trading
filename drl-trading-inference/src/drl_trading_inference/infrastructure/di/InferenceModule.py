@@ -1,26 +1,30 @@
 """Dependency injection module for inference service."""
 from injector import Module, provider, singleton
-from drl_trading_common.base.base_application_config import BaseApplicationConfig
+from drl_trading_inference.infrastructure.config.inference_config import InferenceConfig
 from drl_trading_common.config.infrastructure_config import MessagingConfig, LoggingConfig
 
 
 class InferenceModule(Module):
     """Dependency injection module for inference service."""
 
+    def __init__(self, config: InferenceConfig):
+        """Initialize module with configuration."""
+        self.config = config
+
     @provider
     @singleton
-    def provide_application_config(self) -> BaseApplicationConfig:
-        """Provide application configuration."""
-        return BaseApplicationConfig(app_name="drl-trading-inference")
+    def provide_inference_config(self) -> InferenceConfig:
+        """Provide inference service configuration."""
+        return self.config
 
     @provider
     @singleton
     def provide_messaging_config(self) -> MessagingConfig:
         """Provide messaging configuration."""
-        return MessagingConfig()
+        return self.config.infrastructure.messaging
 
     @provider
     @singleton
     def provide_logging_config(self) -> LoggingConfig:
         """Provide logging configuration."""
-        return LoggingConfig()
+        return self.config.infrastructure.logging

@@ -1,0 +1,87 @@
+# DRL Trading Training Service - Base Configuration
+# This file contains the common configuration that applies to all environments
+
+# Basic Application Information
+app_name: "drl-trading-training"
+version: "1.0.0"
+stage: "local"
+
+# Infrastructure Configuration
+infrastructure:
+
+  # Logging Configuration
+  logging:
+    level: "INFO"
+    file_path: "logs/training.log"
+    console_enabled: true
+    max_file_size: "10MB"
+    backup_count: 5
+
+  # Message Bus Configuration
+  messaging:
+    provider: "memory"  # memory | kafka | rabbitmq
+    serialization: "json"
+    timeout_seconds: 30
+
+# Experiment Tracking Configuration
+experiment_tracking:
+  enabled: true
+  mlflow:
+    experiment_name: "drl-trading"
+    tracking_uri: null
+    registry_uri: null
+    artifact_location: null
+    default_tags: {}
+    run_name_pattern: "{experiment_name}_{timestamp}"
+    metrics_to_log: ["reward", "episode_length", "episode_return", "cumulative_profit"]
+    params_to_log: ["learning_rate", "batch_size", "total_timesteps"]
+    log_model_checkpoint: true
+    log_model_final: true
+    log_environment: true
+    log_source_code: true
+    log_config: true
+    log_metrics: true
+  hyperparameters:
+    learning_rate: 0.0003
+    batch_size: 64
+    buffer_size: 10000
+    gamma: 0.99
+    total_timesteps: 10000
+    eval_frequency: 1000
+    policy_type: "MlpPolicy"
+    hidden_size: [64, 64]
+    custom: {}
+
+# Dataset Configuration
+dataset:
+  input_path: "data/raw"
+  train_split: 0.8
+  validation_split: 0.1
+  test_split: 0.1
+  symbols: ["EURUSD"]
+  timeframes: ["H1", "H4"]
+  base_timeframe: "H1"
+  limit: 10000
+
+# Agent Configuration
+agent:
+  algorithms: ["PPO"]
+  hyperparameters:
+    learning_rate: 0.0003
+    gamma: 0.99
+    batch_size: 64
+    n_epochs: 10
+
+# Ensemble Configuration
+ensemble:
+  enabled: false
+  voting_scheme: "majority"
+  threshold: 0.1
+
+# Output Configuration
+output:
+  model_save_path: "experiments/models"
+  results_save_path: "experiments/results"
+  save_format: "pickle"
+  create_visualization: true
+  publish_metrics: false

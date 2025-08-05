@@ -1,9 +1,12 @@
-from drl_trading_common.config.logging_config import configure_logging
+"""DRL Trading Training Service Package."""
 
-from .training_app import TrainingApp
+# Hexagonal Architecture:
+# - adapter/: External interfaces (APIs, message handlers)
+# - core/: Business logic and domain services
+# - infrastructure/: Technical concerns (config, DI, bootstrap)
 
-configure_logging()
+__version__ = "0.1.0"
 
 __all__ = [
-    "TrainingApp"
+    "__version__",
 ]

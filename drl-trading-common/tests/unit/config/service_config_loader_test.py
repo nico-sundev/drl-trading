@@ -20,7 +20,7 @@ class TestConfig(BaseApplicationConfig):
     """Test configuration class for migration testing."""
 
     app_name: str = "test_service"
-    service_name: str = "test"
+    service_name: str = "test_service"
     database_url: str = "localhost"
     api_key: str = "default_key"
     port: int = 8080
@@ -45,9 +45,6 @@ class TestEnhancedServiceConfigLoader:
         # Given
         required_methods = [
             'load_config',
-            'validate_config_file',
-            'list_available_configs',
-            'get_env_name',
             '_substitute_secrets'
         ]
 
@@ -59,7 +56,7 @@ class TestEnhancedServiceConfigLoader:
         """Test basic configuration loading functionality."""
         # Given
         with tempfile.TemporaryDirectory() as temp_dir:
-            config_file = Path(temp_dir) / "test_config.yaml"
+            config_file = Path(temp_dir) / "application.yaml"
             config_content = """
 app_name: "test_service"
 service_name: "test_service"
@@ -70,13 +67,8 @@ port: 9000
             config_file.write_text(config_content)
 
             # When - Load configuration
-            with patch.dict(os.environ, {}, clear=True):
-                config = EnhancedServiceConfigLoader.load_config(
-                    TestConfig,
-                    config_path=str(config_file),
-                    secret_substitution=False,
-                    env_override=False
-                )
+            with patch.dict(os.environ, {'CONFIG_DIR': temp_dir, 'STAGE': 'local'}, clear=True):
+                config = EnhancedServiceConfigLoader.load_config(TestConfig)
 
             # Then - Configuration should be loaded correctly
             assert config.app_name == "test_service"
@@ -89,7 +81,7 @@ port: 9000
         """Test that secret substitution works correctly."""
         # Given
         with tempfile.TemporaryDirectory() as temp_dir:
-            config_file = Path(temp_dir) / "test_config.yaml"
+            config_file = Path(temp_dir) / "application.yaml"
             config_content = """
 app_name: "test_service"
 service_name: "test_service"
@@ -101,14 +93,12 @@ port: 9000
 
             # When - Load with environment variables set
             with patch.dict(os.environ, {
+                'CONFIG_DIR': temp_dir,
+                'STAGE': 'local',
                 'DB_URL': 'postgresql://prod.example.com:5432/prod_db',
                 'API_KEY': 'prod_api_key_xyz'
             }):
-                config = EnhancedServiceConfigLoader.load_config(
-                    TestConfig,
-                    config_path=str(config_file),
-                    secret_substitution=True
-                )
+                config = EnhancedServiceConfigLoader.load_config(TestConfig)
 
             # Then - Environment variables should be substituted
             assert config.database_url == "postgresql://prod.example.com:5432/prod_db"
@@ -121,7 +111,7 @@ port: 9000
         """Test secret substitution with default values."""
         # Given
         with tempfile.TemporaryDirectory() as temp_dir:
-            config_file = Path(temp_dir) / "test_config.yaml"
+            config_file = Path(temp_dir) / "application.yaml"
             config_content = """
 app_name: "test_service"
 service_name: "test_service"
@@ -132,103 +122,54 @@ port: 9000
             config_file.write_text(config_content)
 
             # When - Load without environment variables (should use defaults)
-            with patch.dict(os.environ, {}, clear=True):
-                config = EnhancedServiceConfigLoader.load_config(
-                    TestConfig,
-                    config_path=str(config_file),
-                    secret_substitution=True
-                )
+            with patch.dict(os.environ, {'CONFIG_DIR': temp_dir, 'STAGE': 'local'}, clear=True):
+                config = EnhancedServiceConfigLoader.load_config(TestConfig)
 
             # Then - Default values should be used
             assert config.database_url == "postgresql://localhost:5432/default"
             assert config.api_key == "fallback_key"
             assert config.app_name == "test_service"  # Required field
 
-    def test_yaml_preference_over_json(self) -> None:
-        """Test that YAML files are preferred over JSON files."""
+    def test_stage_override_functionality(self) -> None:
+        """Test that stage-specific overrides work correctly."""
         # Given
         with tempfile.TemporaryDirectory() as temp_dir:
-            # Create both YAML and JSON files
-            yaml_file = Path(temp_dir) / "config.yaml"
-            json_file = Path(temp_dir) / "config.json"
-
-            yaml_content = """
-app_name: "yaml_service"
-service_name: "yaml_service"
-database_url: "yaml_database"
-api_key: "yaml_key"
+            # Create base config
+            base_config = Path(temp_dir) / "application.yaml"
+            base_content = """
+app_name: "test_service"
+service_name: "test_service"
+database_url: "localhost:5432"
+api_key: "default_key"
 port: 8080
 """
-            json_content = """{
-    "app_name": "json_service",
-    "service_name": "json_service",
-    "database_url": "json_database",
-    "api_key": "json_key",
-    "port": 9090
-}"""
-            yaml_file.write_text(yaml_content)
-            json_file.write_text(json_content)
+            base_config.write_text(base_content)
 
-            # When - Load config from directory
-            config = EnhancedServiceConfigLoader.load_config(
-                TestConfig,
-                config_path=temp_dir,
-                secret_substitution=False
-            )
+            # Create stage override
+            stage_config = Path(temp_dir) / "application-prod.yaml"
+            stage_content = """
+database_url: "prod.example.com:5432"
+api_key: "prod_key"
+port: 9090
+"""
+            stage_config.write_text(stage_content)
 
-            # Then - YAML config should be loaded (not JSON)
-            assert config.app_name == "yaml_service"
-            assert config.service_name == "yaml_service"
-            assert config.database_url == "yaml_database"
-            assert config.api_key == "yaml_key"
-            assert config.port == 8080
+            # When - Load with stage override
+            with patch.dict(os.environ, {'CONFIG_DIR': temp_dir, 'STAGE': 'prod'}):
+                config = EnhancedServiceConfigLoader.load_config(TestConfig)
 
-    def test_validate_config_file_functionality(self) -> None:
-        """Test the validate_config_file utility method."""
-        # Given
-        with tempfile.TemporaryDirectory() as temp_dir:
-            valid_config = Path(temp_dir) / "valid.yaml"
-            invalid_config = Path(temp_dir) / "invalid.txt"
-            empty_config = Path(temp_dir) / "empty.yaml"
-
-            valid_config.write_text("service_name: test")
-            invalid_config.write_text("some content")
-            empty_config.write_text("")
-
-            # When/Then
-            assert EnhancedServiceConfigLoader.validate_config_file(str(valid_config)) is True
-            assert EnhancedServiceConfigLoader.validate_config_file(str(invalid_config)) is False
-            assert EnhancedServiceConfigLoader.validate_config_file(str(empty_config)) is False
-            assert EnhancedServiceConfigLoader.validate_config_file("nonexistent.yaml") is False
-
-    def test_list_available_configs_functionality(self) -> None:
-        """Test the list_available_configs utility method."""
-        # Given
-        with tempfile.TemporaryDirectory() as temp_dir:
-            # Create various config files
-            (Path(temp_dir) / "config1.yaml").write_text("test: 1")
-            (Path(temp_dir) / "config2.yml").write_text("test: 2")
-            (Path(temp_dir) / "config3.json").write_text('{"test": 3}')
-            (Path(temp_dir) / "other.txt").write_text("not a config")
-
-            # When
-            configs = EnhancedServiceConfigLoader.list_available_configs(temp_dir)
-
-            # Then
-            assert len(configs["yaml"]) == 2  # .yaml and .yml files
-            assert len(configs["json"]) == 1  # .json file
-            assert len(configs["other"]) == 1  # .txt file
-
-            # Check specific files are found
-            yaml_files = [Path(f).name for f in configs["yaml"]]
-            assert "config1.yaml" in yaml_files
-            assert "config2.yml" in yaml_files
+            # Then - Stage overrides should be applied
+            assert config.app_name == "test_service"  # From base
+            assert config.service_name == "test_service"  # From base
+            assert config.database_url == "prod.example.com:5432"  # Overridden
+            assert config.api_key == "prod_key"  # Overridden
+            assert config.port == 9090  # Overridden
 
     def test_environment_override_functionality(self) -> None:
         """Test enhanced environment variable override support."""
         # Given
         with tempfile.TemporaryDirectory() as temp_dir:
-            config_file = Path(temp_dir) / "test_config.yaml"
+            config_file = Path(temp_dir) / "application.yaml"
             config_content = """
 app_name: "test_service"
 service_name: "test_service"
@@ -240,15 +181,12 @@ port: 8080
 
             # When - Load with environment overrides
             with patch.dict(os.environ, {
+                'CONFIG_DIR': temp_dir,
+                'STAGE': 'local',
                 'TESTCONFIG__SERVICE_NAME': 'overridden_service',
                 'TESTCONFIG__PORT': '9999'
             }):
-                config = EnhancedServiceConfigLoader.load_config(
-                    TestConfig,
-                    config_path=str(config_file),
-                    env_override=True,
-                    secret_substitution=False
-                )
+                config = EnhancedServiceConfigLoader.load_config(TestConfig)
 
             # Then - Environment variables should override config values
             assert config.app_name == "test_service"  # Not overridden

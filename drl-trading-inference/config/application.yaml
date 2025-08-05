@@ -1,0 +1,61 @@
+# DRL Trading Inference Service - Base Configuration
+# This file contains the common configuration that applies to all environments
+
+# Basic Application Information
+app_name: "drl-trading-inference"
+version: "1.0.0"
+stage: "local"
+
+# Infrastructure Configuration
+infrastructure:
+
+  # Logging Configuration
+  logging:
+    level: "INFO"
+    file_path: "logs/inference.log"
+    console_enabled: true
+    max_file_size: "10MB"
+    backup_count: 5
+
+  # Message Bus Configuration
+  messaging:
+    provider: "in_memory"  # Default for local development
+    host: null
+    port: null
+    username: null
+    password: null
+
+  # Database Configuration (if needed)
+  database:
+    provider: "sqlite"
+    host: null
+    port: null
+    database: ":memory:"
+    username: null
+    password: null
+
+  # Monitoring Configuration
+  monitoring:
+    prometheus_enabled: false
+    prometheus_port: 9090
+    jaeger_enabled: false
+    jaeger_endpoint: null
+
+# Inference Service Specific Configuration
+model:
+  # Model loading configuration
+  model_path: "${MODEL_PATH:models/}"
+  model_name: "${MODEL_NAME:default_model}"
+  device: "${DEVICE:cpu}"
+  batch_size: 32
+
+# Feature Store Configuration
+feature_store:
+  provider: "local"  # local | feast | custom
+  config_path: "feature_store.yaml"
+
+# Prediction Service Configuration
+prediction:
+  endpoint: "/predict"
+  max_concurrent_requests: 10
+  timeout_seconds: 30

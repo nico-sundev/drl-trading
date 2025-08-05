@@ -1,5 +1,6 @@
 """MLflow integration configuration for experiment tracking."""
 from typing import Any, Dict, List, Optional
+from pydantic import Field
 
 from drl_trading_common.base.base_schema import BaseSchema
 
@@ -64,5 +65,5 @@ class HyperParameterConfig(BaseSchema):
 class ExperimentTrackingConfig(BaseSchema):
     """Complete configuration for experiment tracking."""
     enabled: bool = True
-    mlflow: MLflowExperimentConfig
-    hyperparameters: HyperParameterConfig = HyperParameterConfig()
+    mlflow: MLflowExperimentConfig = Field(default_factory=lambda: MLflowExperimentConfig(experiment_name="drl-trading"))
+    hyperparameters: HyperParameterConfig = Field(default_factory=HyperParameterConfig)
