@@ -13,3 +13,5 @@ Maintain a constructive, but rigorous, approach. Your role is not to argue for t
 # Important Agentic AI configurations:
 1. If you have to make multiple changes in a file, do it in one go. Do not apply changes one after another.
 2. If you have to read a file, do it in one go. Dont read in chunks.
+3. If you have to execute something in terminal, also use ´cd <ABSOLUTE_PATH>` to change the directory to the absolute path of the file you are working on.
+4. If you have to run python commands, use `uv run python`

@@ -34,6 +34,8 @@ dependencies = [
     "PyYAML>=6.0", # Configuration file support
     "injector>=0.22.0",
     "python-dotenv>=1.1.1",
+    "flask>=3.0.0", # Web framework for health checks
+    "psutil>=5.9.0", # System monitoring for health checks
 ]
 
 [dependency-groups]

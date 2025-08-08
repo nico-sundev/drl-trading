@@ -1,50 +1,39 @@
 """
-Ingest service bootstrap implementation.
+Ingest service bootstrap using ServiceBootstrap framework.
 
-Provides standardized service startup with hexagonal architecture compliance.
+Implements the standard service bootstrap pattern with Flask web interface
+for health checks and data ingestion endpoints.
 """
 
 import logging
-import os
-import time
-from typing import Optional, List
+from typing import List
 
-from flask import Flask
 from injector import Module
 
-from drl_trading_common.infrastructure.bootstrap.service_bootstrap import ServiceBootstrap
-from drl_trading_common.infrastructure.health.health_check_service import HealthCheckService
+from drl_trading_common.infrastructure.bootstrap.flask_service_bootstrap import FlaskServiceBootstrap
+from drl_trading_common.infrastructure.health.basic_health_checks import (
+    SystemResourcesHealthCheck,
+    ServiceStartupHealthCheck,
+    ConfigurationHealthCheck
+)
 from drl_trading_ingest.infrastructure.config.ingest_config import IngestConfig
+from drl_trading_ingest.adapter.web.ingest_route_registrar import IngestRouteRegistrar
 
 logger = logging.getLogger(__name__)
 
 
-class IngestServiceBootstrap(ServiceBootstrap):
+class IngestServiceBootstrap(FlaskServiceBootstrap):
     """
     Bootstrap implementation for the ingest service.
 
-    Maintains hexagonal architecture boundaries with proper separation of:
-    - Core business logic
-    - Adapter layer (Flask routes, REST endpoints)
-    - Infrastructure concerns (config, DI, logging)
+    Uses the specialized FlaskServiceBootstrap with automatic Flask web interface
+    for health checks and data ingestion endpoints.
     """
 
     def __init__(self) -> None:
         """Initialize the ingest service bootstrap."""
-        # Set up environment for config loading before calling super().__init__
-        # Use directory path so EnhancedServiceConfigLoader can auto-discover based on STAGE
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        # Navigate from src/drl_trading_ingest/infrastructure/bootstrap/ to config directory
-        # New hexagonal architecture: src/drl_trading_ingest/infrastructure/config/
-        config_dir = os.path.join(os.path.dirname(current_dir), "config")
-
-        os.environ["CONFIG_DIR"] = config_dir
-        logger.info(f"Configuration directory set to: {config_dir}")
-
-        # Use T004-compliant IngestConfig
         super().__init__(service_name="ingest", config_class=IngestConfig)
-        self._app: Optional[Flask] = None
-        self._health_service: Optional[HealthCheckService] = None
+        self._startup_health_check = ServiceStartupHealthCheck("ingest_startup")
 
     def get_dependency_modules(self) -> List[Module]:
         """
@@ -59,60 +48,85 @@ class IngestServiceBootstrap(ServiceBootstrap):
             logger.error(f"Failed to import IngestModule: {e}")
             return []
 
+    def get_route_registrar(self) -> IngestRouteRegistrar:
+        """Return ingest-specific route registrar for Flask endpoints."""
+        return IngestRouteRegistrar()
+
+    def get_health_checks(self) -> List:
+        """
+        Return health checks for this service.
+
+        Returns:
+            List of HealthCheck instances for the ingest service
+        """
+        health_checks = [
+            SystemResourcesHealthCheck(name="ingest_system_resources"),
+            self._startup_health_check,
+        ]
+
+        # Add configuration health check if config is loaded
+        if self.config:
+            health_checks.append(ConfigurationHealthCheck(self.config, "ingest_configuration"))
+
+        return health_checks
+
     def _start_service(self) -> None:
         """
-        Start service-specific logic.
+        Start ingest service-specific logic.
 
-        Creates the Flask application using the existing FlaskAppFactory.
+        Initializes core business services via dependency injection.
         """
         try:
-            # Use the existing FlaskAppFactory to create the app
-            from drl_trading_ingest.infrastructure.bootstrap.flask_app_factory import FlaskAppFactory
+            logger.info("Initializing ingest service business logic...")
 
-            app = FlaskAppFactory.create_app(self.injector)
-            self._app = app
+            # Mark startup as beginning
+            self._startup_health_check.startup_completed = False
 
-            # Add health endpoint if not already present
-            if not any(rule.rule == '/health' for rule in app.url_map.iter_rules()):
-                @app.route('/health')
-                def health():
-                    return {"status": "healthy", "service": "drl-trading-ingest"}
+            # Any additional service-specific initialization would go here
+            # Core business logic is handled via dependency injection
 
-            logger.info("Ingest service started successfully with FlaskAppFactory")
+            # Mark startup as completed successfully
+            self._startup_health_check.mark_startup_completed(success=True)
+            logger.info("Ingest service business logic initialized successfully")
 
         except Exception as e:
-            logger.error(f"Failed to start service: {e}")
+            self._startup_health_check.mark_startup_completed(
+                success=False,
+                error_message=str(e)
+            )
+            logger.error(f"Failed to start ingest service: {e}")
             raise
 
     def _stop_service(self) -> None:
-        """Stop service-specific logic."""
-        logger.info("Stopping ingest service")
+        """Stop ingest service-specific logic."""
+        logger.info("Stopping ingest service business logic...")
         try:
-            if self._app:
-                logger.info("Flask application stopped")
+            # Any cleanup logic would go here
+            logger.info("Ingest service business logic stopped successfully")
         except Exception as e:
-            logger.error(f"Error stopping service: {e}")
+            logger.error(f"Error stopping ingest service: {e}")
 
     def _run_main_loop(self) -> None:
         """
         Run the main service loop.
 
-        For Flask services, this starts the web server.
+        FlaskServiceBootstrap will handle Flask server startup,
+        but we could add additional background tasks here if needed.
         """
-        if self._app:
-            # In production, use a proper WSGI server like gunicorn
-            # For development, run directly
-            port = int(os.environ.get("PORT", 8080))
-            debug_mode = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+        # FlaskServiceBootstrap handles Flask server in its _run_main_loop
+        super()._run_main_loop()
 
-            logger.info(f"Starting Flask application on port {port}")
-            self._app.run(host="0.0.0.0", port=port, debug=debug_mode, threaded=True)
-        else:
-            logger.error("No Flask application to run")
-            # Keep the service alive if no app
-            while self.is_running:
-                time.sleep(1)
 
-    def get_app(self) -> Optional[Flask]:
-        """Get the Flask application instance."""
-        return self._app
+def bootstrap_ingest_service() -> None:
+    """
+    Bootstrap the ingest service using the standardized pattern.
+
+    This function provides the standard bootstrap interface using
+    the ServiceBootstrap framework.
+    """
+    bootstrap = IngestServiceBootstrap()
+    bootstrap.start()
+
+
+# Legacy alias for backward compatibility during transition
+bootstrap_ingest_service_standardized = bootstrap_ingest_service

@@ -1,115 +1,156 @@
-"""Example of using the EnhancedServiceConfigLoader in a microservice."""
+"""
+Inference service bootstrap using ServiceBootstrap framework.
+
+Implements the standard service bootstrap pattern with Flask web interface
+for health checks while maintaining the inference service's core functionality.
+"""
+
 import logging
-from typing import Optional
+from typing import List, cast
 
-from drl_trading_common.config.logging_config import configure_unified_logging
-from drl_trading_common.config.enhanced_service_config_loader import EnhancedServiceConfigLoader
+from drl_trading_inference.infrastructure.di.InferenceModule import InferenceModule
+from injector import Module
 
-# Local import with proper type ignoring for mypy during development
-from drl_trading_inference.infrastructure.config.inference_config import (
-    InferenceConfig,  # type: ignore
+from drl_trading_common.infrastructure.bootstrap.flask_service_bootstrap import FlaskServiceBootstrap
+from drl_trading_common.infrastructure.health.basic_health_checks import (
+    SystemResourcesHealthCheck,
+    ServiceStartupHealthCheck,
+    ConfigurationHealthCheck
 )
-
-# Configure basic logging for bootstrap phase
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-)
+from drl_trading_inference.infrastructure.config.inference_config import InferenceConfig
 
 logger = logging.getLogger(__name__)
 
 
-def setup_logging(config: Optional[InferenceConfig] = None) -> None:
-    """Set up logging using the appropriate method based on available config.
-
-    If config is provided, uses the infrastructure logging configuration.
-    Otherwise, falls back to the standard configure_logging from common library.
-
-    Args:
-        config: Optional InferenceConfig instance with logging settings
+class InferenceServiceBootstrap(FlaskServiceBootstrap):
     """
-    # Use the unified logging configuration function from the common library
-    configure_unified_logging(config, service_name="inference")
-    logger.info("Logging configured using unified configuration approach")
+    Bootstrap implementation for the inference service.
+
+    Uses the specialized FlaskServiceBootstrap with automatic Flask web interface
+    for health checks while running inference workflows.
+    """
+
+    def __init__(self) -> None:
+        """Initialize the inference service bootstrap."""
+        super().__init__(service_name="inference", config_class=InferenceConfig)
+        self._startup_health_check = ServiceStartupHealthCheck("inference_startup")
+
+    def get_dependency_modules(self) -> List[Module]:
+        """
+        Return dependency injection modules for this service.
+        """
+        typed_config = cast(InferenceConfig, self.config)
+        return [InferenceModule(typed_config)]
+
+    def get_health_checks(self) -> List:
+        """
+        Return health checks for this service.
+
+        Returns:
+            List of HealthCheck instances for the inference service
+        """
+        health_checks = [
+            SystemResourcesHealthCheck(
+                name="inference_system_resources",
+                cpu_threshold=85.0,  # Inference should be responsive
+                memory_threshold=90.0  # May need memory for models
+            ),
+            self._startup_health_check,
+        ]
+
+        # Add configuration health check if config is loaded
+        if self.config:
+            health_checks.append(ConfigurationHealthCheck(self.config, "inference_configuration"))
+
+        return health_checks
+
+    def _start_service(self) -> None:
+        """
+        Start inference service-specific logic.
+
+        Initializes inference workflows and core business services.
+        """
+        try:
+            logger.info("Initializing inference service business logic...")
+
+            # Mark startup as beginning
+            self._startup_health_check.startup_completed = False
+
+            # Initialize inference components
+            self._initialize_inference_components()
+
+            # Mark startup as completed successfully
+            self._startup_health_check.mark_startup_completed(success=True)
+            logger.info("Inference service business logic initialized successfully")
+
+        except Exception as e:
+            self._startup_health_check.mark_startup_completed(
+                success=False,
+                error_message=str(e)
+            )
+            logger.error(f"Failed to start inference service: {e}")
+            raise
+
+    def _stop_service(self) -> None:
+        """Stop inference service-specific logic."""
+        logger.info("Stopping inference service business logic...")
+        try:
+            # Any cleanup logic would go here
+            logger.info("Inference service business logic stopped successfully")
+        except Exception as e:
+            logger.error(f"Error stopping inference service: {e}")
+
+    def _initialize_inference_components(self) -> None:
+        """Initialize inference-specific components."""
+        logger.info("Setting up inference components...")
+
+        # Setup model loading
+        self._setup_model_loading()
+
+        # Setup predictions
+        self._setup_predictions()
+
+        # Setup messaging
+        self._setup_messaging()
+
+        logger.info("Inference components initialized")
+
+    def _setup_model_loading(self) -> None:
+        """Setup model loading infrastructure."""
+        logger.info("Setting up model loading...")
+        # TODO: Implement model loading setup
+
+    def _setup_predictions(self) -> None:
+        """Setup prediction pipelines."""
+        logger.info("Setting up prediction pipelines...")
+        # TODO: Implement prediction setup
+
+    def _setup_messaging(self) -> None:
+        """Setup messaging infrastructure."""
+        logger.info("Setting up messaging...")
+        # TODO: Implement messaging setup
+
+    def _run_main_loop(self) -> None:
+        """
+        Run the main service loop.
+
+        FlaskServiceBootstrap will handle Flask server startup,
+        but we could add additional background tasks here if needed.
+        """
+        # FlaskServiceBootstrap handles Flask server in its _run_main_loop
+        super()._run_main_loop()
 
 
 def bootstrap_inference_service() -> None:
-    """Bootstrap the inference service with proper configuration."""
-    # Load configuration with smart path discovery and environment detection
-    try:
-        # Use lean EnhancedServiceConfigLoader
-        # Loads: application.yaml + application-{STAGE}.yaml + secret substitution
-        logger.info("Loading configuration with lean EnhancedServiceConfigLoader")
-        config = EnhancedServiceConfigLoader.load_config(InferenceConfig)
+    """
+    Bootstrap the inference service using the standardized pattern.
 
-        # Now that we have the config, reconfigure logging properly
-        setup_logging(config)
-
-        # Log effective configuration for debugging
-        logger.info(
-            f"Inference service initialized in {config.stage} mode "
-            f"for {config.app_name} v{config.version}"
-        )
-
-        # Configure service components based on the config
-        setup_model(config)
-        setup_messaging(config)
-        setup_monitoring(config)
-
-        # Start processing
-        start_inference_loop(config)
-
-    except FileNotFoundError as e:
-        logger.error(f"Configuration error: {e}")
-        # Exit with error code
-        exit(1)
-    except Exception as e:
-        logger.exception(f"Failed to initialize inference service: {e}")
-        exit(2)
+    This function provides the standard bootstrap interface using
+    the ServiceBootstrap framework.
+    """
+    bootstrap = InferenceServiceBootstrap()
+    bootstrap.start()
 
 
-def setup_model(config: InferenceConfig) -> None:
-    """Set up the ML model for inference."""
-    # Use the correct config structure
-    model_path = config.model.model_path
-    model_name = config.model.model_name
-    device = config.model.device
-
-    logger.info(f"Loading model '{model_name}' from {model_path} on device: {device}")
-    # ... model loading logic here
-
-
-def setup_messaging(config: InferenceConfig) -> None:
-    """Set up message bus connections."""
-    # Use the messaging config from infrastructure
-    provider = config.infrastructure.messaging.provider
-
-    logger.info(f"Setting up messaging with {provider} provider")
-    # ... messaging setup logic here
-
-
-def setup_monitoring(config: InferenceConfig) -> None:
-    """Set up monitoring and health checks."""
-    # Note: monitoring config may not be implemented yet in infrastructure
-    logger.info("Setting up monitoring and health checks")
-    # ... monitoring setup logic here
-
-
-def start_inference_loop(config: InferenceConfig) -> None:
-    """Start the main inference processing loop."""
-    endpoint = config.prediction.endpoint
-    max_concurrent = config.prediction.max_concurrent_requests
-    timeout = config.prediction.timeout_seconds
-
-    logger.info(
-        f"Starting inference service on endpoint {endpoint} "
-        f"(max concurrent: {max_concurrent}, timeout: {timeout}s)"
-    )
-    # ... inference loop logic here
-
-def main() -> None:
-    """Main entry point for the inference service bootstrap."""
-    bootstrap_inference_service()
-
-if __name__ == "__main__":
-    main()
+# Legacy alias for backward compatibility during transition
+bootstrap_inference_service_standardized = bootstrap_inference_service

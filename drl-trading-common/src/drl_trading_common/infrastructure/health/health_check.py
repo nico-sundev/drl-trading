@@ -4,6 +4,7 @@ Health check framework for DRL Trading services.
 Provides standardized health check patterns for monitoring service health
 and readiness across all deployable services.
 """
+
 from abc import ABC, abstractmethod
 from typing import Dict, Any
 from enum import Enum
@@ -12,6 +13,7 @@ from datetime import datetime
 
 class HealthStatus(Enum):
     """Health check status enumeration."""
+
     HEALTHY = "healthy"
     UNHEALTHY = "unhealthy"
     DEGRADED = "degraded"
@@ -83,12 +85,12 @@ class DatabaseHealthCheck(HealthCheck):
             return {
                 "status": HealthStatus.HEALTHY.value,
                 "message": "Database connection successful",
-                "response_time_ms": response_time
+                "response_time_ms": response_time,
             }
         except Exception as e:
             return {
                 "status": HealthStatus.UNHEALTHY.value,
-                "message": f"Database connection failed: {str(e)}"
+                "message": f"Database connection failed: {str(e)}",
             }
 
 
@@ -110,27 +112,27 @@ class MessageBusHealthCheck(HealthCheck):
         """Check message bus connectivity."""
         try:
             # Assuming message bus has some kind of health check method
-            if hasattr(self.message_bus, 'is_connected'):
+            if hasattr(self.message_bus, "is_connected"):
                 if self.message_bus.is_connected():
                     return {
                         "status": HealthStatus.HEALTHY.value,
-                        "message": "Message bus connection healthy"
+                        "message": "Message bus connection healthy",
                     }
                 else:
                     return {
                         "status": HealthStatus.UNHEALTHY.value,
-                        "message": "Message bus not connected"
+                        "message": "Message bus not connected",
                     }
             else:
                 # If no specific health check, assume healthy if object exists
                 return {
                     "status": HealthStatus.HEALTHY.value,
-                    "message": "Message bus service available"
+                    "message": "Message bus service available",
                 }
         except Exception as e:
             return {
                 "status": HealthStatus.UNHEALTHY.value,
-                "message": f"Message bus health check failed: {str(e)}"
+                "message": f"Message bus health check failed: {str(e)}",
             }
 
 
@@ -151,26 +153,26 @@ class ModelHealthCheck(HealthCheck):
     def check(self) -> Dict[str, Any]:
         """Check model availability and readiness."""
         try:
-            if hasattr(self.model_service, 'is_ready'):
+            if hasattr(self.model_service, "is_ready"):
                 if self.model_service.is_ready():
                     return {
                         "status": HealthStatus.HEALTHY.value,
-                        "message": "Model loaded and ready"
+                        "message": "Model loaded and ready",
                     }
                 else:
                     return {
                         "status": HealthStatus.DEGRADED.value,
-                        "message": "Model loading in progress"
+                        "message": "Model loading in progress",
                     }
             else:
                 return {
                     "status": HealthStatus.HEALTHY.value,
-                    "message": "Model service available"
+                    "message": "Model service available",
                 }
         except Exception as e:
             return {
                 "status": HealthStatus.UNHEALTHY.value,
-                "message": f"Model health check failed: {str(e)}"
+                "message": f"Model health check failed: {str(e)}",
             }
 
 
@@ -192,19 +194,27 @@ class FeatureStoreHealthCheck(HealthCheck):
         """Check feature store connectivity."""
         try:
             # Try to access feature store
-            if hasattr(self.feature_store, 'health_check'):
+            if hasattr(self.feature_store, "health_check"):
                 result = self.feature_store.health_check()
                 return {
-                    "status": HealthStatus.HEALTHY.value if result else HealthStatus.UNHEALTHY.value,
-                    "message": "Feature store available" if result else "Feature store unavailable"
+                    "status": (
+                        HealthStatus.HEALTHY.value
+                        if result
+                        else HealthStatus.UNHEALTHY.value
+                    ),
+                    "message": (
+                        "Feature store available"
+                        if result
+                        else "Feature store unavailable"
+                    ),
                 }
             else:
                 return {
                     "status": HealthStatus.HEALTHY.value,
-                    "message": "Feature store service available"
+                    "message": "Feature store service available",
                 }
         except Exception as e:
             return {
                 "status": HealthStatus.UNHEALTHY.value,
-                "message": f"Feature store health check failed: {str(e)}"
+                "message": f"Feature store health check failed: {str(e)}",
             }

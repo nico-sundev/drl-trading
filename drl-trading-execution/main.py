@@ -6,12 +6,13 @@ HEXAGONAL ARCHITECTURE:
 - Business logic lives in core layer
 - External interfaces live in adapter layer
 """
-from drl_trading_execution.infrastructure.bootstrap.execution_service_bootstrap import main as bootstrap_main
+
+from drl_trading_execution.infrastructure.bootstrap.execution_service_bootstrap import bootstrap_execution_service
 
 
 def main() -> None:
     """Main entry point for execution service."""
-    bootstrap_main()
+    bootstrap_execution_service()
 
 
 if __name__ == "__main__":

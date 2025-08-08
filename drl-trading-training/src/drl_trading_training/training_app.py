@@ -2,6 +2,7 @@ import logging
 import os
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
+from warnings import deprecated
 
 from drl_trading_common.config.feature_config import FeaturesConfig
 from drl_trading_common.config.feature_config_repo import FeatureConfigPostgresRepo
@@ -20,7 +21,7 @@ from drl_trading_strategy_example.module.example_strategy_module import ExampleS
 
 logger = logging.getLogger(__name__)
 
-
+@deprecated
 class TrainingApp:
 
     def run(self) -> None:

@@ -4,6 +4,7 @@ Health check service for managing and executing health checks.
 Coordinates multiple health checks and provides aggregated health status
 for service monitoring and readiness probes.
 """
+
 from typing import Dict, Any, List
 from datetime import datetime
 import logging
@@ -62,22 +63,28 @@ class HealthCheckService:
                 if status == HealthStatus.UNHEALTHY.value:
                     overall_status = HealthStatus.UNHEALTHY
                     failed_checks.append(check.get_name())
-                elif (status == HealthStatus.DEGRADED.value and
-                      overall_status == HealthStatus.HEALTHY):
+                elif (
+                    status == HealthStatus.DEGRADED.value
+                    and overall_status == HealthStatus.HEALTHY
+                ):
                     overall_status = HealthStatus.DEGRADED
                     degraded_checks.append(check.get_name())
 
             except Exception as e:
-                logger.error(f"Health check {check.get_name()} failed with exception: {e}")
+                logger.error(
+                    f"Health check {check.get_name()} failed with exception: {e}"
+                )
                 results[check.get_name()] = {
                     "status": HealthStatus.UNHEALTHY.value,
-                    "message": f"Health check failed with exception: {str(e)}"
+                    "message": f"Health check failed with exception: {str(e)}",
                 }
                 overall_status = HealthStatus.UNHEALTHY
                 failed_checks.append(check.get_name())
 
         # Build summary message
-        summary_message = self._build_summary_message(overall_status, failed_checks, degraded_checks)
+        summary_message = self._build_summary_message(
+            overall_status, failed_checks, degraded_checks
+        )
 
         return {
             "status": overall_status.value,
@@ -86,7 +93,7 @@ class HealthCheckService:
             "timestamp": datetime.utcnow().isoformat(),
             "total_checks": len(self.checks),
             "failed_checks": failed_checks,
-            "degraded_checks": degraded_checks
+            "degraded_checks": degraded_checks,
         }
 
     def check_readiness(self) -> Dict[str, Any]:
@@ -109,7 +116,7 @@ class HealthCheckService:
             "ready": is_ready,
             "status": health_result["status"],
             "message": health_result["message"],
-            "timestamp": health_result["timestamp"]
+            "timestamp": health_result["timestamp"],
         }
 
     def get_registered_checks(self) -> List[str]:
@@ -125,7 +132,7 @@ class HealthCheckService:
         self,
         overall_status: HealthStatus,
         failed_checks: List[str],
-        degraded_checks: List[str]
+        degraded_checks: List[str],
     ) -> str:
         """Build a summary message based on check results."""
         if overall_status == HealthStatus.HEALTHY:

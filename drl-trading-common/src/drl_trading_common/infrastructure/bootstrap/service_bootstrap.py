@@ -4,11 +4,15 @@ Service Bootstrap Framework for DRL Trading Services.
 This module provides standardized bootstrap patterns for all deployable DRL Trading
 microservices while maintaining strict hexagonal architecture compliance.
 """
+
 from abc import ABC, abstractmethod
 from typing import Optional, List, Type
 import signal
 import logging
 import sys
+from drl_trading_common.infrastructure.web.generic_flask_app_factory import (
+    RouteRegistrar,
+)
 from injector import Injector, Module
 
 from drl_trading_common.base.base_application_config import BaseApplicationConfig
@@ -32,6 +36,7 @@ class ServiceBootstrap(ABC):
     - Logging configuration
     - Graceful shutdown handling
     - Health check endpoints
+    - Optional Flask web interface
     """
 
     def __init__(self, service_name: str, config_class: Type[BaseApplicationConfig]):
@@ -47,6 +52,7 @@ class ServiceBootstrap(ABC):
         self.config: Optional[BaseApplicationConfig] = None
         self.injector: Optional[Injector] = None
         self.is_running = False
+        self._flask_app = None
         self._setup_signal_handlers()
 
     def start(self, config_path: Optional[str] = None) -> None:
@@ -61,7 +67,8 @@ class ServiceBootstrap(ABC):
         2. Setup logging
         3. Initialize dependency injection (wire ports to adapters)
         4. Setup health checks
-        5. Start service-specific logic (via core services)
+        5. Setup Flask web interface (if enabled)
+        6. Start service-specific logic (via core services)
 
         Args:
             config_path: Optional path to configuration file
@@ -81,7 +88,10 @@ class ServiceBootstrap(ABC):
             # Step 4: Setup health checks (infrastructure concern)
             self._setup_health_checks()
 
-            # Step 5: Start service-specific logic (delegate to core via DI)
+            # Step 5: Setup Flask web interface if enabled (infrastructure concern)
+            self._setup_web_interface()
+
+            # Step 6: Start service-specific logic (delegate to core via DI)
             self._start_service()
 
             self.is_running = True
@@ -110,20 +120,18 @@ class ServiceBootstrap(ABC):
 
         Uses the lean EnhancedServiceConfigLoader with secret substitution support.
         """
-        from drl_trading_common.config.enhanced_service_config_loader import EnhancedServiceConfigLoader
+        from drl_trading_common.config.enhanced_service_config_loader import (
+            EnhancedServiceConfigLoader,
+        )
 
         self.config = EnhancedServiceConfigLoader.load_config(self.config_class)
         logger.info(f"Configuration loaded for {self.service_name}")
 
     def _setup_logging(self) -> None:
         """Setup standardized logging configuration."""
-        from drl_trading_common.infrastructure.logging.standard_logging_setup import StandardLoggingSetup
+        from drl_trading_common.config.logging_config import configure_unified_logging
 
-        logging_config = getattr(self.config, 'logging', None)
-        StandardLoggingSetup.configure_logging(
-            service_name=self.service_name,
-            config=logging_config
-        )
+        configure_unified_logging(self.config, service_name=self.service_name)
 
     def _setup_dependency_injection(self) -> None:
         """
@@ -136,17 +144,48 @@ class ServiceBootstrap(ABC):
         """
         di_modules = self.get_dependency_modules()
         self.injector = Injector(di_modules)
-        logger.info("Dependency injection container initialized (hexagonal architecture wired)")
+        logger.info(
+            "Dependency injection container initialized (hexagonal architecture wired)"
+        )
 
     def _setup_health_checks(self) -> None:
         """Setup standardized health check endpoints."""
         try:
-            from drl_trading_common.infrastructure.health.health_check_service import HealthCheckService
+            from drl_trading_common.infrastructure.health.health_check_service import (
+                HealthCheckService,
+            )
+
+            if self.injector is None:
+                logger.warning(
+                    "Dependency injector is not initialized; skipping health check setup."
+                )
+                return
             health_service = self.injector.get(HealthCheckService)
             health_service.register_checks(self.get_health_checks())
             logger.info("Health checks configured")
         except Exception as e:
             logger.warning(f"Health check setup failed: {e}")
+
+    def _setup_web_interface(self) -> None:
+        """Setup Flask web interface if enabled."""
+        if self.enable_web_interface():
+            try:
+                from drl_trading_common.infrastructure.web.generic_flask_app_factory import (
+                    GenericFlaskAppFactory,
+                    DefaultRouteRegistrar,
+                )
+
+                route_registrar = self.get_route_registrar() or DefaultRouteRegistrar()
+                self._flask_app = GenericFlaskAppFactory.create_app(
+                    service_name=self.service_name,
+                    injector=self.injector,
+                    config=self.config,
+                    route_registrar=route_registrar,
+                )
+                logger.info(f"Flask web interface configured for {self.service_name}")
+            except Exception as e:
+                logger.error(f"Failed to setup web interface: {e}")
+                raise
 
     def _setup_signal_handlers(self) -> None:
         """Setup graceful shutdown signal handlers."""
@@ -206,8 +245,27 @@ class ServiceBootstrap(ABC):
 
         For message-driven services, this might just wait.
         For request-response services, this might start the web server.
+        For Flask services, this should start the Flask server if web interface is enabled.
         """
         pass
+
+    def enable_web_interface(self) -> bool:
+        """
+        Override to enable Flask web interface for this service.
+
+        Returns:
+            True if service should expose Flask endpoints, False otherwise
+        """
+        return False
+
+    def get_route_registrar(self) -> Optional[RouteRegistrar]:
+        """
+        Return service-specific route registrar for Flask endpoints.
+
+        Returns:
+            RouteRegistrar instance or None for default health-only endpoints
+        """
+        return None
 
     def get_health_checks(self) -> List:
         """
@@ -217,6 +275,10 @@ class ServiceBootstrap(ABC):
             List of HealthCheck instances for this service
         """
         return []
+
+    def get_flask_app(self):
+        """Get the Flask application instance if web interface is enabled."""
+        return self._flask_app
 
     def _cleanup(self) -> None:
         """Cleanup resources before shutdown."""

@@ -672,9 +672,11 @@ version = "0.1.0"
 source = { editable = "drl-trading-common" }
 dependencies = [
     { name = "confluent-kafka" },
+    { name = "flask" },
     { name = "gymnasium" },
     { name = "injector" },
     { name = "pandas" },
+    { name = "psutil" },
     { name = "psycopg2-binary" },
     { name = "pydantic" },
     { name = "python-dotenv" },
@@ -710,9 +712,11 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "confluent-kafka", specifier = ">=2.3.0" },
+    { name = "flask", specifier = ">=3.0.0" },
     { name = "gymnasium", specifier = ">=0.29.0" },
     { name = "injector", specifier = ">=0.22.0" },
     { name = "pandas", specifier = ">=2.0.0" },
+    { name = "psutil", specifier = ">=5.9.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
