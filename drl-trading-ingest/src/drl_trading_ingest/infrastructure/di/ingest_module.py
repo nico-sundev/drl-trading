@@ -1,6 +1,6 @@
 import logging
 
-from drl_trading_common.config.enhanced_service_config_loader import EnhancedServiceConfigLoader
+from drl_trading_common.config.service_config_loader import ServiceConfigLoader
 from drl_trading_common.db.database_connection_interface import (
     DatabaseConnectionInterface,
 )
@@ -44,11 +44,11 @@ class IngestModule(Module):
     @provider
     def provide_ingest_config(self) -> IngestConfig:
         """Provide the IngestConfig instance."""
-        logger.info("Loading IngestConfig with lean EnhancedServiceConfigLoader")
+        logger.info("Loading IngestConfig with ServiceConfigLoader")
 
         # Use the lean EnhancedServiceConfigLoader
         # Loads: application.yaml + application-{STAGE}.yaml + secret substitution
-        config: IngestConfig = EnhancedServiceConfigLoader.load_config(IngestConfig)
+        config: IngestConfig = ServiceConfigLoader.load_config(IngestConfig)
 
         return config
 

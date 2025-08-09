@@ -29,10 +29,27 @@ infrastructure:
     username: "trading_user"
     password: "${DB_PASSWORD:secure_password}"  # Secret substitution
 
+  webapi:
+    port: 8080
+    host: "0.0.0.0"
+    debug: false
+    threaded: true
+    max_content_length: 16777216  # 16MB
+
   logging:
     level: "INFO"
     format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
     file_path: "logs/data-ingestion.log"
+    console_enabled: true
+    rotation_enabled: true
+    max_bytes: 10485760  # 10MB
+    backup_count: 5
+
+  monitoring:
+    prometheus_enabled: false
+    prometheus_port: 9090
+    jaeger_enabled: false
+    jaeger_endpoint: null
 
 # =============================================================================
 # DATA SOURCE CONFIGURATION (maps to DataSourceConfig)
@@ -46,8 +63,8 @@ data_source:
 
   # Binance configuration
   binance_enabled: false
-  binance_api_key_env: "BINANCE_API_KEY"
-  binance_secret_key_env: "BINANCE_SECRET_KEY"
+  binance_api_key_env: "BINANCE_API_KEY"        # Environment variable name
+  binance_secret_key_env: "BINANCE_SECRET_KEY"  # Environment variable name
   binance_symbols: ["BTCUSDT", "ETHUSDT", "ADAUSDT"]
 
   # Yahoo Finance configuration

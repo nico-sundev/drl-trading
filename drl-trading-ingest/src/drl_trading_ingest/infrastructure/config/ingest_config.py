@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 from drl_trading_common.base.base_application_config import BaseApplicationConfig
 from drl_trading_common.config.infrastructure_config import InfrastructureConfig
+from drl_trading_common.config.service_logging_config import ServiceLoggingConfig
 
 
 class DataSourceConfig(BaseModel):
@@ -56,6 +57,7 @@ class IngestConfig(BaseApplicationConfig):
     """T004-compliant configuration for ingest service."""
 
     infrastructure: InfrastructureConfig
+    logging: ServiceLoggingConfig = Field(default_factory=ServiceLoggingConfig)
     data_source: DataSourceConfig = Field(default_factory=DataSourceConfig)
     message_routing: MessageRoutingConfig = Field(default_factory=MessageRoutingConfig)
     data_validation: DataValidationConfig = Field(default_factory=DataValidationConfig)

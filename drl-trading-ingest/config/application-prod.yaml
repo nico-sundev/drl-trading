@@ -20,11 +20,24 @@ infrastructure:
     username: "${DB_USERNAME}"
     password: "${DB_PASSWORD}"
 
+  webapi:
+    port: 8080
+    host: "0.0.0.0"
+    debug: false
+    threaded: true
+    max_content_length: 16777216  # 16MB
+
   logging:
     level: "WARNING"
     format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
     file_path: "/var/log/ingest/ingest.log"
     console_enabled: false
     rotation_enabled: true
-    max_bytes: 52428800
+    max_bytes: 52428800  # 50MB
     backup_count: 20
+
+  monitoring:
+    prometheus_enabled: true
+    prometheus_port: 9090
+    jaeger_enabled: true
+    jaeger_endpoint: "${JAEGER_ENDPOINT}"

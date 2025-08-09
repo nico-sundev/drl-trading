@@ -22,9 +22,7 @@ from drl_trading_ingest.core.port.migration_service_interface import (
     MigrationError,
     MigrationServiceInterface,
 )
-from drl_trading_ingest.infrastructure.config.data_ingestion_config import (
-    DataIngestionConfig,
-)
+from drl_trading_ingest.infrastructure.config.ingest_config import IngestConfig
 
 
 @inject
@@ -37,12 +35,12 @@ class AlembicMigrationService(MigrationServiceInterface):
     while following hexagonal architecture principles.
     """
 
-    def __init__(self, config: DataIngestionConfig):
+    def __init__(self, config: IngestConfig):
         """
         Initialize the migration service with configuration.
 
         Args:
-            config: Data ingestion configuration containing database settings
+            config: Ingest service configuration containing database settings
         """
         self.config = config
         self.db_config = config.infrastructure.database

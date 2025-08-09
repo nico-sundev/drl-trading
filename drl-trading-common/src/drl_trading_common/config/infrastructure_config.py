@@ -52,9 +52,19 @@ class MonitoringConfig(BaseSchema):
     jaeger_endpoint: Optional[str] = None
 
 
+class WebApiConfig(BaseSchema):
+    """Web API configuration for Flask/FastAPI services."""
+    port: int = 8080
+    host: str = "0.0.0.0"
+    debug: bool = False
+    threaded: bool = True
+    max_content_length: int = 16 * 1024 * 1024  # 16MB
+
+
 class InfrastructureConfig(BaseSchema):
     """Infrastructure configuration for deployment environment."""
     messaging: MessagingConfig = MessagingConfig()
     database: DatabaseConfig = DatabaseConfig()
     logging: LoggingConfig = LoggingConfig()
     monitoring: MonitoringConfig = MonitoringConfig()
+    webapi: Optional[WebApiConfig] = None

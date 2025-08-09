@@ -1,6 +1,6 @@
 from importlib.metadata import PackageNotFoundError, version
 
-from drl_trading_common.config.logging_config import (
+from drl_trading_common.utils.logging_config_utils import (
     configure_logging,  # pragma: no cover
 )
 

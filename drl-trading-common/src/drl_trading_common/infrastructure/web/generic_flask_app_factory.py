@@ -24,13 +24,16 @@ class RouteRegistrar(ABC):
     """Abstract base class for service-specific route registration."""
 
     @abstractmethod
-    def register_routes(self, app: Flask, injector: Injector) -> None:
+    def register_routes(self, app: Flask, injector: Injector) -> bool:
         """
         Register service-specific routes.
 
         Args:
             app: Flask application instance
             injector: Dependency injection container
+
+        Returns:
+            bool: True if routes were registered successfully, False otherwise
         """
         pass
 
@@ -86,11 +89,14 @@ class GenericFlaskAppFactory:
         # Register service-specific routes if provided
         if route_registrar:
             try:
-                route_registrar.register_routes(app, injector)
-                logger.info(f"Service-specific routes registered for {service_name}")
+                success = route_registrar.register_routes(app, injector)
+                if success:
+                    logger.info(f"Service-specific routes registered for {service_name}")
+                else:
+                    logger.warning(f"Some routes could not be registered for {service_name} (service may have limited functionality)")
             except Exception as e:
-                logger.error(
-                    f"Failed to register service routes for {service_name}: {e}"
+                logger.warning(
+                    f"Could not register service routes for {service_name}: {str(type(e).__name__)} (see service logs for details)"
                 )
 
         logger.info(

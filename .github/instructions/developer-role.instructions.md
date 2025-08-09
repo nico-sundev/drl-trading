@@ -13,6 +13,10 @@ applyTo: '**'
 - Try your best to find the easiest and most efficient solution to a problem
 - If there is no easy understandable and simple solution, explain complex logic with comments
 - Alway generate docstrings for all classes and methods
+- For data structures used across services, consider creating
+  - DTOs
+  - Container Classes
+  - Domain Objects
 - To test **ANY** code ALWAYS use pytest and stick to the following specifications
 - Testing:
     - as a general rule, a test is located in same parent directories like the class/module it is implemented for.

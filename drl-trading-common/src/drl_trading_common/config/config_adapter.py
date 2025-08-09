@@ -84,8 +84,11 @@ class ConfigAdapter:
         if env_prefix:
             config_dict = config.model_dump()
 
+            # Get all environment variables
+            env_vars = dict(os.environ.items())
+
             # Look for environment variables with the specified prefix
-            for env_var, value in os.environ.items():
+            for env_var, value in env_vars.items():
                 if env_var.startswith(f"{env_prefix}__"):
                     # Extract the field path from the environment variable name
                     field_path = env_var[len(f"{env_prefix}__"):].lower()

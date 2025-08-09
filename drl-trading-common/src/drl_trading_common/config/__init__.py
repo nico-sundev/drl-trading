@@ -9,9 +9,8 @@ from .context_feature_config import ContextFeatureConfig
 from .environment_config import EnvironmentConfig
 from .feature_config import FeaturesConfig
 from .local_data_import_config import LocalDataImportConfig, SymbolConfig
-from .logging_config import configure_logging
 from .rl_model_config import RlModelConfig
-from .enhanced_service_config_loader import EnhancedServiceConfigLoader
+from .service_config_loader import ServiceConfigLoader
 
 __all__ = [
     "ApplicationConfig",
@@ -22,8 +21,7 @@ __all__ = [
     "FeaturesConfig",
     "LocalDataImportConfig",
     "SymbolConfig",
-    "configure_logging",
     "RlModelConfig",
     "ConfigLoader",
-    "EnhancedServiceConfigLoader",
+    "ServiceConfigLoader",
 ]

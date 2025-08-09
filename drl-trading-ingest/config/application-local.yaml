@@ -1,33 +1,17 @@
 # =============================================================================
-# DRL Trading Data Ingestion Service Configuration
+# DRL Trading Data Ingestion Service - Local Development Overrides
 # =============================================================================
-# This configuration aligns with the current architecture and DataIngestionConfig class
+# Local overrides for development environment
 
-# =============================================================================
-# INFRASTRUCTURE CONFIGURATION (maps to InfrastructureConfig)
-# =============================================================================
 infrastructure:
-  messaging:
-    provider: "in_memory"  # in_memory for training, rabbitmq for production
-    host: null
-    port: null
-    username: null
-    password: null
-    vhost: null
+  webapi:
+    debug: true  # Enable debug mode for local development
 
   database:
-    provider: "postgresql"
-    host: "localhost"
-    port: 5432
-    database: "drl_trading"
-    username: "trading_user"
-    password: "secure_password"
+    password: "dev_password"  # Local development password
 
   logging:
-    level: "INFO"
-    format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-    file_path: "logs/data-ingestion.log"
-    console_enabled: true
+    level: "DEBUG"  # More verbose logging for development
     rotation_enabled: true
     max_bytes: 10485760
     backup_count: 5

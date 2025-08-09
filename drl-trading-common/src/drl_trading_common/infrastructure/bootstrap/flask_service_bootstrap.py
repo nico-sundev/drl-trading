@@ -1,5 +1,5 @@
-import os
 import logging
+import sys
 
 from drl_trading_common.infrastructure.bootstrap.service_bootstrap import (
     ServiceBootstrap,
@@ -12,25 +12,50 @@ class FlaskServiceBootstrap(ServiceBootstrap):
     """
     Specialized bootstrap for services that require Flask web interface.
 
-    Automatically enables web interface and provides Flask-specific main loop.
+    Automatically enables web interface and provides Flask-specific main loop
+    with proper shutdown handling.
     """
+
+    def __init__(self, service_name: str, config_class):
+        """Initialize Flask service bootstrap with shutdown handling."""
+        super().__init__(service_name, config_class)
+        self._flask_server_thread = None
 
     def enable_web_interface(self) -> bool:
         """Flask services always enable web interface."""
         return True
 
-    def _run_main_loop(self) -> None:
-        """Run Flask development server as main loop."""
+    def _signal_handler(self, signum: int, frame) -> None:
+        """Override signal handler to properly shutdown Flask."""
+        logger.info(f"Received signal {signum}, initiating graceful shutdown...")
+        self.stop()
+        # Force exit if Flask doesn't shutdown gracefully
         if self._flask_app:
-            # In production, use a proper WSGI server like gunicorn
-            # For development, run directly
-            port = int(os.environ.get("PORT", 8080))
-            debug_mode = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+            logger.info("Forcing Flask application shutdown...")
+            sys.exit(0)
+
+    def _run_main_loop(self) -> None:
+        """Run Flask development server as main loop with proper shutdown."""
+        if self._flask_app:
+            # Get WebAPI configuration from the service config
+            webapi_config = getattr(self.config.infrastructure, 'webapi', None)
+
+            port = webapi_config.port if webapi_config else 8080
+            debug = webapi_config.debug if webapi_config else False
 
             logger.info(f"Starting Flask application on port {port}")
-            self._flask_app.run(
-                host="0.0.0.0", port=port, debug=debug_mode, threaded=True
-            )
+            try:
+                self._flask_app.run(
+                    host="0.0.0.0",
+                    port=port,
+                    debug=debug,
+                    threaded=True,
+                    use_reloader=False
+                )
+            except KeyboardInterrupt:
+                logger.info("Flask application interrupted by user")
+            except Exception as e:
+                logger.error(f"Flask application error: {e}")
         else:
             logger.error("No Flask application to run")
             # Keep the service alive if no app

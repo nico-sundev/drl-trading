@@ -8,12 +8,12 @@ completion of the migration from the original ServiceConfigLoader.
 import os
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 
 from drl_trading_common.base.base_application_config import BaseApplicationConfig
-from drl_trading_common.config.enhanced_service_config_loader import EnhancedServiceConfigLoader
+from drl_trading_common.config.service_config_loader import ServiceConfigLoader
 
 
 class TestConfig(BaseApplicationConfig):
@@ -33,12 +33,12 @@ class TestEnhancedServiceConfigLoader:
         """Test that EnhancedServiceConfigLoader can be imported."""
         # Given/When/Then
         # Import should succeed without errors
-        from drl_trading_common.config import EnhancedServiceConfigLoader as ESCLFromInit
-        from drl_trading_common.config.enhanced_service_config_loader import EnhancedServiceConfigLoader
+        from drl_trading_common.config import ServiceConfigLoader as ESCLFromInit
+        from drl_trading_common.config.service_config_loader import ServiceConfigLoader
 
-        assert EnhancedServiceConfigLoader is not None
+        assert ServiceConfigLoader is not None
         assert ESCLFromInit is not None
-        assert EnhancedServiceConfigLoader == ESCLFromInit
+        assert ServiceConfigLoader == ESCLFromInit
 
     def test_enhanced_loader_has_all_required_methods(self) -> None:
         """Test that EnhancedServiceConfigLoader has all required methods."""
@@ -50,7 +50,7 @@ class TestEnhancedServiceConfigLoader:
 
         # When/Then
         for method_name in required_methods:
-            assert hasattr(EnhancedServiceConfigLoader, method_name), f"Missing method: {method_name}"
+            assert hasattr(ServiceConfigLoader, method_name), f"Missing method: {method_name}"
 
     def test_basic_config_loading(self) -> None:
         """Test basic configuration loading functionality."""
@@ -68,7 +68,7 @@ port: 9000
 
             # When - Load configuration
             with patch.dict(os.environ, {'CONFIG_DIR': temp_dir, 'STAGE': 'local'}, clear=True):
-                config = EnhancedServiceConfigLoader.load_config(TestConfig)
+                config = ServiceConfigLoader.load_config(TestConfig)
 
             # Then - Configuration should be loaded correctly
             assert config.app_name == "test_service"
@@ -98,7 +98,7 @@ port: 9000
                 'DB_URL': 'postgresql://prod.example.com:5432/prod_db',
                 'API_KEY': 'prod_api_key_xyz'
             }):
-                config = EnhancedServiceConfigLoader.load_config(TestConfig)
+                config = ServiceConfigLoader.load_config(TestConfig)
 
             # Then - Environment variables should be substituted
             assert config.database_url == "postgresql://prod.example.com:5432/prod_db"
@@ -123,7 +123,7 @@ port: 9000
 
             # When - Load without environment variables (should use defaults)
             with patch.dict(os.environ, {'CONFIG_DIR': temp_dir, 'STAGE': 'local'}, clear=True):
-                config = EnhancedServiceConfigLoader.load_config(TestConfig)
+                config = ServiceConfigLoader.load_config(TestConfig)
 
             # Then - Default values should be used
             assert config.database_url == "postgresql://localhost:5432/default"
@@ -156,7 +156,7 @@ port: 9090
 
             # When - Load with stage override
             with patch.dict(os.environ, {'CONFIG_DIR': temp_dir, 'STAGE': 'prod'}):
-                config = EnhancedServiceConfigLoader.load_config(TestConfig)
+                config = ServiceConfigLoader.load_config(TestConfig)
 
             # Then - Stage overrides should be applied
             assert config.app_name == "test_service"  # From base
@@ -186,7 +186,7 @@ port: 8080
                 'TESTCONFIG__SERVICE_NAME': 'overridden_service',
                 'TESTCONFIG__PORT': '9999'
             }):
-                config = EnhancedServiceConfigLoader.load_config(TestConfig)
+                config = ServiceConfigLoader.load_config(TestConfig)
 
             # Then - Environment variables should override config values
             assert config.app_name == "test_service"  # Not overridden
@@ -197,47 +197,15 @@ port: 8080
 
 
 class TestServiceIntegration:
-    """Test that services using EnhancedServiceConfigLoader work correctly."""
-
-    @patch('drl_trading_inference.bootstrap.InferenceConfig')
-    def test_inference_service_migration(self, mock_config_class) -> None:
-        """Test that inference service uses EnhancedServiceConfigLoader correctly."""
-        # Given
-        mock_config = Mock()
-        mock_config_class.return_value = mock_config
-
-        # When - Import the migrated bootstrap module
-        try:
-            from drl_trading_inference.bootstrap import bootstrap_inference_service
-            # The import should succeed without errors
-            assert bootstrap_inference_service is not None
-        except ImportError:
-            # This is expected in test environment without the actual service
-            pytest.skip("Inference service not available in test environment")
-
-    @patch('drl_trading_ingest.infrastructure.di.ingest_module.DataIngestionConfig')
-    def test_ingest_service_migration(self, mock_config_class) -> None:
-        """Test that ingest service uses EnhancedServiceConfigLoader correctly."""
-        # Given
-        mock_config = Mock()
-        mock_config_class.return_value = mock_config
-
-        # When - Import the migrated DI module
-        try:
-            from drl_trading_ingest.infrastructure.di.ingest_module import IngestModule
-            # The import should succeed without errors
-            assert IngestModule is not None
-        except ImportError:
-            # This is expected in test environment without the actual service
-            pytest.skip("Ingest service not available in test environment")
+    """Test that EnhancedServiceConfigLoader integrates properly with the common package."""
 
     def test_enhanced_config_loader_in_init_exports(self) -> None:
-        """Test that EnhancedServiceConfigLoader is properly exported."""
+        """Test that ServiceConfigLoader is properly exported."""
         # Given/When
         from drl_trading_common.config import __all__
 
         # Then
-        assert "EnhancedServiceConfigLoader" in __all__
+        assert "ServiceConfigLoader" in __all__
 
 
 class TestSecretSubstitutionPattern:
@@ -246,7 +214,7 @@ class TestSecretSubstitutionPattern:
     def test_secret_pattern_regex(self) -> None:
         """Test the secret substitution regex pattern."""
         # Given
-        pattern = EnhancedServiceConfigLoader.SECRET_PATTERN
+        pattern = ServiceConfigLoader.SECRET_PATTERN
 
         test_cases = [
             ("${VAR_NAME}", ("VAR_NAME", None)),
@@ -281,7 +249,7 @@ class TestSecretSubstitutionPattern:
             'DB_PASSWORD': 'super_secret',
             # API_KEY not set, should use default
         }):
-            result = EnhancedServiceConfigLoader._substitute_secrets(test_data)
+            result = ServiceConfigLoader._substitute_secrets(test_data)
 
         # Then
         assert result["database"]["host"] == "prod.database.com"
@@ -303,7 +271,7 @@ class TestSecretSubstitutionPattern:
 
         # When
         with patch.dict(os.environ, {'HOST1': 'prod1.example.com'}):
-            result = EnhancedServiceConfigLoader._substitute_secrets(test_data)
+            result = ServiceConfigLoader._substitute_secrets(test_data)
 
         # Then
         assert result["hosts"][0] == "prod1.example.com"

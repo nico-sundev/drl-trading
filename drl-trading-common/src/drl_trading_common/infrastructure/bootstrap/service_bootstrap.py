@@ -120,16 +120,16 @@ class ServiceBootstrap(ABC):
 
         Uses the lean EnhancedServiceConfigLoader with secret substitution support.
         """
-        from drl_trading_common.config.enhanced_service_config_loader import (
-            EnhancedServiceConfigLoader,
+        from drl_trading_common.config.service_config_loader import (
+            ServiceConfigLoader,
         )
 
-        self.config = EnhancedServiceConfigLoader.load_config(self.config_class)
+        self.config = ServiceConfigLoader.load_config(self.config_class)
         logger.info(f"Configuration loaded for {self.service_name}")
 
     def _setup_logging(self) -> None:
         """Setup standardized logging configuration."""
-        from drl_trading_common.config.logging_config import configure_unified_logging
+        from drl_trading_common.utils.logging_config_utils import configure_unified_logging
 
         configure_unified_logging(self.config, service_name=self.service_name)
 

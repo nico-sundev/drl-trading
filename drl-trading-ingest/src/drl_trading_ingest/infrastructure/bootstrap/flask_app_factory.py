@@ -12,9 +12,7 @@ from flask import Flask, request
 from injector import Injector
 
 from drl_trading_ingest.adapter.web.routes import register_routes
-from drl_trading_ingest.infrastructure.config.data_ingestion_config import (
-    DataIngestionConfig,
-)
+from drl_trading_ingest.infrastructure.config.ingest_config import IngestConfig
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +26,7 @@ class FlaskAppFactory:
     """
 
     @staticmethod
-    def create_app(injector: Injector, config: Optional[DataIngestionConfig] = None) -> Flask:
+    def create_app(injector: Injector, config: Optional[IngestConfig] = None) -> Flask:
         """
         Create and configure a Flask application instance.
 
@@ -42,7 +40,7 @@ class FlaskAppFactory:
         app = Flask(__name__)
 
         if config is None:
-            config = injector.get(DataIngestionConfig)
+            config = injector.get(IngestConfig)
 
         # Configure Flask from our config
         FlaskAppFactory._configure_flask_settings(app, config)
@@ -60,7 +58,7 @@ class FlaskAppFactory:
         return app
 
     @staticmethod
-    def _configure_flask_settings(app: Flask, config: DataIngestionConfig) -> None:
+    def _configure_flask_settings(app: Flask, config: IngestConfig) -> None:
         """Configure Flask-specific settings."""
         app.config.update({
             'DEBUG': False,  # Never debug in production

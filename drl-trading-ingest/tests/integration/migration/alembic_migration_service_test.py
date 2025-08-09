@@ -20,6 +20,7 @@ from drl_trading_ingest.core.port.migration_service_interface import (
 from drl_trading_ingest.infrastructure.config.data_ingestion_config import (
     DataIngestionConfig,
 )
+from drl_trading_ingest.infrastructure.config.ingest_config import IngestConfig
 from drl_trading_ingest.infrastructure.di.ingest_module import IngestModule
 
 
@@ -197,8 +198,10 @@ class TestDependencyInjectionIntegration:
         """Test that migration service can be injected from the DI container."""
         # Given
         # Mock the config loading to avoid file dependencies
-        with patch('drl_trading_ingest.infrastructure.di.ingest_module.EnhancedServiceConfigLoader') as mock_loader:
-            mock_config = Mock(spec=DataIngestionConfig)
+        with patch('drl_trading_ingest.infrastructure.di.ingest_module.ServiceConfigLoader') as mock_loader:
+            # Create a proper mock config that matches IngestConfig
+            mock_config = Mock(spec=IngestConfig)
+            mock_config.app_name = "drl-trading-ingest"
             mock_config.infrastructure = Mock()
             mock_config.infrastructure.database = Mock()
             mock_config.infrastructure.database.username = "test"

@@ -14,7 +14,7 @@ T = TypeVar('T', bound=BaseApplicationConfig)
 logger = logging.getLogger(__name__)
 
 
-class EnhancedServiceConfigLoader:
+class ServiceConfigLoader:
     """
     Lean configuration loader for service application configs.
 
@@ -36,9 +36,9 @@ class EnhancedServiceConfigLoader:
             Instance of the specified configuration class
         """
         # Load .env file if present (for local development)
-        EnhancedServiceConfigLoader._load_dotenv()
+        ServiceConfigLoader._load_dotenv()
 
-        # Get config directory (12-factor app principle)
+        # Get config directory from environment
         config_dir = os.environ.get("CONFIG_DIR")
         if not config_dir:
             raise ValueError(
@@ -49,19 +49,19 @@ class EnhancedServiceConfigLoader:
         if not Path(config_dir).exists():
             raise FileNotFoundError(f"Configuration directory not found: {config_dir}")
 
-        # Get stage for overrides
+        # Get stage from environment
         stage = os.environ.get("STAGE", "local")
 
         # Find base application config file (YAML preference)
-        base_file = EnhancedServiceConfigLoader._find_config_file(config_dir, "application")
+        base_file = ServiceConfigLoader._find_config_file(config_dir, "application")
         if not base_file:
             raise FileNotFoundError(f"Base configuration file not found: application.yaml in {config_dir}")
 
         # Find stage override file (optional)
-        stage_file = EnhancedServiceConfigLoader._find_config_file(config_dir, f"application-{stage}")
+        stage_file = ServiceConfigLoader._find_config_file(config_dir, f"application-{stage}")
 
         # Load base configuration
-        config = EnhancedServiceConfigLoader._load_single_file(config_class, base_file)
+        config = ServiceConfigLoader._load_single_file(config_class, base_file)
 
         # Apply stage override if exists
         if stage_file:
@@ -73,11 +73,11 @@ class EnhancedServiceConfigLoader:
 
             # Apply secret substitution to stage data
             if stage_data:
-                stage_data = EnhancedServiceConfigLoader._substitute_secrets(stage_data)
+                stage_data = ServiceConfigLoader._substitute_secrets(stage_data)
 
                 # Merge stage data into base config
                 config_dict = config.model_dump()
-                EnhancedServiceConfigLoader._deep_update(config_dict, stage_data)
+                ServiceConfigLoader._deep_update(config_dict, stage_data)
                 config = config_class.model_validate(config_dict)
 
         return config
@@ -93,7 +93,7 @@ class EnhancedServiceConfigLoader:
         """
         for key, value in update_dict.items():
             if isinstance(value, dict) and key in base_dict and isinstance(base_dict[key], dict):
-                EnhancedServiceConfigLoader._deep_update(base_dict[key], value)
+                ServiceConfigLoader._deep_update(base_dict[key], value)
             else:
                 base_dict[key] = value
 
@@ -114,7 +114,7 @@ class EnhancedServiceConfigLoader:
 
         # Apply secret substitution
         config_dict = config.model_dump()
-        config_dict = EnhancedServiceConfigLoader._substitute_secrets(config_dict)
+        config_dict = ServiceConfigLoader._substitute_secrets(config_dict)
         return config_class.model_validate(config_dict)
 
     @staticmethod
@@ -144,7 +144,7 @@ class EnhancedServiceConfigLoader:
                     else:
                         raise ValueError(f"Required secret '{secret_name}' not found in environment and no default provided")
 
-                return EnhancedServiceConfigLoader.SECRET_PATTERN.sub(replace_secret, value)
+                return ServiceConfigLoader.SECRET_PATTERN.sub(replace_secret, value)
             elif isinstance(value, dict):
                 return {k: substitute_value(v) for k, v in value.items()}
             elif isinstance(value, list):
