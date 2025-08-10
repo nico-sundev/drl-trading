@@ -2,6 +2,7 @@ import os
 from typing import Literal, Optional, Type
 from unittest.mock import MagicMock
 
+from drl_trading_common.interface.feature.feature_factory_interface import IFeatureFactory
 import pandas_ta as ta
 import pytest
 from drl_trading_common import BaseParameterSetConfig
@@ -10,9 +11,6 @@ from drl_trading_common.config.application_config import ApplicationConfig
 from drl_trading_common.config.config_loader import ConfigLoader
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     ITechnicalIndicatorFacade,
-)
-from drl_trading_strategy_example.feature.feature_factory import (
-    IFeatureFactory,
 )
 from injector import Injector
 from pandas import DataFrame
@@ -127,10 +125,8 @@ def mocked_container(feature_factory):
         os.path.dirname(__file__), "resources/applicationConfig-test.json"
     )
 
-    # Import and create the application module
-    from drl_trading_core.common.di.core_module import CoreModule
-
     # Create injector with the domain module
+    from drl_trading_core.common.di.core_module import CoreModule
     app_module = CoreModule(config_path=test_config_path)
     injector = Injector([app_module])
 

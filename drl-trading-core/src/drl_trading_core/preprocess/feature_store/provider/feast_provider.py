@@ -15,7 +15,7 @@ from feast import (
     FeatureView,
     Field,
     FileSource,
-    OnDemandFeatureView
+    OnDemandFeatureView,
 )
 from feast.types import Float32
 from injector import inject
@@ -216,7 +216,10 @@ class FeastProvider:
         )
 
     def _create_file_source(
-        self, feature_view_name: str, feature_version_info: FeatureConfigVersionInfo, symbol: str
+        self,
+        feature_view_name: str,
+        feature_version_info: FeatureConfigVersionInfo,
+        symbol: str,
     ) -> FileSource:
         """Create file source with error handling."""
         # Delegate path resolution to the offline repository implementation
@@ -243,11 +246,13 @@ class FeastProvider:
         self, feature_role: Optional[FeatureRoleEnum], role_description: str
     ) -> list[BaseFeature]:
         """Get features for the specified role with validation."""
+
+        features_for_role: list[BaseFeature] = []
+
         if feature_role is not None:
-            features_for_role = self.feature_manager.get_features_by_role(feature_role)
-        else:
-            # Handle None case - return empty list for integration tests
-            features_for_role = []
+            features_for_role.append(
+                self.feature_manager.get_features_by_role(feature_role)
+            )
 
         if not features_for_role:
             logger.warning(
@@ -379,7 +384,9 @@ class FeastProvider:
             str: A unique name for the field
         """
         config = feature.get_config()
-        config_string = f"_{feature.get_config_to_string()}_{config.hash_id()}" if config else ""
+        config_string = (
+            f"_{feature.get_config_to_string()}_{config.hash_id()}" if config else ""
+        )
         return f"{feature.get_feature_name()}{config_string}"
 
     def _create_fields(self, feature: BaseFeature) -> list[Field]:

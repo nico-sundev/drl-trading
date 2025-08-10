@@ -152,6 +152,11 @@ class CoreModule(Module):
         )
 
     @provider
+    def provide_stage(self, application_config: ApplicationConfig) -> str:
+        """Provide the stage from application configuration."""
+        return application_config.stage
+
+    @provider
     @singleton
     def provide_offline_feature_repository(
         self, feature_store_config: FeatureStoreConfig

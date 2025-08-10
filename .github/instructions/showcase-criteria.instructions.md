@@ -18,8 +18,3 @@ Guide AI agents to optimize for professional portfolio value and GitHub/LinkedIn
 **Technical Breadth**: Backend engineering, ML pipelines, DevOps, financial domain
 **Unique Value**: Finance + ML + Software engineering integration
 **Professional Quality**: Enterprise-grade code, scalable design, production concerns
-
-## AI Agent Focus
-**Code Reviews**: Prioritize architectural elegance, professional standards, educational value
-**Documentation**: Highlight decision rationale, trade-offs, scalability considerations
-**Features**: Recommend technically sophisticated, real-world applicable solutions

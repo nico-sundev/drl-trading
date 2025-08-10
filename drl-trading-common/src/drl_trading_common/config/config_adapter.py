@@ -1,6 +1,5 @@
 """Config adapters for multiple file formats and sources (JSON, YAML, ENV)."""
 import os
-from pathlib import Path
 from typing import Optional, Type, TypeVar
 
 import yaml
@@ -110,48 +109,3 @@ class ConfigAdapter:
             config = config_class.model_validate(config_dict)
 
         return config
-
-    @staticmethod
-    def load_best_match(
-        config_class: Type[T],
-        base_path: str,
-        env_name: Optional[str] = None
-    ) -> T:
-        """
-        Load the best matching configuration file based on environment.
-
-        This method looks for environment-specific configuration files first,
-        then falls back to the base configuration file if not found.
-
-        Args:
-            config_class: The configuration class to instantiate
-            base_path: Base path to the configuration file without extension
-            env_name: Optional environment name (dev, staging, prod)
-
-        Returns:
-            Instance of the specified configuration class
-        """
-        env_name = env_name or os.environ.get("STAGE", "local")
-
-        # Look for environment-specific config files first
-        for ext in [".json", ".yaml", ".yml"]:
-            # Check for environment-specific file
-            env_path = f"{base_path}.{env_name}{ext}"
-            if Path(env_path).exists():
-                return ConfigAdapter.load_with_env_override(
-                    config_class,
-                    env_path,
-                    env_prefix=config_class.__name__.upper()
-                )
-
-            # Check for base file
-            base_file = f"{base_path}{ext}"
-            if Path(base_file).exists():
-                return ConfigAdapter.load_with_env_override(
-                    config_class,
-                    base_file,
-                    env_prefix=config_class.__name__.upper()
-                )
-
-        # If we get here, no config file was found
-        raise FileNotFoundError(f"No configuration file found for {base_path} with any supported extension")

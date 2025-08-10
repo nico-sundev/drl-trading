@@ -35,7 +35,7 @@ class TestFeatureStoreWrapper:
             ttl_days=30,
             online_enabled=False,
             service_name="test_service",
-            service_version="1.0.0"
+            service_version="1.0.0",
         )
 
     @pytest.fixture
@@ -48,7 +48,7 @@ class TestFeatureStoreWrapper:
             ttl_days=30,
             online_enabled=False,
             service_name="test_service",
-            service_version="1.0.0"
+            service_version="1.0.0",
         )
 
     @pytest.fixture
@@ -78,26 +78,29 @@ entity_key_serialization_version: 2
 
     def test_init_with_enabled_config(self, enabled_config: FeatureStoreConfig) -> None:
         """Test initialization with enabled feature store config."""
-        wrapper = FeatureStoreWrapper(enabled_config)
+        wrapper = FeatureStoreWrapper(enabled_config, "test")
 
         assert wrapper._feature_store_config == enabled_config
+        assert wrapper._stage == "test"
         assert wrapper._feature_store is None
 
-    def test_init_with_disabled_config(self, disabled_config: FeatureStoreConfig) -> None:
+    def test_init_with_disabled_config(
+        self, disabled_config: FeatureStoreConfig
+    ) -> None:
         """Test initialization with disabled feature store config."""
-        wrapper = FeatureStoreWrapper(disabled_config)
+        wrapper = FeatureStoreWrapper(disabled_config, "test")
 
         assert wrapper._feature_store_config == disabled_config
+        assert wrapper._stage == "test"
         assert wrapper._feature_store is None
 
-    @patch.dict(os.environ, {"STAGE": "test"})
-    @patch('drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper.FeatureStore')
+    @patch(
+        "drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper.FeatureStore"
+    )
     def test_get_feature_store_with_enabled_config(
-        self,
-        mock_feast_store: MagicMock,
-        temp_feature_store_dir: str
+        self, mock_feast_store: MagicMock, temp_feature_store_dir: str
     ) -> None:
-        """Test get_feature_store with enabled config and STAGE environment variable."""
+        """Test get_feature_store with enabled config and test stage."""
         config = FeatureStoreConfig(
             enabled=True,
             config_directory=temp_feature_store_dir,
@@ -105,13 +108,13 @@ entity_key_serialization_version: 2
             ttl_days=30,
             online_enabled=False,
             service_name="test_service",
-            service_version="1.0.0"
+            service_version="1.0.0",
         )
 
         mock_feast_instance = MagicMock(spec=FeatureStore)
         mock_feast_store.return_value = mock_feast_instance
 
-        wrapper = FeatureStoreWrapper(config)
+        wrapper = FeatureStoreWrapper(config, "test")
         result = wrapper.get_feature_store()
 
         assert result == mock_feast_instance
@@ -119,32 +122,22 @@ entity_key_serialization_version: 2
         expected_path = os.path.join(temp_feature_store_dir, "test")
         mock_feast_store.assert_called_once_with(repo_path=expected_path)
 
-    def test_get_feature_store_with_disabled_config(self, disabled_config: FeatureStoreConfig) -> None:
+    def test_get_feature_store_with_disabled_config(
+        self, disabled_config: FeatureStoreConfig
+    ) -> None:
         """Test get_feature_store returns None when feature store is disabled."""
-        wrapper = FeatureStoreWrapper(disabled_config)
+        wrapper = FeatureStoreWrapper(disabled_config, "test")
 
         # This should return None due to disabled config in _resolve_feature_store_config_directory
         result = wrapper._resolve_feature_store_config_directory()
 
         assert result is None
 
-    def test_missing_stage_environment_variable(self, enabled_config: FeatureStoreConfig) -> None:
-        """Test that missing STAGE environment variable raises ValueError."""
-        wrapper = FeatureStoreWrapper(enabled_config)
-
-        # Ensure STAGE is not set
-        if "STAGE" in os.environ:
-            del os.environ["STAGE"]
-
-        with pytest.raises(ValueError, match="STAGE environment variable must be set"):
-            wrapper._resolve_feature_store_config_directory()
-
-    @patch.dict(os.environ, {"STAGE": "dev"})
-    @patch('drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper.FeatureStore')
+    @patch(
+        "drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper.FeatureStore"
+    )
     def test_get_feature_store_with_absolute_path(
-        self,
-        mock_feast_store: MagicMock,
-        temp_feature_store_dir: str
+        self, mock_feast_store: MagicMock, temp_feature_store_dir: str
     ) -> None:
         """Test get_feature_store with absolute path to config directory."""
         config = FeatureStoreConfig(
@@ -154,13 +147,13 @@ entity_key_serialization_version: 2
             ttl_days=30,
             online_enabled=False,
             service_name="test_service",
-            service_version="1.0.0"
+            service_version="1.0.0",
         )
 
         mock_feast_instance = MagicMock(spec=FeatureStore)
         mock_feast_store.return_value = mock_feast_instance
 
-        wrapper = FeatureStoreWrapper(config)
+        wrapper = FeatureStoreWrapper(config, "dev")
         result = wrapper.get_feature_store()
 
         assert result == mock_feast_instance
@@ -168,11 +161,11 @@ entity_key_serialization_version: 2
         expected_path = os.path.join(temp_feature_store_dir, "dev")
         mock_feast_store.assert_called_once_with(repo_path=expected_path)
 
-    @patch.dict(os.environ, {"STAGE": "prod"})
-    @patch('drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper.FeatureStore')
+    @patch(
+        "drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper.FeatureStore"
+    )
     def test_get_feature_store_with_relative_path(
-        self,
-        mock_feast_store: MagicMock
+        self, mock_feast_store: MagicMock
     ) -> None:
         """Test get_feature_store with relative path to config directory."""
         # Create a temp directory structure with stage subdirectories
@@ -194,28 +187,27 @@ entity_key_serialization_version: 2
                 ttl_days=30,
                 online_enabled=False,
                 service_name="test_service",
-                service_version="1.0.0"
+                service_version="1.0.0",
             )
 
             mock_feast_instance = MagicMock(spec=FeatureStore)
             mock_feast_store.return_value = mock_feast_instance
 
-            wrapper = FeatureStoreWrapper(config)
+            wrapper = FeatureStoreWrapper(config, "prod")
             result = wrapper.get_feature_store()
 
             assert result == mock_feast_instance
             # Verify that the path points to the prod stage subdirectory
             call_args = mock_feast_store.call_args_list[0]
-            called_path = call_args[1]['repo_path']
+            called_path = call_args[1]["repo_path"]
             assert os.path.isabs(called_path)
             assert called_path.endswith(os.path.join("feature_store", "prod"))
 
-    @patch.dict(os.environ, {"STAGE": "cicd"})
-    @patch('drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper.FeatureStore')
+    @patch(
+        "drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper.FeatureStore"
+    )
     def test_get_feature_store_caching(
-        self,
-        mock_feast_store: MagicMock,
-        temp_feature_store_dir: str
+        self, mock_feast_store: MagicMock, temp_feature_store_dir: str
     ) -> None:
         """Test that FeatureStore instance is cached after first creation."""
         config = FeatureStoreConfig(
@@ -225,13 +217,13 @@ entity_key_serialization_version: 2
             ttl_days=30,
             online_enabled=False,
             service_name="test_service",
-            service_version="1.0.0"
+            service_version="1.0.0",
         )
 
         mock_feast_instance = MagicMock(spec=FeatureStore)
         mock_feast_store.return_value = mock_feast_instance
 
-        wrapper = FeatureStoreWrapper(config)
+        wrapper = FeatureStoreWrapper(config, "test")
 
         # First call should create the instance
         result1 = wrapper.get_feature_store()
@@ -253,19 +245,18 @@ entity_key_serialization_version: 2
             ttl_days=30,
             online_enabled=False,
             service_name="test_service",
-            service_version="1.0.0"
+            service_version="1.0.0",
         )
 
-        wrapper = FeatureStoreWrapper(config)
+        wrapper = FeatureStoreWrapper(config, "test")
 
         # Ensure STAGE is not set to trigger the ValueError
         if "STAGE" in os.environ:
             del os.environ["STAGE"]
 
-        with pytest.raises(ValueError, match="STAGE environment variable must be set"):
+        with pytest.raises(FileNotFoundError, match="Feature store config not found"):
             wrapper.get_feature_store()
 
-    @patch.dict(os.environ, {"STAGE": "test"})
     def test_get_feature_store_missing_config_file(self) -> None:
         """Test error handling when feature_store.yaml is missing."""
         config = FeatureStoreConfig(
@@ -275,24 +266,27 @@ entity_key_serialization_version: 2
             ttl_days=30,
             online_enabled=False,
             service_name="test_service",
-            service_version="1.0.0"
+            service_version="1.0.0",
         )
 
-        wrapper = FeatureStoreWrapper(config)
+        wrapper = FeatureStoreWrapper(config, "test")
 
         with pytest.raises(FileNotFoundError, match="Feature store config not found"):
             wrapper.get_feature_store()
 
-    def test_resolve_feature_store_config_directory_disabled(self, disabled_config: FeatureStoreConfig) -> None:
+    def test_resolve_feature_store_config_directory_disabled(
+        self, disabled_config: FeatureStoreConfig
+    ) -> None:
         """Test _resolve_feature_store_config_directory returns None when disabled."""
-        wrapper = FeatureStoreWrapper(disabled_config)
+        wrapper = FeatureStoreWrapper(disabled_config, "test")
 
         result = wrapper._resolve_feature_store_config_directory()
 
         assert result is None
 
-    @patch.dict(os.environ, {"STAGE": "test"})
-    def test_resolve_feature_store_config_directory_absolute(self, temp_feature_store_dir: str) -> None:
+    def test_resolve_feature_store_config_directory_absolute(
+        self, temp_feature_store_dir: str
+    ) -> None:
         """Test _resolve_feature_store_config_directory with absolute path."""
         config = FeatureStoreConfig(
             enabled=True,
@@ -301,10 +295,10 @@ entity_key_serialization_version: 2
             ttl_days=30,
             online_enabled=False,
             service_name="test_service",
-            service_version="1.0.0"
+            service_version="1.0.0",
         )
 
-        wrapper = FeatureStoreWrapper(config)
+        wrapper = FeatureStoreWrapper(config, "test")
         result = wrapper._resolve_feature_store_config_directory()
 
         # Should return the test stage subdirectory
@@ -312,7 +306,6 @@ entity_key_serialization_version: 2
         assert result == expected_path
         assert os.path.isabs(result)
 
-    @patch.dict(os.environ, {"STAGE": "dev"})
     def test_resolve_feature_store_config_directory_relative(self) -> None:
         """Test _resolve_feature_store_config_directory with relative path."""
         # Create a temp directory structure for testing
@@ -332,10 +325,10 @@ entity_key_serialization_version: 2
                 ttl_days=30,
                 online_enabled=False,
                 service_name="test_service",
-                service_version="1.0.0"
+                service_version="1.0.0",
             )
 
-            wrapper = FeatureStoreWrapper(config)
+            wrapper = FeatureStoreWrapper(config, "dev")
             result = wrapper._resolve_feature_store_config_directory()
 
             assert result is not None
@@ -343,12 +336,11 @@ entity_key_serialization_version: 2
             # Should point to the dev stage subdirectory
             assert result.endswith(os.path.join("feature_store", "dev"))
 
-    @patch.dict(os.environ, {"STAGE": "test"})
-    @patch('drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper.FeatureStore')
+    @patch(
+        "drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper.FeatureStore"
+    )
     def test_multiple_wrappers_independent_caching(
-        self,
-        mock_feast_store: MagicMock,
-        temp_feature_store_dir: str
+        self, mock_feast_store: MagicMock, temp_feature_store_dir: str
     ) -> None:
         """Test that multiple wrapper instances have independent caching."""
         mock_feast_instance1 = MagicMock(spec=FeatureStore)
@@ -363,7 +355,7 @@ entity_key_serialization_version: 2
             ttl_days=30,
             online_enabled=False,
             service_name="test_service",
-            service_version="1.0.0"
+            service_version="1.0.0",
         )
 
         config2 = FeatureStoreConfig(
@@ -373,12 +365,12 @@ entity_key_serialization_version: 2
             ttl_days=30,
             online_enabled=False,
             service_name="test_service",
-            service_version="1.0.0"
+            service_version="1.0.0",
         )
 
         # Create two wrapper instances
-        wrapper1 = FeatureStoreWrapper(config1)
-        wrapper2 = FeatureStoreWrapper(config2)
+        wrapper1 = FeatureStoreWrapper(config1, "prod")
+        wrapper2 = FeatureStoreWrapper(config2, "prod")
 
         # Each should create its own FeatureStore instance
         result1 = wrapper1.get_feature_store()
@@ -389,12 +381,10 @@ entity_key_serialization_version: 2
         assert result1 is not result2
         assert mock_feast_store.call_count == 2
 
-    @patch.dict(os.environ, {"STAGE": "prod"})
-    @patch('drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper.FeatureStore')
-    def test_path_with_special_characters(
-        self,
-        mock_feast_store: MagicMock
-    ) -> None:
+    @patch(
+        "drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper.FeatureStore"
+    )
+    def test_path_with_special_characters(self, mock_feast_store: MagicMock) -> None:
         """Test handling of paths with special characters."""
         # Create a temp directory structure for testing
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -413,40 +403,46 @@ entity_key_serialization_version: 2
                 ttl_days=30,
                 online_enabled=False,
                 service_name="test_service",
-                service_version="1.0.0"
+                service_version="1.0.0",
             )
 
             mock_feast_instance = MagicMock(spec=FeatureStore)
             mock_feast_store.return_value = mock_feast_instance
 
-            wrapper = FeatureStoreWrapper(config)
+            wrapper = FeatureStoreWrapper(config, "prod")
             result = wrapper.get_feature_store()
 
             assert result == mock_feast_instance
             call_args = mock_feast_store.call_args_list[0]
-            called_path = call_args[1]['repo_path']
+            called_path = call_args[1]["repo_path"]
             assert os.path.isabs(called_path)
             # Should point to the prod stage subdirectory
             assert called_path.endswith(os.path.join("test-feature_store@v1", "prod"))
 
     def test_config_object_attributes(self, enabled_config: FeatureStoreConfig) -> None:
         """Test that config object has expected attributes."""
-        wrapper = FeatureStoreWrapper(enabled_config)
+        wrapper = FeatureStoreWrapper(enabled_config, "test")
 
         assert wrapper._feature_store_config.enabled is True
-        assert wrapper._feature_store_config.config_directory == "/test/path/feature_store"
+        assert (
+            wrapper._feature_store_config.config_directory == "/test/path/feature_store"
+        )
         assert wrapper._feature_store_config.entity_name == "test_entity"
         assert wrapper._feature_store_config.ttl_days == 30
         assert wrapper._feature_store_config.online_enabled is False
         assert wrapper._feature_store_config.service_name == "test_service"
         assert wrapper._feature_store_config.service_version == "1.0.0"
 
-    @pytest.mark.parametrize("enabled,expected_none", [
-        (True, False),
-        (False, True),
-    ])
-    @patch.dict(os.environ, {"STAGE": "test"})
-    def test_resolve_path_parametrized(self, enabled: bool, expected_none: bool) -> None:
+    @pytest.mark.parametrize(
+        "enabled,expected_none",
+        [
+            (True, False),
+            (False, True),
+        ],
+    )
+    def test_resolve_path_parametrized(
+        self, enabled: bool, expected_none: bool
+    ) -> None:
         """Test path resolution with parametrized enabled/disabled states."""
         # Create a temp directory structure for testing
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -466,10 +462,10 @@ entity_key_serialization_version: 2
                 ttl_days=30,
                 online_enabled=False,
                 service_name="test_service",
-                service_version="1.0.0"
+                service_version="1.0.0",
             )
 
-            wrapper = FeatureStoreWrapper(config)
+            wrapper = FeatureStoreWrapper(config, "test")
 
             if expected_none:
                 result = wrapper._resolve_feature_store_config_directory()
@@ -479,14 +475,19 @@ entity_key_serialization_version: 2
                 assert result is not None
                 assert os.path.isabs(result)
 
-    @pytest.mark.parametrize("repo_path,stage,is_absolute", [
-        ("/absolute/path/to/repo", "test", True),
-        ("relative/path/to/repo", "dev", False),
-        ("C:\\Windows\\path\\to\\repo", "prod", True),  # Windows absolute path
-        ("./relative/path", "cicd", False),
-        ("../parent/path", "test", False),
-    ])
-    def test_path_resolution_types(self, repo_path: str, stage: str, is_absolute: bool) -> None:
+    @pytest.mark.parametrize(
+        "repo_path,stage,is_absolute",
+        [
+            ("/absolute/path/to/repo", "test", True),
+            ("relative/path/to/repo", "dev", False),
+            ("C:\\Windows\\path\\to\\repo", "prod", True),  # Windows absolute path
+            ("./relative/path", "cicd", False),
+            ("../parent/path", "test", False),
+        ],
+    )
+    def test_path_resolution_types(
+        self, repo_path: str, stage: str, is_absolute: bool
+    ) -> None:
         """Test path resolution with various path types and stages."""
         # Create a temp directory structure for testing
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -514,26 +515,28 @@ entity_key_serialization_version: 2
                 ttl_days=30,
                 online_enabled=False,
                 service_name="test_service",
-                service_version="1.0.0"
+                service_version="1.0.0",
             )
 
-            with patch.dict(os.environ, {"STAGE": stage}):
-                wrapper = FeatureStoreWrapper(config)
-                result = wrapper._resolve_feature_store_config_directory()
+            # Use injected stage directly (implementation no longer reads env)
+            wrapper = FeatureStoreWrapper(config, stage)
+            result = wrapper._resolve_feature_store_config_directory()
 
-                assert result is not None
-                assert os.path.isabs(result)
-                # Should point to the stage subdirectory
-                assert result.endswith(stage)
+            assert result is not None
+            assert os.path.isabs(result)
+            # Should point to the stage subdirectory
+            assert result.endswith(stage)
 
-    def test_feature_store_attribute_access(self, enabled_config: FeatureStoreConfig) -> None:
+    def test_feature_store_attribute_access(
+        self, enabled_config: FeatureStoreConfig
+    ) -> None:
         """Test direct access to _feature_store attribute."""
-        wrapper = FeatureStoreWrapper(enabled_config)
+        wrapper = FeatureStoreWrapper(enabled_config, "test")
 
         # Initially should be None
         assert wrapper._feature_store is None
 
         # After calling get_feature_store, it should be set (but we don't call it to avoid FeatureStore creation)
         # Just verify the attribute exists and is accessible
-        assert hasattr(wrapper, '_feature_store')
+        assert hasattr(wrapper, "_feature_store")
         assert wrapper._feature_store is None
