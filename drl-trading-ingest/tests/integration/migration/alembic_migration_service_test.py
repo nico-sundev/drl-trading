@@ -215,13 +215,12 @@ class TestDependencyInjectionIntegration:
             mock_loader.load_config.return_value = mock_config
 
             # Mock environment variable
-            with patch.dict('os.environ', {'SERVICE_CONFIG_PATH': '/mock/path'}):
-                injector = Injector([IngestModule()])
+            injector = Injector([IngestModule()])
 
-                # When
-                migration_service = injector.get(MigrationServiceInterface)
+            # When
+            migration_service = injector.get(MigrationServiceInterface)
 
-                # Then
-                assert migration_service is not None
-                assert isinstance(migration_service, AlembicMigrationService)
-                assert migration_service.connection_string == "postgresql://test:test@localhost:5432/test"
+            # Then
+            assert migration_service is not None
+            assert isinstance(migration_service, AlembicMigrationService)
+            assert migration_service.connection_string == "postgresql://test:test@localhost:5432/test"

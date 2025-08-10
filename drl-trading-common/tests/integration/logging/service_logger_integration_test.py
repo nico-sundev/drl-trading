@@ -10,7 +10,6 @@ import logging
 import os
 from io import StringIO
 from typing import Any
-from unittest.mock import patch
 import pytest
 
 from drl_trading_common.logging.service_logger import ServiceLogger
@@ -94,10 +93,9 @@ class TestServiceLoggerIntegrationProduction:
     def test_complete_production_logging_flow(self, temp_directory: str, clean_log_context: Any) -> None:
         """Test complete logging flow in production environment."""
         # Given
-        with patch.dict(os.environ, {"DEPLOYMENT_MODE": "production"}):
-            service_logger = ServiceLogger("integration-test-service", "prod")
-            service_logger.configure()
-            logger = service_logger.get_logger()
+        service_logger = ServiceLogger("integration-test-service", "prod")
+        service_logger.configure()
+        logger = service_logger.get_logger()
 
         # Create test handler to capture JSON output
         string_stream = StringIO()
@@ -138,8 +136,7 @@ class TestServiceLoggerIntegrationProduction:
     def test_production_trading_context_integration(self, temp_directory: str, clean_log_context: Any, sample_trading_context: Any) -> None:
         """Test trading context integration in production."""
         # Given
-        with patch.dict(os.environ, {"DEPLOYMENT_MODE": "production"}):
-            service_logger = ServiceLogger("integration-test-service", "prod")
+        service_logger = ServiceLogger("integration-test-service", "prod")
         service_logger.configure()
         logger = service_logger.get_logger()
 

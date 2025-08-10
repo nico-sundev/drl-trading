@@ -49,3 +49,4 @@ and review the changes from their perspective, considering the same factors outl
 7. If you have doubts about the implementation or its impact, express them in a constructive manner, providing specific examples or scenarios that illustrate your concerns and include them in your response message.
     **Good Example:**
     > I'm concerned that the changes to the logging configuration might have unintended side effects on the existing services. For instance, if we change the log format to JSON for all services, it could break any existing log parsing tools that expect the old format. We should thoroughly test the logging behavior in all services before deploying this change.
+8. If you have to download dependencies, **ALWAYS PREFER** `uv sync --group dev-all` over `uv sync`

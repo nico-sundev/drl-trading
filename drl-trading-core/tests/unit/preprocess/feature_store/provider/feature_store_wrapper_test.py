@@ -250,10 +250,6 @@ entity_key_serialization_version: 2
 
         wrapper = FeatureStoreWrapper(config, "test")
 
-        # Ensure STAGE is not set to trigger the ValueError
-        if "STAGE" in os.environ:
-            del os.environ["STAGE"]
-
         with pytest.raises(FileNotFoundError, match="Feature store config not found"):
             wrapper.get_feature_store()
 
