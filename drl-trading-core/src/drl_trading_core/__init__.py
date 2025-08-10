@@ -1,8 +1,6 @@
 from importlib.metadata import PackageNotFoundError, version
 
-from drl_trading_common.utils.logging_config_utils import (
-    configure_logging,  # pragma: no cover
-)
+from drl_trading_common.logging.service_logger import ServiceLogger  # pragma: no cover
 
 from drl_trading_core.core_engine import CoreEngine
 
@@ -15,8 +13,8 @@ except PackageNotFoundError:  # pragma: no cover
 finally:
     del version, PackageNotFoundError
 
-# Initialize logging
-configure_logging()
+# Initialize logging using default stage ('local') for library import context
+ServiceLogger(service_name="drl-trading-core", stage="local").configure()
 
 __all__ = [
     "CoreEngine"

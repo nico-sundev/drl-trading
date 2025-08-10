@@ -2453,3 +2453,5 @@
 2025-07-27 20:53:31,015 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied feast feature views: <Mock name='mock.name' id='2246676442832'>, <Mock name='mock.name' id='2246676436448'>
 2025-07-27 20:53:31,015 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Applied Feast feature service: test_service
 2025-07-27 20:53:31,022 [INFO] drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo: Stored 3 feature records for EURUSD
+2025-08-10 21:18:26 | INFO     | drl_trading_common             | drl_trading_common | Logging configured for drl_trading_common service
+2025-08-10 21:20:02 | INFO     | drl_trading_common             | drl_trading_common | Logging configured for drl_trading_common service

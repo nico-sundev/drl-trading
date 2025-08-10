@@ -2,6 +2,21 @@
 
 ## Quick Thoughts
 <!-- Dump ideas here quickly, organize later -->
+### Check logs
+- starting service current works without errors, even if stage envvar not provided
+
+### Separate domain from adapter logic for feast
+- Upgrade current integration of feast FeatureStore to be hexagonal architecture confirm
+- Below services contain mostly domain logic, this should be abstracted from adapter logic
+  - feast_provider.py
+  - feature_store_fetch_repo.py
+  - feature_store_store_repo.py
+- Utilize existing interface abstractions, try to keep it and adapt on it
+
+### Break up drl-trading-core`s services
+-- Refactor core package, comply with hexagonal architecture
+-- More specification is coming soon regards inter-service dependencies
+
 
 ## Future Epics (Unrefined)
 - Performance optimization epic

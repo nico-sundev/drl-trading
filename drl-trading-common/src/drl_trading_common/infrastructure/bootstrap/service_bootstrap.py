@@ -129,9 +129,14 @@ class ServiceBootstrap(ABC):
 
     def _setup_logging(self) -> None:
         """Setup standardized logging configuration."""
-        from drl_trading_common.utils.logging_config_utils import configure_unified_logging
-
-        configure_unified_logging(self.config, service_name=self.service_name)
+        try:
+            from drl_trading_common.logging.service_logger import ServiceLogger
+            # Prefer top-level T005 logging config when present
+            stage = getattr(self.config, "stage", "local") if self.config else "local"
+            t005_cfg = getattr(self.config, "logging", None) if self.config else None
+            ServiceLogger(service_name=self.service_name, stage=stage, config=t005_cfg).configure()
+        except Exception as e:  # pragma: no cover
+            logger.warning(f"ServiceLogger configuration failed: {e}")
 
     def _setup_dependency_injection(self) -> None:
         """

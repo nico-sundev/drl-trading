@@ -8,13 +8,22 @@ stage: "local"
 
 # Infrastructure Configuration
 infrastructure:
+  # Web API (Flask) Configuration
+  webapi:
+    port: 8082
+    host: "0.0.0.0"
+    debug: false
+    threaded: true
+    max_content_length: 16777216  # 16MB
 
-  # Logging Configuration
+  # Logging Configuration (legacy infra logging - kept for compatibility with other utilities)
   logging:
     level: "INFO"
+    format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
     file_path: "logs/preprocess.log"
     console_enabled: true
-    max_file_size: "10MB"
+    rotation_enabled: true
+    max_bytes: 10485760
     backup_count: 5
 
   # Message Bus Configuration
@@ -41,3 +50,16 @@ output:
   format: "parquet"
   compression: "snappy"
   validation_enabled: true
+
+# T005 ServiceLogger Configuration (top-level)
+logging:
+  level: "INFO"
+  json_format: false
+  file_logging: true
+  file_path: "logs/drl-trading-preprocess.log"
+  console_enabled: true
+  max_file_size: 10485760
+  backup_count: 5
+  third_party_loggers:
+    flask: { level: "WARNING" }
+    werkzeug: { level: "WARNING" }
