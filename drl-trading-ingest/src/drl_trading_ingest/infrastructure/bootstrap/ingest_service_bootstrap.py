@@ -18,6 +18,7 @@ from drl_trading_common.infrastructure.health.basic_health_checks import (
     ServiceStartupHealthCheck,
     SystemResourcesHealthCheck,
 )
+from drl_trading_common.infrastructure.health.health_check import HealthCheck
 from drl_trading_ingest.adapter.web.ingest_route_registrar import IngestRouteRegistrar
 from drl_trading_ingest.infrastructure.config.ingest_config import IngestConfig
 
@@ -25,12 +26,16 @@ logger = logging.getLogger(__name__)
 
 
 class IngestServiceBootstrap(FlaskServiceBootstrap):
-    """
-    Bootstrap implementation for the ingest service.
+    """Bootstrap implementation for the ingest service.
 
-    Uses the specialized FlaskServiceBootstrap with automatic Flask web interface
-    for health checks and data ingestion endpoints. Integrates standardized
-    logging with trading context tracking.
+    Responsibilities (infrastructure orchestration only):
+    - Provide DI modules (hexagonal wiring)
+    - Register health checks (system, startup, configuration)
+    - Supply route registrar for Flask endpoints
+    - Start/stop high-level business logic hooks (placeholder until real logic)
+
+    Business/domain logic lives in core layer services wired through DI. This
+    class must remain thin and infrastructure-focused per hexagonal principles.
     """
 
     def __init__(self) -> None:
@@ -39,73 +44,62 @@ class IngestServiceBootstrap(FlaskServiceBootstrap):
         self._startup_health_check = ServiceStartupHealthCheck("ingest_startup")
 
     def get_dependency_modules(self) -> List[Module]:
-        """
-        Return dependency injection modules for this service.
+        """Return DI modules (fail fast on import errors).
 
-        Uses the existing IngestModule which properly wires the hexagonal architecture.
+        Import errors are not recoverable at runtime; we surface them early to
+        avoid a partially initialized service (previous implementation silently
+        returned an empty list, risking obscure downstream failures).
         """
-        try:
-            from drl_trading_ingest.infrastructure.di.ingest_module import IngestModule
+        from drl_trading_ingest.infrastructure.di.ingest_module import IngestModule  # type: ignore
 
-            return [IngestModule()]
-        except ImportError as e:
-            logger.error(f"Failed to import IngestModule: {e}")
-            return []
+        return [IngestModule()]
 
     def get_route_registrar(self) -> IngestRouteRegistrar:
         """Return ingest-specific route registrar for Flask endpoints."""
         return IngestRouteRegistrar()
 
-    def get_health_checks(self) -> List:
-        """
-        Return health checks for this service.
+    def get_health_checks(self) -> List[HealthCheck]:
+        """Return health checks (always includes configuration check).
 
-        Returns:
-            List of HealthCheck instances for the ingest service
+        Assumes configuration load phase already succeeded (else bootstrap
+        would have aborted). Therefore we always add ConfigurationHealthCheck.
         """
-        health_checks = [
+        return [
             SystemResourcesHealthCheck(name="ingest_system_resources"),
             self._startup_health_check,
+            ConfigurationHealthCheck(self.config, "ingest_configuration"),  # type: ignore[arg-type]
         ]
 
-        # Add configuration health check if config is loaded
-        if self.config:
-            health_checks.append(
-                ConfigurationHealthCheck(self.config, "ingest_configuration")
-            )
-
-        return health_checks
-
     def _start_service(self) -> None:
-        """Start ingest service logic (logging already configured)."""
-        service_root_logger = logging.getLogger(__name__)
+        """Start ingest service business logic placeholder.
+
+        Real ingestion orchestration (e.g., background consumers, schedulers)
+        will be triggered here once implemented. For now we just mark startup
+        successful to feed health check status.
+        """
+        service_logger = logging.getLogger(__name__)
         try:
-            service_root_logger.info("=== STARTING INGEST SERVICE BUSINESS LOGIC ===")
-            self._startup_health_check.startup_completed = False
-            service_root_logger.info("Initializing ingest service components...")
-            service_root_logger.info("Dependency injection wiring completed")
+            service_logger.info("=== STARTING INGEST SERVICE BUSINESS LOGIC ===")
+            service_logger.info("Initializing ingest service components (placeholder)...")
+            service_logger.info("Dependency injection wiring completed")
             self._startup_health_check.mark_startup_completed(success=True)
-            service_root_logger.info(
+            service_logger.info(
                 "=== INGEST SERVICE BUSINESS LOGIC INITIALIZED SUCCESSFULLY ==="
             )
-        except Exception as e:
-            self._startup_health_check.mark_startup_completed(
-                success=False, error_message=str(e)
-            )
-            service_root_logger.error(
-                f"Failed to start ingest service: {e}", exc_info=True
-            )
+        except Exception as e:  # pragma: no cover - defensive guard
+            self._startup_health_check.mark_startup_completed(success=False, error_message=str(e))
+            service_logger.error(f"Failed to start ingest service: {e}", exc_info=True)
             raise
 
     def _stop_service(self) -> None:
         """Stop ingest service-specific logic with proper logging."""
-        service_root_logger = logging.getLogger(self.service_name)
-        service_root_logger.info("=== STOPPING INGEST SERVICE BUSINESS LOGIC ===")
+        service_logger = logging.getLogger(__name__)
+        service_logger.info("=== STOPPING INGEST SERVICE BUSINESS LOGIC ===")
         try:
-            # Any cleanup logic would go here
-            service_root_logger.info("Ingest service business logic stopped successfully")
-        except Exception as e:
-            service_root_logger.error(f"Error stopping ingest service: {e}", exc_info=True)
+            # Placeholder for future cleanup
+            service_logger.info("Ingest service business logic stopped successfully")
+        except Exception as e:  # pragma: no cover - defensive
+            service_logger.error(f"Error stopping ingest service: {e}", exc_info=True)
 
     def _run_main_loop(self) -> None:
         """
