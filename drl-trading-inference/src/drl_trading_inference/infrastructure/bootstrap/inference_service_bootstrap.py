@@ -6,7 +6,7 @@ for health checks while maintaining the inference service's core functionality.
 """
 
 import logging
-from typing import List, cast
+from typing import List
 
 from drl_trading_inference.infrastructure.di.InferenceModule import InferenceModule
 from injector import Module
@@ -41,10 +41,9 @@ class InferenceServiceBootstrap(FlaskServiceBootstrap):
         super().__init__(service_name="inference", config_class=InferenceConfig)
         self._startup_health_check = ServiceStartupHealthCheck("inference_startup")
 
-    def get_dependency_modules(self) -> List[Module]:
-        """Return DI modules (fail fast if misconfigured)."""
-        typed_config = cast(InferenceConfig, self.config)
-        return [InferenceModule(typed_config)]
+    def get_dependency_modules(self, app_config: InferenceConfig) -> List[Module]:
+        """Return DI modules using already-loaded config instance."""
+        return [InferenceModule(app_config)]
 
     def get_health_checks(self) -> List[HealthCheck]:
         """Return health checks (always includes configuration check)."""

@@ -197,30 +197,26 @@ class TestDependencyInjectionIntegration:
     def test_migration_service_injection(self) -> None:
         """Test that migration service can be injected from the DI container."""
         # Given
-        # Mock the config loading to avoid file dependencies
-        with patch('drl_trading_ingest.infrastructure.di.ingest_module.ServiceConfigLoader') as mock_loader:
-            # Create a proper mock config that matches IngestConfig
-            mock_config = Mock(spec=IngestConfig)
-            mock_config.app_name = "drl-trading-ingest"
-            mock_config.infrastructure = Mock()
-            mock_config.infrastructure.database = Mock()
-            mock_config.infrastructure.database.username = "test"
-            mock_config.infrastructure.database.password = "test"
-            mock_config.infrastructure.database.host = "localhost"
-            mock_config.infrastructure.database.port = 5432
-            mock_config.infrastructure.database.database = "test"
-            mock_config.infrastructure.messaging = Mock()
-            mock_config.infrastructure.messaging.host = "localhost:9092"
+    # Mock the config loading to avoid file dependencies
+    # Create a proper mock config that matches IngestConfig (no re-load)
+    mock_config = Mock(spec=IngestConfig)
+    mock_config.app_name = "drl-trading-ingest"
+    mock_config.infrastructure = Mock()
+    mock_config.infrastructure.database = Mock()
+    mock_config.infrastructure.database.username = "test"
+    mock_config.infrastructure.database.password = "test"
+    mock_config.infrastructure.database.host = "localhost"
+    mock_config.infrastructure.database.port = 5432
+    mock_config.infrastructure.database.database = "test"
+    mock_config.infrastructure.messaging = Mock()
+    mock_config.infrastructure.messaging.host = "localhost:9092"
 
-            mock_loader.load_config.return_value = mock_config
+    injector = Injector([IngestModule(mock_config)])
 
-            # Mock environment variable
-            injector = Injector([IngestModule()])
+    # When
+    migration_service = injector.get(MigrationServiceInterface)
 
-            # When
-            migration_service = injector.get(MigrationServiceInterface)
-
-            # Then
-            assert migration_service is not None
-            assert isinstance(migration_service, AlembicMigrationService)
-            assert migration_service.connection_string == "postgresql://test:test@localhost:5432/test"
+    # Then
+    assert migration_service is not None
+    assert isinstance(migration_service, AlembicMigrationService)
+    assert migration_service.connection_string == "postgresql://test:test@localhost:5432/test"

@@ -168,7 +168,9 @@ class ServiceBootstrap(ABC):
         - Infrastructure modules bind ports to concrete adapters
         - Configuration flows from infrastructure to core via DI
         """
-        di_modules = self.get_dependency_modules()
+        # Pass the already-loaded configuration into DI module factory to ensure
+        # a single authoritative config instance (avoid each Module re-loading).
+        di_modules = self.get_dependency_modules(self.config)  # type: ignore[arg-type]
         self.injector = Injector(di_modules)
         logger.info(
             "Dependency injection container initialized (hexagonal architecture wired)"
@@ -279,7 +281,7 @@ class ServiceBootstrap(ABC):
 
     # Abstract methods for service-specific implementation
     @abstractmethod
-    def get_dependency_modules(self) -> List[Module]:
+    def get_dependency_modules(self, app_config: BaseApplicationConfig) -> List[Module]:
         """
         Return dependency injection modules for this service.
 
@@ -290,9 +292,9 @@ class ServiceBootstrap(ABC):
 
         Example:
         return [
-            CoreModule(self.config),      # Core business services
-            AdapterModule(self.config),   # External adapters (web, messaging)
-            InfrastructureModule(self.config)  # Technical concerns
+            CoreModule(app_config),      # Core business services
+            AdapterModule(app_config),   # External adapters (web, messaging)
+            InfrastructureModule(app_config)  # Technical concerns
         ]
         """
         pass
@@ -356,7 +358,7 @@ class ServiceBootstrap(ABC):
         """
         return []
 
-    def get_flask_app(self):
+    def get_flask_app(self) -> Optional[Flask]:
         """Get the Flask application instance if web interface is enabled."""
         return self._flask_app
 

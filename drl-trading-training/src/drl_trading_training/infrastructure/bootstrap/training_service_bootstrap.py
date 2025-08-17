@@ -34,7 +34,7 @@ class TrainingServiceBootstrap(ServiceBootstrap):
         super().__init__(service_name="training", config_class=TrainingConfig)
         self._startup_health_check = ServiceStartupHealthCheck("training_startup")
 
-    def get_dependency_modules(self) -> List[Module]:
+    def get_dependency_modules(self, app_config: TrainingConfig) -> List[Module]:
         """
         Return dependency injection modules for this service.
 

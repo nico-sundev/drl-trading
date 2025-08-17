@@ -44,11 +44,14 @@ class PreprocessServiceBootstrap(FlaskServiceBootstrap):
         super().__init__(service_name="drl-trading-preprocess", config_class=PreprocessConfig)
         self._startup_health_check = ServiceStartupHealthCheck("preprocess_startup")
 
-    def get_dependency_modules(self) -> List[Module]:
-        """Return DI modules (fail fast if module missing)."""
-        from drl_trading_preprocess.infrastructure.di.PreprocessModule import PreprocessModule  # type: ignore
+    def get_dependency_modules(self, app_config: PreprocessConfig) -> List[Module]:
+        """Return DI modules using existing loaded config instance.
 
-        return [PreprocessModule()]
+        The provided app_config avoids redundant config reloads inside DI.
+        """
+        from drl_trading_preprocess.infrastructure.di.preprocess_module import PreprocessModule  # type: ignore
+
+        return [PreprocessModule(app_config)]
 
     def get_health_checks(self) -> List[HealthCheck]:
         """Return health checks (always includes configuration check)."""

@@ -43,16 +43,17 @@ class IngestServiceBootstrap(FlaskServiceBootstrap):
         super().__init__(service_name="drl-trading-ingest", config_class=IngestConfig)
         self._startup_health_check = ServiceStartupHealthCheck("ingest_startup")
 
-    def get_dependency_modules(self) -> List[Module]:
-        """Return DI modules (fail fast on import errors).
+    def get_dependency_modules(self, app_config: IngestConfig) -> List[Module]:
+        """Return DI modules using already-loaded config instance.
 
-        Import errors are not recoverable at runtime; we surface them early to
-        avoid a partially initialized service (previous implementation silently
-        returned an empty list, risking obscure downstream failures).
+        The config instance passed here is the single authoritative object
+        produced during the config phase. We must NOT reload configuration
+        inside DI modules (prevents divergence & duplicate IO). Import errors
+        are surfaced immediately to fail fast.
         """
         from drl_trading_ingest.infrastructure.di.ingest_module import IngestModule  # type: ignore
 
-        return [IngestModule()]
+        return [IngestModule(app_config)]
 
     def get_route_registrar(self) -> IngestRouteRegistrar:
         """Return ingest-specific route registrar for Flask endpoints."""
