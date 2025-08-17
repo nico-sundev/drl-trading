@@ -2,10 +2,6 @@
 
 ## Quick Thoughts
 <!-- Dump ideas here quickly, organize later -->
-### Check logs
-- starting service current works without errors, even if stage envvar not provided
-- use fixed width columns for log formatter
-
 ### New Package
 - drl-trading-adapter where adapter logic from current drl-trading-core resides
 
