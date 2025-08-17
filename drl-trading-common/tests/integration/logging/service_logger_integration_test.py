@@ -51,6 +51,8 @@ class TestServiceLoggerIntegrationDevelopment:
             assert "integration-test-service" in output
             assert "Development test message" in output
             assert "INFO" in output
+            # No abbreviation expected (single segment logger name)
+            assert "integration-test-service" in output
         finally:
             logger.removeHandler(test_handler)
 
@@ -85,6 +87,39 @@ class TestServiceLoggerIntegrationDevelopment:
             assert "symbol=EURUSD" in output
         finally:
             logger.removeHandler(test_handler)
+
+    def test_development_deep_logger_abbreviation(self, temp_directory: str, clean_log_context: Any) -> None:
+        """Deep dotted dev logger should render abbreviated short_name."""
+        # Given
+        service_logger = ServiceLogger("integration-test-service", "local")
+        service_logger.configure()
+        base_logger = service_logger.get_logger()
+
+        deep_logger_name = "integration_test_service.adapter.messaging.kafka.consumer.Component"
+        deep_logger = logging.getLogger(deep_logger_name)
+
+        stream = StringIO()
+        handler = logging.StreamHandler(stream)
+        # Reuse formatter from main logger
+        for h in base_logger.handlers:
+            if isinstance(h, logging.StreamHandler) and h.formatter:
+                handler.setFormatter(h.formatter)
+                break
+        deep_logger.addHandler(handler)
+        deep_logger.setLevel(logging.INFO)
+        deep_logger.propagate = False
+
+        try:
+            # When
+            deep_logger.info("Deep dev message")
+
+            # Then
+            out = stream.getvalue()
+            # Abbreviated form: i.a.m.k.consumer.Component
+            assert "i.a.m.k.consumer.Component" in out
+            assert deep_logger_name not in out  # original should be shortened
+        finally:
+            deep_logger.removeHandler(handler)
 
 
 class TestServiceLoggerIntegrationProduction:
@@ -127,6 +162,7 @@ class TestServiceLoggerIntegrationProduction:
                     assert log_data["level"] == "INFO"
                     assert log_data["extra_operation"] == "test"
                     assert log_data["extra_price"] == 1.2345
+                    assert "short_logger" in log_data
                     break
             else:
                 pytest.fail("Expected log message not found in output")
@@ -169,11 +205,44 @@ class TestServiceLoggerIntegrationProduction:
                     assert log_data["correlation_id"] == sample_trading_context.correlation_id
                     assert log_data["symbol"] == sample_trading_context.symbol
                     assert log_data["trace_id"] == sample_trading_context.correlation_id  # OpenTelemetry mapping
+                    assert "short_logger" in log_data
                     break
             else:
                 pytest.fail("Expected log message not found in output")
         finally:
             logger.removeHandler(test_handler)
+
+    def test_production_deep_logger_abbreviation(self, temp_directory: str, clean_log_context: Any) -> None:
+        """Deep logger in production should include short_logger abbreviated field."""
+        # Given
+        service_logger = ServiceLogger("integration-test-service", "prod")
+        service_logger.configure()
+        base_logger = service_logger.get_logger()
+        deep_logger_name = "integration_test_service.adapter.messaging.kafka.consumer.Component"
+        deep_logger = logging.getLogger(deep_logger_name)
+
+        stream = StringIO()
+        handler = logging.StreamHandler(stream)
+        # Copy structured formatter
+        for h in base_logger.handlers:
+            if isinstance(h, logging.StreamHandler) and h.formatter:
+                handler.setFormatter(h.formatter)
+                break
+        deep_logger.addHandler(handler)
+        deep_logger.setLevel(logging.INFO)
+        deep_logger.propagate = False
+
+        try:
+            # When
+            deep_logger.info("Deep prod message")
+
+            # Then
+            lines = [line for line in stream.getvalue().split('\n') if line.strip()]
+            target = next(line for line in lines if "Deep prod message" in line)
+            data = json.loads(target)
+            assert data["short_logger"] == "i.a.m.k.consumer.Component"
+        finally:
+            deep_logger.removeHandler(handler)
 
 
 class TestServiceLoggerFileHandling:
@@ -355,3 +424,26 @@ class TestServiceLoggerConfiguration:
         # Verify production setup
         assert prod_service_logger.environment == "production"
         assert prod_service_logger._should_use_json_formatting()
+
+    def test_disable_abbreviation_flag(self, temp_directory: str, clean_log_context: Any) -> None:
+        """Disabling abbreviation should avoid installing record factory."""
+        # Given
+        config = ServiceLoggingConfig(abbreviate_logger_names=False)
+        service_logger = ServiceLogger("flag-test-service", "local", config)
+
+        # Reset global record factory state to simulate first configuration scenario
+        original_factory = logging.getLogRecordFactory()
+        previous_flag = getattr(ServiceLogger, "_record_factory_installed", False)
+        try:
+            logging.setLogRecordFactory(logging.LogRecord)
+            ServiceLogger._record_factory_installed = False  # type: ignore[attr-defined]
+
+            # When
+            service_logger.configure()
+
+            # Then
+            assert ServiceLogger._record_factory_installed is False  # type: ignore[attr-defined]
+        finally:
+            # Restore original state to avoid side effects on other tests
+            logging.setLogRecordFactory(original_factory)
+            ServiceLogger._record_factory_installed = previous_flag  # type: ignore[attr-defined]

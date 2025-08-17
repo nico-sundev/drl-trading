@@ -5,6 +5,8 @@ import logging
 from pathlib import Path
 from typing import Optional, Type, TypeVar, Dict, Any, Union
 
+from drl_trading_common.logging.bootstrap_logging import get_bootstrap_logger
+
 from drl_trading_common.base.base_application_config import BaseApplicationConfig
 from drl_trading_common.config.config_adapter import ConfigAdapter
 
@@ -25,7 +27,7 @@ class ServiceConfigLoader:
     SECRET_PATTERN = re.compile(r'\$\{([^}:]+)(?::([^}]*))?\}')
 
     @staticmethod
-    def load_config(config_class: Type[T]) -> T:
+    def load_config(config_class: Type[T], service_name: Optional[str] = None) -> T:
         """
         Load service configuration with stage overrides and secret substitution.
 
@@ -38,34 +40,53 @@ class ServiceConfigLoader:
         # Load .env file if present (for local development)
         ServiceConfigLoader._load_dotenv()
 
+        svc_name = service_name or config_class.__name__.lower()
+        bootstrap_logger = get_bootstrap_logger(svc_name)
+
         # Get config directory from environment
         config_dir = os.environ.get("CONFIG_DIR")
         if not config_dir:
+            bootstrap_logger.error(
+                "CONFIG_DIR environment variable not set; cannot load configuration"
+            )
             raise ValueError(
                 "CONFIG_DIR environment variable must be set. "
                 "Example: CONFIG_DIR=/path/to/config or CONFIG_DIR=./config"
             )
 
         if not Path(config_dir).exists():
+            bootstrap_logger.error("Configuration directory not found: %s", config_dir)
             raise FileNotFoundError(f"Configuration directory not found: {config_dir}")
 
         # Get stage from environment
         stage = os.environ.get("STAGE", "local")
+        bootstrap_logger.info(
+            "Loading config (service=%s, stage=%s, dir=%s)", svc_name, stage, config_dir
+        )
 
         # Find base application config file (YAML preference)
         base_file = ServiceConfigLoader._find_config_file(config_dir, "application")
         if not base_file:
+            bootstrap_logger.error(
+                "Base configuration file application.yaml not found in %s", config_dir
+            )
             raise FileNotFoundError(f"Base configuration file not found: application.yaml in {config_dir}")
+        bootstrap_logger.info("Base configuration file: %s", base_file)
 
         # Find stage override file (optional)
         stage_file = ServiceConfigLoader._find_config_file(config_dir, f"application-{stage}")
+        if stage != "local" and not stage_file:
+            bootstrap_logger.warning(
+                "Stage override file application-%s.yaml not found (continuing with base)",
+                stage,
+            )
 
         # Load base configuration
         config = ServiceConfigLoader._load_single_file(config_class, base_file)
 
         # Apply stage override if exists
         if stage_file:
-            logger.info(f"Applying stage override: {stage_file}")
+            bootstrap_logger.info("Applying stage override: %s", stage_file)
             # Load stage override as raw YAML data (not as config object)
             import yaml
             with open(stage_file, 'r') as f:
@@ -78,8 +99,19 @@ class ServiceConfigLoader:
                 # Merge stage data into base config
                 config_dict = config.model_dump()
                 ServiceConfigLoader._deep_update(config_dict, stage_data)
+                before_keys = set(config.model_dump().keys())
                 config = config_class.model_validate(config_dict)
+                after_keys = set(config.model_dump().keys())
+                changed = after_keys.union(before_keys)
+                bootstrap_logger.info(
+                    "Stage override applied (file=%s, keys=%d)", stage_file, len(changed)
+                )
 
+        # Provide warning if logging section missing for observability
+        if not hasattr(config, "logging"):
+            bootstrap_logger.warning(
+                "No logging section present in config object (defaults will be used)"
+            )
         return config
 
     @staticmethod

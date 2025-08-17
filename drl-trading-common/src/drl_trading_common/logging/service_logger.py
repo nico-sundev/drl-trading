@@ -10,7 +10,7 @@ import logging
 import logging.config
 import os
 from contextlib import contextmanager
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Callable, Generator
 import uuid
 
 from drl_trading_common.logging.trading_formatters import (
@@ -95,6 +95,10 @@ class ServiceLogger:
 
         # Configure loggers
         loggers = self._configure_loggers(log_level)
+
+        # Install short_name record factory (idempotent) prior to applying config
+        if self.config.abbreviate_logger_names:
+            self._install_short_name_record_factory()
 
         # Apply logging configuration
         logging_config = {
@@ -219,6 +223,18 @@ class ServiceLogger:
             }
         }
 
+        # Add underscore package variant (e.g. drl-trading-preprocess -> drl_trading_preprocess)
+        # so that deep module loggers (drl_trading_preprocess.*) inherit configured level/handlers.
+        if '-' in self.service_name:
+            underscore_name = self.service_name.replace('-', '_')
+            # Only add if not already explicitly configured
+            if underscore_name not in loggers:
+                loggers[underscore_name] = {
+                    'level': log_level,
+                    'handlers': handler_names,
+                    'propagate': False  # sub-module loggers propagate here then stop
+                }
+
         # Add third-party logger configurations
         for logger_name, logger_config in self.config.third_party_loggers.items():
             loggers[logger_name] = {
@@ -233,9 +249,69 @@ class ServiceLogger:
         """Create logs directory if it doesn't exist."""
         os.makedirs('logs', exist_ok=True)
 
+    # ---------------- Short-name abbreviation support (performance-aware) ----------------
+    _SHORT_NAME_CACHE: Dict[str, str] = {}
+    _record_factory_installed: bool = False
+
+    @classmethod
+    def _abbreviate_logger_name(cls, name: str) -> str:
+        """Return cached abbreviated form of a logger name.
+
+        Rules:
+        - Keep last two path segments unchanged (module + class/helper scope)
+        - For preceding segments:
+            * If segment starts with 'drl_trading_' -> take suffix (after prefix) and truncate to 4 chars
+            * Else -> first character of the segment
+        - If path depth <= 3, return original name (already short enough)
+        """
+        cached = cls._SHORT_NAME_CACHE.get(name)
+        if cached is not None:
+            return cached
+
+        parts = name.split('.')
+        if len(parts) <= 3:
+            short = name
+        else:
+            core = parts[:-2]
+            tail = parts[-2:]
+            core_abbrev: list[str] = []
+            for seg in core:
+                if seg.startswith('drl_trading_'):
+                    suffix = seg.removeprefix('drl_trading_')
+                    core_abbrev.append(suffix[:4])  # e.g. drl_trading_preprocess -> prep
+                else:
+                    core_abbrev.append(seg[0])
+            short = '.'.join(core_abbrev + tail)
+        # Collision guard: if another full name already produced same short, fallback to original
+        if short in cls._SHORT_NAME_CACHE.values() and cls._SHORT_NAME_CACHE.get(name) != short:
+            short = name  # revert to full to avoid ambiguity
+        cls._SHORT_NAME_CACHE[name] = short
+        return short
+
+    @classmethod
+    def _install_short_name_record_factory(cls) -> None:
+        """Augment the LogRecordFactory once to inject record.short_name.
+
+        Safe to call multiple times; wrapper is installed only once.
+        """
+        if cls._record_factory_installed:
+            return
+        orig_factory: Callable[..., logging.LogRecord] = logging.getLogRecordFactory()  # type: ignore
+
+        def record_factory(*args, **kwargs):  # type: ignore
+            record = orig_factory(*args, **kwargs)
+            try:
+                record.short_name = cls._abbreviate_logger_name(record.name)  # type: ignore[attr-defined]
+            except Exception:  # pragma: no cover
+                record.short_name = record.name  # type: ignore[attr-defined]
+            return record
+
+        logging.setLogRecordFactory(record_factory)
+        cls._record_factory_installed = True
+
     # Context management methods
     @contextmanager
-    def correlation_context(self, correlation_id: Optional[str] = None):
+    def correlation_context(self, correlation_id: Optional[str] = None) -> Generator[str, None, None]:
         """
         Context manager for correlation ID tracking.
 
@@ -255,7 +331,7 @@ class ServiceLogger:
             TradingLogContext.clear()
 
     @contextmanager
-    def trading_context(self, trading_context: TradingContext):
+    def trading_context(self, trading_context: TradingContext) -> Generator[None, None, None]:
         """
         Context manager for complete trading context.
 
@@ -269,7 +345,7 @@ class ServiceLogger:
             TradingLogContext.clear()
 
     @contextmanager
-    def market_data_context(self, symbol: str, correlation_id: Optional[str] = None):
+    def market_data_context(self, symbol: str, correlation_id: Optional[str] = None) -> Any:
         """
         Context manager for market data processing.
 

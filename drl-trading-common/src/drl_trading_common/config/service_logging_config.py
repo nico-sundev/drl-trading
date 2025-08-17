@@ -83,6 +83,12 @@ class ServiceLoggingConfig(BaseModel):
         description="Log sampling rate for high-volume logs (0.0-1.0)"
     )
 
+    # Abbreviation settings
+    abbreviate_logger_names: bool = Field(
+        default=True,
+        description="Enable cached abbreviated logger name (short_name / short_logger)."
+    )
+
     # Production-specific settings
     sentry_dsn: Optional[str] = Field(
         default=None,

@@ -62,6 +62,7 @@ class TradingStructuredFormatter(logging.Formatter):
             JSON string with structured log entry
         """
         # Build base log entry
+        short_logger = getattr(record, 'short_name', record.name)
         log_entry: Dict[str, Any] = {
             'timestamp': datetime.utcnow().isoformat() + 'Z',
             'service': self.service_name,
@@ -69,6 +70,7 @@ class TradingStructuredFormatter(logging.Formatter):
             'hostname': self.hostname,
             'level': record.levelname,
             'logger': record.name,
+            'short_logger': short_logger,
             'message': record.getMessage(),
             'module': record.module,
             'function': record.funcName,
@@ -120,7 +122,7 @@ class TradingHumanReadableFormatter(logging.Formatter):
 
         # Create format string with service name
         format_string = (
-            "%(asctime)s | %(levelname)-8s | %(name)-30s | "
+            "%(asctime)s | %(levelname)-8s | %(short_name)-30s | "
             f"{service_name} | %(message)s"
         )
 
@@ -137,6 +139,9 @@ class TradingHumanReadableFormatter(logging.Formatter):
             Human-readable log string with context
         """
         # Get base formatted message
+        # Ensure graceful fallback if short_name missing (external early logs)
+        if not hasattr(record, 'short_name'):
+            record.short_name = record.name  # type: ignore[attr-defined]
         formatted = super().format(record)
 
         # Add trading context information if available

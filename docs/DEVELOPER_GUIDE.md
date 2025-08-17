@@ -36,6 +36,11 @@ uv run pytest tests/
 uv run ruff check . --fix
 uv run mypy src/
 
+# Startup observability
+# Each service startup is instrumented with StartupContext.
+# Wrap new bootstrap steps in ctx.phase("<name>") and add dependency probes instead of ad-hoc logs.
+# See OBSERVABILITY_STARTUP.md for schema & conventions.
+
 # Integration testing
 docker-compose -f docker-compose.training.yml up
 ./scripts/e2e_test.sh
@@ -46,6 +51,7 @@ docker-compose -f docker-compose.training.yml up
 - **Testing**: Given/When/Then structure, 80%+ coverage
 - **Quality**: `ruff check . --fix` and `mypy src/`
 - **Architecture**: Hexagonal patterns, SOLID principles
+- **Startup Observability**: Maintain `STARTUP SUMMARY` schema (see OBSERVABILITY_STARTUP.md); add phases sparingly; prefer attributes & probes.
 - **Dependencies**: uv only, project-level groups
 
 ## Configuration

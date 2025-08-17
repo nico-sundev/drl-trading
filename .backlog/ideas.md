@@ -5,6 +5,9 @@
 ### Check logs
 - starting service current works without errors, even if stage envvar not provided
 
+### New Package
+- drl-trading-adapter where adapter logic from current drl-trading-core resides
+
 ### Separate domain from adapter logic for feast
 - Upgrade current integration of feast FeatureStore to be hexagonal architecture confirm
 - Below services contain mostly domain logic, this should be abstracted from adapter logic

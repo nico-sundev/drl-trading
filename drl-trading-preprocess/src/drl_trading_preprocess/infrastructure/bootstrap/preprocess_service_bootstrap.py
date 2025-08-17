@@ -22,16 +22,15 @@ from drl_trading_common.infrastructure.health.basic_health_checks import (
 from drl_trading_preprocess.infrastructure.config.preprocess_config import PreprocessConfig
 
 
+logger = logging.getLogger(__name__)
+
+
 class PreprocessServiceBootstrap(FlaskServiceBootstrap):
-    """
-    Bootstrap implementation for the preprocess service.
+    """Bootstrap implementation for the preprocess service.
 
     Uses the specialized FlaskServiceBootstrap with automatic Flask web interface
     for health checks while running preprocessing workflows.
     """
-
-    # Class-level logger to avoid repeated lookups
-    logger = logging.getLogger(f"{__name__}.{__qualname__}")
 
     def __init__(self) -> None:
         """Initialize the preprocess service bootstrap."""
@@ -41,7 +40,7 @@ class PreprocessServiceBootstrap(FlaskServiceBootstrap):
     def get_dependency_modules(self) -> List[Module]:
         """Return dependency injection modules for this service."""
         # TODO: Implement preprocess service dependency injection modules
-        self.logger.warning("Preprocess service dependency injection modules not yet implemented")
+        logger.warning("Preprocess service dependency injection modules not yet implemented")
         return []
 
     def get_health_checks(self) -> List:
@@ -67,56 +66,56 @@ class PreprocessServiceBootstrap(FlaskServiceBootstrap):
     def _start_service(self) -> None:
         """Start preprocess service-specific logic."""
         try:
-            self.logger.info("=== STARTING PREPROCESS SERVICE BUSINESS LOGIC ===")
+            logger.info("=== STARTING PREPROCESS SERVICE BUSINESS LOGIC ===")
             self._startup_health_check.startup_completed = False
             self._initialize_preprocessing_components()
             self._startup_health_check.mark_startup_completed(success=True)
-            self.logger.info(
+            logger.info(
                 "=== PREPROCESS SERVICE BUSINESS LOGIC INITIALIZED SUCCESSFULLY ==="
             )
         except Exception as e:
             self._startup_health_check.mark_startup_completed(
                 success=False, error_message=str(e)
             )
-            self.logger.error("Failed to start preprocess service: %s", e, exc_info=True)
+            logger.error("Failed to start preprocess service: %s", e, exc_info=True)
             raise
 
     def _stop_service(self) -> None:
         """Stop preprocess service-specific logic."""
-        self.logger.info("=== STOPPING PREPROCESS SERVICE BUSINESS LOGIC ===")
+        logger.info("=== STOPPING PREPROCESS SERVICE BUSINESS LOGIC ===")
         try:
             # Any cleanup logic would go here
-            self.logger.info("Preprocess service business logic stopped successfully")
+            logger.info("Preprocess service business logic stopped successfully")
         except Exception as e:
-            self.logger.error("Error stopping preprocess service: %s", e, exc_info=True)
+            logger.error("Error stopping preprocess service: %s", e, exc_info=True)
 
     def _initialize_preprocessing_components(self) -> None:
         """Initialize preprocessing-specific components."""
-        self.logger.info("Setting up preprocessing components...")
+        logger.info("Setting up preprocessing components...")
         self._setup_feature_computation()
         self._setup_data_validation()
         self._setup_feature_store()
         self._setup_messaging()
-        self.logger.info("Preprocessing components initialized")
+        logger.info("Preprocessing components initialized")
 
     def _setup_feature_computation(self) -> None:
         """Setup feature computation pipelines."""
-        self.logger.info("Setting up feature computation...")
+        logger.info("Setting up feature computation...")
         # TODO: Implement feature computation setup
 
     def _setup_data_validation(self) -> None:
         """Setup data validation pipelines."""
-        self.logger.info("Setting up data validation...")
+        logger.info("Setting up data validation...")
         # TODO: Implement data validation setup
 
     def _setup_feature_store(self) -> None:
         """Setup feature store integration."""
-        self.logger.info("Setting up feature store integration...")
+        logger.info("Setting up feature store integration...")
         # TODO: Implement feature store setup
 
     def _setup_messaging(self) -> None:
         """Setup messaging infrastructure."""
-        self.logger.info("Setting up messaging...")
+        logger.info("Setting up messaging...")
         # TODO: Implement messaging setup
 
     def _run_main_loop(self) -> None:

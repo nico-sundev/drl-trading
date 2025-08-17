@@ -16,7 +16,7 @@ class FlaskServiceBootstrap(ServiceBootstrap):
     with proper shutdown handling.
     """
 
-    def __init__(self, service_name: str, config_class):
+    def __init__(self, service_name: str, config_class: type) -> None:
         """Initialize Flask service bootstrap with shutdown handling."""
         super().__init__(service_name, config_class)
         self._flask_server_thread = None
@@ -25,7 +25,7 @@ class FlaskServiceBootstrap(ServiceBootstrap):
         """Flask services always enable web interface."""
         return True
 
-    def _signal_handler(self, signum: int, frame) -> None:
+    def _signal_handler(self, signum: int, frame: object) -> None:
         """Override signal handler to properly shutdown Flask."""
         logger.info(f"Received signal {signum}, initiating graceful shutdown...")
         self.stop()
@@ -40,8 +40,17 @@ class FlaskServiceBootstrap(ServiceBootstrap):
             # Get WebAPI configuration from the service config
             webapi_config = getattr(self.config.infrastructure, 'webapi', None)
 
-            port = webapi_config.port if webapi_config else 8080
-            debug = webapi_config.debug if webapi_config else False
+            if webapi_config:
+                port = webapi_config.port
+            else:
+                port = 8080
+                logger.warning("No WebAPI port configuration found, using default port 8080")
+
+            if webapi_config:
+                debug = webapi_config.debug
+            else:
+                debug = False
+                logger.warning("No WebAPI debug configuration found, using default debug False")
 
             logger.info(f"Starting Flask application on port {port}")
             try:

@@ -10,12 +10,16 @@ from typing import Optional, List, Type
 import signal
 import logging
 import sys
+import time
 from drl_trading_common.infrastructure.web.generic_flask_app_factory import (
     RouteRegistrar,
 )
 from injector import Injector, Module
+from flask import Flask
 
 from drl_trading_common.base.base_application_config import BaseApplicationConfig
+from drl_trading_common.logging.bootstrap_logging import retire_bootstrap_logger
+from drl_trading_common.infrastructure.bootstrap.startup_context import StartupContext
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +53,9 @@ class ServiceBootstrap(ABC):
         """
         self.service_name = service_name
         self.config_class = config_class
-        self.config: Optional[BaseApplicationConfig] = None
         self.injector: Optional[Injector] = None
         self.is_running = False
-        self._flask_app = None
+        self._flask_app: Optional[Flask] = None
         self._setup_signal_handlers()
 
     def start(self, config_path: Optional[str] = None) -> None:
@@ -73,35 +76,50 @@ class ServiceBootstrap(ABC):
         Args:
             config_path: Optional path to configuration file
         """
+        ctx = StartupContext(self.service_name)
         try:
             logger.info(f"Starting {self.service_name} service...")
 
-            # Step 1: Load configuration (infrastructure concern)
-            self._load_configuration(config_path)
+            with ctx.phase("config"):
+                self._load_configuration(config_path)
+                stage = getattr(self.config, "stage", "unknown")
+                ctx.attribute("stage", stage)
+                ctx.attribute("has_logging_section", bool(getattr(self.config, "logging", None)))
 
-            # Step 2: Setup logging (infrastructure concern)
-            self._setup_logging()
+            with ctx.phase("logging"):
+                self._setup_logging()
 
-            # Step 3: Initialize dependency injection (wire hexagonal architecture)
-            self._setup_dependency_injection()
+            with ctx.phase("dependency_injection"):
+                self._setup_dependency_injection()
 
-            # Step 4: Setup health checks (infrastructure concern)
-            self._setup_health_checks()
+            with ctx.phase("dependency_checks"):
+                self._evaluate_startup_dependencies(ctx)
 
-            # Step 5: Setup Flask web interface if enabled (infrastructure concern)
-            self._setup_web_interface()
+            with ctx.phase("health_checks"):
+                self._setup_health_checks()
 
-            # Step 6: Start service-specific logic (delegate to core via DI)
-            self._start_service()
+            with ctx.phase("web_interface"):
+                self._setup_web_interface()
+                ctx.attribute("web_interface_enabled", self.enable_web_interface())
+
+            with ctx.phase("business_start"):
+                self._start_service()
 
             self.is_running = True
-            logger.info(f"{self.service_name} service started successfully")
-
-            # Keep service running
+            ctx.emit_summary(logger)
+            if ctx.mandatory_dependencies_healthy():
+                logger.info(f"{self.service_name} service started successfully")
+            else:
+                logger.warning(
+                    f"{self.service_name} service started in DEGRADED state (see STARTUP SUMMARY)"
+                )
             self._run_main_loop()
-
         except Exception as e:
             logger.error(f"Failed to start {self.service_name}: {e}")
+            try:
+                ctx.emit_summary(logger)
+            except Exception:  # pragma: no cover
+                pass
             self._cleanup()
             sys.exit(1)
 
@@ -120,21 +138,24 @@ class ServiceBootstrap(ABC):
 
         Uses the lean EnhancedServiceConfigLoader with secret substitution support.
         """
-        from drl_trading_common.config.service_config_loader import (
-            ServiceConfigLoader,
-        )
-
-        self.config = ServiceConfigLoader.load_config(self.config_class)
-        logger.info(f"Configuration loaded for {self.service_name}")
+        from drl_trading_common.config.service_config_loader import ServiceConfigLoader
+        # Delegates observability to ServiceConfigLoader (bootstrap logger used there)
+        self.config = ServiceConfigLoader.load_config(self.config_class, service_name=self.service_name)
 
     def _setup_logging(self) -> None:
         """Setup standardized logging configuration."""
         try:
             from drl_trading_common.logging.service_logger import ServiceLogger
+
+            # Retire bootstrap logger BEFORE full configuration to avoid duplicate handlers
+            retire_bootstrap_logger(self.service_name)
+
             # Prefer top-level T005 logging config when present
             stage = getattr(self.config, "stage", "local") if self.config else "local"
             t005_cfg = getattr(self.config, "logging", None) if self.config else None
-            ServiceLogger(service_name=self.service_name, stage=stage, config=t005_cfg).configure()
+            ServiceLogger(
+                service_name=self.service_name, stage=stage, config=t005_cfg
+            ).configure()
         except Exception as e:  # pragma: no cover
             logger.warning(f"ServiceLogger configuration failed: {e}")
 
@@ -152,6 +173,55 @@ class ServiceBootstrap(ABC):
         logger.info(
             "Dependency injection container initialized (hexagonal architecture wired)"
         )
+
+    def _evaluate_startup_dependencies(self, ctx: StartupContext) -> None:
+        """Evaluate critical external dependencies and record health.
+
+        Currently checks:
+          - Database connectivity (if DatabaseConnectionInterface is bound)
+        Additional checks (messaging, feature store, etc.) can be added here.
+        """
+        if self.injector is None:
+            return
+        try:
+            from drl_trading_common.db.database_connection_interface import (
+                DatabaseConnectionInterface,  # type: ignore
+                DatabaseConnectionError,
+            )
+
+            start = time.time()
+            try:
+                db_service = self.injector.get(DatabaseConnectionInterface)  # type: ignore
+            except Exception:
+                ctx.add_dependency_status(
+                    name="database",
+                    healthy=True,
+                    mandatory=False,
+                    message="No database binding (skipped)",
+                )
+                db_service = None
+            if db_service:
+                try:
+                    with db_service.get_connection():  # type: ignore
+                        latency = (time.time() - start) * 1000
+                        ctx.add_dependency_status(
+                            name="database",
+                            healthy=True,
+                            mandatory=True,
+                            message="Connection pool healthy",
+                            latency_ms=round(latency, 2),
+                        )
+                except DatabaseConnectionError as de:  # type: ignore
+                    latency = (time.time() - start) * 1000
+                    ctx.add_dependency_status(
+                        name="database",
+                        healthy=False,
+                        mandatory=True,
+                        message=str(de),
+                        latency_ms=round(latency, 2),
+                    )
+        except Exception as e:  # pragma: no cover
+            logger.debug(f"Startup dependency evaluation failed: {e}")
 
     def _setup_health_checks(self) -> None:
         """Setup standardized health check endpoints."""
@@ -180,6 +250,11 @@ class ServiceBootstrap(ABC):
                     DefaultRouteRegistrar,
                 )
 
+                if self.injector is None:
+                    raise RuntimeError(
+                        "Injector must be initialized before setting up web interface."
+                    )
+
                 route_registrar = self.get_route_registrar() or DefaultRouteRegistrar()
                 self._flask_app = GenericFlaskAppFactory.create_app(
                     service_name=self.service_name,
@@ -197,7 +272,7 @@ class ServiceBootstrap(ABC):
         signal.signal(signal.SIGTERM, self._signal_handler)
         signal.signal(signal.SIGINT, self._signal_handler)
 
-    def _signal_handler(self, signum: int, frame) -> None:
+    def _signal_handler(self, signum: int, frame: object) -> None:
         """Handle shutdown signals gracefully."""
         logger.info(f"Received signal {signum}, initiating graceful shutdown...")
         self.stop()

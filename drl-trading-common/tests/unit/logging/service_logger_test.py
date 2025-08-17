@@ -6,6 +6,7 @@ environment-aware formatting, and logger management.
 """
 
 import os
+import logging
 import pytest
 
 from drl_trading_common.config.service_logging_config import ServiceLoggingConfig
@@ -317,3 +318,126 @@ class TestServiceLoggerIntegration:
 
         # Then
         assert logger1 is logger2
+
+
+class TestServiceLoggerShortName:
+    """Tests for short_name abbreviation feature in ServiceLogger."""
+
+    def test_short_name_abbreviation_deep_logger(self, clean_log_context) -> None:
+        """Ensure deep dotted logger names are abbreviated correctly.
+
+        Given a deep module path > 3 segments
+        When a log record is emitted after ServiceLogger.configure()
+        Then record.short_name follows abbreviation rules and is cached.
+        """
+        # Given
+        service_logger = ServiceLogger("test-service", "local")
+        service_logger.configure()
+        deep_logger_name = "drl_trading_preprocess.adapter.messaging.kafka.consumer.SomeComponent"
+        deep_logger = logging.getLogger(deep_logger_name)
+
+        class CaptureHandler(logging.Handler):  # simple in-memory record collector
+            def __init__(self) -> None:  # type: ignore[no-untyped-def]
+                super().__init__()
+                self.records = []  # type: ignore[var-annotated]
+
+            def emit(self, record: logging.LogRecord) -> None:  # type: ignore[override]
+                self.records.append(record)
+
+        handler = CaptureHandler()
+        deep_logger.addHandler(handler)
+        deep_logger.setLevel(logging.INFO)
+        deep_logger.propagate = False
+
+        # When
+        deep_logger.info("Deep logger test message")
+
+        # Then
+        assert len(handler.records) == 1
+        record = handler.records[0]
+        # Expected abbreviation: drl_trading_preprocess -> preprocess -> 'prep'; adapter->a; messaging->m; kafka->k; keep last two segments
+        assert getattr(record, "short_name", None) == "prep.a.m.k.consumer.SomeComponent"
+        # Cache should contain original name
+        assert ServiceLogger._SHORT_NAME_CACHE[deep_logger_name] == "prep.a.m.k.consumer.SomeComponent"
+
+    def test_short_name_no_abbreviation_shallow_logger(self, clean_log_context) -> None:
+        """Shallow logger names (<=3 segments) should remain unchanged."""
+        # Given
+        service_logger = ServiceLogger("test-service", "local")
+        service_logger.configure()
+        shallow_name = "drl_trading_common"  # single segment => unchanged
+        logger_obj = logging.getLogger(shallow_name)
+
+        class CaptureHandler(logging.Handler):
+            def __init__(self) -> None:  # type: ignore[no-untyped-def]
+                super().__init__()
+                self.records = []  # type: ignore[var-annotated]
+
+            def emit(self, record: logging.LogRecord) -> None:  # type: ignore[override]
+                self.records.append(record)
+
+        handler = CaptureHandler()
+        logger_obj.addHandler(handler)
+        logger_obj.setLevel(logging.INFO)
+        logger_obj.propagate = False
+
+        # When
+        logger_obj.info("Shallow logger message")
+
+        # Then
+        assert len(handler.records) == 1
+        record = handler.records[0]
+        assert getattr(record, "short_name", None) == shallow_name
+
+    def test_record_factory_idempotent(self, clean_log_context) -> None:
+        """Calling configure multiple times should not reinstall record factory."""
+        # Given
+        service_logger = ServiceLogger("test-service", "local")
+        service_logger.configure()
+        initial_flag = ServiceLogger._record_factory_installed
+        assert initial_flag is True
+
+        # When
+        service_logger.configure()  # second invocation
+
+        # Then
+        assert ServiceLogger._record_factory_installed is True  # still installed
+        # Abbreviation still works after second configure
+        deep_name = "drl_trading_preprocess.adapter.messaging.kafka.consumer.SomeComponent"
+        logger_obj = logging.getLogger(deep_name)
+        logger_obj.info("Idempotent test")
+        # Confirm cache entry created without error
+        assert deep_name in ServiceLogger._SHORT_NAME_CACHE
+
+    def test_json_formatter_includes_short_logger(self, clean_log_context) -> None:
+        """JSON structured output should include short_logger field when enabled."""
+        # Given
+        config = ServiceLoggingConfig(json_format=True, abbreviate_logger_names=True)
+        service_logger = ServiceLogger("test-service", "local", config)
+        service_logger.configure()
+        deep_logger_name = "drl_trading_preprocess.adapter.messaging.kafka.consumer.SomeComponent"
+        logger_obj = logging.getLogger(deep_logger_name)
+
+        class CaptureHandler(logging.Handler):
+            def __init__(self) -> None:  # type: ignore[no-untyped-def]
+                super().__init__()
+                self.records = []  # type: ignore[var-annotated]
+            def emit(self, record: logging.LogRecord) -> None:  # type: ignore[override]
+                self.records.append(record)
+
+        # Attach a structured formatter manually to capture JSON string
+        capture = CaptureHandler()
+        from drl_trading_common.logging.trading_formatters import TradingStructuredFormatter
+        capture.setFormatter(TradingStructuredFormatter(service_name="test-service", environment="development"))
+        logger_obj.addHandler(capture)
+        logger_obj.setLevel(logging.INFO)
+        logger_obj.propagate = False
+
+        # When
+        logger_obj.info("Structured abbreviation test")
+
+        # Then
+        assert len(capture.records) == 1
+        output = capture.format(capture.records[0])
+        assert '"short_logger"' in output
+        assert 'consumer.SomeComponent' in output

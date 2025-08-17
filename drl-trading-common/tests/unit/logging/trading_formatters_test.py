@@ -59,6 +59,28 @@ class TestTradingStructuredFormatter:
         assert parsed["line"] == 42
         assert "timestamp" in parsed
         assert "hostname" in parsed
+        assert parsed["short_logger"] == "test-logger"  # fallback to full name when no short_name
+
+    def test_short_logger_uses_record_short_name(self, clean_log_context: Any) -> None:
+        """Structured formatter should emit provided record.short_name."""
+        # Given
+        formatter = TradingStructuredFormatter("test-service", "production")
+        record = logging.LogRecord(
+            name="very.deep.module.structure.Class",
+            level=logging.INFO,
+            pathname="/p.py",
+            lineno=1,
+            msg="Deep message",
+            args=(),
+            exc_info=None
+        )
+        record.short_name = "v.d.m.s.Class"  # Simulate abbreviation injected by ServiceLogger
+
+        # When
+        parsed = json.loads(formatter.format(record))
+
+        # Then
+        assert parsed["short_logger"] == "v.d.m.s.Class"
 
     def test_trading_context_integration(self, clean_log_context: Any) -> None:
         """Test integration with TradingLogContext."""
@@ -176,6 +198,30 @@ class TestTradingHumanReadableFormatter:
         assert "test-service" in formatted
         assert "Test message" in formatted
         assert "|" in formatted  # Should have separator pipes
+        # Ensure logger name (fallback) present
+        assert "test-logger" in formatted
+
+    def test_human_formatter_uses_short_name(self, clean_log_context: Any) -> None:
+        """If record.short_name provided it should appear instead of full name."""
+        # Given
+        formatter = TradingHumanReadableFormatter("test-service")
+        record = logging.LogRecord(
+            name="very.deep.module.structure.Component",
+            level=logging.INFO,
+            pathname="/p.py",
+            lineno=10,
+            msg="Abbrev test",
+            args=(),
+            exc_info=None
+        )
+        record.short_name = "v.d.m.s.Component"
+
+        # When
+        formatted = formatter.format(record)
+
+        # Then
+        assert "v.d.m.s.Component" in formatted
+        assert "very.deep.module.structure.Component" not in formatted
 
     def test_trading_context_integration(self, clean_log_context: Any) -> None:
         """Test integration with TradingLogContext."""
