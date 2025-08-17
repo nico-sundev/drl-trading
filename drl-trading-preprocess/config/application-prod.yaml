@@ -24,21 +24,15 @@ infrastructure:
     host: "0.0.0.0"
     debug: false
 
-  logging:
-    level: "WARNING"
-    format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-    file_path: "/var/log/preprocess/preprocess.log"
-    console_enabled: false
-    rotation_enabled: true
-    max_bytes: 52428800
-    backup_count: 20
-
 # T005 ServiceLogger overrides (top-level)
 logging:
-  level: "WARNING"
+  level: "INFO"
   json_format: true
   console_enabled: false
   file_logging: true
   file_path: "/var/log/preprocess/drl-trading-preprocess.log"
   max_file_size: 52428800
   backup_count: 20
+  third_party_loggers:
+    flask: { level: "WARNING" }
+    werkzeug: { level: "WARNING" }

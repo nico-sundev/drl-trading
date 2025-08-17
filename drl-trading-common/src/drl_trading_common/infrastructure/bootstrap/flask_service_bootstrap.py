@@ -38,15 +38,16 @@ class FlaskServiceBootstrap(ServiceBootstrap):
         """Run Flask development server as main loop with proper shutdown."""
         if self._flask_app:
             # Get WebAPI configuration from the service config
-            webapi_config = getattr(self.config.infrastructure, 'webapi', None)
+            infrastructure = getattr(self.config, 'infrastructure', None)
+            webapi_config = getattr(infrastructure, 'webapi', None)
 
-            if webapi_config:
+            if webapi_config and hasattr(webapi_config, 'port'):
                 port = webapi_config.port
             else:
                 port = 8080
                 logger.warning("No WebAPI port configuration found, using default port 8080")
 
-            if webapi_config:
+            if webapi_config and hasattr(webapi_config, 'debug'):
                 debug = webapi_config.debug
             else:
                 debug = False

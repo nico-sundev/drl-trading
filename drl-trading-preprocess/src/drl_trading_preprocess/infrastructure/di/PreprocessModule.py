@@ -1,9 +1,7 @@
 """Dependency injection module for preprocess service."""
+from drl_trading_preprocess.infrastructure.config.preprocess_config import PreprocessConfig
 from injector import Module, provider, singleton
 from drl_trading_common.config.service_config_loader import ServiceConfigLoader
-
-# Use relative import to avoid module path issues
-from .infrastructure.config.preprocess_config import PreprocessConfig
 
 
 class PreprocessModule(Module):

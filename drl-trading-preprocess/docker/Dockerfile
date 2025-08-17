@@ -1,9 +1,12 @@
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
+# Update system packages to reduce vulnerabilities
+RUN apt-get update && apt-get upgrade -y && apt-get clean
+
 # Install uv
-RUN pip install uv
+RUN pip install --no-cache-dir uv
 
 # Copy project files
 COPY pyproject.toml uv.lock ./
@@ -17,4 +20,4 @@ RUN uv sync
 ENV PYTHONPATH=/app/src
 
 # Run service
-CMD ["uv", "run", "python", "-m", "drl_trading_preprocess.bootstrap"]
+CMD ["uv", "run", "main.py"]

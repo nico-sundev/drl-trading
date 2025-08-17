@@ -24,17 +24,6 @@ infrastructure:
     host: "0.0.0.0"
     debug: true
 
-  logging:
-    level: "DEBUG"
-    format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-    file_path: "logs/preprocess.log"
-    console_enabled: true
-    rotation_enabled: true
-    max_bytes: 10485760
-    backup_count: 5
-
 # T005 ServiceLogger overrides (top-level)
 logging:
   level: "DEBUG"
-  json_format: false
-  console_enabled: true

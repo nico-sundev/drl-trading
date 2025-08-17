@@ -36,15 +36,6 @@ infrastructure:
     threaded: true
     max_content_length: 16777216  # 16MB
 
-  logging:
-    level: "INFO"
-    format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-    file_path: "logs/data-ingestion.log"
-    console_enabled: true
-    rotation_enabled: true
-    max_bytes: 10485760  # 10MB
-    backup_count: 5
-
   monitoring:
     prometheus_enabled: false
     prometheus_port: 9090

@@ -16,16 +16,6 @@ infrastructure:
     threaded: true
     max_content_length: 16777216  # 16MB
 
-  # Logging Configuration (legacy infra logging - kept for compatibility with other utilities)
-  logging:
-    level: "INFO"
-    format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-    file_path: "logs/preprocess.log"
-    console_enabled: true
-    rotation_enabled: true
-    max_bytes: 10485760
-    backup_count: 5
-
   # Message Bus Configuration
   messaging:
     provider: "memory"  # memory | kafka | rabbitmq
@@ -60,6 +50,3 @@ logging:
   console_enabled: true
   max_file_size: 10485760
   backup_count: 5
-  third_party_loggers:
-    flask: { level: "WARNING" }
-    werkzeug: { level: "WARNING" }

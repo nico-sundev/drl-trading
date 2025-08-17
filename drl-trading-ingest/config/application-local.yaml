@@ -10,12 +10,6 @@ infrastructure:
   database:
     password: "dev_password"  # Local development password
 
-  logging:
-    level: "DEBUG"  # More verbose logging for development
-    rotation_enabled: true
-    max_bytes: 10485760
-    backup_count: 5
-
   monitoring:
     prometheus_enabled: false
     prometheus_port: 9090
