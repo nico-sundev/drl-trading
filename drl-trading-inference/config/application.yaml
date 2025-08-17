@@ -59,3 +59,19 @@ prediction:
   endpoint: "/predict"
   max_concurrent_requests: 10
   timeout_seconds: 30
+
+logging:
+  level: "INFO"
+  json_format: false
+  file_logging: true
+  file_path: "logs/drl-trading-inference.log"
+  console_enabled: true
+  max_file_size: 10485760
+  backup_count: 5
+
+webapi:
+  port: 8082
+  host: "0.0.0.0"
+  debug: false
+  threaded: true
+  max_content_length: 16777216  # 16MB

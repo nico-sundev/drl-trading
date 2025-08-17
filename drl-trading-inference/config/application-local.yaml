@@ -30,6 +30,11 @@ infrastructure:
     health_check_port: 8081
     metrics_port: "${METRICS_PORT:9090}"
 
+  webapi:
+    port: 8082
+    host: "0.0.0.0"
+    debug: true
+
 # Model Configuration
 model_config:
   model_path: "${MODEL_PATH:experiments/models/latest}"
@@ -45,3 +50,6 @@ performance:
   queue_size: "${QUEUE_SIZE:1000}"
   batch_processing: true
   max_memory_usage: "${MAX_MEMORY_MB:2048}"
+
+logging:
+  level: "DEBUG"

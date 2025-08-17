@@ -15,19 +15,25 @@ from drl_trading_common.infrastructure.bootstrap.flask_service_bootstrap import 
 from drl_trading_common.infrastructure.health.basic_health_checks import (
     SystemResourcesHealthCheck,
     ServiceStartupHealthCheck,
-    ConfigurationHealthCheck
+    ConfigurationHealthCheck,
 )
+from drl_trading_common.infrastructure.health.health_check import HealthCheck
 from drl_trading_inference.infrastructure.config.inference_config import InferenceConfig
 
 logger = logging.getLogger(__name__)
 
 
 class InferenceServiceBootstrap(FlaskServiceBootstrap):
-    """
-    Bootstrap implementation for the inference service.
+    """Bootstrap implementation for the inference service.
 
-    Uses the specialized FlaskServiceBootstrap with automatic Flask web interface
-    for health checks while running inference workflows.
+    Infrastructure responsibilities only:
+    - Provide DI modules (wiring core inference ports/adapters)
+    - Register health checks (system, startup, configuration)
+    - Provide (future) route registrar if needed
+    - Start/stop placeholder business logic hooks
+
+    Domain logic (model loading, prediction pipelines) belongs to core layer
+    services acquired via DI; keep this thin per hexagonal architecture.
     """
 
     def __init__(self) -> None:
@@ -36,98 +42,70 @@ class InferenceServiceBootstrap(FlaskServiceBootstrap):
         self._startup_health_check = ServiceStartupHealthCheck("inference_startup")
 
     def get_dependency_modules(self) -> List[Module]:
-        """
-        Return dependency injection modules for this service.
-        """
+        """Return DI modules (fail fast if misconfigured)."""
         typed_config = cast(InferenceConfig, self.config)
         return [InferenceModule(typed_config)]
 
-    def get_health_checks(self) -> List:
-        """
-        Return health checks for this service.
-
-        Returns:
-            List of HealthCheck instances for the inference service
-        """
-        health_checks = [
+    def get_health_checks(self) -> List[HealthCheck]:
+        """Return health checks (always includes configuration check)."""
+        return [
             SystemResourcesHealthCheck(
                 name="inference_system_resources",
-                cpu_threshold=85.0,  # Inference should be responsive
-                memory_threshold=90.0  # May need memory for models
+                cpu_threshold=85.0,
+                memory_threshold=90.0,
             ),
             self._startup_health_check,
+            ConfigurationHealthCheck(self.config, "inference_configuration"),  # type: ignore[arg-type]
         ]
 
-        # Add configuration health check if config is loaded
-        if self.config:
-            health_checks.append(ConfigurationHealthCheck(self.config, "inference_configuration"))
-
-        return health_checks
-
     def _start_service(self) -> None:
-        """
-        Start inference service-specific logic.
+        """Start inference business logic placeholder.
 
-        Initializes inference workflows and core business services.
+        Future: orchestration of model loading, prediction loop scheduling, etc.
+        Currently: initialize placeholder components & mark startup healthy.
         """
+        service_logger = logging.getLogger(__name__)
         try:
-            logger.info("Initializing inference service business logic...")
-
-            # Mark startup as beginning
-            self._startup_health_check.startup_completed = False
-
-            # Initialize inference components
+            service_logger.info("=== STARTING INFERENCE SERVICE BUSINESS LOGIC ===")
             self._initialize_inference_components()
-
-            # Mark startup as completed successfully
             self._startup_health_check.mark_startup_completed(success=True)
-            logger.info("Inference service business logic initialized successfully")
-
-        except Exception as e:
-            self._startup_health_check.mark_startup_completed(
-                success=False,
-                error_message=str(e)
-            )
-            logger.error(f"Failed to start inference service: {e}")
+            service_logger.info("=== INFERENCE SERVICE BUSINESS LOGIC INITIALIZED SUCCESSFULLY ===")
+        except Exception as e:  # pragma: no cover - defensive path
+            self._startup_health_check.mark_startup_completed(success=False, error_message=str(e))
+            service_logger.error(f"Failed to start inference service: {e}", exc_info=True)
             raise
 
     def _stop_service(self) -> None:
         """Stop inference service-specific logic."""
-        logger.info("Stopping inference service business logic...")
+        service_logger = logging.getLogger(__name__)
+        service_logger.info("=== STOPPING INFERENCE SERVICE BUSINESS LOGIC ===")
         try:
-            # Any cleanup logic would go here
-            logger.info("Inference service business logic stopped successfully")
-        except Exception as e:
-            logger.error(f"Error stopping inference service: {e}")
+            # Placeholder for future cleanup
+            service_logger.info("Inference service business logic stopped successfully")
+        except Exception as e:  # pragma: no cover
+            service_logger.error(f"Error stopping inference service: {e}", exc_info=True)
 
     def _initialize_inference_components(self) -> None:
         """Initialize inference-specific components."""
-        logger.info("Setting up inference components...")
-
-        # Setup model loading
+        logger.info("Setting up inference components (placeholder)...")
         self._setup_model_loading()
-
-        # Setup predictions
         self._setup_predictions()
-
-        # Setup messaging
         self._setup_messaging()
-
         logger.info("Inference components initialized")
 
     def _setup_model_loading(self) -> None:
         """Setup model loading infrastructure."""
-        logger.info("Setting up model loading...")
+        logger.info("Setting up model loading (placeholder)...")
         # TODO: Implement model loading setup
 
     def _setup_predictions(self) -> None:
         """Setup prediction pipelines."""
-        logger.info("Setting up prediction pipelines...")
+        logger.info("Setting up prediction pipelines (placeholder)...")
         # TODO: Implement prediction setup
 
     def _setup_messaging(self) -> None:
         """Setup messaging infrastructure."""
-        logger.info("Setting up messaging...")
+        logger.info("Setting up messaging (placeholder)...")
         # TODO: Implement messaging setup
 
     def _run_main_loop(self) -> None:

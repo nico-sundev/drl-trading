@@ -41,7 +41,6 @@ output:
   compression: "snappy"
   validation_enabled: true
 
-# T005 ServiceLogger Configuration (top-level)
 logging:
   level: "INFO"
   json_format: false
