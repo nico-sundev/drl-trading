@@ -1,8 +1,6 @@
-# DRL Trading Common Package Configuration
-# This package inherits shared tool configurations from workspace pyproject.toml
+## DRL Trading Common Package Configuration (Unified Structure)
 
 [build-system]
-# Hatchling - fast, modern build backend for large packages
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
@@ -11,9 +9,10 @@ name = "drl-trading-common"
 version = "0.1.0"
 description = "Common shared library for DRL Trading System - messaging, utilities, and interfaces"
 readme = "README.md"
+requires-python = ">=3.12"
 license = "MIT"
 authors = [
-    {name = "sonntagnico", email = "nico-tor@hotmail.com"},
+    { name = "sonntagnico", email = "nico-tor@hotmail.com" },
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -21,74 +20,66 @@ classifiers = [
     "Intended Audience :: Financial and Insurance Industry",
     "Topic :: Office/Business :: Financial :: Investment",
 ]
-requires-python = ">=3.12"
 
-# Common shared dependencies
+# Runtime dependencies ONLY
 dependencies = [
-    "gymnasium>=0.29.0",
-    "pandas>=2.0.0",
-    "pydantic>=2.0.0",
-    "typing-extensions>=4.0.0",
-    "psycopg2-binary>=2.9.10",
-    "confluent-kafka>=2.3.0", # Core messaging infrastructure
-    "PyYAML>=6.0", # Configuration file support
-    "injector>=0.22.0",
-    "python-dotenv>=1.1.1",
-    "flask>=3.0.0", # Web framework for health checks
-    "psutil>=5.9.0", # System monitoring for health checks
+    "gymnasium>=0.29.0",            # Environment interface
+    "pandas>=2.0.0",                # Data structures
+    "pydantic>=2.0.0",              # Validation & config models
+    "typing-extensions>=4.0.0",     # Forward compat types
+    "psycopg2-binary>=2.9.10",      # PostgreSQL access
+    "confluent-kafka>=2.3.0",       # Messaging infrastructure
+    "PyYAML>=6.0",                  # YAML config parsing
+    "injector>=0.22.0",             # DI framework
+    "python-dotenv>=1.1.1",         # .env support
+    "flask>=3.0.0",                 # Lightweight web (health endpoints)
+    "psutil>=5.9.0",                # System metrics
 ]
 
+## Optional extras (minimal; prefer dependency groups)
+[project.optional-dependencies]
+testing = ["pytest>=8.0.0", "pytest-cov>=4.0.0"]
+dev = ["mypy>=1.8.0", "ruff>=0.1.0", "ipython>=8.0.0"]
+
 [dependency-groups]
-# Testing dependencies (following workspace standards)
 test = [
     "pytest>=8.0.0",
     "pytest-cov>=4.0.0",
     "pytest-benchmark>=4.0.0",
     "pytest-mock>=3.12.0",
 ]
-# Development dependencies (following workspace standards)
 dev = [
     "mypy>=1.8.0",
     "ruff>=0.1.0",
     "ipython>=8.0.0",
 ]
 dev-full = [
-    # Development dependencies
+    # Dev
     "mypy>=1.8.0",
     "ruff>=0.1.0",
     "ipython>=8.0.0",
-    # Testing dependencies
+    # Test
     "pytest>=8.0.0",
     "pytest-cov>=4.0.0",
     "pytest-benchmark>=4.0.0",
     "pytest-mock>=3.12.0",
-    # ML dependencies
+    # ML runtime alignment for local experimentation
     "numpy>=1.24.0",
     "pandas>=2.0.0",
     "gymnasium>=0.29.0",
 ]
 
-# Project-specific ruff configuration (overrides workspace defaults where needed)
 [tool.ruff.lint.isort]
 known-first-party = ["drl_trading_common"]
 
-# Project-specific coverage configuration
 [tool.coverage.run]
 source = ["drl_trading_common"]
 branch = true
-omit = [
-    "*/tests/*",
-    "*/setup.py",
-]
+omit = ["*/tests/*", "*/setup.py"]
 
-# Project-specific pytest configuration (extends workspace defaults)
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
-addopts = [
-    "-ra",
-    "--strict-markers"
-    # Uncomment for coverage reporting:
-    # "--cov=drl_trading_common",
-    # "--cov-report=term-missing"
-]
+addopts = ["-ra", "--strict-markers"]
+# Uncomment for coverage locally:
+# addopts = ["-ra", "--strict-markers", "--cov=drl_trading_common", "--cov-report=term-missing"]

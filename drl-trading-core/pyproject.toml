@@ -1,22 +1,19 @@
-# DRL Trading Core Package Configuration
-# This package inherits shared tool configurations from workspace pyproject.toml
+## DRL Trading Core Package Configuration (Unified Structure)
 
 [build-system]
-# Hatchling - fast, modern build backend for large packages
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-# Project metadata
 [project]
 name = "drl_trading_core"
 version = "0.1.0"
 description = "AI-powered trading system with reinforcement learning capabilities"
-authors = [
-    {name = "sonntagnico", email = "nico-tor@hotmail.com"},
-]
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
+authors = [
+    { name = "sonntagnico", email = "nico-tor@hotmail.com" },
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3.12",
@@ -24,26 +21,24 @@ classifiers = [
     "Topic :: Office/Business :: Financial :: Investment",
 ]
 
-# Core package dependencies - ONLY runtime dependencies needed for deployment
+# Runtime dependencies ONLY (avoid pulling test/dev tooling)
 dependencies = [
-    # Workspace dependencies
-    "drl-trading-common",
-    # Core ML and data processing
+    "drl-trading-common",           # Workspace shared library
+    # Data & ML stack
     "numpy>=1.24.0",
     "pandas>=2.0.0",
     "pandas_ta",
     "stable_baselines3>=2.0.0",
     "gymnasium>=0.29.0",
-    "yfinance",
-    # Feature storage and management
+    "yfinance",                    # Market data source (lightweight)
+    # Feature store
     "feast",
-    "protobuf>=5.26.0,<6.0.0", # Pin protobuf to compatible version with feast
-    # API and services
+    "protobuf>=5.26.0,<6.0.0",     # Version pin for feast compatibility
+    # CLI / utilities
     "click",
-    # Dependency injection framework
+    # DI / AWS / config
     "injector>=0.22.0",
     "boto3>=1.38.30",
-    # Configuration support - required by drl-trading-common
     "PyYAML>=6.0",
     "python-dotenv>=1.1.1",
 ]
@@ -51,33 +46,12 @@ dependencies = [
 [tool.uv.sources]
 drl-trading-common = { workspace = true }
 
-# Project-specific ruff configuration (overrides workspace defaults where needed)
-[tool.ruff.lint.isort]
-known-first-party = ["drl_trading_core", "drl_trading_common"]
+## Optional extras (keep slim; prefer dependency-groups for contributors)
+[project.optional-dependencies]
+testing = ["pytest>=8.0.0", "pytest-cov>=4.0.0"]
+dev = ["mypy>=1.8.0", "ruff>=0.1.0", "ipython>=8.0.0"]
 
-# Project-specific coverage configuration
-[tool.coverage.run]
-source = ["drl_trading_core"]
-branch = true
-omit = [
-    "*/tests/*",
-    "*/setup.py",
-]
-
-# Project-specific pytest configuration (extends workspace defaults)
-[tool.pytest.ini_options]
-addopts = [
-    "-ra",
-    "-m not slow",
-    "--strict-markers"
-    # Uncomment for coverage reporting:
-    # "--cov=drl_trading_core",
-    # "--cov-report=term-missing"
-]
-
-# Dependency groups (following workspace standards)
 [dependency-groups]
-# Testing dependencies (following workspace standards)
 test = [
     "pytest>=8.0.0",
     "pytest-cov>=4.0.0",
@@ -85,22 +59,21 @@ test = [
     "pytest-mock>=3.12.0",
     "moto[s3]>=5.1.9",
     "testcontainers>=4.10.0",
-    "minio>=7.0.0",  # Required for testcontainers MinIO support
+    "minio>=7.0.0",
 ]
-# Development dependencies (following workspace standards)
 dev = [
     "mypy>=1.8.0",
     "ruff>=0.1.0",
     "ipython>=8.0.0",
-    "pandas-stubs",  # Type stubs for development
+    "pandas-stubs",
 ]
 dev-full = [
-    # Development dependencies
+    # Dev
     "mypy>=1.8.0",
     "ruff>=0.1.0",
     "ipython>=8.0.0",
     "pandas-stubs",
-    # Testing dependencies
+    # Test
     "pytest>=8.0.0",
     "pytest-cov>=4.0.0",
     "pytest-benchmark>=4.0.0",
@@ -108,11 +81,24 @@ dev-full = [
     "moto[s3]>=5.1.9",
     "testcontainers>=4.10.0",
     "minio>=7.0.0",
-    # ML dependencies for core processing
+    # ML runtime alignment
     "numpy>=1.24.0",
     "pandas>=2.0.0",
     "gymnasium>=0.29.0",
 ]
+
+[tool.ruff.lint.isort]
+known-first-party = ["drl_trading_core", "drl_trading_common"]
+
+[tool.coverage.run]
+source = ["drl_trading_core"]
+branch = true
+omit = ["*/tests/*", "*/setup.py"]
+
+[tool.pytest.ini_options]
+addopts = ["-ra", "-m not slow", "--strict-markers"]
+# Uncomment to enable coverage locally:
+# addopts = ["-ra", "-m not slow", "--strict-markers", "--cov=drl_trading_core", "--cov-report=term-missing"]
 
 [project.scripts]
 add-feature = "drl_trading_core.scripts.add_feature:main"

@@ -1,22 +1,20 @@
-# DRL Trading Strategy Example Package Configuration
-# This package inherits shared tool configurations from workspace pyproject.toml
+## DRL Trading Strategy Example Package Configuration
+## Unified structure aligned with architectural standards (see .github/instructions)
 
 [build-system]
-# Hatchling - fast, modern build backend for large packages
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-# Project metadata
 [project]
 name = "drl-trading-strategy-example"
 version = "0.1.0"
 description = "Example trading strategy implementation using DRL framework"
-authors = [
-    {name = "sonntagnico", email = "nico-tor@hotmail.com"},
-]
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
+authors = [
+    { name = "sonntagnico", email = "nico-tor@hotmail.com" },
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3.12",
@@ -24,72 +22,65 @@ classifiers = [
     "Topic :: Office/Business :: Financial :: Investment",
 ]
 
-# Strategy-specific dependencies
+# Runtime dependencies ONLY (installation into deployable services)
 dependencies = [
-    # Workspace dependencies
-    "drl-trading-common",
-    # Core data processing
-    "numpy>=1.24.0",
-    "pandas>=2.0.0",
-    "talipp",  # Strategy-specific technical analysis library
-    # Dependency injection framework
-    "injector>=0.22.0"
+    "drl-trading-common",          # Workspace dependency
+    "numpy>=1.24.0",               # Numerical ops
+    "pandas>=2.0.0",               # DataFrames
+    "talipp",                      # Technical indicators (strategy specific)
+    "injector>=0.22.0",            # DI framework
 ]
 
 [tool.uv.sources]
 drl-trading-common = { workspace = true }
 
+## Optional extras (for external consumers) kept thin; dev/test go via dependency-groups
 [project.optional-dependencies]
-testing = [
+testing = ["pytest>=8.0.0", "pytest-cov>=4.0.0"]
+dev = ["mypy>=1.8.0", "ruff>=0.1.0", "ipython>=8.0.0"]
+
+## Dependency groups (uv) standardized across packages
+[dependency-groups]
+test = [
     "pytest>=8.0.0",
     "pytest-cov>=4.0.0",
     "pytest-benchmark>=4.0.0",
+    "pytest-mock>=3.12.0",
 ]
 dev = [
     "mypy>=1.8.0",
     "ruff>=0.1.0",
     "ipython>=8.0.0",
 ]
+dev-full = [
+    # Dev
+    "mypy>=1.8.0",
+    "ruff>=0.1.0",
+    "ipython>=8.0.0",
+    # Test
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-benchmark>=4.0.0",
+    "pytest-mock>=3.12.0",
+    # (No extra ML libs beyond runtime to avoid divergence)
+]
 
-# Package discovery configuration
-[tool.setuptools]
-zip-safe = false
-include-package-data = true
-
-[tool.setuptools.packages.find]
-where = ["src"]
-exclude = ["tests*"]
-
-# Project-specific ruff configuration (overrides workspace defaults where needed)
+## Ruff configuration overrides (keep minimal per-project customizations)
 [tool.ruff.lint.isort]
 known-first-party = ["drl_trading_strategy_example", "drl_trading_common"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/drl_trading_strategy_example/preprocess/feature/todo_*.py" = ["B019"]
 
-# Project-specific coverage configuration
+## Coverage settings
 [tool.coverage.run]
 source = ["drl_trading_strategy_example"]
 branch = true
-omit = [
-    "*/tests/*",
-    "*/setup.py",
-]
+omit = ["*/tests/*", "*/setup.py"]
 
-# Project-specific pytest configuration (extends workspace defaults)
+## Pytest configuration (extends workspace defaults)
 [tool.pytest.ini_options]
-addopts = [
-    "-ra",
-    "-m not slow"
-    # Uncomment for coverage reporting:
-    # "--cov=drl_trading_strategy_example",
-    # "--cov-report=term-missing"
-]
-
-# Project-specific dependency groups
-[dependency-groups]
-dev = [
-    "injector>=0.22.0",
-    "pytest>=8.3.5",
-    "pytest-cov>=6.1.1",
-]
+testpaths = ["tests"]
+addopts = ["-ra", "-m not slow", "--strict-markers"]
+# Uncomment to enable coverage locally:
+# addopts = ["-ra", "-m not slow", "--strict-markers", "--cov=drl_trading_strategy_example", "--cov-report=term-missing"]
