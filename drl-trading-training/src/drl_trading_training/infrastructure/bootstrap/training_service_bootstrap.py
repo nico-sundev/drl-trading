@@ -17,6 +17,8 @@ from drl_trading_common.infrastructure.health.basic_health_checks import (
     ConfigurationHealthCheck
 )
 from drl_trading_training.infrastructure.config.training_config import TrainingConfig
+from drl_trading_training.infrastructure.di.training_module import TrainingModule
+from drl_trading_common.infrastructure.health.health_check import HealthCheck
 
 logger = logging.getLogger(__name__)
 
@@ -35,16 +37,14 @@ class TrainingServiceBootstrap(ServiceBootstrap):
         self._startup_health_check = ServiceStartupHealthCheck("training_startup")
 
     def get_dependency_modules(self, app_config: TrainingConfig) -> List[Module]:
-        """
-        Return dependency injection modules for this service.
+        """Return DI modules using already-loaded config instance.
 
-        For now, returns empty list - training service modules to be implemented.
+        Even though training currently has minimal bindings, we still return
+        a module to enforce a consistent single-source-of-truth config flow.
         """
-        # TODO: Implement training service dependency injection modules
-        logger.warning("Training service dependency injection modules not yet implemented")
-        return []
+        return [TrainingModule(app_config)]
 
-    def get_health_checks(self) -> List:
+    def get_health_checks(self) -> List[HealthCheck]:
         """
         Return health checks for this service.
 
