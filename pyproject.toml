@@ -11,6 +11,7 @@ members = [
     "drl-trading-ingest",
     "drl-trading-training",
     "drl-trading-preprocess",
+    "drl-trading-adapter",
 ]
 
 # ============================================================================

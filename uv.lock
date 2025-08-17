@@ -8,6 +8,7 @@ resolution-markers = [
 
 [manifest]
 members = [
+    "drl-trading-adapter",
     "drl-trading-common",
     "drl-trading-core",
     "drl-trading-execution",
@@ -667,6 +668,102 @@ wheels = [
 ]
 
 [[package]]
+name = "drl-trading-adapter"
+version = "0.1.0"
+source = { editable = "drl-trading-adapter" }
+dependencies = [
+    { name = "boto3" },
+    { name = "drl-trading-common" },
+    { name = "drl-trading-core" },
+    { name = "feast" },
+    { name = "injector" },
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "protobuf" },
+    { name = "python-dotenv" },
+    { name = "pyyaml" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "ipython" },
+    { name = "mypy" },
+    { name = "ruff" },
+]
+testing = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "ipython" },
+    { name = "mypy" },
+    { name = "ruff" },
+]
+dev-full = [
+    { name = "ipython" },
+    { name = "mypy" },
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "pytest" },
+    { name = "pytest-benchmark" },
+    { name = "pytest-cov" },
+    { name = "pytest-mock" },
+    { name = "ruff" },
+]
+test = [
+    { name = "pytest" },
+    { name = "pytest-benchmark" },
+    { name = "pytest-cov" },
+    { name = "pytest-mock" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "boto3", specifier = ">=1.38.30" },
+    { name = "drl-trading-common", editable = "drl-trading-common" },
+    { name = "drl-trading-core", editable = "drl-trading-core" },
+    { name = "feast" },
+    { name = "injector", specifier = ">=0.22.0" },
+    { name = "ipython", marker = "extra == 'dev'", specifier = ">=8.0.0" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8.0" },
+    { name = "numpy", specifier = ">=1.24.0" },
+    { name = "pandas", specifier = ">=2.0.0" },
+    { name = "protobuf", specifier = ">=5.26.0,<6.0.0" },
+    { name = "pytest", marker = "extra == 'testing'", specifier = ">=8.0.0" },
+    { name = "pytest-cov", marker = "extra == 'testing'", specifier = ">=4.0.0" },
+    { name = "python-dotenv", specifier = ">=1.1.1" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
+]
+provides-extras = ["testing", "dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "ipython", specifier = ">=8.0.0" },
+    { name = "mypy", specifier = ">=1.8.0" },
+    { name = "ruff", specifier = ">=0.1.0" },
+]
+dev-full = [
+    { name = "ipython", specifier = ">=8.0.0" },
+    { name = "mypy", specifier = ">=1.8.0" },
+    { name = "numpy", specifier = ">=1.24.0" },
+    { name = "pandas", specifier = ">=2.0.0" },
+    { name = "pytest", specifier = ">=8.0.0" },
+    { name = "pytest-benchmark", specifier = ">=4.0.0" },
+    { name = "pytest-cov", specifier = ">=4.0.0" },
+    { name = "pytest-mock", specifier = ">=3.12.0" },
+    { name = "ruff", specifier = ">=0.1.0" },
+]
+test = [
+    { name = "pytest", specifier = ">=8.0.0" },
+    { name = "pytest-benchmark", specifier = ">=4.0.0" },
+    { name = "pytest-cov", specifier = ">=4.0.0" },
+    { name = "pytest-mock", specifier = ">=3.12.0" },
+]
+
+[[package]]
 name = "drl-trading-common"
 version = "0.1.0"
 source = { editable = "drl-trading-common" }
@@ -682,6 +779,17 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "pyyaml" },
     { name = "typing-extensions" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "ipython" },
+    { name = "mypy" },
+    { name = "ruff" },
+]
+testing = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
 ]
 
 [package.dev-dependencies]
@@ -715,14 +823,20 @@ requires-dist = [
     { name = "flask", specifier = ">=3.0.0" },
     { name = "gymnasium", specifier = ">=0.29.0" },
     { name = "injector", specifier = ">=0.22.0" },
+    { name = "ipython", marker = "extra == 'dev'", specifier = ">=8.0.0" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8.0" },
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "psutil", specifier = ">=5.9.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pydantic", specifier = ">=2.0.0" },
+    { name = "pytest", marker = "extra == 'testing'", specifier = ">=8.0.0" },
+    { name = "pytest-cov", marker = "extra == 'testing'", specifier = ">=4.0.0" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "pyyaml", specifier = ">=6.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
     { name = "typing-extensions", specifier = ">=4.0.0" },
 ]
+provides-extras = ["testing", "dev"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -757,7 +871,6 @@ dependencies = [
     { name = "boto3" },
     { name = "click" },
     { name = "drl-trading-common" },
-    { name = "feast" },
     { name = "gymnasium" },
     { name = "injector" },
     { name = "numpy" },
@@ -768,6 +881,17 @@ dependencies = [
     { name = "pyyaml" },
     { name = "stable-baselines3" },
     { name = "yfinance" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "ipython" },
+    { name = "mypy" },
+    { name = "ruff" },
+]
+testing = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
 ]
 
 [package.dev-dependencies]
@@ -808,18 +932,23 @@ requires-dist = [
     { name = "boto3", specifier = ">=1.38.30" },
     { name = "click" },
     { name = "drl-trading-common", editable = "drl-trading-common" },
-    { name = "feast" },
     { name = "gymnasium", specifier = ">=0.29.0" },
     { name = "injector", specifier = ">=0.22.0" },
+    { name = "ipython", marker = "extra == 'dev'", specifier = ">=8.0.0" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8.0" },
     { name = "numpy", specifier = ">=1.24.0" },
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "pandas-ta" },
     { name = "protobuf", specifier = ">=5.26.0,<6.0.0" },
+    { name = "pytest", marker = "extra == 'testing'", specifier = ">=8.0.0" },
+    { name = "pytest-cov", marker = "extra == 'testing'", specifier = ">=4.0.0" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "pyyaml", specifier = ">=6.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
     { name = "stable-baselines3", specifier = ">=2.0.0" },
     { name = "yfinance" },
 ]
+provides-extras = ["testing", "dev"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1178,15 +1307,29 @@ dev = [
 ]
 testing = [
     { name = "pytest" },
-    { name = "pytest-benchmark" },
     { name = "pytest-cov" },
 ]
 
 [package.dev-dependencies]
 dev = [
-    { name = "injector" },
+    { name = "ipython" },
+    { name = "mypy" },
+    { name = "ruff" },
+]
+dev-full = [
+    { name = "ipython" },
+    { name = "mypy" },
     { name = "pytest" },
+    { name = "pytest-benchmark" },
     { name = "pytest-cov" },
+    { name = "pytest-mock" },
+    { name = "ruff" },
+]
+test = [
+    { name = "pytest" },
+    { name = "pytest-benchmark" },
+    { name = "pytest-cov" },
+    { name = "pytest-mock" },
 ]
 
 [package.metadata]
@@ -1198,7 +1341,6 @@ requires-dist = [
     { name = "numpy", specifier = ">=1.24.0" },
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "pytest", marker = "extra == 'testing'", specifier = ">=8.0.0" },
-    { name = "pytest-benchmark", marker = "extra == 'testing'", specifier = ">=4.0.0" },
     { name = "pytest-cov", marker = "extra == 'testing'", specifier = ">=4.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
     { name = "talipp" },
@@ -1207,9 +1349,24 @@ provides-extras = ["testing", "dev"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "injector", specifier = ">=0.22.0" },
-    { name = "pytest", specifier = ">=8.3.5" },
-    { name = "pytest-cov", specifier = ">=6.1.1" },
+    { name = "ipython", specifier = ">=8.0.0" },
+    { name = "mypy", specifier = ">=1.8.0" },
+    { name = "ruff", specifier = ">=0.1.0" },
+]
+dev-full = [
+    { name = "ipython", specifier = ">=8.0.0" },
+    { name = "mypy", specifier = ">=1.8.0" },
+    { name = "pytest", specifier = ">=8.0.0" },
+    { name = "pytest-benchmark", specifier = ">=4.0.0" },
+    { name = "pytest-cov", specifier = ">=4.0.0" },
+    { name = "pytest-mock", specifier = ">=3.12.0" },
+    { name = "ruff", specifier = ">=0.1.0" },
+]
+test = [
+    { name = "pytest", specifier = ">=8.0.0" },
+    { name = "pytest-benchmark", specifier = ">=4.0.0" },
+    { name = "pytest-cov", specifier = ">=4.0.0" },
+    { name = "pytest-mock", specifier = ">=3.12.0" },
 ]
 
 [[package]]

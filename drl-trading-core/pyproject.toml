@@ -31,9 +31,9 @@ dependencies = [
     "stable_baselines3>=2.0.0",
     "gymnasium>=0.29.0",
     "yfinance",                    # Market data source (lightweight)
-    # Feature store
-    "feast",
-    "protobuf>=5.26.0,<6.0.0",     # Version pin for feast compatibility
+    # Feature store (implemented via adapter; core decoupled)
+    # "feast" now provided in adapter layer only
+    "protobuf>=5.26.0,<6.0.0",     # Keep protobuf for shared message/model use
     # CLI / utilities
     "click",
     # DI / AWS / config

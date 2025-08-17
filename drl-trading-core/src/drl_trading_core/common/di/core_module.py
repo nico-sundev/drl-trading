@@ -15,7 +15,6 @@ from drl_trading_common.config.feature_config_repo import (
 )
 from drl_trading_common.config.local_data_import_config import LocalDataImportConfig
 from drl_trading_common.config.rl_model_config import RlModelConfig
-from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_repo_interface import IOfflineFeatureRepository
 from injector import Module, provider, singleton, Binder
 
 from drl_trading_core.common.data_import.data_import_manager import (
@@ -37,20 +36,6 @@ from drl_trading_core.preprocess.data_set_utils.strip_service import (
     StripServiceInterface,
 )
 from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
-from drl_trading_core.preprocess.feature_store.provider.feast_provider import (
-    FeastProvider,
-)
-from drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper import (
-    FeatureStoreWrapper,
-)
-from drl_trading_core.preprocess.feature_store.repository.feature_store_fetch_repo import (
-    FeatureStoreFetchRepository,
-    IFeatureStoreFetchRepository,
-)
-from drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo import (
-    FeatureStoreSaveRepository,
-    IFeatureStoreSaveRepository,
-)
 from drl_trading_core.preprocess.preprocess_service import (
     PreprocessService,
     PreprocessServiceInterface,
@@ -156,18 +141,7 @@ class CoreModule(Module):
         """Provide the stage from application configuration."""
         return application_config.stage
 
-    @provider
-    @singleton
-    def provide_offline_feature_repository(
-        self, feature_store_config: FeatureStoreConfig
-    ) -> IOfflineFeatureRepository:
-        """Provide the appropriate offline feature repository based on strategy."""
-        from drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy import (
-            OfflineRepoStrategy,
-        )
-
-        strategy = OfflineRepoStrategy(feature_store_config)
-        return strategy.create_offline_repository()
+    # Offline feature repository now provided by AdapterModule in drl-trading-adapter
     def configure(self, binder: Binder) -> None:  # type: ignore[misc]
         """Configure interface bindings for auto-wiring services with @inject decorators."""
         from drl_trading_core.preprocess.compute.computing_service import (
@@ -189,21 +163,11 @@ class CoreModule(Module):
             scope=singleton,
         )
         binder.bind(
-            FeatureStoreWrapper, to=FeatureStoreWrapper, scope=singleton
-        )
-        binder.bind(
             IFeatureConfigRepository, to=FeatureConfigPostgresRepo, scope=singleton
         )
-        binder.bind(FeastProvider, to=FeastProvider, scope=singleton)
-        # Offline repository binding now handled by provider method
+        # Feast / feature store bindings moved to AdapterModule
         binder.bind(
             FeatureViewNameMapper, to=FeatureViewNameMapper, scope=singleton
-        )
-        binder.bind(
-            IFeatureStoreSaveRepository, to=FeatureStoreSaveRepository, scope=singleton
-        )
-        binder.bind(
-            IFeatureStoreFetchRepository, to=FeatureStoreFetchRepository, scope=singleton
         )
         binder.bind(FeatureManager, to=FeatureManager, scope=singleton)
         binder.bind(PreprocessServiceInterface, to=PreprocessService, scope=singleton)

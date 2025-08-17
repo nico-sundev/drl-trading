@@ -6,7 +6,6 @@ from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
-from feast import FeatureView
 from injector import inject
 from pandas import DataFrame
 
@@ -16,8 +15,12 @@ from drl_trading_core.preprocess.feature_store.mapper.feature_view_name_mapper i
 from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_repo_interface import (
     IOfflineFeatureRepository,
 )
-from drl_trading_core.preprocess.feature_store.provider.feast_provider import (
-    FeastProvider,
+from drl_trading_core.preprocess.feature_store.port.feature_store_operation_ports import (
+    IFeatureViewFactory,
+    IFeatureDefinitionApplier,
+    IFeatureMaterializer,
+    IOnlineFeatureWriter,
+    FeatureViewDef,
 )
 from drl_trading_core.preprocess.feature_store.repository.feature_view_name_enum import (
     FeatureViewNameEnum,
@@ -103,13 +106,18 @@ class FeatureStoreSaveRepository(IFeatureStoreSaveRepository):
     def __init__(
         self,
         config: FeatureStoreConfig,
-        feast_provider: FeastProvider,
+        feature_view_factory: IFeatureViewFactory,
+        definition_applier: IFeatureDefinitionApplier,
+        materializer: IFeatureMaterializer,
+        online_writer: IOnlineFeatureWriter,
         offline_repo: IOfflineFeatureRepository,
         feature_view_name_mapper: FeatureViewNameMapper,
     ):
         self.config = config
-        self.feast_provider = feast_provider
-        self.feature_store = feast_provider.get_feature_store()
+        self._fv_factory = feature_view_factory
+        self._def_applier = definition_applier
+        self._materializer = materializer
+        self._online_writer = online_writer
         self.offline_repo = offline_repo
         self.feature_view_name_mapper = feature_view_name_mapper
 
@@ -205,10 +213,7 @@ class FeatureStoreSaveRepository(IFeatureStoreSaveRepository):
                 start_date = start_date.tz_localize("UTC")
                 end_date = end_date.tz_localize("UTC")
 
-            self.feature_store.materialize(
-                start_date=start_date,
-                end_date=end_date,
-            )
+            self._materializer.materialize(start_ts=start_date, end_ts=end_date)
             logger.info(f"Materialized features for online serving: {symbol}")
 
         except (TypeError, AttributeError) as e:
@@ -253,17 +258,13 @@ class FeatureStoreSaveRepository(IFeatureStoreSaveRepository):
 
         feature_view_name = self.feature_view_name_mapper.map(feature_role)
 
-        # Get the feature view to determine which columns should be included
-        try:
-            feature_view = self.feature_store.get_feature_view(feature_view_name)
-        except Exception as e:
+        # Retrieve schema field names via port abstraction
+        schema_field_names_set = set(self._fv_factory.get_feature_view_schema(feature_view_name))
+        if not schema_field_names_set:
             raise RuntimeError(
-                f"Feature view '{feature_view_name}' not found. "
-                f"Ensure offline features are stored first to create the feature view. Error: {e}"
-            ) from e
-
-        # Extract the field names from the feature view schema
-        schema_field_names = {field.name for field in feature_view.schema}
+                f"Schema for feature view '{feature_view_name}' not found. Ensure feature view is created/applied first."
+            )
+        schema_field_names = schema_field_names_set
         logger.debug(f"Feature view '{feature_view_name}' schema fields: {schema_field_names}")
 
         # Filter DataFrame to only include required columns:
@@ -299,22 +300,10 @@ class FeatureStoreSaveRepository(IFeatureStoreSaveRepository):
 
         # Push features directly to online store without offline storage
         # This avoids creating many small parquet files during inference
-        # Use Feast's write_to_online_store for direct online updates
-        self.feature_store.write_to_online_store(
-            feature_view_name=feature_view_name,
-            df=filtered_df,
-        )
+        self._online_writer.write(feature_view_name=feature_view_name, df=filtered_df)
         logger.debug(
             f"Pushed {len(filtered_df)} feature records of feature-view {feature_view_name} to online store: {symbol}"
         )
-
-    def is_enabled(self) -> bool:
-        """
-        Check if the feature store is enabled.
-
-        :return: True if the feature store is enabled, False otherwise.
-        """
-        return self.config.enabled
 
     def _create_and_apply_feature_views(
         self,
@@ -333,27 +322,27 @@ class FeatureStoreSaveRepository(IFeatureStoreSaveRepository):
         reward_fv = self._create_reward_feature_view(symbol, feature_version_info)
 
         # Create feature service combining both views
-        feature_service = self.feast_provider.create_feature_service(
+        feature_service = self._fv_factory.create_feature_service(
             feature_views=[obs_fv, reward_fv],
             symbol=symbol,
             feature_version_info=feature_version_info,
         )
 
         # Create entity (needed for both feature views)
-        entity = self.feast_provider.get_entity(symbol)
+        entity = self._fv_factory.get_entity(symbol)
 
         # Apply entities and feature views to Feast registry
         # IMPORTANT: Entities must be applied before feature views that reference them
-        self.feature_store.apply([entity, obs_fv, reward_fv, feature_service])
-        logger.info(f"Applied feast entity: {entity.name}")
-        logger.info(f"Applied feast feature views: {obs_fv.name}, {reward_fv.name}")
-        logger.info(f"Applied Feast feature service: {feature_service.name}")
+        self._def_applier.apply_definitions(entity, [obs_fv, reward_fv], feature_service)
+        logger.info(f"Applied entity: {entity.name}")
+        logger.info(f"Applied feature views: {obs_fv.name}, {reward_fv.name}")
+        logger.info(f"Applied feature service: {feature_service.name}")
 
     def _create_observation_feature_view(
         self,
         symbol: str,
         feature_version_info: FeatureConfigVersionInfo,
-    ) -> FeatureView:
+    ) -> FeatureViewDef:
         """
         Create observation feature view for the given symbol.
 
@@ -361,18 +350,18 @@ class FeatureStoreSaveRepository(IFeatureStoreSaveRepository):
             symbol: The trading symbol for which to create the feature view
             feature_version_info: Version information for feature tracking
         """
-        return self.feast_provider.create_feature_view(
-            symbol=symbol,
-            feature_view_name=FeatureViewNameEnum.OBSERVATION_SPACE.value,
-            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature_version_info=feature_version_info,
-        )
+        return self._fv_factory.create_feature_view(
+                symbol=symbol,
+                feature_view_name=FeatureViewNameEnum.OBSERVATION_SPACE.value,
+                feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+                feature_version_info=feature_version_info,
+            )
 
     def _create_reward_feature_view(
         self,
         symbol: str,
         feature_version_info: FeatureConfigVersionInfo,
-    ) -> FeatureView:
+    ) -> FeatureViewDef:
         """
         Create reward feature view for the given symbol.
 
@@ -380,9 +369,9 @@ class FeatureStoreSaveRepository(IFeatureStoreSaveRepository):
             symbol: The trading symbol for which to create the feature view
             feature_version_info: Version information for feature tracking
         """
-        return self.feast_provider.create_feature_view(
-            symbol=symbol,
-            feature_view_name=FeatureViewNameEnum.REWARD_ENGINEERING.value,
-            feature_role=FeatureRoleEnum.REWARD_ENGINEERING,
-            feature_version_info=feature_version_info,
-        )
+        return self._fv_factory.create_feature_view(
+                symbol=symbol,
+                feature_view_name=FeatureViewNameEnum.REWARD_ENGINEERING.value,
+                feature_role=FeatureRoleEnum.REWARD_ENGINEERING,
+                feature_version_info=feature_version_info,
+            )

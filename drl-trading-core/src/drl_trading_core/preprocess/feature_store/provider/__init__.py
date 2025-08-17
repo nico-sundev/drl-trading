@@ -1,7 +1,6 @@
-from .feast_provider import FeastProvider
-from .feature_store_wrapper import FeatureStoreWrapper
+from .feast_provider import IFeatureStoreProvider, FeastProvider
 
 __all__ = [
-    "FeatureStoreWrapper",
-    "FeastProvider",
+    "IFeatureStoreProvider",
+    "FeastProvider",  # deprecated alias
 ]
