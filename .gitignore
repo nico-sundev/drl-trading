@@ -69,3 +69,9 @@ tests/resources/test/data/*
 
 # local logs
 logs/*
+
+# secrets
+# Ignore real env files but keep the committed template
+.env
+*.env
+!example.env

@@ -43,23 +43,35 @@ class ServiceConfigLoader:
         svc_name = service_name or config_class.__name__.lower()
         bootstrap_logger = get_bootstrap_logger(svc_name)
 
-        # Get config directory from environment
-        config_dir = os.environ.get("CONFIG_DIR")
-        if not config_dir:
-            bootstrap_logger.error(
-                "CONFIG_DIR environment variable not set; cannot load configuration"
-            )
-            raise ValueError(
-                "CONFIG_DIR environment variable must be set. "
-                "Example: CONFIG_DIR=/path/to/config or CONFIG_DIR=./config"
+        # Resolve configuration directory with graceful fallback.
+        # Priority: explicit CONFIG_DIR env var; else default to ./config and warn.
+        raw_config_dir = os.environ.get("CONFIG_DIR")
+        if raw_config_dir and raw_config_dir.strip():
+            config_dir = raw_config_dir.strip()
+        else:
+            config_dir = "./config"
+            bootstrap_logger.warning(
+                "CONFIG_DIR not set; falling back to default '%s'", config_dir
             )
 
         if not Path(config_dir).exists():
+            # Fail fast – having no config directory is not recoverable.
             bootstrap_logger.error("Configuration directory not found: %s", config_dir)
             raise FileNotFoundError(f"Configuration directory not found: {config_dir}")
 
-        # Get stage from environment
-        stage = os.environ.get("STAGE", "local")
+        # Resolve stage with normalization and allowed set validation.
+        raw_stage = (os.environ.get("STAGE") or "").strip().lower()
+        if not raw_stage:
+            stage = "local"
+            bootstrap_logger.warning("STAGE not set; using fallback 'local'")
+        else:
+            stage = raw_stage
+        allowed_stages = {"local", "cicd", "prod"}
+        if stage not in allowed_stages:
+            bootstrap_logger.warning(
+                "Unrecognized STAGE '%s'; proceeding but treat as 'local' semantics for overrides",
+                stage,
+            )
         bootstrap_logger.info(
             "Loading config (service=%s, stage=%s, dir=%s)", svc_name, stage, config_dir
         )

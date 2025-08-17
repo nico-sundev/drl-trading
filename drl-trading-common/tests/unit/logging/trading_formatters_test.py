@@ -223,6 +223,33 @@ class TestTradingHumanReadableFormatter:
         assert "v.d.m.s.Component" in formatted
         assert "very.deep.module.structure.Component" not in formatted
 
+    def test_human_formatter_truncates_long_short_name(self, clean_log_context: Any) -> None:
+        """Given an extremely long short_name When formatted Then it is truncated with ellipsis."""
+        # Given
+        formatter = TradingHumanReadableFormatter("test-service")
+        long_name = "drl_trading_common.very.deep.module.structure.subcomponent.ClassName"
+        record = logging.LogRecord(
+            name=long_name,
+            level=logging.INFO,
+            pathname="/p.py",
+            lineno=11,
+            msg="Truncation test",
+            args=(),
+            exc_info=None
+        )
+        # Simulate abbreviated form longer than cap
+        record.short_name = long_name  # type: ignore[attr-defined]
+
+        # When
+        formatted = formatter.format(record)
+
+        # Then
+        # Extract the short_name column (after first two pipes)
+        # Simpler: ensure ellipsis appears and length not excessive
+        assert "..." in formatted
+        # Ensure original over-long string not fully present
+        assert long_name not in formatted
+
     def test_trading_context_integration(self, clean_log_context: Any) -> None:
         """Test integration with TradingLogContext."""
         # Given

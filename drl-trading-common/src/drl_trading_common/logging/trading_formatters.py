@@ -9,7 +9,7 @@ and production logging requirements.
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, Set
 
 from drl_trading_common.logging.trading_log_context import TradingLogContext
@@ -48,7 +48,10 @@ class TradingStructuredFormatter(logging.Formatter):
     def _get_hostname(self) -> str:
         """Get hostname, with fallback for different environments."""
         if hasattr(os, 'uname'):
-            return os.uname().nodename
+            try:
+                return str(os.uname().nodename)  # type: ignore[no-untyped-call]
+            except Exception:  # pragma: no cover - defensive
+                return os.environ.get('HOSTNAME', 'unknown')
         return os.environ.get('HOSTNAME', 'unknown')
 
     def format(self, record: logging.LogRecord) -> str:
@@ -64,7 +67,7 @@ class TradingStructuredFormatter(logging.Formatter):
         # Build base log entry
         short_logger = getattr(record, 'short_name', record.name)
         log_entry: Dict[str, Any] = {
-            'timestamp': datetime.utcnow().isoformat() + 'Z',
+            'timestamp': datetime.now(timezone.utc).isoformat() + 'Z',
             'service': self.service_name,
             'environment': self.environment,
             'hostname': self.hostname,
@@ -85,11 +88,13 @@ class TradingStructuredFormatter(logging.Formatter):
 
         # Add exception information if present
         if record.exc_info:
-            log_entry['exception'] = {
-                'type': record.exc_info[0].__name__,
-                'message': str(record.exc_info[1]),
-                'traceback': self.formatException(record.exc_info)
-            }
+            exc_type, exc_value, exc_tb = record.exc_info
+            if exc_type is not None:
+                log_entry['exception'] = {
+                    'type': exc_type.__name__,
+                    'message': str(exc_value),
+                    'traceback': self.formatException(record.exc_info)
+                }
 
         # Add extra fields from log record (prefixed with 'extra_')
         for key, value in record.__dict__.items():
@@ -111,6 +116,8 @@ class TradingHumanReadableFormatter(logging.Formatter):
     still including essential trading context information.
     """
 
+    MAX_SHORT_NAME_LEN = 40
+
     def __init__(self, service_name: str):
         """
         Initialize the human-readable formatter.
@@ -122,7 +129,7 @@ class TradingHumanReadableFormatter(logging.Formatter):
 
         # Create format string with service name
         format_string = (
-            "%(asctime)s | %(levelname)-8s | %(short_name)-30s | "
+            f"%(asctime)s | %(levelname)-8s | %(short_name)-{self.MAX_SHORT_NAME_LEN}s | "
             f"{service_name} | %(message)s"
         )
 
@@ -142,7 +149,15 @@ class TradingHumanReadableFormatter(logging.Formatter):
         # Ensure graceful fallback if short_name missing (external early logs)
         if not hasattr(record, 'short_name'):
             record.short_name = record.name  # type: ignore[attr-defined]
-        formatted = super().format(record)
+
+        # Enforce fixed-width short_name column by truncating with ellipsis when necessary
+        original_short = record.short_name  # type: ignore[attr-defined]
+        try:
+            record.short_name = self._truncate_short_name(original_short)  # type: ignore[attr-defined]
+            formatted = super().format(record)
+        finally:
+            # Restore original to avoid affecting other handlers
+            record.short_name = original_short  # type: ignore[attr-defined]
 
         # Add trading context information if available
         trading_context = TradingLogContext.get_available_context()
@@ -159,6 +174,22 @@ class TradingHumanReadableFormatter(logging.Formatter):
 
         # Add exception information if present
         if record.exc_info:
-            formatted += f"\nException: {record.exc_info[0].__name__}: {record.exc_info[1]}"
+            et, ev, _ = record.exc_info
+            if et is not None:
+                formatted += f"\nException: {et.__name__}: {ev}"
 
         return formatted
+
+    # Internal helpers -------------------------------------------------
+    def _truncate_short_name(self, value: str) -> str:
+        """Truncate the short_name to MAX_SHORT_NAME_LEN preserving width.
+
+        Uses '...' ellipsis if truncation occurs. Guarantees returned
+        string length <= MAX_SHORT_NAME_LEN and pads handled by Formatter.
+        """
+        max_len = self.MAX_SHORT_NAME_LEN
+        if len(value) <= max_len:
+            return value
+        if max_len <= 3:  # defensive fallback
+            return value[:max_len]
+        return value[: max_len - 3] + '...'

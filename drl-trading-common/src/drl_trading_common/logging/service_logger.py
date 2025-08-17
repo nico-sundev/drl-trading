@@ -115,14 +115,17 @@ class ServiceLogger:
 
         logging.config.dictConfig(logging_config)
 
-        # Get service logger and log configuration success
+        # Get service-specific logger (not module logger) and log configuration success
         self._logger_instance = logging.getLogger(self.service_name)
-        self._logger_instance.info(f"Logging configured for {self.service_name} service", extra={
-            'stage': self.stage,
-            'environment': self.environment,
-            'json_format': use_json,
-            'log_level': log_level
-        })
+        self._logger_instance.info(
+            f"Logging configured for {self.service_name} service",
+            extra={
+                'stage': self.stage,
+                'environment': self.environment,
+                'json_format': use_json,
+                'log_level': log_level
+            }
+        )
 
     def _get_log_level(self) -> str:
         """Determine log level from config."""
@@ -257,34 +260,30 @@ class ServiceLogger:
     def _abbreviate_logger_name(cls, name: str) -> str:
         """Return cached abbreviated form of a logger name.
 
-        Rules:
-        - Keep last two path segments unchanged (module + class/helper scope)
-        - For preceding segments:
-            * If segment starts with 'drl_trading_' -> take suffix (after prefix) and truncate to 4 chars
-            * Else -> first character of the segment
-        - If path depth <= 3, return original name (already short enough)
+        Simplified rule (per latest review to avoid over-truncation):
+        - Split by '.'
+        - If only one segment -> return original
+        - Abbreviated form: first character of every segment except the final segment
+          (which is kept in full). Segments that are empty / non-alnum are skipped.
+        - Example:
+            drl_trading_ingest.infrastructure.bootstrap.ingest_service_bootstrap
+            -> d.t.i.i.b.ingest_service_bootstrap
+        This keeps path shape while minimizing loss of the decisive tail identifier.
         """
         cached = cls._SHORT_NAME_CACHE.get(name)
         if cached is not None:
             return cached
 
-        parts = name.split('.')
-        if len(parts) <= 3:
+        parts = [p for p in name.split('.') if p]
+        if len(parts) <= 1:
             short = name
         else:
-            core = parts[:-2]
-            tail = parts[-2:]
-            core_abbrev: list[str] = []
-            for seg in core:
-                if seg.startswith('drl_trading_'):
-                    suffix = seg.removeprefix('drl_trading_')
-                    core_abbrev.append(suffix[:4])  # e.g. drl_trading_preprocess -> prep
-                else:
-                    core_abbrev.append(seg[0])
-            short = '.'.join(core_abbrev + tail)
-        # Collision guard: if another full name already produced same short, fallback to original
-        if short in cls._SHORT_NAME_CACHE.values() and cls._SHORT_NAME_CACHE.get(name) != short:
-            short = name  # revert to full to avoid ambiguity
+            abbreviated_prefix = [seg[0] for seg in parts[:-1] if seg]
+            short = '.'.join(abbreviated_prefix + [parts[-1]])
+        # Minimal collision mitigation (rare with final segment kept); keep earliest mapping
+        existing = {v: k for k, v in cls._SHORT_NAME_CACHE.items()}
+        if short in existing and existing[short] != name:
+            short = name
         cls._SHORT_NAME_CACHE[name] = short
         return short
 

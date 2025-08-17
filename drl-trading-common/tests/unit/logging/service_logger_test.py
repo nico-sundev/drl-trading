@@ -7,6 +7,7 @@ environment-aware formatting, and logger management.
 
 import os
 import logging
+from typing import Any
 import pytest
 
 from drl_trading_common.config.service_logging_config import ServiceLoggingConfig
@@ -16,7 +17,7 @@ from drl_trading_common.logging.service_logger import ServiceLogger
 class TestServiceLoggerConfiguration:
     """Test ServiceLogger configuration functionality."""
 
-    def test_service_logger_initialization(self, clean_log_context) -> None:
+    def test_service_logger_initialization(self, clean_log_context: Any) -> None:
         """Test ServiceLogger basic initialization."""
         # Given
         service_name = "test-service"
@@ -34,7 +35,7 @@ class TestServiceLoggerConfiguration:
         assert service_logger.is_production_environment is False
         assert service_logger._logger_instance is None
 
-    def test_service_logger_environment_detection(self, clean_log_context) -> None:
+    def test_service_logger_environment_detection(self, clean_log_context: Any) -> None:
         """Test stage to environment mapping."""
         # Given
         stage = "prod"
@@ -57,7 +58,7 @@ class TestServiceLoggerConfiguration:
         ],
     )
     def test_log_level_configuration(
-        self, clean_log_context, log_level: str, expected: str
+    self, clean_log_context: Any, log_level: str, expected: str
     ) -> None:
         """Test log level configuration from config and environment."""
         # Given
@@ -70,7 +71,7 @@ class TestServiceLoggerConfiguration:
         # Then
         assert actual_level == expected
 
-    def test_log_level_from_config(self, clean_log_context) -> None:
+    def test_log_level_from_config(self, clean_log_context: Any) -> None:
         """Test log level configuration through ServiceLoggingConfig."""
         # Given
         config = ServiceLoggingConfig(level="WARNING")
@@ -82,7 +83,7 @@ class TestServiceLoggerConfiguration:
         # Then
         assert log_level == "WARNING"
 
-    def test_json_formatting_detection_development(self, clean_log_context) -> None:
+    def test_json_formatting_detection_development(self, clean_log_context: Any) -> None:
         """Test JSON formatting detection in development environment."""
         # Given
         service_logger = ServiceLogger("test-service", "local")
@@ -93,7 +94,7 @@ class TestServiceLoggerConfiguration:
         # Then
         assert should_use_json is False
 
-    def test_json_formatting_detection_production(self, clean_log_context) -> None:
+    def test_json_formatting_detection_production(self, clean_log_context: Any) -> None:
         """Test JSON formatting detection in production environment."""
         # Given
         service_logger = ServiceLogger("test-service", "prod")
@@ -104,7 +105,7 @@ class TestServiceLoggerConfiguration:
         # Then
         assert should_use_json is True
 
-    def test_json_formatting_override(self, clean_log_context) -> None:
+    def test_json_formatting_override(self, clean_log_context: Any) -> None:
         """Test JSON formatting override via configuration."""
         # Given
         config = ServiceLoggingConfig(json_format=True)
@@ -120,7 +121,7 @@ class TestServiceLoggerConfiguration:
 class TestServiceLoggerFormatters:
     """Test ServiceLogger formatter configuration."""
 
-    def test_configure_human_readable_formatter(self, clean_log_context) -> None:
+    def test_configure_human_readable_formatter(self, clean_log_context: Any) -> None:
         """Test human-readable formatter configuration."""
         # Given
         service_logger = ServiceLogger("test-service", "local")
@@ -133,7 +134,7 @@ class TestServiceLoggerFormatters:
         assert formatters["human"]["()"].__name__ == "TradingHumanReadableFormatter"
         assert formatters["human"]["service_name"] == "test-service"
 
-    def test_configure_json_formatter(self, clean_log_context) -> None:
+    def test_configure_json_formatter(self, clean_log_context: Any) -> None:
         """Test JSON structured formatter configuration."""
         # Given
         service_logger = ServiceLogger("test-service", "local")
@@ -151,7 +152,7 @@ class TestServiceLoggerFormatters:
 class TestServiceLoggerHandlers:
     """Test ServiceLogger handler configuration."""
 
-    def test_console_handler_configuration(self, clean_log_context) -> None:
+    def test_console_handler_configuration(self, clean_log_context: Any) -> None:
         """Test console handler configuration."""
         # Given
         service_logger = ServiceLogger("test-service", "local")
@@ -167,7 +168,7 @@ class TestServiceLoggerHandlers:
         assert console_handler["formatter"] == "human"
 
     def test_file_handler_configuration(
-        self, clean_log_context, service_logger_config
+    self, clean_log_context: Any, service_logger_config: ServiceLoggingConfig
     ) -> None:
         """Test file handler configuration."""
         # Given
@@ -184,7 +185,7 @@ class TestServiceLoggerHandlers:
         assert file_handler["maxBytes"] == 1024 * 1024  # From config
         assert file_handler["backupCount"] == 3  # From config
 
-    def test_error_file_handler_production(self, clean_log_context) -> None:
+    def test_error_file_handler_production(self, clean_log_context: Any) -> None:
         """Test error file handler configuration in production."""
         # Given
         service_logger = ServiceLogger("test-service", "prod")
@@ -199,7 +200,7 @@ class TestServiceLoggerHandlers:
         assert error_handler["level"] == "ERROR"
         assert error_handler["filename"] == "logs/test-service_errors.log"
 
-    def test_no_error_file_handler_development(self, clean_log_context) -> None:
+    def test_no_error_file_handler_development(self, clean_log_context: Any) -> None:
         """Test no error file handler in development."""
         # Given
         service_logger = ServiceLogger("test-service", "local")
@@ -214,7 +215,7 @@ class TestServiceLoggerHandlers:
 class TestServiceLoggerLoggers:
     """Test ServiceLogger logger configuration."""
 
-    def test_service_logger_configuration(self, clean_log_context) -> None:
+    def test_service_logger_configuration(self, clean_log_context: Any) -> None:
         """Test service-specific logger configuration."""
         # Given
         service_logger = ServiceLogger("test-service", "local")
@@ -229,7 +230,7 @@ class TestServiceLoggerLoggers:
         assert "console" in service_config["handlers"]
         assert service_config["propagate"] is False
 
-    def test_framework_loggers_configuration(self, clean_log_context) -> None:
+    def test_framework_loggers_configuration(self, clean_log_context: Any) -> None:
         """Test framework loggers configuration."""
         # Given
         service_logger = ServiceLogger("test-service", "local")
@@ -248,7 +249,7 @@ class TestServiceLoggerLoggers:
             assert logger_config["propagate"] is False
 
     def test_third_party_loggers_configuration(
-        self, clean_log_context, service_logger_config
+    self, clean_log_context: Any, service_logger_config: ServiceLoggingConfig
     ) -> None:
         """Test third-party loggers configuration."""
         # Given
@@ -268,7 +269,7 @@ class TestServiceLoggerLoggers:
 class TestServiceLoggerIntegration:
     """Test ServiceLogger end-to-end integration."""
 
-    def test_full_configuration(self, temp_directory, clean_log_context) -> None:
+    def test_full_configuration(self, temp_directory: str, clean_log_context: Any) -> None:
         """Test complete ServiceLogger configuration process."""
         # Given
         service_logger = ServiceLogger("test-service", "local")
@@ -282,7 +283,7 @@ class TestServiceLoggerIntegration:
         assert logger.name == "test-service"
         assert service_logger._logger_instance is logger
 
-    def test_logs_directory_creation(self, temp_directory, clean_log_context) -> None:
+    def test_logs_directory_creation(self, temp_directory: str, clean_log_context: Any) -> None:
         """Test automatic logs directory creation."""
         # Given
         service_logger = ServiceLogger("test-service", "local")
@@ -294,7 +295,7 @@ class TestServiceLoggerIntegration:
         assert os.path.exists("logs")
         assert os.path.isdir("logs")
 
-    def test_get_logger_before_configure(self, clean_log_context) -> None:
+    def test_get_logger_before_configure(self, clean_log_context: Any) -> None:
         """Test get_logger before configure() is called."""
         # Given
         service_logger = ServiceLogger("test-service", "local")
@@ -306,7 +307,7 @@ class TestServiceLoggerIntegration:
         assert logger is not None
         assert logger.name == "test-service"
 
-    def test_get_logger_caching(self, temp_directory, clean_log_context) -> None:
+    def test_get_logger_caching(self, temp_directory: str, clean_log_context: Any) -> None:
         """Test logger instance caching."""
         # Given
         service_logger = ServiceLogger("test-service", "local")
@@ -322,8 +323,7 @@ class TestServiceLoggerIntegration:
 
 class TestServiceLoggerShortName:
     """Tests for short_name abbreviation feature in ServiceLogger."""
-
-    def test_short_name_abbreviation_deep_logger(self, clean_log_context) -> None:
+    def test_short_name_abbreviation_deep_logger(self, clean_log_context: Any) -> None:
         """Ensure deep dotted logger names are abbreviated correctly.
 
         Given a deep module path > 3 segments
@@ -339,7 +339,7 @@ class TestServiceLoggerShortName:
         class CaptureHandler(logging.Handler):  # simple in-memory record collector
             def __init__(self) -> None:  # type: ignore[no-untyped-def]
                 super().__init__()
-                self.records = []  # type: ignore[var-annotated]
+                self.records: list[logging.LogRecord] = []
 
             def emit(self, record: logging.LogRecord) -> None:  # type: ignore[override]
                 self.records.append(record)
@@ -355,12 +355,13 @@ class TestServiceLoggerShortName:
         # Then
         assert len(handler.records) == 1
         record = handler.records[0]
-        # Expected abbreviation: drl_trading_preprocess -> preprocess -> 'prep'; adapter->a; messaging->m; kafka->k; keep last two segments
-        assert getattr(record, "short_name", None) == "prep.a.m.k.consumer.SomeComponent"
+        # Expected abbreviation under implemented simplified rule: first letter of each segment except final kept full
+        # drl_trading_preprocess.adapter.messaging.kafka.consumer.SomeComponent -> d.a.m.k.c.SomeComponent
+        assert getattr(record, "short_name", None) == "d.a.m.k.c.SomeComponent"
         # Cache should contain original name
-        assert ServiceLogger._SHORT_NAME_CACHE[deep_logger_name] == "prep.a.m.k.consumer.SomeComponent"
+        assert ServiceLogger._SHORT_NAME_CACHE[deep_logger_name] == "d.a.m.k.c.SomeComponent"
 
-    def test_short_name_no_abbreviation_shallow_logger(self, clean_log_context) -> None:
+    def test_short_name_no_abbreviation_shallow_logger(self, clean_log_context: Any) -> None:
         """Shallow logger names (<=3 segments) should remain unchanged."""
         # Given
         service_logger = ServiceLogger("test-service", "local")
@@ -371,7 +372,7 @@ class TestServiceLoggerShortName:
         class CaptureHandler(logging.Handler):
             def __init__(self) -> None:  # type: ignore[no-untyped-def]
                 super().__init__()
-                self.records = []  # type: ignore[var-annotated]
+                self.records: list[logging.LogRecord] = []
 
             def emit(self, record: logging.LogRecord) -> None:  # type: ignore[override]
                 self.records.append(record)
@@ -389,7 +390,7 @@ class TestServiceLoggerShortName:
         record = handler.records[0]
         assert getattr(record, "short_name", None) == shallow_name
 
-    def test_record_factory_idempotent(self, clean_log_context) -> None:
+    def test_record_factory_idempotent(self, clean_log_context: Any) -> None:
         """Calling configure multiple times should not reinstall record factory."""
         # Given
         service_logger = ServiceLogger("test-service", "local")
@@ -409,7 +410,7 @@ class TestServiceLoggerShortName:
         # Confirm cache entry created without error
         assert deep_name in ServiceLogger._SHORT_NAME_CACHE
 
-    def test_json_formatter_includes_short_logger(self, clean_log_context) -> None:
+    def test_json_formatter_includes_short_logger(self, clean_log_context: Any) -> None:
         """JSON structured output should include short_logger field when enabled."""
         # Given
         config = ServiceLoggingConfig(json_format=True, abbreviate_logger_names=True)
@@ -421,7 +422,8 @@ class TestServiceLoggerShortName:
         class CaptureHandler(logging.Handler):
             def __init__(self) -> None:  # type: ignore[no-untyped-def]
                 super().__init__()
-                self.records = []  # type: ignore[var-annotated]
+                self.records: list[logging.LogRecord] = []
+
             def emit(self, record: logging.LogRecord) -> None:  # type: ignore[override]
                 self.records.append(record)
 
