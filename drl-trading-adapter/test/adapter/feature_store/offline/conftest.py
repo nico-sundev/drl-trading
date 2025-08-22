@@ -7,15 +7,12 @@ Provides fixtures and utilities for testing the OfflineFeatureLocalRepo class.
 import tempfile
 from typing import Generator
 
+from drl_trading_adapter.adapter.feature_store.offline.offline_feature_local_repo import OfflineFeatureLocalRepo
 import pandas as pd
 import pytest
 from drl_trading_common.config.feature_config import FeatureStoreConfig, LocalRepoConfig, S3RepoConfig
 from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
 from pandas import DataFrame
-
-from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo import (
-    OfflineFeatureLocalRepo,
-)
 
 
 @pytest.fixture

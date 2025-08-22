@@ -3,15 +3,7 @@
 ## Quick Thoughts
 <!-- Dump ideas here quickly, organize later -->
 ### New Package
-- drl-trading-adapter where adapter logic from current drl-trading-core resides
-
-### Separate domain from adapter logic for feast
-- Upgrade current integration of feast FeatureStore to be hexagonal architecture confirm
-- Below services contain mostly domain logic, this should be abstracted from adapter logic
-  - feast_provider.py
-  - feature_store_fetch_repo.py
-  - feature_store_store_repo.py
-- Utilize existing interface abstractions, try to keep it and adapt on it
+- try move and run feast unit and integration tests
 
 ### Break up drl-trading-core`s services
 -- Refactor core package, comply with hexagonal architecture

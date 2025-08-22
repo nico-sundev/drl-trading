@@ -8,14 +8,11 @@ with datetime-based organization and incremental storage capabilities.
 import os
 from unittest.mock import Mock, patch
 
+from drl_trading_adapter.adapter.feature_store.offline.offline_feature_local_repo import OfflineFeatureLocalRepo
 import pandas as pd
 import pytest
 from drl_trading_common.config.feature_config import FeatureStoreConfig
 from pandas import DataFrame
-
-from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo import (
-    OfflineFeatureLocalRepo,
-)
 
 
 class TestOfflineFeatureLocalRepoInit:

@@ -13,13 +13,10 @@ import tempfile
 from typing import Generator
 from unittest.mock import MagicMock, patch
 
+from drl_trading_adapter.adapter.feature_store.feast.feature_store_wrapper import FeatureStoreWrapper
 import pytest
 from drl_trading_common.config.feature_config import FeatureStoreConfig  # type: ignore
 from feast import FeatureStore
-
-from drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper import (  # type: ignore
-    FeatureStoreWrapper,
-)
 
 
 class TestFeatureStoreWrapper:
@@ -95,7 +92,7 @@ entity_key_serialization_version: 2
         assert wrapper._feature_store is None
 
     @patch(
-        "drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper.FeatureStore"
+        "drl_trading_adapter.adapter.feature_store.feast.feature_store_wrapper.FeatureStore"
     )
     def test_get_feature_store_with_enabled_config(
         self, mock_feast_store: MagicMock, temp_feature_store_dir: str
@@ -134,7 +131,7 @@ entity_key_serialization_version: 2
         assert result is None
 
     @patch(
-        "drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper.FeatureStore"
+        "drl_trading_adapter.adapter.feature_store.feast.feature_store_wrapper.FeatureStore"
     )
     def test_get_feature_store_with_absolute_path(
         self, mock_feast_store: MagicMock, temp_feature_store_dir: str
@@ -162,7 +159,7 @@ entity_key_serialization_version: 2
         mock_feast_store.assert_called_once_with(repo_path=expected_path)
 
     @patch(
-        "drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper.FeatureStore"
+        "drl_trading_adapter.adapter.feature_store.feast.feature_store_wrapper.FeatureStore"
     )
     def test_get_feature_store_with_relative_path(
         self, mock_feast_store: MagicMock
@@ -204,7 +201,7 @@ entity_key_serialization_version: 2
             assert called_path.endswith(os.path.join("feature_store", "prod"))
 
     @patch(
-        "drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper.FeatureStore"
+        "drl_trading_adapter.adapter.feature_store.feast.feature_store_wrapper.FeatureStore"
     )
     def test_get_feature_store_caching(
         self, mock_feast_store: MagicMock, temp_feature_store_dir: str
@@ -333,7 +330,7 @@ entity_key_serialization_version: 2
             assert result.endswith(os.path.join("feature_store", "dev"))
 
     @patch(
-        "drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper.FeatureStore"
+        "drl_trading_adapter.adapter.feature_store.feast.feature_store_wrapper.FeatureStore"
     )
     def test_multiple_wrappers_independent_caching(
         self, mock_feast_store: MagicMock, temp_feature_store_dir: str
@@ -378,7 +375,7 @@ entity_key_serialization_version: 2
         assert mock_feast_store.call_count == 2
 
     @patch(
-        "drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper.FeatureStore"
+        "drl_trading_adapter.adapter.feature_store.feast.feature_store_wrapper.FeatureStore"
     )
     def test_path_with_special_characters(self, mock_feast_store: MagicMock) -> None:
         """Test handling of paths with special characters."""

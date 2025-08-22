@@ -4,10 +4,10 @@ from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from feast import FeatureStore
 from injector import Injector
 
-from drl_trading_core.preprocess.feature_store.provider.feast_provider import (
+from drl_trading_adapter.adapter.feature_store.feast.feast_provider import (
     FeastProvider,
 )
-from drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper import (
+from drl_trading_adapter.adapter.feature_store.feast.feature_store_wrapper import (
     FeatureStoreWrapper,
 )
 

@@ -5,7 +5,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "drl_trading_core"
+name = "drl-trading-core"
 version = "0.1.0"
 description = "AI-powered trading system with reinforcement learning capabilities"
 readme = "README.md"

@@ -7,7 +7,7 @@ from __future__ import annotations
 from injector import Module, Binder, singleton, provider
 
 from drl_trading_common.config.feature_config import FeatureStoreConfig
-from drl_trading_core.preprocess.feature_store.provider.feast_provider import (
+from drl_trading_core.preprocess.feature_store.port.feature_store_provider_port import (
     IFeatureStoreProvider,
 )
 from drl_trading_core.preprocess.feature_store.port.feature_store_operation_ports import (
@@ -18,7 +18,7 @@ from drl_trading_core.preprocess.feature_store.port.feature_store_operation_port
     IOnlineFeatureReader,
     IHistoricalFeatureReader,
 )
-from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_repo_interface import (
+from drl_trading_core.preprocess.feature_store.port.offline_feature_repo_interface import (
     IOfflineFeatureRepository,
 )
 from drl_trading_core.preprocess.feature_store.repository.feature_store_fetch_repo import (
@@ -28,10 +28,10 @@ from drl_trading_core.preprocess.feature_store.repository.feature_store_save_rep
     IFeatureStoreSaveRepository,
 )
 
-from drl_trading_adapter.feature_store.feast.feast_provider import FeastProvider
-from drl_trading_adapter.feature_store.feast.feature_store_wrapper import FeatureStoreWrapper
-from drl_trading_adapter.feature_store.offline.offline_repo_strategy import OfflineRepoStrategy
-from drl_trading_adapter.feature_store.feast.ports.feast_port_implementations import (
+from drl_trading_adapter.adapter.feature_store.feast.feast_provider import FeastProvider
+from drl_trading_adapter.adapter.feature_store.feast.feature_store_wrapper import FeatureStoreWrapper
+from drl_trading_adapter.adapter.feature_store.offline.offline_repo_strategy import OfflineRepoStrategy
+from drl_trading_adapter.adapter.feature_store.feast.ports.feast_port_implementations import (
     FeastFeatureViewFactory,
     FeastFeatureDefinitionApplier,
     FeastFeatureMaterializer,

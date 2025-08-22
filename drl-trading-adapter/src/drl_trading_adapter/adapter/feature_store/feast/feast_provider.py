@@ -3,6 +3,7 @@ import logging
 from datetime import timedelta
 from typing import Optional
 
+from drl_trading_adapter.adapter.feature_store.feast.feature_store_wrapper import FeatureStoreWrapper
 from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.config.feature_config import FeatureStoreConfig
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
@@ -13,9 +14,10 @@ from injector import inject
 
 from drl_trading_core.common.model.feature_view_request import FeatureViewRequest
 from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
-from drl_trading_core.preprocess.feature_store.provider.feast_provider import IFeatureStoreProvider
-from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_repo_interface import IOfflineFeatureRepository
-from .feature_store_wrapper import FeatureStoreWrapper
+from drl_trading_core.preprocess.feature_store.port.feature_store_provider_port import (
+    IFeatureStoreProvider,
+)
+from drl_trading_core.preprocess.feature_store.port.offline_feature_repo_interface import IOfflineFeatureRepository
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +108,10 @@ class FeastProvider(IFeatureStoreProvider):
     def _get_features_for_role(self, feature_role: Optional[FeatureRoleEnum], role_description: str) -> list[BaseFeature]:
         features_for_role: list[BaseFeature] = []
         if feature_role is not None:
-            features_for_role.append(self.feature_manager.get_features_by_role(feature_role))
+            # FeatureManager.get_features_by_role returns a list; extend to avoid nested lists
+            features = self.feature_manager.get_features_by_role(feature_role)
+            if features:
+                features_for_role.extend(features)
         if not features_for_role:
             logger.warning(f"No features found for role {role_description}, creating empty feature view")
         logger.debug(f"Feast feature view will be created for feature role: {role_description}")

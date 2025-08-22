@@ -23,7 +23,9 @@ from drl_trading_core.preprocess.feature_store.port.feature_store_operation_port
     IOnlineFeatureReader,
     IHistoricalFeatureReader,
 )
-from drl_trading_core.preprocess.feature_store.provider.feast_provider import IFeatureStoreProvider
+from drl_trading_core.preprocess.feature_store.port.feature_store_provider_port import (
+    IFeatureStoreProvider,
+)
 
 logger = logging.getLogger(__name__)
 

@@ -16,13 +16,13 @@ from feast import Entity, FeatureService, FeatureStore, FeatureView
 from feast.types import Float32
 
 from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
-from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_repo_interface import (
+from drl_trading_core.preprocess.feature_store.port.offline_feature_repo_interface import (
     IOfflineFeatureRepository,
 )
-from drl_trading_core.preprocess.feature_store.provider.feast_provider import (
+from drl_trading_adapter.adapter.feature_store.feast.feast_provider import (
     FeastProvider,
 )
-from drl_trading_core.preprocess.feature_store.provider.feature_store_wrapper import (
+from drl_trading_adapter.adapter.feature_store.feast.feature_store_wrapper import (
     FeatureStoreWrapper,
 )
 
@@ -155,7 +155,7 @@ class TestFeastProvider:
         assert provider.feature_manager == mock_feature_manager
         assert provider.feature_store_config == feature_store_config
         assert provider.feature_store == mock_feature_store_wrapper.get_feature_store.return_value
-        assert provider.offline_feature_repo == mock_offline_feature_repo
+        assert provider._offline_repo == mock_offline_feature_repo
         mock_feature_store_wrapper.get_feature_store.assert_called_once()
 
     def test_init_with_disabled_config(
@@ -181,7 +181,7 @@ class TestFeastProvider:
         assert provider.feature_manager == mock_feature_manager
         assert provider.feature_store_config == disabled_feature_store_config
         assert provider.feature_store == mock_feature_store_wrapper.get_feature_store.return_value
-        assert provider.offline_feature_repo == mock_offline_feature_repo
+        assert provider._offline_repo == mock_offline_feature_repo
         mock_feature_store_wrapper.get_feature_store.assert_called_once()
 
     def test_get_feature_store(

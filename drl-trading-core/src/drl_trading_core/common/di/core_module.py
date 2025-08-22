@@ -40,10 +40,6 @@ from drl_trading_core.preprocess.preprocess_service import (
     PreprocessService,
     PreprocessServiceInterface,
 )
-from drl_trading_core.training.services.agent_training_service import (
-    AgentTrainingService,
-    AgentTrainingServiceInterface,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +169,4 @@ class CoreModule(Module):
         binder.bind(PreprocessServiceInterface, to=PreprocessService, scope=singleton)
         binder.bind(
             DataImportStrategyFactory, to=DataImportStrategyFactory, scope=singleton
-        )
-        binder.bind(
-            AgentTrainingServiceInterface, to=AgentTrainingService, scope=singleton
         )

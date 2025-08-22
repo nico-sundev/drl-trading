@@ -6,7 +6,7 @@ while maintaining compatibility with existing logging infrastructure.
 """
 
 from typing import Optional, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 # Renamed from EnhancedLoggingConfig to ServiceLoggingConfig for clarity
@@ -95,12 +95,10 @@ class ServiceLoggingConfig(BaseModel):
         description="Sentry DSN for error tracking (future enhancement)"
     )
 
-    class Config:
-        """Pydantic configuration."""
-        extra = "forbid"
-
+    model_config = ConfigDict(
+        extra="forbid",
         # Configuration examples for documentation
-        schema_extra = {
+        json_schema_extra={
             "examples": [
                 {
                     "level": "INFO",
@@ -116,7 +114,8 @@ class ServiceLoggingConfig(BaseModel):
                     }
                 }
             ]
-        }
+        },
+    )
 
 
 # Renamed from configure_t005_logging to configure_service_logging for clarity

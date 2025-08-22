@@ -6,14 +6,12 @@ from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
+from drl_trading_core.preprocess.feature_store.port.offline_feature_repo_interface import IOfflineFeatureRepository
 from injector import inject
 from pandas import DataFrame
 
 from drl_trading_core.preprocess.feature_store.mapper.feature_view_name_mapper import (
     FeatureViewNameMapper,
-)
-from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_repo_interface import (
-    IOfflineFeatureRepository,
 )
 from drl_trading_core.preprocess.feature_store.port.feature_store_operation_ports import (
     IFeatureViewFactory,
