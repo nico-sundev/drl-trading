@@ -1,2 +1,3 @@
-def main() -> None:
-    print("Hello from drl-trading-adapter!")
+from .infrastructure.di.adapter_module import AdapterModule
+
+__all__ = ["AdapterModule"]

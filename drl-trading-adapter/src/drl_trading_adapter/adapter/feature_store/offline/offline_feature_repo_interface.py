@@ -5,14 +5,10 @@ This module defines the contract for storing and retrieving features
 from different storage backends (local filesystem, S3, etc.).
 """
 
-import logging
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
 from pandas import DataFrame
-
-logger = logging.getLogger(__name__)
-
 
 class IOfflineFeatureRepository(ABC):
     """

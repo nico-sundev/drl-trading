@@ -1,7 +1,7 @@
 
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 
-from drl_trading_core.preprocess.feature_store.repository.feature_view_name_enum import (
+from drl_trading_core.preprocess.feature_store.feature_view_name_enum import (
     FeatureViewNameEnum,
 )
 
@@ -22,8 +22,8 @@ class FeatureViewNameMapper:
             str: The name of the feature view.
         """
         if feature_role == FeatureRoleEnum.OBSERVATION_SPACE:
-            return FeatureViewNameEnum.OBSERVATION_SPACE.value
+            return str(FeatureViewNameEnum.OBSERVATION_SPACE.value)
         elif feature_role == FeatureRoleEnum.REWARD_ENGINEERING:
-            return FeatureViewNameEnum.REWARD_ENGINEERING.value
+            return str(FeatureViewNameEnum.REWARD_ENGINEERING.value)
         else:
             raise ValueError(f"Unknown feature role: {feature_role}")

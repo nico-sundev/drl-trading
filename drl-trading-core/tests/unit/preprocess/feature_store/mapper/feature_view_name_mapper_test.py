@@ -4,7 +4,7 @@ from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_core.preprocess.feature_store.mapper.feature_view_name_mapper import (
     FeatureViewNameMapper,
 )
-from drl_trading_core.preprocess.feature_store.repository.feature_view_name_enum import (
+from drl_trading_core.preprocess.feature_store.feature_view_name_enum import (
     FeatureViewNameEnum,
 )
 

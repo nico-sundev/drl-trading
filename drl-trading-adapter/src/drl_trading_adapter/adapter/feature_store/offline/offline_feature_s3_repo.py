@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 from pandas import DataFrame
 from injector import inject
 from drl_trading_common.config.feature_config import FeatureStoreConfig
-from drl_trading_core.preprocess.feature_store.port.offline_feature_repo_interface import IOfflineFeatureRepository
+from drl_trading_adapter.adapter.feature_store.offline.offline_feature_repo_interface import IOfflineFeatureRepository
 
 
 @inject

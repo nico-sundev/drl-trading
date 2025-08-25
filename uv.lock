@@ -1221,6 +1221,7 @@ name = "drl-trading-preprocess"
 version = "0.1.0"
 source = { editable = "drl-trading-preprocess" }
 dependencies = [
+    { name = "drl-trading-adapter" },
     { name = "drl-trading-common" },
     { name = "drl-trading-core" },
     { name = "injector" },
@@ -1255,6 +1256,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
+    { name = "drl-trading-adapter", editable = "drl-trading-adapter" },
     { name = "drl-trading-common", editable = "drl-trading-common" },
     { name = "drl-trading-core", editable = "drl-trading-core" },
     { name = "injector", specifier = ">=0.22.0" },

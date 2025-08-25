@@ -25,7 +25,7 @@ from drl_trading_core.preprocess.data_set_utils.merge_service import (
 from drl_trading_core.preprocess.feature.feature_aggregator import (
     IFeatureAggregator,
 )
-from drl_trading_core.preprocess.feature_store.repository.feature_store_fetch_repo import (
+from drl_trading_adapter.adapter.feature_store.feature_store_fetch_adapter import (
     IFeatureStoreFetchRepository,
 )
 from drl_trading_core.preprocess.preprocess_service import (

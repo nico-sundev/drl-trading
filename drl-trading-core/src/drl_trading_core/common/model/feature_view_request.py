@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_common.model.feature_config_version_info import (
+from drl_trading_common.base import BaseFeature
+from drl_trading_common.enum import FeatureRoleEnum
+from drl_trading_common.model import (
     FeatureConfigVersionInfo,
 )
 
@@ -25,6 +26,7 @@ class FeatureViewRequest:
     feature_view_name: str
     feature_role: Optional[FeatureRoleEnum]
     feature_version_info: FeatureConfigVersionInfo
+    features: list[BaseFeature]
 
     def validate(self) -> None:
         """
@@ -48,6 +50,10 @@ class FeatureViewRequest:
         # Feature version info validation
         if self.feature_version_info is None:
             raise ValueError("Feature version info cannot be None")
+
+        # Features length validation
+        if self.features is None or len(self.features) == 0:
+            raise ValueError("Features list cannot be None or empty")
 
         # Validate feature version info has required attributes
         if not hasattr(self.feature_version_info, 'semver') or not self.feature_version_info.semver:
@@ -74,7 +80,8 @@ class FeatureViewRequest:
         symbol: str,
         feature_view_name: str,
         feature_role: Optional[FeatureRoleEnum],
-        feature_version_info: FeatureConfigVersionInfo
+        feature_version_info: FeatureConfigVersionInfo,
+        features: list[BaseFeature]
     ) -> "FeatureViewRequest":
         """
         Factory method to create and validate a FeatureViewRequest.
@@ -84,6 +91,7 @@ class FeatureViewRequest:
             feature_view_name: Name of the feature view to create
             feature_role: Role/type of features (or None for integration tests)
             feature_version_info: Version and metadata information
+            features: List of role features to include in the view
 
         Returns:
             FeatureViewRequest: Validated request object

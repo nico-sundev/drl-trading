@@ -1,96 +1,22 @@
 import logging
-from abc import ABC, abstractmethod
 
-from drl_trading_common.config.feature_config import FeatureStoreConfig
-from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_common.model.feature_config_version_info import (
-    FeatureConfigVersionInfo,
-)
-from drl_trading_core.preprocess.feature_store.port.offline_feature_repo_interface import IOfflineFeatureRepository
+from drl_trading_adapter.adapter.feature_store import FeastProvider
 from injector import inject
 from pandas import DataFrame
 
-from drl_trading_core.preprocess.feature_store.mapper.feature_view_name_mapper import (
+from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+from drl_trading_core.common.model.feature_view_request import FeatureViewRequest
+from drl_trading_core.preprocess.feature_store.mapper import (
     FeatureViewNameMapper,
 )
-from drl_trading_core.preprocess.feature_store.port.feature_store_operation_ports import (
-    IFeatureViewFactory,
-    IFeatureDefinitionApplier,
-    IFeatureMaterializer,
-    IOnlineFeatureWriter,
-    FeatureViewDef,
-)
-from drl_trading_core.preprocess.feature_store.repository.feature_view_name_enum import (
-    FeatureViewNameEnum,
-)
+
+from ..core.port import IFeatureStoreSavePort
 
 logger = logging.getLogger(__name__)
 
 
-class IFeatureStoreSaveRepository(ABC):
-
-    @abstractmethod
-    def store_computed_features_offline(
-        self,
-        features_df: DataFrame,
-        symbol: str,
-        feature_version_info: FeatureConfigVersionInfo,
-    ) -> None:
-        """
-        Store computed features in the feature store.
-
-        Args:
-            features_df: DataFrame containing the computed features
-            dataset_id: Identifier for the dataset to which these features belong
-        """
-        pass
-
-    @abstractmethod
-    def batch_materialize_features(
-        self,
-        features_df: DataFrame,
-        symbol: str,
-    ) -> None:
-        """
-        Store computed features in the feature store for online serving.
-
-        Args:
-            features_df: DataFrame containing the computed features
-            dataset_id: Identifier for the dataset to which these features belong
-        """
-        pass
-
-    @abstractmethod
-    def push_features_to_online_store(
-        self,
-        features_df: DataFrame,
-        symbol: str,
-        feature_role: FeatureRoleEnum,
-    ) -> None:
-        """
-        Push features directly to online store for real-time inference.
-
-        Bypasses offline storage for single-record inference scenarios
-        to avoid file fragmentation and improve performance.
-
-        Args:
-            features_df: DataFrame containing the computed features (typically single record)
-            dataset_id: Identifier for the dataset to which these features belong
-        """
-        pass
-
-    @abstractmethod
-    def is_enabled(self) -> bool:
-        """
-        Check if the feature store is enabled.
-
-        :return: True if the feature store is enabled, False otherwise.
-        """
-        pass
-
-
 @inject
-class FeatureStoreSaveRepository(IFeatureStoreSaveRepository):
+class FeatureStoreSaveRepository(IFeatureStoreSavePort):
     """
     Repository for saving features to a feature store.
 
@@ -103,27 +29,19 @@ class FeatureStoreSaveRepository(IFeatureStoreSaveRepository):
 
     def __init__(
         self,
-        config: FeatureStoreConfig,
-        feature_view_factory: IFeatureViewFactory,
-        definition_applier: IFeatureDefinitionApplier,
-        materializer: IFeatureMaterializer,
-        online_writer: IOnlineFeatureWriter,
-        offline_repo: IOfflineFeatureRepository,
+        feast_provider: FeastProvider,
         feature_view_name_mapper: FeatureViewNameMapper,
     ):
-        self.config = config
-        self._fv_factory = feature_view_factory
-        self._def_applier = definition_applier
-        self._materializer = materializer
-        self._online_writer = online_writer
-        self.offline_repo = offline_repo
+        self.feast_provider = feast_provider
+        self.feature_store = feast_provider.get_feature_store()
+        self.offline_repo = feast_provider.get_offline_repo()
         self.feature_view_name_mapper = feature_view_name_mapper
 
     def store_computed_features_offline(
         self,
         features_df: DataFrame,
         symbol: str,
-        feature_version_info: FeatureConfigVersionInfo,
+        feature_view_requests: list[FeatureViewRequest],
     ) -> None:
         """
         Store computed features using the configured offline repository.
@@ -150,17 +68,23 @@ class FeatureStoreSaveRepository(IFeatureStoreSaveRepository):
 
         # Validate and clean event_timestamp column to prevent Dask/Feast issues
         if features_df["event_timestamp"].isnull().any():
-            logger.warning(f"Found null values in event_timestamp for {symbol}, dropping rows with nulls")
+            logger.warning(
+                f"Found null values in event_timestamp for {symbol}, dropping rows with nulls"
+            )
             features_df = features_df.dropna(subset=["event_timestamp"])
 
         if features_df.empty:
-            logger.warning(f"No valid features to store after dropping nulls for {symbol}")
+            logger.warning(
+                f"No valid features to store after dropping nulls for {symbol}"
+            )
             return
 
         # Ensure event_timestamp is timezone-aware to prevent Feast timezone issues
         if features_df["event_timestamp"].dt.tz is None:
             features_df = features_df.copy()
-            features_df["event_timestamp"] = features_df["event_timestamp"].dt.tz_localize("UTC")
+            features_df["event_timestamp"] = features_df[
+                "event_timestamp"
+            ].dt.tz_localize("UTC")
 
         # Store features using the configured offline repository
         stored_count = self.offline_repo.store_features_incrementally(
@@ -171,12 +95,12 @@ class FeatureStoreSaveRepository(IFeatureStoreSaveRepository):
             logger.warning(f"No new features stored for {symbol}")
             # Still create feature views even if no new data was stored
             # This is needed for online operations to work properly
-            self._create_and_apply_feature_views(symbol, feature_version_info)
+            self._create_and_apply_feature_views(symbol, feature_view_requests)
             return
 
         logger.info(f"Stored {stored_count} feature records for {symbol}")
         # Create and apply Feast feature views
-        self._create_and_apply_feature_views(symbol, feature_version_info)
+        self._create_and_apply_feature_views(symbol, feature_view_requests)
 
     def batch_materialize_features(
         self,
@@ -211,14 +135,23 @@ class FeatureStoreSaveRepository(IFeatureStoreSaveRepository):
                 start_date = start_date.tz_localize("UTC")
                 end_date = end_date.tz_localize("UTC")
 
-            self._materializer.materialize(start_ts=start_date, end_ts=end_date)
+            self.feature_store.materialize(
+                start_date=start_date,
+                end_date=end_date,
+            )
             logger.info(f"Materialized features for online serving: {symbol}")
 
         except (TypeError, AttributeError) as e:
             if "tz_convert" in str(e) or "astimezone" in str(e):
-                logger.warning(f"Materialization failed due to timezone conversion issue: {e}")
-                logger.info("This is a known compatibility issue between pandas and Feast versions")
-                logger.info("Skipping materialization - online store operations may still work")
+                logger.warning(
+                    f"Materialization failed due to timezone conversion issue: {e}"
+                )
+                logger.info(
+                    "This is a known compatibility issue between pandas and Feast versions"
+                )
+                logger.info(
+                    "Skipping materialization - online store operations may still work"
+                )
                 return
             else:
                 raise RuntimeError(f"Materialization failed for {symbol}: {e}") from e
@@ -256,14 +189,20 @@ class FeatureStoreSaveRepository(IFeatureStoreSaveRepository):
 
         feature_view_name = self.feature_view_name_mapper.map(feature_role)
 
-        # Retrieve schema field names via port abstraction
-        schema_field_names_set = set(self._fv_factory.get_feature_view_schema(feature_view_name))
-        if not schema_field_names_set:
+        # Get the feature view to determine which columns should be included
+        try:
+            feature_view = self.feature_store.get_feature_view(feature_view_name)
+        except Exception as e:
             raise RuntimeError(
-                f"Schema for feature view '{feature_view_name}' not found. Ensure feature view is created/applied first."
-            )
-        schema_field_names = schema_field_names_set
-        logger.debug(f"Feature view '{feature_view_name}' schema fields: {schema_field_names}")
+                f"Feature view '{feature_view_name}' not found. "
+                f"Ensure offline features are stored first to create the feature view. Error: {e}"
+            ) from e
+
+        # Extract the field names from the feature view schema
+        schema_field_names = {field.name for field in feature_view.schema}
+        logger.debug(
+            f"Feature view '{feature_view_name}' schema fields: {schema_field_names}"
+        )
 
         # Filter DataFrame to only include required columns:
         # - event_timestamp (required by Feast)
@@ -298,7 +237,11 @@ class FeatureStoreSaveRepository(IFeatureStoreSaveRepository):
 
         # Push features directly to online store without offline storage
         # This avoids creating many small parquet files during inference
-        self._online_writer.write(feature_view_name=feature_view_name, df=filtered_df)
+        # Use Feast's write_to_online_store for direct online updates
+        self.feature_store.write_to_online_store(
+            feature_view_name=feature_view_name,
+            df=filtered_df,
+        )
         logger.debug(
             f"Pushed {len(filtered_df)} feature records of feature-view {feature_view_name} to online store: {symbol}"
         )
@@ -306,7 +249,7 @@ class FeatureStoreSaveRepository(IFeatureStoreSaveRepository):
     def _create_and_apply_feature_views(
         self,
         symbol: str,
-        feature_version_info: FeatureConfigVersionInfo,
+        feature_view_requests: list[FeatureViewRequest],
     ) -> None:
         """
         Create and apply Feast feature views and services.
@@ -315,61 +258,35 @@ class FeatureStoreSaveRepository(IFeatureStoreSaveRepository):
             dataset_id: Dataset identifier
             feature_version_info: Version information for feature tracking
         """
+
+        if feature_view_requests is None or len(feature_view_requests) == 0:
+            logger.warning(
+                f"No feature view requests provided for {symbol}, skipping creation"
+            )
+            return
+
         # Create feature views for observation and reward spaces
-        obs_fv = self._create_observation_feature_view(symbol, feature_version_info)
-        reward_fv = self._create_reward_feature_view(symbol, feature_version_info)
+        feature_views = [
+            self.feast_provider.create_feature_view_from_request(fv_request)
+            for fv_request in feature_view_requests
+        ]
+        feature_version_info = feature_view_requests[0].feature_version_info
 
         # Create feature service combining both views
-        feature_service = self._fv_factory.create_feature_service(
-            feature_views=[obs_fv, reward_fv],
+        feature_service = self.feast_provider.create_feature_service(
+            feature_views=feature_views,
             symbol=symbol,
             feature_version_info=feature_version_info,
         )
 
         # Create entity (needed for both feature views)
-        entity = self._fv_factory.get_entity(symbol)
+        entity = self.feast_provider.get_entity(symbol)
 
         # Apply entities and feature views to Feast registry
         # IMPORTANT: Entities must be applied before feature views that reference them
-        self._def_applier.apply_definitions(entity, [obs_fv, reward_fv], feature_service)
-        logger.info(f"Applied entity: {entity.name}")
-        logger.info(f"Applied feature views: {obs_fv.name}, {reward_fv.name}")
-        logger.info(f"Applied feature service: {feature_service.name}")
-
-    def _create_observation_feature_view(
-        self,
-        symbol: str,
-        feature_version_info: FeatureConfigVersionInfo,
-    ) -> FeatureViewDef:
-        """
-        Create observation feature view for the given symbol.
-
-        Args:
-            symbol: The trading symbol for which to create the feature view
-            feature_version_info: Version information for feature tracking
-        """
-        return self._fv_factory.create_feature_view(
-                symbol=symbol,
-                feature_view_name=FeatureViewNameEnum.OBSERVATION_SPACE.value,
-                feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-                feature_version_info=feature_version_info,
-            )
-
-    def _create_reward_feature_view(
-        self,
-        symbol: str,
-        feature_version_info: FeatureConfigVersionInfo,
-    ) -> FeatureViewDef:
-        """
-        Create reward feature view for the given symbol.
-
-        Args:
-            symbol: The trading symbol for which to create the feature view
-            feature_version_info: Version information for feature tracking
-        """
-        return self._fv_factory.create_feature_view(
-                symbol=symbol,
-                feature_view_name=FeatureViewNameEnum.REWARD_ENGINEERING.value,
-                feature_role=FeatureRoleEnum.REWARD_ENGINEERING,
-                feature_version_info=feature_version_info,
-            )
+        self.feature_store.apply([entity, *feature_views, feature_service])
+        logger.info(f"Applied feast entity: {entity.name}")
+        logger.info(
+            f"Applied feast feature views: {', '.join(fv.name for fv in feature_views)}"
+        )
+        logger.info(f"Applied Feast feature service: {feature_service.name}")

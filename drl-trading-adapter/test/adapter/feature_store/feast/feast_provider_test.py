@@ -16,7 +16,7 @@ from feast import Entity, FeatureService, FeatureStore, FeatureView
 from feast.types import Float32
 
 from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
-from drl_trading_core.preprocess.feature_store.port.offline_feature_repo_interface import (
+from drl_trading_adapter.adapter.feature_store.offline.offline_feature_repo_interface import (
     IOfflineFeatureRepository,
 )
 from drl_trading_adapter.adapter.feature_store.feast.feast_provider import (
