@@ -18,14 +18,12 @@ import logging
 import pytest
 import pandas as pd
 import boto3
+from drl_trading_adapter.adapter.feature_store.offline.offline_feature_s3_repo import OfflineFeatureS3Repo
 from moto import mock_aws
 from pandas import DataFrame
 
 from drl_trading_common.config.feature_config import FeatureStoreConfig, S3RepoConfig
 from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
-from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo import (
-    OfflineFeatureS3Repo,
-)
 
 logger = logging.getLogger(__name__)
 

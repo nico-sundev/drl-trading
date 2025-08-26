@@ -703,6 +703,8 @@ dev = [
 ]
 dev-full = [
     { name = "ipython" },
+    { name = "minio" },
+    { name = "moto" },
     { name = "mypy" },
     { name = "numpy" },
     { name = "pandas" },
@@ -711,12 +713,16 @@ dev-full = [
     { name = "pytest-cov" },
     { name = "pytest-mock" },
     { name = "ruff" },
+    { name = "testcontainers" },
 ]
 test = [
+    { name = "minio" },
+    { name = "moto" },
     { name = "pytest" },
     { name = "pytest-benchmark" },
     { name = "pytest-cov" },
     { name = "pytest-mock" },
+    { name = "testcontainers" },
 ]
 
 [package.metadata]
@@ -747,6 +753,8 @@ dev = [
 ]
 dev-full = [
     { name = "ipython", specifier = ">=8.0.0" },
+    { name = "minio", specifier = ">=7.2.10" },
+    { name = "moto" },
     { name = "mypy", specifier = ">=1.8.0" },
     { name = "numpy", specifier = ">=1.24.0" },
     { name = "pandas", specifier = ">=2.0.0" },
@@ -755,12 +763,16 @@ dev-full = [
     { name = "pytest-cov", specifier = ">=4.0.0" },
     { name = "pytest-mock", specifier = ">=3.12.0" },
     { name = "ruff", specifier = ">=0.1.0" },
+    { name = "testcontainers", specifier = ">=3.7.1" },
 ]
 test = [
+    { name = "minio", specifier = ">=7.2.10" },
+    { name = "moto" },
     { name = "pytest", specifier = ">=8.0.0" },
     { name = "pytest-benchmark", specifier = ">=4.0.0" },
     { name = "pytest-cov", specifier = ">=4.0.0" },
     { name = "pytest-mock", specifier = ">=3.12.0" },
+    { name = "testcontainers", specifier = ">=3.7.1" },
 ]
 
 [[package]]

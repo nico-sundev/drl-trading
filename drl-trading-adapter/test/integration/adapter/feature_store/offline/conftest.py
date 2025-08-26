@@ -15,6 +15,25 @@ from pandas import DataFrame
 from testcontainers.minio import MinioContainer
 
 
+def _docker_available() -> bool:
+    """Check if a local Docker engine is available for testcontainers."""
+    try:
+        import docker  # type: ignore
+
+        try:
+            client = docker.from_env()
+            # ping is simple; fallback to version() if ping not available
+            if hasattr(client, "ping"):
+                client.ping()
+            else:
+                _ = client.version()
+            return True
+        except Exception:
+            return False
+    except Exception:
+        return False
+
+
 @pytest.fixture(scope="session")
 def minio_container() -> Generator[MinioContainer, None, None]:
     """
@@ -22,6 +41,9 @@ def minio_container() -> Generator[MinioContainer, None, None]:
 
     MinIO is lighter and faster than LocalStack for pure S3 testing.
     """
+    if not _docker_available():
+        pytest.skip("Docker engine not available; skipping MinIO-based integration tests.")
+
     with MinioContainer() as minio:
         yield minio
 
@@ -88,7 +110,7 @@ def s3_feature_store_config(
 @pytest.fixture
 def offline_s3_repo(s3_feature_store_config: FeatureStoreConfig):
     """Create OfflineFeatureS3Repo for testing with real S3 backend."""
-    from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo import (
+    from drl_trading_adapter.adapter.feature_store.offline.offline_feature_s3_repo import (
         OfflineFeatureS3Repo,
     )
 

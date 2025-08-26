@@ -9,10 +9,7 @@ import pandas as pd
 import pytest
 from pandas import DataFrame
 
-from drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo import (
-    OfflineFeatureS3Repo,
-    S3StorageException,
-)
+from drl_trading_adapter.adapter.feature_store.offline.offline_feature_s3_repo import OfflineFeatureS3Repo, S3StorageException
 
 
 class TestOfflineFeatureS3RepoIntegration:

@@ -3,9 +3,8 @@
 ## Quick Thoughts
 <!-- Dump ideas here quickly, organize later -->
 ### New Package
-- run feast unit tests
-    - run offline repo tests <---
 - run feast integration tests
+    - refactor feast integration tests <---
 
 ### Break up drl-trading-core`s services
 -- Refactor core package, comply with hexagonal architecture
