@@ -4,7 +4,7 @@ from injector import Binder, Module, provider, singleton
 
 from drl_trading_adapter.adapter.feature_store import (
     FeastProvider,
-    FeatureStoreFetchAdapter,
+    FeatureStoreFetchRepository,
     FeatureStoreWrapper,
 )
 from drl_trading_adapter.adapter.feature_store.offline import OfflineRepoStrategy
@@ -20,7 +20,7 @@ class AdapterModule(Module):
         binder.bind(FeatureStoreWrapper, to=FeatureStoreWrapper, scope=singleton)
         binder.bind(FeastProvider, to=FeastProvider, scope=singleton)
         binder.bind(
-            IFeatureStoreFetchPort, to=FeatureStoreFetchAdapter, scope=singleton
+            IFeatureStoreFetchPort, to=FeatureStoreFetchRepository, scope=singleton
         )
         # Repositories constructed via provider methods to avoid top-level concrete imports
 

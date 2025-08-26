@@ -3,7 +3,7 @@
 Expose commonly used adapter implementations at the package level.
 """
 
-from .feature_store_save_adapter import FeatureStoreSaveRepository
+from .feature_store_save_repository import FeatureStoreSaveRepository
 
 __all__ = [
     "FeatureStoreSaveRepository",

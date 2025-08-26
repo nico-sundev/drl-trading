@@ -4,13 +4,13 @@ from drl_trading_adapter.adapter.feature_store import FeastProvider
 from injector import inject
 from pandas import DataFrame
 
-from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_core.common.model.feature_view_request import FeatureViewRequest
+from drl_trading_common.enum import FeatureRoleEnum
+from drl_trading_core.common.model import FeatureViewRequest
 from drl_trading_core.preprocess.feature_store.mapper import (
     FeatureViewNameMapper,
 )
 
-from ..core.port import IFeatureStoreSavePort
+from ...core.port import IFeatureStoreSavePort
 
 logger = logging.getLogger(__name__)
 

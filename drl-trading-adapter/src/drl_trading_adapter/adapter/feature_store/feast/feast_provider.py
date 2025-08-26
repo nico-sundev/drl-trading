@@ -14,7 +14,7 @@ from feast import (
 from feast.types import Float32
 from injector import inject
 
-from drl_trading_adapter.adapter.feature_store import FeatureStoreWrapper
+from .feature_store_wrapper import FeatureStoreWrapper
 from drl_trading_adapter.adapter.feature_store.offline import IOfflineFeatureRepository
 from drl_trading_common.base import BaseFeature
 from drl_trading_common.config import FeatureStoreConfig

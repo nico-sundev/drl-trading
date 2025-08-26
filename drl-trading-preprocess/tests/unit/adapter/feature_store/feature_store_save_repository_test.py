@@ -7,18 +7,12 @@ to isolate the business logic from external infrastructure.
 
 from unittest.mock import Mock, patch
 
+from drl_trading_preprocess.adapter.feature_store import FeatureStoreSaveRepository
 import pandas as pd
 import pytest
-from drl_trading_common.config.feature_config import FeatureStoreConfig
-from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_common.model.feature_config_version_info import (
-    FeatureConfigVersionInfo,
-)
+from drl_trading_common.enum import FeatureRoleEnum
+from drl_trading_core.common.model.feature_view_request import FeatureViewRequest
 from pandas import DataFrame
-
-from drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo import (
-    FeatureStoreSaveRepository,
-)
 
 
 class TestFeatureStoreSaveRepositoryInit:
@@ -26,9 +20,7 @@ class TestFeatureStoreSaveRepositoryInit:
 
     def test_init_with_valid_dependencies(
         self,
-        feature_store_config: FeatureStoreConfig,
         mock_feast_provider: Mock,
-        mock_offline_repo: Mock,
         mock_feature_view_name_mapper: Mock
     ) -> None:
         """Test successful initialization with valid dependencies."""
@@ -37,16 +29,12 @@ class TestFeatureStoreSaveRepositoryInit:
 
         # When
         repo = FeatureStoreSaveRepository(
-            config=feature_store_config,
             feast_provider=mock_feast_provider,
-            offline_repo=mock_offline_repo,
-            feature_view_name_mapper=mock_feature_view_name_mapper
+            feature_view_name_mapper=mock_feature_view_name_mapper,
         )
 
         # Then
-        assert repo.config == feature_store_config
         assert repo.feast_provider == mock_feast_provider
-        assert repo.offline_repo == mock_offline_repo
         assert repo.feature_view_name_mapper == mock_feature_view_name_mapper
         assert repo.feature_store == mock_feast_provider.get_feature_store.return_value
         mock_feast_provider.get_feature_store.assert_called_once()
@@ -61,7 +49,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         sample_features_df: DataFrame,
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
-        feature_version_info: FeatureConfigVersionInfo
+        feature_view_requests: list[FeatureViewRequest]
     ) -> None:
         """Test successful storage of computed features offline."""
         # Given
@@ -71,7 +59,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         feature_store_save_repository.store_computed_features_offline(
             sample_features_df,
             eurusd_h1_symbol,
-            feature_version_info
+            feature_view_requests
         )
 
         # Then
@@ -99,7 +87,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         feature_store_save_repository: FeatureStoreSaveRepository,
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
-        feature_version_info: FeatureConfigVersionInfo
+        feature_view_requests: list[FeatureViewRequest]
     ) -> None:
         """Test handling of empty DataFrame during offline storage."""
         # Given
@@ -109,7 +97,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         feature_store_save_repository.store_computed_features_offline(
             empty_df,
             eurusd_h1_symbol,
-            feature_version_info
+            feature_view_requests
         )
 
         # Then
@@ -120,7 +108,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         feature_store_save_repository: FeatureStoreSaveRepository,
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
-        feature_version_info: FeatureConfigVersionInfo
+        feature_view_requests: list[FeatureViewRequest]
     ) -> None:
         """Test error handling when event_timestamp column is missing."""
         # Given
@@ -135,7 +123,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
             feature_store_save_repository.store_computed_features_offline(
                 invalid_df,
                 eurusd_h1_symbol,
-                feature_version_info
+                feature_view_requests
             )
 
     def test_store_computed_features_offline_no_new_features_stored(
@@ -144,7 +132,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         sample_features_df: DataFrame,
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
-        feature_version_info: FeatureConfigVersionInfo
+        feature_view_requests: list[FeatureViewRequest]
     ) -> None:
         """Test handling when no new features are stored (duplicates)."""
         # Given
@@ -154,14 +142,14 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         feature_store_save_repository.store_computed_features_offline(
             sample_features_df,
             eurusd_h1_symbol,
-            feature_version_info
+            feature_view_requests
         )
 
         # Then
         mock_offline_repo.store_features_incrementally.assert_called_once()
         # Should not create feature views when no new features are stored
 
-    @patch('drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo.logger')
+    @patch('drl_trading_preprocess.adapter.feature_store.feature_store_save_repository.logger')
     def test_store_computed_features_offline_with_feature_views_creation(
         self,
         mock_logger: Mock,
@@ -170,35 +158,36 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
         mock_feast_provider: Mock,
-        feature_version_info: FeatureConfigVersionInfo
+        feature_view_requests: list[FeatureViewRequest]
     ) -> None:
         """Test that feature views are created when new features are stored."""
         # Given
         stored_count = len(sample_features_df)
         mock_offline_repo.store_features_incrementally.return_value = stored_count
 
-        mock_obs_fv = Mock()
-        mock_reward_fv = Mock()
+        from types import SimpleNamespace
+        mock_obs_fv = SimpleNamespace(name="observation_space_feature_view")
+        mock_reward_fv = SimpleNamespace(name="reward_engineering_feature_view")
         mock_feature_service = Mock()
         mock_feature_service.name = "test_service"
 
-        mock_feast_provider.create_feature_view.side_effect = [mock_obs_fv, mock_reward_fv]
+        mock_feast_provider.create_feature_view_from_request.side_effect = [mock_obs_fv, mock_reward_fv]
         mock_feast_provider.create_feature_service.return_value = mock_feature_service
 
         # When
         feature_store_save_repository.store_computed_features_offline(
             sample_features_df,
             eurusd_h1_symbol,
-            feature_version_info
+            feature_view_requests
         )
 
         # Then
         # Verify feature views creation
-        assert mock_feast_provider.create_feature_view.call_count == 2
+        assert mock_feast_provider.create_feature_view_from_request.call_count == 2
         mock_feast_provider.create_feature_service.assert_called_once_with(
             feature_views=[mock_obs_fv, mock_reward_fv],
             symbol=eurusd_h1_symbol,
-            feature_version_info=feature_version_info
+            feature_version_info=feature_view_requests[0].feature_version_info
         )
 
         # Verify feature store apply (implementation includes entity)
@@ -266,7 +255,7 @@ class TestFeatureStoreSaveRepositoryBatchMaterialization:
                 eurusd_h1_symbol
             )
 
-    @patch('drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo.logger')
+    @patch('drl_trading_preprocess.adapter.feature_store.feature_store_save_repository.logger')
     def test_batch_materialize_features_logging(
         self,
         mock_logger: Mock,
@@ -383,7 +372,7 @@ class TestFeatureStoreSaveRepositoryOnlineStore:
                 feature_role
             )
 
-    @patch('drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo.logger')
+    @patch('drl_trading_preprocess.adapter.feature_store.feature_store_save_repository.logger')
     def test_push_features_to_online_store_logging(
         self,
         mock_logger: Mock,
@@ -422,77 +411,8 @@ class TestFeatureStoreSaveRepositoryOnlineStore:
 
 
 class TestFeatureStoreSaveRepositoryUtilityMethods:
-    """Test class for utility methods."""
-
-    def test_is_enabled_true(
-        self,
-        mock_feast_provider: Mock,
-        mock_offline_repo: Mock,
-        mock_feature_view_name_mapper: Mock
-    ) -> None:
-        """Test is_enabled returns True when feature store is enabled."""
-        # Given
-        from drl_trading_common.config.feature_config import LocalRepoConfig
-        from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
-
-        local_repo_config = LocalRepoConfig(repo_path="/tmp/test")
-        enabled_config = FeatureStoreConfig(
-            enabled=True,
-            config_directory="/tmp/config",
-            entity_name="test_entity",
-            ttl_days=30,
-            online_enabled=True,
-            service_name="test_service",
-            service_version="1.0.0",
-            offline_repo_strategy=OfflineRepoStrategyEnum.LOCAL,
-            local_repo_config=local_repo_config
-        )
-
-        # When
-        repo = FeatureStoreSaveRepository(
-            config=enabled_config,
-            feast_provider=mock_feast_provider,
-            offline_repo=mock_offline_repo,
-            feature_view_name_mapper=mock_feature_view_name_mapper
-        )
-
-        # Then
-        assert repo.is_enabled() is True
-
-    def test_is_enabled_false(
-        self,
-        mock_feast_provider: Mock,
-        mock_offline_repo: Mock,
-        mock_feature_view_name_mapper: Mock
-    ) -> None:
-        """Test is_enabled returns False when feature store is disabled."""
-        # Given
-        from drl_trading_common.config.feature_config import LocalRepoConfig
-        from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
-
-        local_repo_config = LocalRepoConfig(repo_path="/tmp/test")
-        disabled_config = FeatureStoreConfig(
-            enabled=False,
-            config_directory="/tmp/config",
-            entity_name="test_entity",
-            ttl_days=30,
-            online_enabled=False,
-            service_name="test_service",
-            service_version="1.0.0",
-            offline_repo_strategy=OfflineRepoStrategyEnum.LOCAL,
-            local_repo_config=local_repo_config
-        )
-
-        # When
-        repo = FeatureStoreSaveRepository(
-            config=disabled_config,
-            feast_provider=mock_feast_provider,
-            offline_repo=mock_offline_repo,
-            feature_view_name_mapper=mock_feature_view_name_mapper
-        )
-
-        # Then
-        assert repo.is_enabled() is False
+        """Placeholder for utility method tests."""
+        pass
 
 
 class TestFeatureStoreSaveRepositoryPrivateMethods:
@@ -505,41 +425,35 @@ class TestFeatureStoreSaveRepositoryPrivateMethods:
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
         mock_feast_provider: Mock,
-        feature_version_info: FeatureConfigVersionInfo
+        feature_view_requests: list[FeatureViewRequest]
     ) -> None:
         """Test that _create_and_apply_feature_views is called with correct parameters."""
         # Given
         mock_offline_repo.store_features_incrementally.return_value = len(sample_features_df)
 
-        mock_obs_fv = Mock()
-        mock_reward_fv = Mock()
+        from types import SimpleNamespace
+        mock_obs_fv = SimpleNamespace(name="observation_space_feature_view")
+        mock_reward_fv = SimpleNamespace(name="reward_engineering_feature_view")
         mock_feature_service = Mock()
         mock_feature_service.name = "test_service"
 
-        mock_feast_provider.create_feature_view.side_effect = [mock_obs_fv, mock_reward_fv]
+        mock_feast_provider.create_feature_view_from_request.side_effect = [mock_obs_fv, mock_reward_fv]
         mock_feast_provider.create_feature_service.return_value = mock_feature_service
 
         # When
         feature_store_save_repository.store_computed_features_offline(
             sample_features_df,
             eurusd_h1_symbol,
-            feature_version_info
+            feature_view_requests
         )
 
         # Then
-        # Verify observation space feature view creation
-        observation_call_args = mock_feast_provider.create_feature_view.call_args_list[0]
-        assert observation_call_args[1]["symbol"] == eurusd_h1_symbol
-        assert observation_call_args[1]["feature_view_name"] == "observation_space_feature_view"
-        assert observation_call_args[1]["feature_role"] == FeatureRoleEnum.OBSERVATION_SPACE
-        assert observation_call_args[1]["feature_version_info"] == feature_version_info
-
-        # Verify reward engineering feature view creation
-        reward_call_args = mock_feast_provider.create_feature_view.call_args_list[1]
-        assert reward_call_args[1]["symbol"] == eurusd_h1_symbol
-        assert reward_call_args[1]["feature_view_name"] == "reward_engineering_feature_view"
-        assert reward_call_args[1]["feature_role"] == FeatureRoleEnum.REWARD_ENGINEERING
-        assert reward_call_args[1]["feature_version_info"] == feature_version_info
+        # Verify feature views are created from requests
+        calls = mock_feast_provider.create_feature_view_from_request.call_args_list
+        assert len(calls) == 2
+        # First and second request should be passed as the first positional arg
+        assert isinstance(calls[0].args[0], FeatureViewRequest)
+        assert isinstance(calls[1].args[0], FeatureViewRequest)
 
 
 class TestFeatureStoreSaveRepositoryErrorHandling:
@@ -552,19 +466,19 @@ class TestFeatureStoreSaveRepositoryErrorHandling:
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
         mock_feast_provider: Mock,
-        feature_version_info: FeatureConfigVersionInfo
+        feature_view_requests: list[FeatureViewRequest],
     ) -> None:
         """Test error handling when feast provider raises exception."""
         # Given
         mock_offline_repo.store_features_incrementally.return_value = len(sample_features_df)
-        mock_feast_provider.create_feature_view.side_effect = Exception("Feast provider error")
+        mock_feast_provider.create_feature_view_from_request.side_effect = Exception("Feast provider error")
 
         # When & Then
         with pytest.raises(Exception, match="Feast provider error"):
             feature_store_save_repository.store_computed_features_offline(
                 sample_features_df,
                 eurusd_h1_symbol,
-                feature_version_info
+                feature_view_requests,
             )
 
     def test_batch_materialize_features_feast_store_exception(

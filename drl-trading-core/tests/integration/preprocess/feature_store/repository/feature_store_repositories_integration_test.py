@@ -15,7 +15,7 @@ from drl_trading_common.model.feature_config_version_info import (
 from injector import Injector
 from pandas import DataFrame
 
-from drl_trading_adapter.adapter.feature_store.feature_store_fetch_adapter import (
+from drl_trading_adapter.adapter.feature_store.feature_store_fetch_repository import (
     IFeatureStoreFetchRepository,
 )
 from drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo import (

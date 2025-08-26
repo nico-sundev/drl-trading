@@ -12,16 +12,16 @@ from unittest.mock import Mock
 import pandas as pd
 import pytest
 from drl_trading_common.config.feature_config import FeatureStoreConfig, LocalRepoConfig
+from types import SimpleNamespace
 from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
+from drl_trading_core.common.model.feature_view_request import FeatureViewRequest
 from feast import FeatureService, FeatureStore
 from pandas import DataFrame
 
-from drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo import (
-    FeatureStoreSaveRepository,
-)
+from drl_trading_preprocess.adapter.feature_store import FeatureStoreSaveRepository
 
 
 @pytest.fixture
@@ -84,8 +84,15 @@ def mock_feast_provider() -> Mock:
     mock_feature_store.apply.return_value = None
 
     mock_provider.get_feature_store.return_value = mock_feature_store
-    mock_provider.create_feature_view.return_value = Mock()
-    mock_provider.create_feature_service.return_value = Mock()
+    # Updated provider API to align with repository implementation
+    default_fv = SimpleNamespace(name="test_feature_view")
+    mock_provider.create_feature_view_from_request.return_value = default_fv
+    feature_service_mock = Mock()
+    feature_service_mock.name = "test_service"
+    mock_provider.create_feature_service.return_value = feature_service_mock
+    entity_mock = Mock()
+    entity_mock.name = "trading_entity"
+    mock_provider.get_entity.return_value = entity_mock
     return mock_provider
 
 
@@ -157,18 +164,43 @@ def feature_version_info() -> FeatureConfigVersionInfo:
 
 
 @pytest.fixture
+def feature_view_requests(
+    eurusd_h1_symbol: str,
+    feature_version_info: FeatureConfigVersionInfo,
+) -> list[FeatureViewRequest]:
+    """Create sample FeatureViewRequest list for tests."""
+    # Using simple Mock objects as BaseFeature placeholders
+    features = [Mock(name="feat1"), Mock(name="feat2")]
+    return [
+        FeatureViewRequest(
+            symbol=eurusd_h1_symbol,
+            feature_view_name="observation_space_feature_view",
+            feature_role=None,  # role is optional for integration; provider logic may infer
+            feature_version_info=feature_version_info,
+            features=features,
+        ),
+        FeatureViewRequest(
+            symbol=eurusd_h1_symbol,
+            feature_view_name="reward_engineering_feature_view",
+            feature_role=None,
+            feature_version_info=feature_version_info,
+            features=features,
+        ),
+    ]
+
+
+@pytest.fixture
 def feature_store_save_repository(
-    feature_store_config: FeatureStoreConfig,
     mock_feast_provider: Mock,
+    mock_feature_view_name_mapper: Mock,
     mock_offline_repo: Mock,
-    mock_feature_view_name_mapper: Mock
 ) -> FeatureStoreSaveRepository:
     """Create a FeatureStoreSaveRepository for testing with mocked dependencies."""
+    # Ensure the repository uses the same offline repo mock as the tests
+    mock_feast_provider.get_offline_repo.return_value = mock_offline_repo
     return FeatureStoreSaveRepository(
-        config=feature_store_config,
         feast_provider=mock_feast_provider,
-        offline_repo=mock_offline_repo,
-        feature_view_name_mapper=mock_feature_view_name_mapper
+        feature_view_name_mapper=mock_feature_view_name_mapper,
     )
 
 

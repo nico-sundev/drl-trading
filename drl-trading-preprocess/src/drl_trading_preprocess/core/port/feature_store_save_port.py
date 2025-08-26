@@ -57,12 +57,3 @@ class IFeatureStoreSavePort(ABC):
             dataset_id: Identifier for the dataset to which these features belong
         """
         pass
-
-    @abstractmethod
-    def is_enabled(self) -> bool:
-        """
-        Check if the feature store is enabled.
-
-        :return: True if the feature store is enabled, False otherwise.
-        """
-        pass

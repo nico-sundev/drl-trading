@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from drl_trading_adapter.adapter.feature_store import FeastProvider
+from .feast.feast_provider import FeastProvider
 from drl_trading_core.common.core.port.feature_store_fetch_port import IFeatureStoreFetchPort
 import pandas as pd
 from drl_trading_common.model.feature_config_version_info import (
@@ -13,7 +13,7 @@ from injector import inject
 logger = logging.getLogger(__name__)
 
 @inject
-class FeatureStoreFetchAdapter(IFeatureStoreFetchPort):
+class FeatureStoreFetchRepository(IFeatureStoreFetchPort):
     def __init__(self, feast_provider: FeastProvider):
         self._feast_provider = feast_provider
         self._fs = self._feast_provider.get_feature_store()
