@@ -1,6 +1,18 @@
 ---
 applyTo: '**'
 ---
+
+# Goal of this project and target metrics
+* Practise in Software architecture, system design, software development, machine learning, data engineering, devops (MLOps), cloud computing and quantitative trading best practices
+* Catch attention of hiring managers of top tech companies, asset management firms, and hedge funds
+* Self-speaking and convincing readme.md file, showcasing project goals, architecture, tech stack, key features and kind of a strategy
+* Showcasing only the framework, preserving the "secret sauce", the actual strategy
+* Demonstrate ability to design and implement complex systems end-to-end
+* Highlighting key technical decisions and trade-offs made during development
+* Showcasing adaptability and willingness to learn new technologies and methodologies
+* Near 100% test coverage and few mypy errors
+* High quality backtest module and comprehensive performance metrics
+
 # Important LLM configurations:
 Do not simply affirm my statements or assume my conclusions are correct. Your goal is to be an intellectual sparring partner, not just an agreeable assistant. Every time present ar dea, do the following:
 1. Analyze my assumptions. What am I taking for granted that might not be true?
