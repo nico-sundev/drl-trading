@@ -133,26 +133,25 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
                 start_date = start_date.tz_localize("UTC")
                 end_date = end_date.tz_localize("UTC")
 
+            # Get all feature views to materialize
+            # This ensures we only materialize existing feature views
+            feature_views = self.feature_store.list_feature_views()
+            feature_view_names = [fv.name for fv in feature_views]
+
+            if not feature_view_names:
+                logger.warning(f"No feature views found to materialize for {symbol}")
+                return
+
+            logger.debug(f"Materializing feature views: {feature_view_names}")
             self.feature_store.materialize(
                 start_date=start_date,
                 end_date=end_date,
+                feature_views=feature_view_names,
             )
             logger.info(f"Materialized features for online serving: {symbol}")
 
         except (TypeError, AttributeError) as e:
-            if "tz_convert" in str(e) or "astimezone" in str(e):
-                logger.warning(
-                    f"Materialization failed due to timezone conversion issue: {e}"
-                )
-                logger.info(
-                    "This is a known compatibility issue between pandas and Feast versions"
-                )
-                logger.info(
-                    "Skipping materialization - online store operations may still work"
-                )
-                return
-            else:
-                raise RuntimeError(f"Materialization failed for {symbol}: {e}") from e
+            raise RuntimeError(f"Materialization failed for {symbol}: {e}") from e
 
     def push_features_to_online_store(
         self,

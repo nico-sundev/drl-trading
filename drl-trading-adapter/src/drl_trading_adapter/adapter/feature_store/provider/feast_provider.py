@@ -262,7 +262,7 @@ class FeastProvider:
                 entities=[entity],
                 ttl=timedelta(days=self.feature_store_config.ttl_days),
                 schema=fields,
-                online=self.feature_store_config.online_enabled,  # Use config setting
+                online=True,  # Use config setting
                 source=source,
                 tags={
                     "symbol": symbol,
