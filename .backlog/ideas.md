@@ -4,7 +4,7 @@
 <!-- Dump ideas here quickly, organize later -->
 ### New Package
 - run feast integration tests
-    - refactor feast integration tests <---
+    - refactor feast repo integration tests in preprocessing service <---
 
 ### Break up drl-trading-core`s services
 -- Refactor core package, comply with hexagonal architecture

@@ -19,10 +19,10 @@ from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
 from drl_trading_adapter.adapter.feature_store.offline.offline_feature_repo_interface import (
     IOfflineFeatureRepository,
 )
-from drl_trading_adapter.adapter.feature_store.feast.feast_provider import (
+from drl_trading_adapter.adapter.feature_store.provider import (
     FeastProvider,
 )
-from drl_trading_adapter.adapter.feature_store.feast.feature_store_wrapper import (
+from drl_trading_adapter.adapter.feature_store.provider import (
     FeatureStoreWrapper,
 )
 

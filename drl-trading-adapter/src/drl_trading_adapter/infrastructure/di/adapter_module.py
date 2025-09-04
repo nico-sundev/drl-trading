@@ -3,22 +3,29 @@ from __future__ import annotations
 from injector import Binder, Module, provider, singleton
 
 from drl_trading_adapter.adapter.feature_store import (
-    FeastProvider,
     FeatureStoreFetchRepository,
-    FeatureStoreWrapper,
 )
 from drl_trading_adapter.adapter.feature_store.offline import OfflineRepoStrategy
 from drl_trading_adapter.adapter.feature_store.offline.offline_feature_repo_interface import (
     IOfflineFeatureRepository,
 )
+from drl_trading_adapter.adapter.feature_store.provider import (
+    FeastProvider,
+    FeatureStoreWrapper,
+)
+from drl_trading_adapter.adapter.feature_store.provider.mapper.feature_field_mapper import (
+    FeatureFieldMapper,
+    IFeatureFieldMapper,
+)
 from drl_trading_common.config.feature_config import FeatureStoreConfig
-from drl_trading_core.common.core.port import IFeatureStoreFetchPort
+from drl_trading_core.core.port import IFeatureStoreFetchPort
 
 
 class AdapterModule(Module):
     def configure(self, binder: Binder) -> None:  # type: ignore[override]
         binder.bind(FeatureStoreWrapper, to=FeatureStoreWrapper, scope=singleton)
         binder.bind(FeastProvider, to=FeastProvider, scope=singleton)
+        binder.bind(IFeatureFieldMapper, to=FeatureFieldMapper, scope=singleton)
         binder.bind(
             IFeatureStoreFetchPort, to=FeatureStoreFetchRepository, scope=singleton
         )

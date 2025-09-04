@@ -103,7 +103,8 @@ class FeatureViewRequest:
             symbol=symbol,
             feature_view_name=feature_view_name,
             feature_role=feature_role,
-            feature_version_info=feature_version_info
+            feature_version_info=feature_version_info,
+            features=features
         )
         request.validate()
         return request

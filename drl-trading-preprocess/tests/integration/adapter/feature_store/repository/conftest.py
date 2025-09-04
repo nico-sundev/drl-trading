@@ -1,0 +1,577 @@
+import os
+from typing import Generator, Optional
+
+import boto3
+import pandas as pd
+import pytest
+from drl_trading_adapter.infrastructure.di.adapter_module import AdapterModule
+from drl_trading_common.base.base_feature import BaseFeature
+from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_common.config.feature_config import (
+    FeatureStoreConfig,
+    LocalRepoConfig,
+    S3RepoConfig,
+)
+from drl_trading_common.decorator.feature_role_decorator import feature_role
+from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
+from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
+    ITechnicalIndicatorFacade,
+)
+from drl_trading_common.model.dataset_identifier import DatasetIdentifier
+from injector import Injector
+from pandas import DataFrame
+from testcontainers.minio import MinioContainer
+
+from drl_trading_preprocess.infrastructure.config.preprocess_config import PreprocessConfig
+from drl_trading_preprocess.infrastructure.di.preprocess_module import PreprocessModule
+from drl_trading_core.common.model.feature_view_request import FeatureViewRequest
+from drl_trading_core.core.mapper.feature_view_name_mapper import FeatureViewNameMapper
+from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
+from datetime import datetime
+
+
+# Test Feature Implementations for Core Integration Testing
+class MockTechnicalIndicatorFacade(ITechnicalIndicatorFacade):
+    """Mock technical indicator facade that returns controlled test data for integration testing."""
+
+    def __init__(self) -> None:
+        self._indicators: dict[str, DataFrame] = {}
+
+    def register_instance(self, name: str, indicator_type, **params) -> None:
+        """Register a mock indicator that returns predictable test data."""
+        # Create predictable test data based on indicator type with UTC timezone
+        dates = pd.date_range(start="2024-01-01", periods=100, freq="1H", tz="UTC")
+
+        if "rsi" in name.lower():
+            # Generate RSI-like values between 30-70
+            values = [50.0 + (i % 20) for i in range(100)]
+            self._indicators[name] = pd.DataFrame(
+                {"event_timestamp": dates, name: values}
+            )
+        elif "close_price" in name.lower():
+            # Generate price-like values
+            values = [1.1000 + (i % 50) * 0.0001 for i in range(100)]
+            self._indicators[name] = pd.DataFrame(
+                {"event_timestamp": dates, name: values}
+            )
+        elif name == "reward":
+            # Generate reward-like values between -0.1 and 0.1
+            values = [0.01 * (i % 20 - 10) for i in range(100)]
+            self._indicators[name] = pd.DataFrame(
+                {"event_timestamp": dates, "reward": values}
+            )
+        elif name == "cumulative_return":
+            # Generate cumulative return values
+            values = [0.001 * i for i in range(100)]
+            self._indicators[name] = pd.DataFrame(
+                {"event_timestamp": dates, "cumulative_return": values}
+            )
+        else:
+            # Default values
+            values = [float(i) for i in range(100)]
+            self._indicators[name] = pd.DataFrame(
+                {"event_timestamp": dates, name: values}
+            )
+
+    def add(self, name: str, value: DataFrame) -> None:
+        """Mock incremental computation - not needed for current tests."""
+        pass
+
+    def get_all(self, name: str) -> Optional[DataFrame]:
+        """Return all mock indicator data."""
+        return self._indicators.get(name)
+
+    def get_latest(self, name: str) -> Optional[DataFrame]:
+        """Return latest mock indicator data."""
+        data = self._indicators.get(name)
+        return data.tail(1) if data is not None else None
+
+
+class TestRsiConfig(BaseParameterSetConfig):
+    """Test configuration for RSI feature that follows the existing pattern."""
+
+    type: str = "rsi"
+    enabled: bool = True
+    period: int = 14
+
+    def hash_id(self) -> str:
+        return "A1b2c3"
+
+
+@feature_role(FeatureRoleEnum.OBSERVATION_SPACE)
+class TestRsiFeature(BaseFeature):
+    """Test RSI feature implementation adapted from existing MockFeature pattern."""
+
+    def __init__(
+        self,
+        dataset_id: DatasetIdentifier,
+        indicator_service: MockTechnicalIndicatorFacade,
+        config: TestRsiConfig,
+        postfix: str = "",
+    ):
+        super().__init__(dataset_id, indicator_service, config, postfix)
+        self._feature_name = "rsi"
+        # Register the indicator when feature is created
+        self.indicator_service.register_instance(
+            f"rsi_{config.period}", "rsi", period=config.period
+        )
+
+    def get_feature_name(self) -> str:
+        return self._feature_name
+
+    def get_sub_features_names(self) -> list[str]:
+        return []
+
+    def compute_all(self) -> Optional[DataFrame]:
+        """Compute RSI using the mock indicator service."""
+        indicator_name = f"rsi_{self.config.period}"
+        indicator_data = self.indicator_service.get_all(indicator_name)
+
+        if indicator_data is None:
+            return None
+
+        # Add the required symbol column for Feast compatibility
+        result = indicator_data.copy()
+        result[self.dataset_id.symbol] = self.dataset_id.symbol
+        return result
+
+    def add(self, df: DataFrame) -> None:
+        """Mock incremental computation - not implemented for current testing."""
+        pass
+
+    def compute_latest(self) -> Optional[DataFrame]:
+        """Get latest RSI values."""
+        indicator_name = f"rsi_{self.config.period}"
+        indicator_data = self.indicator_service.get_latest(indicator_name)
+
+        if indicator_data is None:
+            return None
+
+        result = indicator_data.copy()
+        result[self.dataset_id.symbol] = self.dataset_id.symbol
+        return result
+
+    def get_config_to_string(self) -> str:
+        return f"{self.config.period}"
+
+
+@feature_role(FeatureRoleEnum.OBSERVATION_SPACE)
+class TestClosePriceFeature(BaseFeature):
+    """Test close price feature implementation adapted from existing MockFeature pattern."""
+
+    def __init__(
+        self,
+        dataset_id: DatasetIdentifier,
+        indicator_service: MockTechnicalIndicatorFacade,
+        config: Optional[BaseParameterSetConfig] = None,
+        postfix: str = "",
+    ):
+        super().__init__(dataset_id, indicator_service, config, postfix)
+        self._feature_name = "close_price"
+
+    def get_feature_name(self) -> str:
+        return self._feature_name
+
+    def get_sub_features_names(self) -> list[str]:
+        return []
+
+    def compute_all(self) -> Optional[DataFrame]:
+        """Compute close prices using the mock indicator service."""
+        indicator_name = "close_price"
+        indicator_data = self.indicator_service.get_all(indicator_name)
+
+        if indicator_data is None:
+            return None
+
+        # Add the required symbol column for Feast compatibility
+        result = indicator_data.copy()
+        result[self.dataset_id.symbol] = self.dataset_id.symbol
+        return result
+
+    def add(self, df: DataFrame) -> None:
+        """Mock incremental computation - not implemented for current testing."""
+        pass
+
+    def compute_latest(self) -> Optional[DataFrame]:
+        """Get latest close price values."""
+        indicator_name = f"close_{self.config.lookback}"
+        indicator_data = self.indicator_service.get_latest(indicator_name)
+
+        if indicator_data is None:
+            return None
+
+        result = indicator_data.copy()
+        result[self.dataset_id.symbol] = self.dataset_id.symbol
+        return result
+
+    def get_config_to_string(self) -> Optional[str]:
+        return None
+
+
+@feature_role(FeatureRoleEnum.REWARD_ENGINEERING)
+class TestRewardFeature(BaseFeature):
+    """Test reward feature implementation that produces reward and cumulative_return."""
+
+    def __init__(
+        self,
+        dataset_id: DatasetIdentifier,
+        indicator_service: MockTechnicalIndicatorFacade,
+        config: Optional[BaseParameterSetConfig] = None,
+        postfix: str = "",
+    ):
+        super().__init__(dataset_id, indicator_service, config, postfix)
+        self._feature_name = "reward"
+        # Register the indicators when feature is created
+        self.indicator_service.register_instance(
+            "reward", "reward"
+        )
+        self.indicator_service.register_instance(
+            "cumulative_return", "cumulative_return"
+        )
+
+    def get_feature_name(self) -> str:
+        return self._feature_name
+
+    def get_sub_features_names(self) -> list[str]:
+        return ["reward", "cumulative_return"]
+
+    def compute_all(self) -> Optional[DataFrame]:
+        """Compute reward features using the mock indicator service."""
+        # Get both reward and cumulative return data
+        reward_data = self.indicator_service.get_all("reward")
+        cumulative_data = self.indicator_service.get_all("cumulative_return")
+
+        if reward_data is None or cumulative_data is None:
+            return None
+
+        # Combine both into a single DataFrame
+        result = reward_data.copy()
+        result["cumulative_return"] = cumulative_data["cumulative_return"]
+
+        # Add the required symbol column for Feast compatibility
+        result[self.dataset_id.symbol] = self.dataset_id.symbol
+        return result
+
+    def add(self, df: DataFrame) -> None:
+        """Mock incremental computation - not implemented for current testing."""
+        pass
+
+    def compute_latest(self) -> Optional[DataFrame]:
+        """Get latest reward feature values."""
+        reward_data = self.indicator_service.get_latest("reward")
+        cumulative_data = self.indicator_service.get_latest("cumulative_return")
+
+        if reward_data is None or cumulative_data is None:
+            return None
+
+        result = reward_data.copy()
+        result["cumulative_return"] = cumulative_data["cumulative_return"]
+        result[self.dataset_id.symbol] = self.dataset_id.symbol
+        return result
+
+    def get_config_to_string(self) -> Optional[str]:
+        return None
+
+def _initialize_feast_repository(repo_path: str) -> None:
+    """Initialize a Feast repository with staged configuration.
+
+    For integration tests, this simply ensures the STAGE environment variable
+    is set to 'test' to use the existing test configuration.
+
+    Args:
+        repo_path: Path to the directory where the Feast repository should be created
+    """
+    # Ensure the directory exists
+    os.makedirs(repo_path, exist_ok=True)
+
+    # Set STAGE for test if not already set
+    os.environ.setdefault("STAGE", "test")
+
+    # No need to copy configs - the test configuration already exists at
+    # tests/resources/test/feature_store.yaml and will be used by FeatureStoreWrapper
+
+@pytest.fixture(scope="function")
+def integration_container(
+    real_feast_container: Injector, clean_integration_environment: None
+) -> Generator[Injector, None, None]:
+    """Provide container with clean integration environment for each test.
+
+    This ensures each test gets a fresh, clean state while using real
+    services created through dependency injection.
+
+    Args:
+        real_feast_container: DI container with real services
+        clean_integration_environment: Clean environment setup
+
+    Returns:
+        Injector: Ready-to-use DI container for integration testing
+    """
+    yield real_feast_container
+
+@pytest.fixture(scope="function")
+def sample_trading_features_df() -> DataFrame:
+    """Create comprehensive sample trading features DataFrame for integration testing.
+
+    This fixture provides a realistic set of trading features with proper column names
+    and data types that match what the feature store repositories expect.
+    """
+    # Create realistic time series data with UTC timezone to avoid Feast timezone issues
+    timestamps = pd.date_range(
+        start="2024-01-01 09:00:00",
+        periods=50,
+        freq="H",
+        tz="UTC",  # Add UTC timezone to match Feast expectations
+    )
+
+    # Generate realistic trading feature data
+    return DataFrame(
+        {
+            "event_timestamp": timestamps,
+            "symbol": ["EURUSD"] * len(timestamps),
+            # Technical indicators - observation space features (match sub-feature names)
+            "rsi_14_A1b2c3": [30.0 + (i % 40) + (i * 0.5) for i in range(len(timestamps))],
+            # OHLCV data - observation space features (match sub-feature names)
+            "close_price": [
+                1.0850 + (i % 20) * 0.0001 for i in range(len(timestamps))
+            ],  # Fixed: close -> close_1
+            # Reward engineering features
+            "reward_reward": [0.01 * (i % 20 - 10) for i in range(len(timestamps))],
+            "reward_cumulative_return": [0.001 * i for i in range(len(timestamps))],
+        }
+    )
+
+
+# S3/MinIO TestContainer Fixtures for Integration Testing
+
+
+@pytest.fixture(scope="session")
+def minio_container() -> Generator[MinioContainer, None, None]:
+    """
+    Start a MinIO container for S3-compatible testing.
+
+    MinIO is lighter and faster than LocalStack for pure S3 testing.
+    """
+    with MinioContainer() as minio:
+        yield minio
+
+
+@pytest.fixture
+def s3_client_minio(minio_container: MinioContainer) -> boto3.client:
+    """Create a boto3 S3 client connected to MinIO container."""
+    return boto3.client(
+        "s3",
+        endpoint_url=f"http://{minio_container.get_container_host_ip()}:{minio_container.get_exposed_port(9000)}",
+        aws_access_key_id=minio_container.access_key,
+        aws_secret_access_key=minio_container.secret_key,
+        region_name="us-east-1",
+    )
+
+
+@pytest.fixture
+def s3_test_bucket(s3_client_minio: boto3.client) -> str:
+    """Create a test bucket for feature storage testing."""
+    import uuid
+
+    # Use a unique bucket name per test session to ensure isolation
+    bucket_name = f"test-feature-store-{uuid.uuid4().hex[:8]}"
+
+    # Try to create bucket, ignore if it already exists
+    try:
+        s3_client_minio.create_bucket(Bucket=bucket_name)
+    except s3_client_minio.exceptions.BucketAlreadyOwnedByYou:
+        # Bucket already exists, which is fine for our tests
+        pass
+    except s3_client_minio.exceptions.BucketAlreadyExists:
+        # Bucket exists but owned by someone else (shouldn't happen in MinIO)
+        pass
+
+    return bucket_name
+
+
+@pytest.fixture
+def s3_feature_store_config(
+    s3_client_minio: boto3.client,
+    s3_test_bucket: str,
+    minio_container: MinioContainer,
+    temp_feast_repo: str,
+) -> FeatureStoreConfig:
+    """Create FeatureStoreConfig for S3 testing."""
+    s3_config = S3RepoConfig(
+        bucket_name=s3_test_bucket,
+        prefix="features",
+        endpoint_url=f"http://{minio_container.get_container_host_ip()}:{minio_container.get_exposed_port(9000)}",
+        region="us-east-1",
+        access_key_id=minio_container.access_key,
+        secret_access_key=minio_container.secret_key,
+    )
+
+    # Use the actual test config directory that contains feature_store.yaml
+    test_config_dir = os.path.join(os.path.dirname(__file__), "../../../../resources/test")
+
+    return FeatureStoreConfig(
+        enabled=True,
+        entity_name="test_entity",
+        ttl_days=30,
+        online_enabled=False,
+        service_name="test_service",
+        service_version="1.0.0",
+        offline_repo_strategy=OfflineRepoStrategyEnum.S3,
+        s3_repo_config=s3_config,
+        config_directory=test_config_dir,
+    )
+
+
+@pytest.fixture
+def local_feature_store_config(temp_feast_repo: str) -> FeatureStoreConfig:
+    """Create FeatureStoreConfig for local filesystem testing."""
+    import os
+    local_config = LocalRepoConfig(repo_path=os.path.join(temp_feast_repo))
+
+    # Use the actual test config directory that contains feature_store.yaml
+    test_config_dir = os.path.join(os.path.dirname(__file__), "../../../../resources/test")
+
+    return FeatureStoreConfig(
+        enabled=True,
+        entity_name="test_entity",
+        ttl_days=30,
+        online_enabled=False,
+        service_name="test_service",
+        service_version="1.0.0",
+        offline_repo_strategy=OfflineRepoStrategyEnum.LOCAL,
+        local_repo_config=local_config,
+        config_directory=test_config_dir,
+    )
+
+
+@pytest.fixture(params=["local", "s3"])
+def parametrized_feature_store_config(
+    request,
+    local_feature_store_config: FeatureStoreConfig,
+    s3_feature_store_config: FeatureStoreConfig,
+) -> FeatureStoreConfig:
+    """Parametrized fixture that provides both local and S3 feature store configurations."""
+    if request.param == "local":
+        return local_feature_store_config
+    elif request.param == "s3":
+        return s3_feature_store_config
+    else:
+        raise ValueError(f"Unknown parameter: {request.param}")
+
+
+@pytest.fixture
+def parametrized_integration_container(
+    parametrized_feature_store_config: FeatureStoreConfig,
+    clean_integration_environment: None,
+) -> Generator[Injector, None, None]:
+    """Create integration container with parametrized offline repository strategy."""
+
+    # Ensure STAGE is set for consistent testing
+    os.environ.setdefault("STAGE", "test")
+
+    # Initialize Feast repository for local configurations
+    if (
+        parametrized_feature_store_config.offline_repo_strategy
+        == OfflineRepoStrategyEnum.LOCAL
+        and parametrized_feature_store_config.local_repo_config is not None
+    ):
+        repo_path = parametrized_feature_store_config.local_repo_config.repo_path
+        _initialize_feast_repository(repo_path)
+
+    # Create the injector container with the temporary config
+    app_module = AdapterModule()
+    preprocess_module = PreprocessModule(PreprocessConfig(feature_store_config=parametrized_feature_store_config))
+    injector = Injector([app_module, preprocess_module])
+
+    yield injector
+
+
+@pytest.fixture
+def feature_version_info_fixture() -> FeatureConfigVersionInfo:
+    """Create feature version info for integration testing."""
+    return FeatureConfigVersionInfo(
+        semver="1.0.0",
+        hash="integration_test_hash_123",
+        created_at=datetime.fromisoformat("2024-01-01T00:00:00"),
+        feature_definitions=[
+            {"name": "rsi_14", "enabled": True, "role": "observation_space"},
+            {"name": "close_1", "enabled": True, "role": "observation_space"},
+            {"name": "reward", "enabled": True, "role": "reward_engineering"},
+            {
+                "name": "cumulative_return",
+                "enabled": True,
+                "role": "reward_engineering",
+            },
+        ],
+    )
+
+
+@pytest.fixture
+def feature_view_requests_fixture(
+    feature_version_info_fixture: FeatureConfigVersionInfo,
+) -> list[FeatureViewRequest]:
+    """Create feature view requests from feature version info for integration testing."""
+    feature_view_name_mapper = FeatureViewNameMapper()
+    symbol = "EURUSD"
+
+    # Create dataset identifier and mock indicator service
+    dataset_id = DatasetIdentifier(symbol=symbol, timeframe="H1")
+    indicator_service = MockTechnicalIndicatorFacade()
+
+    # Group feature definitions by role and create concrete feature instances
+    role_groups = {}
+    created_features = {}  # Track features we've already created to avoid duplicates
+
+    for feature_def in feature_version_info_fixture.feature_definitions:
+        if not feature_def.get("enabled", True):
+            continue  # Skip disabled features
+
+        role = feature_def.get("role", "observation_space")
+        if role not in role_groups:
+            role_groups[role] = []
+
+        # Create concrete feature instances based on feature name, avoiding duplicates
+        feature_name = feature_def["name"]
+        feature_key = f"{role}_{feature_name}"
+
+        # For reward features, both reward and cumulative_return map to the same TestRewardFeature
+        if feature_name in ["reward", "cumulative_return"]:
+            reward_key = f"{role}_reward_feature"
+            if reward_key not in created_features:
+                feature = TestRewardFeature(dataset_id, indicator_service)
+                created_features[reward_key] = feature
+                role_groups[role].append(feature)
+        elif feature_name == "rsi_14":
+            if feature_key not in created_features:
+                config = TestRsiConfig()
+                feature = TestRsiFeature(dataset_id, indicator_service, config)
+                created_features[feature_key] = feature
+                role_groups[role].append(feature)
+        elif feature_name == "close_1":
+            if feature_key not in created_features:
+                feature = TestClosePriceFeature(dataset_id, indicator_service)
+                created_features[feature_key] = feature
+                role_groups[role].append(feature)
+        else:
+            # Default to close price feature for unknown features
+            if feature_key not in created_features:
+                feature = TestClosePriceFeature(dataset_id, indicator_service)
+                created_features[feature_key] = feature
+                role_groups[role].append(feature)
+
+    # Create FeatureViewRequest for each role group
+    requests = []
+    for role, features in role_groups.items():
+        feature_role = FeatureRoleEnum(role) if role else FeatureRoleEnum.OBSERVATION_SPACE
+        feature_view_name = feature_view_name_mapper.map(feature_role)
+
+        request = FeatureViewRequest(
+            symbol=symbol,
+            feature_view_name=feature_view_name,
+            feature_role=feature_role,
+            feature_version_info=feature_version_info_fixture,
+            features=features
+        )
+        requests.append(request)
+
+    return requests

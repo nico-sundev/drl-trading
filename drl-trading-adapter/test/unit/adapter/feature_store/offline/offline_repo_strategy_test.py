@@ -7,12 +7,9 @@ repository implementation based on configuration settings.
 import pytest
 from unittest.mock import patch, MagicMock
 
+from drl_trading_adapter.adapter.feature_store.offline.offline_repo_strategy import OfflineRepoStrategy
 from drl_trading_common.config.feature_config import FeatureStoreConfig, LocalRepoConfig, S3RepoConfig
 from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
-
-from drl_trading_core.preprocess.feature_store.offline_store.offline_repo_strategy import (
-    OfflineRepoStrategy,
-)
 
 
 class TestOfflineRepoStrategy:

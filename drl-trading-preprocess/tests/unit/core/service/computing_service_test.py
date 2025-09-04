@@ -9,11 +9,8 @@ from drl_trading_common.interface.feature.feature_factory_interface import (
     IFeatureFactory,
 )
 
-from drl_trading_core.preprocess.compute.computing_service import (
-    FeatureComputingService,
-    IFeatureComputer,
-)
 from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
+from drl_trading_preprocess.core.service.computing_service import FeatureComputingService
 
 
 class TestComputingService:
@@ -35,7 +32,7 @@ class TestComputingService:
         return Mock(spec=FeatureManager)
 
     @pytest.fixture
-    def computing_service(self, config_mock, feature_factory_mock, feature_manager_service_mock) -> IFeatureComputer:
+    def computing_service(self, config_mock, feature_factory_mock, feature_manager_service_mock) -> FeatureComputingService:
         """Create a ComputingService instance with mocked dependencies."""
         return FeatureComputingService(
             feature_manager_service=feature_manager_service_mock

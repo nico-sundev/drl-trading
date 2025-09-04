@@ -1,15 +1,42 @@
 
-import pytest
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
-from feast import FeatureStore
+from unittest.mock import Mock
+from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+from drl_trading_core.common.model.feature_view_request import FeatureViewRequest
+from feast import FeatureStore, Field
+from feast.types import Float32
 from injector import Injector
 
-from drl_trading_adapter.adapter.feature_store.feast.feast_provider import (
+from drl_trading_adapter.adapter.feature_store.provider import (
     FeastProvider,
 )
-from drl_trading_adapter.adapter.feature_store.feast.feature_store_wrapper import (
+from drl_trading_adapter.adapter.feature_store.provider import (
     FeatureStoreWrapper,
 )
+from drl_trading_adapter.adapter.feature_store.provider.mapper import (
+    IFeatureFieldMapper,
+)
+
+
+def create_mock_mapper(field_responses: dict[str, list[Field]]) -> Mock:
+    """Create a mock feature field mapper that returns predefined fields."""
+    mock_mapper = Mock(spec=IFeatureFieldMapper)
+
+    def side_effect_create_fields(feature):
+        feature_name = feature.get_feature_name()
+        return field_responses.get(feature_name, [Field(name=feature_name, dtype=Float32)])
+
+    mock_mapper.create_fields.side_effect = side_effect_create_fields
+    return mock_mapper
+
+
+def create_simple_mock_feature(name: str) -> Mock:
+    """Create a simple mock feature without BaseFeature complexity."""
+    mock_feature = Mock()
+    mock_feature.get_feature_name.return_value = name
+    mock_feature.get_sub_features_names.return_value = []
+    mock_feature.get_config.return_value = None
+    mock_feature.get_config_to_string.return_value = None
+    return mock_feature
 
 
 class TestFeastIntegration:
@@ -17,12 +44,13 @@ class TestFeastIntegration:
 
     def test_feature_store_wrapper_provides_real_feature_store(
         self,
-        integration_container: Injector,
+        real_feast_container: Injector,
+        temp_feast_repo: str,
         clean_integration_environment: None
     ) -> None:
         """Test that FeatureStoreWrapper provides a real FeatureStore instance."""
         # Given
-        feature_store_wrapper = integration_container.get(FeatureStoreWrapper)
+        feature_store_wrapper = real_feast_container.get(FeatureStoreWrapper)
 
         # When
         feature_store = feature_store_wrapper.get_feature_store()
@@ -34,192 +62,152 @@ class TestFeastIntegration:
         # Verify it's properly configured for test environment
         assert feature_store.repo_path is not None
 
-    def test_feast_provider_can_create_feature_views(
+    def test_feast_provider_can_create_feature_views_with_request(
         self,
-        integration_container: Injector,
+        real_feast_container: Injector,
         feature_version_info_fixture,
+        temp_feast_repo: str,
         clean_integration_environment: None
     ) -> None:
-        """Test that FeastProvider can create feature views with real Feast backend."""
+        """Test that FeastProvider can create feature views using synthetic FeatureViewRequest."""
         # Given
-        feast_provider = integration_container.get(FeastProvider)
-        symbol = "EURUSD"
-        feature_view_name = "test_features"
+        feast_provider = real_feast_container.get(FeastProvider)
 
         # Verify that we're using a real Feast store, not a mock
         assert isinstance(feast_provider.get_feature_store(), FeatureStore)
         assert feast_provider.is_enabled() is True
 
-        # When
-        feature_view = feast_provider.create_feature_view(
-            symbol=symbol,
-            feature_view_name=feature_view_name,
-            feature_role=None,  # This might need adjustment based on your enum
-            feature_version_info=feature_version_info_fixture
+        # Create synthetic features for the request (no complex business logic needed)
+        mock_feature_1 = create_simple_mock_feature("test_feature_1")
+        mock_feature_2 = create_simple_mock_feature("test_feature_2")
+
+        # Create a mock mapper that returns specific fields for these features
+        expected_fields = {
+            "test_feature_1": [Field(name="test_feature_1", dtype=Float32)],
+            "test_feature_2": [Field(name="test_feature_2", dtype=Float32)],
+        }
+        mock_mapper = create_mock_mapper(expected_fields)
+
+        # Replace the mapper in the DI container with our mock
+        feast_provider.feature_field_mapper = mock_mapper
+
+        # Create FeatureViewRequest with synthetic features
+        request = FeatureViewRequest(
+            symbol="TESTSYM",
+            feature_view_name="synthetic_features",
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature_version_info=feature_version_info_fixture,
+            features=[mock_feature_1, mock_feature_2]
         )
+
+        # When
+        feature_view = feast_provider.create_feature_view_from_request(request)
 
         # Then
         assert feature_view is not None
-        assert feature_view.name == feature_view_name
-        assert symbol in [tag for tag in feature_view.tags.values()]
+        assert feature_view.name == "synthetic_features"
+        assert "TESTSYM" in [tag for tag in feature_view.tags.values()]
 
-    def test_feature_factory_creates_real_features(
+        # Verify fields were created correctly from mock mapper
+        field_names = [field.name for field in feature_view.schema]
+        assert "test_feature_1" in field_names
+        assert "test_feature_2" in field_names
+
+    def test_feast_provider_uses_injected_mapper(
         self,
-        integration_container: Injector,
-        test_feature_factory,
-        test_rsi_config,
-    ) -> None:
-        """Test that the feature factory creates real feature instances."""
-        # Given
-        feature_factory = integration_container.get(test_feature_factory.__class__)
-        dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe="1H")
-
-        # When
-        rsi_feature = feature_factory.create_feature(
-            feature_name="rsi",
-            dataset_id=dataset_id,
-            config=test_rsi_config
-        )
-        close_price_feature = feature_factory.create_feature(
-            feature_name="close_price",
-            dataset_id=dataset_id,
-            config=None
-        )
-
-        # Then
-        assert rsi_feature is not None
-        assert rsi_feature.get_feature_name() == "rsi"
-        assert rsi_feature.get_sub_features_names() == []
-
-        assert close_price_feature is not None
-        assert close_price_feature.get_feature_name() == "close_price"
-        assert close_price_feature.get_sub_features_names() == []
-
-    def test_feature_computation_returns_real_data(
-        self,
-        integration_container: Injector,
-        test_feature_factory,
-        test_rsi_config,
-    ) -> None:
-        """Test that features can compute real data."""
-        # Given
-        feature_factory = integration_container.get(test_feature_factory.__class__)
-        dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe="1H")
-
-        rsi_feature = feature_factory.create_feature(
-            feature_name="rsi",
-            dataset_id=dataset_id,
-            config=test_rsi_config
-        )
-        assert rsi_feature is not None, "Feature creation should not return None"
-
-        # When
-        computed_data = rsi_feature.compute_all()
-
-        # Then
-        assert computed_data is not None
-        assert len(computed_data) == 100  # As defined in our test implementation
-        assert "event_timestamp" in computed_data.columns
-        assert "rsi_14" in computed_data.columns
-        assert "EURUSD" in computed_data.columns
-
-        # Verify data types and ranges
-        assert computed_data["rsi_14"].dtype.kind in 'fi'  # float or int
-        assert computed_data["rsi_14"].min() >= 30.0  # Based on our test data
-        assert computed_data["rsi_14"].max() <= 70.0
-
-    def test_feature_store_wrapper_provides_real_store(
-        self,
-        integration_container: Injector,
+        real_feast_container: Injector,
+        feature_version_info_fixture,
+        temp_feast_repo: str,
         clean_integration_environment: None
     ) -> None:
-        """Test that FeatureStoreWrapper provides a real FeatureStore instance."""
+        """Test that FeastProvider uses the injected feature field mapper correctly."""
         # Given
-        feature_store_wrapper = integration_container.get(FeatureStoreWrapper)
+        feast_provider = real_feast_container.get(FeastProvider)
+
+        # Create simple mock features
+        mock_feature = create_simple_mock_feature("mapper_test_feature")
+
+        # Create a mock mapper with custom behavior
+        mock_mapper = Mock(spec=IFeatureFieldMapper)
+        mock_mapper.create_fields.return_value = [
+            Field(name="custom_mapped_field", dtype=Float32)
+        ]
+
+        # Inject the mock mapper
+        feast_provider.feature_field_mapper = mock_mapper
+
+        request = FeatureViewRequest(
+            symbol="MAPPERTEST",
+            feature_view_name="mapper_test",
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature_version_info=feature_version_info_fixture,
+            features=[mock_feature]
+        )
 
         # When
-        feature_store = feature_store_wrapper.get_feature_store()
+        feature_view = feast_provider.create_feature_view_from_request(request)
 
         # Then
-        assert isinstance(feature_store, FeatureStore)
-        assert feature_store is not None
+        assert feature_view is not None
+        field_names = [field.name for field in feature_view.schema]
+        assert "custom_mapped_field" in field_names
 
-        # Verify it's properly configured for test environment
-        assert feature_store.repo_path is not None
-
-    def test_clean_feature_store_isolation(
-        self,
-        integration_container: Injector,
-        clean_integration_environment: None
-    ) -> None:
-        """Test that each test gets a clean feature store state."""
-        # Given
-        feast_provider = integration_container.get(FeastProvider)
-
-        # When - try to list existing feature views (should be empty)
-        feature_views = feast_provider.get_feature_store().list_feature_views()
-
-        # Then
-        assert len(feature_views) == 0, "Feature store should be clean for each test"
-
-    @pytest.mark.parametrize("feature_name,config_data,expected_config_type", [
-        ("rsi", {"period": 21}, "TestRsiConfig"),
-    ])
-    def test_feature_factory_config_creation(
-        self,
-        integration_container: Injector,
-        test_feature_factory,
-        feature_name: str,
-        config_data: dict,
-        expected_config_type: str
-    ) -> None:
-        """Test parameterized feature configuration creation."""
-        # Given
-        feature_factory = integration_container.get(test_feature_factory.__class__)
-
-        # When
-        config = feature_factory.create_config_instance(feature_name, config_data)
-
-        # Then
-        assert config is not None
-        assert type(config).__name__ == expected_config_type
-        if feature_name == "rsi":
-            assert type(config).__name__ == "TestRsiConfig"
-            assert config.period == config_data["period"]
+        # Verify the mapper was called with our feature
+        mock_mapper.create_fields.assert_called_once_with(mock_feature)
 
 
 class TestFeastDataPersistence:
-    """Tests for data persistence and retrieval with Feast."""
+    """Tests for Feast integration mechanics, not data computation."""
 
-    def test_feature_data_can_be_stored_and_retrieved(
+    def test_feast_provider_handles_feature_view_request_validation(
         self,
-        integration_container: Injector,
+        real_feast_container: Injector,
         clean_integration_environment: None,
-        test_feature_factory,
-        test_rsi_config,
+        feature_version_info_fixture,
     ) -> None:
-        """Test end-to-end feature data storage and retrieval."""
+        """Test that FeastProvider validates FeatureViewRequest properly."""
         # Given
-        feature_factory = integration_container.get(test_feature_factory.__class__)
-        _ = integration_container.get(FeastProvider)
+        feast_provider = real_feast_container.get(FeastProvider)
 
-        dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe="1H")
-        rsi_feature = feature_factory.create_feature("rsi", dataset_id, test_rsi_config)
-        assert rsi_feature is not None, "Feature creation should not return None"
+        # Create a valid request
+        valid_request = FeatureViewRequest(
+            symbol="TESTSYM",
+            feature_view_name="validation_test",
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature_version_info=feature_version_info_fixture,
+            features=[create_simple_mock_feature("test_feature")]
+        )
+
+        # When & Then - should not raise any validation errors
+        feature_view = feast_provider.create_feature_view_from_request(valid_request)
+        assert feature_view is not None
+
+    def test_feast_feature_view_has_correct_metadata(
+        self,
+        real_feast_container: Injector,
+        clean_integration_environment: None,
+        feature_version_info_fixture,
+    ) -> None:
+        """Test that created feature views have correct Feast metadata."""
+        # Given
+        feast_provider = real_feast_container.get(FeastProvider)
+        request = FeatureViewRequest(
+            symbol="METADATA_TEST",
+            feature_view_name="metadata_features",
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature_version_info=feature_version_info_fixture,
+            features=[create_simple_mock_feature("meta_feature")]
+        )
 
         # When
-        computed_data = rsi_feature.compute_all()
+        feature_view = feast_provider.create_feature_view_from_request(request)
 
-        # Then
-        assert computed_data is not None
-        assert len(computed_data) > 0
-
-        # This test demonstrates that we have real data that could be stored
-        # In a full integration test, you would:
-        # 1. Apply feature views to Feast
-        # 2. Materialize features
-        # 3. Retrieve features using get_historical_features
-        # For now, we verify the data structure is correct for Feast ingestion
-        required_columns = ["event_timestamp", dataset_id.symbol]
-        for col in required_columns:
-            assert col in computed_data.columns, f"Missing required column: {col}"
+        # Then - verify Feast-specific metadata
+        assert feature_view.name == "metadata_features"
+        assert len(feature_view.entities) == 1
+        # Note: Feast stores entity names as strings in feature_view.entities
+        assert feature_view.entities[0] == "test_entity"  # This is the entity name from config
+        assert feature_view.ttl is not None
+        assert feature_view.ttl.days > 0  # From config
+        assert "METADATA_TEST" in feature_view.tags.values()
+        assert feature_view.source.timestamp_field == "event_timestamp"

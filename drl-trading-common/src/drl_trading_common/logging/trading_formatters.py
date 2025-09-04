@@ -67,7 +67,7 @@ class TradingStructuredFormatter(logging.Formatter):
         # Build base log entry
         short_logger = getattr(record, 'short_name', record.name)
         log_entry: Dict[str, Any] = {
-            'timestamp': datetime.now(timezone.utc).isoformat() + 'Z',
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'service': self.service_name,
             'environment': self.environment,
             'hostname': self.hostname,

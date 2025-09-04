@@ -13,6 +13,7 @@ from typing import List
 
 from injector import Module
 
+from drl_trading_adapter.infrastructure.di.adapter_module import AdapterModule
 from drl_trading_common.infrastructure.bootstrap.flask_service_bootstrap import FlaskServiceBootstrap
 from drl_trading_common.infrastructure.health.basic_health_checks import (
     SystemResourcesHealthCheck,
@@ -20,6 +21,7 @@ from drl_trading_common.infrastructure.health.basic_health_checks import (
     ConfigurationHealthCheck,
 )
 from drl_trading_common.infrastructure.health.health_check import HealthCheck
+from drl_trading_core.infrastructure.di.core_module import CoreModule
 from drl_trading_preprocess.infrastructure.config.preprocess_config import PreprocessConfig
 
 
@@ -51,7 +53,7 @@ class PreprocessServiceBootstrap(FlaskServiceBootstrap):
         """
         from drl_trading_preprocess.infrastructure.di.preprocess_module import PreprocessModule  # type: ignore
 
-        return [PreprocessModule(app_config)]
+        return [PreprocessModule(app_config), CoreModule(), AdapterModule()]
 
     def get_health_checks(self) -> List[HealthCheck]:
         """Return health checks (always includes configuration check)."""

@@ -36,6 +36,7 @@ dependencies = [
     # Configuration support - required by drl-trading-common
     "PyYAML>=6.0",
     "drl-trading-adapter",
+    "feast>=0.53.0",
 ]
 
 [tool.uv.sources]

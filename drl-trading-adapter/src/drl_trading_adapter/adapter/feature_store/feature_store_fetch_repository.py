@@ -1,8 +1,8 @@
 import logging
 from typing import Optional
 
-from .feast.feast_provider import FeastProvider
-from drl_trading_core.common.core.port.feature_store_fetch_port import IFeatureStoreFetchPort
+from drl_trading_adapter.adapter.feature_store.provider import FeastProvider
+from drl_trading_core.core.port import IFeatureStoreFetchPort
 import pandas as pd
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,

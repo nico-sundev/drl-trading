@@ -1,6 +1,6 @@
 from pandas import DataFrame
 
-from drl_trading_core.common.core.port import IFeatureStoreFetchPort
+from drl_trading_core.core.port import IFeatureStoreFetchPort
 from drl_trading_core.preprocess.feature import FeatureManager
 
 from ..port import IFeatureStoreSavePort

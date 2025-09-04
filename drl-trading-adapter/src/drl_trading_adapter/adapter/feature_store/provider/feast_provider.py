@@ -11,14 +11,13 @@ from feast import (
     FileSource,
     OnDemandFeatureView,
 )
-from feast.types import Float32
 from injector import inject
 
 from .feature_store_wrapper import FeatureStoreWrapper
+from .mapper.feature_field_mapper import IFeatureFieldMapper
 from drl_trading_adapter.adapter.feature_store.offline import IOfflineFeatureRepository
 from drl_trading_common.base import BaseFeature
 from drl_trading_common.config import FeatureStoreConfig
-from drl_trading_common.enum import FeatureRoleEnum
 from drl_trading_common.model import (
     FeatureConfigVersionInfo,
 )
@@ -38,10 +37,12 @@ class FeastProvider:
         feature_store_config: FeatureStoreConfig,
         feature_store_wrapper: FeatureStoreWrapper,
         offline_feature_repo: IOfflineFeatureRepository,
+        feature_field_mapper: IFeatureFieldMapper,
     ):
         self.feature_store_config = feature_store_config
         self.feature_store = feature_store_wrapper.get_feature_store()
         self.offline_feature_repo = offline_feature_repo
+        self.feature_field_mapper = feature_field_mapper
 
     def get_feature_store(self) -> FeatureStore:
         """
@@ -163,10 +164,8 @@ class FeastProvider:
             feature_view_name, request.feature_version_info, symbol
         )
 
-        # Get features and create fields
-        features_for_role = self._get_features_for_role(
-            request.feature_role, request.get_role_description()
-        )
+        # Get features from the request and create fields
+        features_for_role = self._get_features_from_request(request)
         fields = self._create_fields_for_features(features_for_role)
 
         # Create entity
@@ -208,27 +207,20 @@ class FeastProvider:
                 f"Failed to create FileSource for feature view '{feature_view_name}': {e}"
             ) from e
 
-    def _get_features_for_role(
-        self, feature_role: Optional[FeatureRoleEnum], role_description: str
-    ) -> list[BaseFeature]:
-        """Get features for the specified role with validation."""
+    def _get_features_from_request(self, request: FeatureViewRequest) -> list[BaseFeature]:
+        """Get features from the FeatureViewRequest with validation."""
 
-        features_for_role: list[BaseFeature] = []
+        features_from_request = request.features if hasattr(request, 'features') else []
 
-        if feature_role is not None:
-            features_for_role.append(
-                self.feature_manager.get_features_by_role(feature_role)
-            )
-
-        if not features_for_role:
+        if not features_from_request:
             logger.warning(
-                f"No features found for role {role_description}, creating empty feature view"
+                f"No features found in request for role {request.get_role_description()}, creating empty feature view"
             )
 
         logger.debug(
-            f"Feast feature view will be created for feature role: {role_description}"
+            f"Feast feature view will be created for feature role: {request.get_role_description()}"
         )
-        return features_for_role
+        return features_from_request
 
     def _create_fields_for_features(
         self, features_for_role: list[BaseFeature]
@@ -238,10 +230,7 @@ class FeastProvider:
 
         try:
             for feature in features_for_role:
-                if feature is None:
-                    logger.warning("Skipping None feature in feature list")
-                    continue
-                feature_fields = self._create_fields(feature)
+                feature_fields = self.feature_field_mapper.create_fields(feature)
                 if feature_fields:
                     fields.extend(feature_fields)
         except Exception as e:
@@ -328,57 +317,3 @@ class FeastProvider:
             join_keys=["symbol"],  # Column name in DataFrame, not the symbol value
             description=f"Entity for {symbol} asset price data",
         )
-
-    def _get_field_base_name(self, feature: BaseFeature) -> str:
-        """
-        Create a unique field name based on the feature name and its config hash.
-        Current schema looks like:
-        [feature_name]_[config_to_string]_[config_hash]
-
-        Example 1: A feature relying on a config
-        If feature name is "rsi", config_to_string is "14" and config_hash is "abc123",
-        the resulting name will be "rsi_14_abc123".
-
-        Example 2: A feature without a config
-        If feature name is "close_price",
-        the resulting name will be "close_price".
-
-        Args:
-            feature: The feature object
-
-        Returns:
-            str: A unique name for the field
-        """
-        config = feature.get_config()
-        config_string = (
-            f"_{feature.get_config_to_string()}_{config.hash_id()}" if config else ""
-        )
-        return f"{feature.get_feature_name()}{config_string}"
-
-    def _create_fields(self, feature: BaseFeature) -> list[Field]:
-        """
-        Create fields for the feature view based on the feature's type and role.
-        Current schema looks like:
-        [field_base_name][_[sub_feature_name]] if sub-features exist
-        Args:
-            feature: The feature for which fields are created
-
-        Returns:
-            list[Field]: List of fields for the feature view
-        """
-        feature_name = self._get_field_base_name(feature)
-        logger.debug(f"Feast fields will be created for feature: {feature_name}")
-
-        if len(feature.get_sub_features_names()) == 0:
-            # If no sub-features, create a single field for the feature
-            logger.debug(f"Creating feast field:{feature_name}")
-            return [Field(name=feature_name, dtype=Float32)]
-
-        fields = []
-        for sub_feature in feature.get_sub_features_names():
-            # Combine feature name with sub-feature name to create unique field names
-            feast_field_name = f"{feature_name}_{sub_feature}"
-            logger.debug(f"Creating feast field:{feast_field_name}")
-            fields.append(Field(name=feast_field_name, dtype=Float32))
-
-        return fields

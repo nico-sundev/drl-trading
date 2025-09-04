@@ -7,23 +7,13 @@ import pandas_ta as ta
 import pytest
 from drl_trading_common import BaseParameterSetConfig
 from drl_trading_common.base.base_feature import BaseFeature
-from drl_trading_common.config.application_config import ApplicationConfig
-from drl_trading_common.config.config_loader import ConfigLoader
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     ITechnicalIndicatorFacade,
 )
 from injector import Injector
 from pandas import DataFrame
 
-
-@pytest.fixture(scope="session")
-def mocked_config() -> ApplicationConfig:
-    """Load test configuration from the test resources directory."""
-    config_path = os.path.join(
-        os.path.dirname(__file__), "resources/applicationConfig-test.json"
-    )
-    return ConfigLoader.get_config(ApplicationConfig, config_path)
-
+from drl_trading_core.infrastructure.di import CoreModule
 
 class RsiConfig(BaseParameterSetConfig):
     """RSI configuration for testing."""
@@ -125,8 +115,6 @@ def mocked_container(feature_factory):
         os.path.dirname(__file__), "resources/applicationConfig-test.json"
     )
 
-    # Create injector with the domain module
-    from drl_trading_core.common.di.core_module import CoreModule
     app_module = CoreModule(config_path=test_config_path)
     injector = Injector([app_module])
 

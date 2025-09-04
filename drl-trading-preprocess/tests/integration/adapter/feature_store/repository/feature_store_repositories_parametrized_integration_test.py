@@ -6,18 +6,14 @@ repository strategies (local filesystem and S3).
 """
 
 import logging
-from drl_trading_common.model.feature_config_version_info import (
-    FeatureConfigVersionInfo,
-)
+from drl_trading_core.common.model.feature_view_request import FeatureViewRequest
 from injector import Injector
 from pandas import DataFrame
 
 from drl_trading_adapter.adapter.feature_store.feature_store_fetch_repository import (
-    IFeatureStoreFetchRepository,
+    IFeatureStoreFetchPort,
 )
-from drl_trading_core.preprocess.feature_store.repository.feature_store_save_repo import (
-    IFeatureStoreSaveRepository,
-)
+from drl_trading_preprocess.core.port.feature_store_save_port import IFeatureStoreSavePort
 
 logger = logging.getLogger(__name__)
 
@@ -29,21 +25,21 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_version_info_fixture: FeatureConfigVersionInfo
+        feature_view_requests_fixture: list[FeatureViewRequest]
     ) -> None:
         """Test complete workflow with both local and S3 offline repositories."""
         # Given
         symbol = "EURUSD"
 
         # Get repository instances from DI container
-        save_repo = parametrized_integration_container.get(IFeatureStoreSaveRepository)
-        fetch_repo = parametrized_integration_container.get(IFeatureStoreFetchRepository)
+        save_repo = parametrized_integration_container.get(IFeatureStoreSavePort)
+        fetch_repo = parametrized_integration_container.get(IFeatureStoreFetchPort)
 
         # When - Store features offline
         save_repo.store_computed_features_offline(
             features_df=sample_trading_features_df,
             symbol=symbol,
-            feature_version_info=feature_version_info_fixture
+            feature_view_requests=feature_view_requests_fixture
         )
 
         # And fetch them back (offline)
@@ -51,7 +47,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         fetched_features = fetch_repo.get_offline(
             symbol=symbol,
             timestamps=timestamps,
-            feature_version_info=feature_version_info_fixture
+            feature_version_info=feature_view_requests_fixture[0].feature_version_info
         )
 
         # Then
@@ -73,21 +69,21 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_version_info_fixture: FeatureConfigVersionInfo
+        feature_view_requests_fixture: list[FeatureViewRequest]
     ) -> None:
         """Test workflow with both offline strategies: store offline, materialize to online, then fetch online."""
         # Given
         symbol = "EURUSD"
 
         # Get repository instances from DI container
-        save_repo = parametrized_integration_container.get(IFeatureStoreSaveRepository)
-        fetch_repo = parametrized_integration_container.get(IFeatureStoreFetchRepository)
+        save_repo = parametrized_integration_container.get(IFeatureStoreSavePort)
+        fetch_repo = parametrized_integration_container.get(IFeatureStoreFetchPort)
 
         # Store features offline first
         save_repo.store_computed_features_offline(
             features_df=sample_trading_features_df,
             symbol=symbol,
-            feature_version_info=feature_version_info_fixture
+            feature_view_requests=feature_view_requests_fixture
         )
 
         # When - Materialize to online store
@@ -97,11 +93,9 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         )
 
         # And fetch from online store
-        latest_timestamp = sample_trading_features_df["event_timestamp"].max()
         online_features = fetch_repo.get_online(
             symbol=symbol,
-            timestamp=latest_timestamp,
-            feature_version_info=feature_version_info_fixture
+            feature_version_info=feature_view_requests_fixture[0].feature_version_info
         )
 
         # Then
@@ -116,26 +110,26 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_version_info_fixture: FeatureConfigVersionInfo
+        feature_view_requests_fixture: list[FeatureViewRequest]
     ) -> None:
         """Test that duplicate features are handled correctly with both offline strategies."""
         # Given
         symbol = "EURUSD"
-        save_repo = parametrized_integration_container.get(IFeatureStoreSaveRepository)
-        fetch_repo = parametrized_integration_container.get(IFeatureStoreFetchRepository)
+        save_repo = parametrized_integration_container.get(IFeatureStoreSavePort)
+        fetch_repo = parametrized_integration_container.get(IFeatureStoreFetchPort)
 
         # Store initial features
         save_repo.store_computed_features_offline(
             features_df=sample_trading_features_df,
             symbol=symbol,
-            feature_version_info=feature_version_info_fixture
+            feature_view_requests=feature_view_requests_fixture
         )
 
         # When - Store the same features again (should handle duplicates gracefully)
         save_repo.store_computed_features_offline(
             features_df=sample_trading_features_df,
             symbol=symbol,
-            feature_version_info=feature_version_info_fixture
+            feature_view_requests=feature_view_requests_fixture
         )
 
         # Then - Fetch should still return the correct number of unique features
@@ -143,7 +137,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         fetched_features = fetch_repo.get_offline(
             symbol=symbol,
             timestamps=timestamps,
-            feature_version_info=feature_version_info_fixture
+            feature_version_info=feature_view_requests_fixture[0].feature_version_info
         )
 
         assert not fetched_features.empty
@@ -156,13 +150,13 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_version_info_fixture: FeatureConfigVersionInfo
+        feature_view_requests_fixture: list[FeatureViewRequest]
     ) -> None:
         """Test incremental feature storage with both offline strategies."""
         # Given
         symbol = "EURUSD"
-        save_repo = parametrized_integration_container.get(IFeatureStoreSaveRepository)
-        fetch_repo = parametrized_integration_container.get(IFeatureStoreFetchRepository)
+        save_repo = parametrized_integration_container.get(IFeatureStoreSavePort)
+        fetch_repo = parametrized_integration_container.get(IFeatureStoreFetchPort)
 
         # Split the data into two batches
         mid_point = len(sample_trading_features_df) // 2
@@ -173,14 +167,14 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         save_repo.store_computed_features_offline(
             features_df=first_batch,
             symbol=symbol,
-            feature_version_info=feature_version_info_fixture
+            feature_view_requests=feature_view_requests_fixture
         )
 
         # And store second batch
         save_repo.store_computed_features_offline(
             features_df=second_batch,
             symbol=symbol,
-            feature_version_info=feature_version_info_fixture
+            feature_view_requests=feature_view_requests_fixture
         )
 
         # Then - Fetch all features
@@ -188,7 +182,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         fetched_features = fetch_repo.get_offline(
             symbol=symbol,
             timestamps=all_timestamps,
-            feature_version_info=feature_version_info_fixture
+            feature_version_info=feature_view_requests_fixture[0].feature_version_info
         )
 
         assert not fetched_features.empty
@@ -203,13 +197,13 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_version_info_fixture: FeatureConfigVersionInfo
+        feature_view_requests_fixture: list[FeatureViewRequest]
     ) -> None:
         """Test storing and fetching features for multiple symbols with both offline strategies."""
         # Given
         symbols = ["EURUSD", "GBPUSD", "USDJPY"]
-        save_repo = parametrized_integration_container.get(IFeatureStoreSaveRepository)
-        fetch_repo = parametrized_integration_container.get(IFeatureStoreFetchRepository)
+        save_repo = parametrized_integration_container.get(IFeatureStoreSavePort)
+        fetch_repo = parametrized_integration_container.get(IFeatureStoreFetchPort)
 
         # When - Store features for multiple symbols
         for symbol in symbols:
@@ -218,16 +212,18 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
             save_repo.store_computed_features_offline(
                 features_df=symbol_features,
                 symbol=symbol,
-                feature_version_info=feature_version_info_fixture
+                feature_view_requests=feature_view_requests_fixture
             )
 
         # Then - Fetch features for each symbol and verify isolation
         timestamps = sample_trading_features_df["event_timestamp"]
+        # Extract feature_version_info from the first feature_view_request for fetch operations
+        feature_version_info = feature_view_requests_fixture[0].feature_version_info
         for symbol in symbols:
             fetched_features = fetch_repo.get_offline(
                 symbol=symbol,
                 timestamps=timestamps,
-                feature_version_info=feature_version_info_fixture
+                feature_version_info=feature_version_info
             )
 
             assert not fetched_features.empty

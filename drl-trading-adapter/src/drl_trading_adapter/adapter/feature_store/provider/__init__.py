@@ -3,8 +3,11 @@
 Currently includes Feast provider and wrapper migrated from core. Additional offline
 repository implementations will be migrated in subsequent iterations.
 """
-from .feature_store_fetch_repository import FeatureStoreFetchRepository
+from .feast_provider import FeastProvider
+from .feature_store_wrapper import FeatureStoreWrapper
 
 __all__ = [
+    "FeastProvider",
+    "FeatureStoreWrapper",
     "FeatureStoreFetchRepository"
 ]

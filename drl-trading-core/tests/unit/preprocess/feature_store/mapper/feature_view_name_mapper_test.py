@@ -1,12 +1,7 @@
 import pytest
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-
-from drl_trading_core.preprocess.feature_store.mapper.feature_view_name_mapper import (
-    FeatureViewNameMapper,
-)
-from drl_trading_core.preprocess.feature_store.feature_view_name_enum import (
-    FeatureViewNameEnum,
-)
+from drl_trading_core.core.enum.feature_view_name_enum import FeatureViewNameEnum
+from drl_trading_core.core.mapper.feature_view_name_mapper import FeatureViewNameMapper
 
 
 class TestFeatureViewNameMapper:

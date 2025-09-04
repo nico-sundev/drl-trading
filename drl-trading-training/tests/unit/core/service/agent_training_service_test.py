@@ -1,5 +1,6 @@
 from unittest import mock
 
+from drl_trading_training.core.service.training import AgentTrainingService
 import numpy as np
 import pandas as pd
 import pytest
@@ -8,9 +9,6 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv
 
 from drl_trading_core.common.agents.agent_factory import AgentFactory
 from drl_trading_core.common.agents.base_agent import BaseAgent
-from drl_trading_core.training.services.agent_training_service import (
-    AgentTrainingService,
-)
 
 
 # Mock implementation of AbstractBaseAgent for testing

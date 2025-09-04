@@ -115,8 +115,8 @@ class TestServiceLoggerIntegrationDevelopment:
 
             # Then
             out = stream.getvalue()
-            # Abbreviated form: i.a.m.k.consumer.Component
-            assert "i.a.m.k.consumer.Component" in out
+            # Abbreviated form: i.a.m.k.c.Component
+            assert "i.a.m.k.c.Component" in out
             assert deep_logger_name not in out  # original should be shortened
         finally:
             deep_logger.removeHandler(handler)
@@ -240,7 +240,7 @@ class TestServiceLoggerIntegrationProduction:
             lines = [line for line in stream.getvalue().split('\n') if line.strip()]
             target = next(line for line in lines if "Deep prod message" in line)
             data = json.loads(target)
-            assert data["short_logger"] == "i.a.m.k.consumer.Component"
+            assert data["short_logger"] == "i.a.m.k.c.Component"
         finally:
             deep_logger.removeHandler(handler)
 

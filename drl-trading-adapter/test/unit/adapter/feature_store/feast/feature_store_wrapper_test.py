@@ -13,7 +13,7 @@ import tempfile
 from typing import Generator
 from unittest.mock import MagicMock, patch
 
-from drl_trading_adapter.adapter.feature_store.feast.feature_store_wrapper import FeatureStoreWrapper
+from drl_trading_adapter.adapter.feature_store.provider import FeatureStoreWrapper
 import pytest
 from drl_trading_common.config.feature_config import FeatureStoreConfig  # type: ignore
 from feast import FeatureStore

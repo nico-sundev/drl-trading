@@ -2,6 +2,7 @@
 from pydantic import Field
 from drl_trading_common.base.base_application_config import BaseApplicationConfig
 from drl_trading_common.base.base_schema import BaseSchema
+from drl_trading_common.config.feature_config import FeatureStoreConfig
 from drl_trading_common.config.infrastructure_config import InfrastructureConfig
 from drl_trading_common.config.service_logging_config import ServiceLoggingConfig
 
@@ -34,6 +35,4 @@ class PreprocessConfig(BaseApplicationConfig):
     infrastructure: InfrastructureConfig = Field(default_factory=InfrastructureConfig)
     # T005 logging configuration for ServiceLogger
     logging: ServiceLoggingConfig = Field(default_factory=ServiceLoggingConfig)
-    data_source: DataSourceConfig = Field(default_factory=DataSourceConfig)
-    feature_engineering: FeatureEngineeringConfig = Field(default_factory=FeatureEngineeringConfig)
-    output: OutputConfig = Field(default_factory=OutputConfig)
+    feature_store_config: FeatureStoreConfig = Field(default_factory=FeatureStoreConfig)
