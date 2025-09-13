@@ -12,7 +12,7 @@ from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
-from drl_trading_core.common.model.feature_view_request import FeatureViewRequest
+from drl_trading_core.common.model.feature_view_request import FeatureViewRequestContainer
 from injector import Injector
 from pandas import DataFrame
 
@@ -31,7 +31,8 @@ class TestFeatureStoreRepositoriesIntegration:
         self,
         integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequest]
+        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test complete workflow: save features, then fetch them back."""
         # Given
@@ -45,6 +46,7 @@ class TestFeatureStoreRepositoriesIntegration:
         save_repo.store_computed_features_offline(
             features_df=sample_trading_features_df,
             symbol=symbol,
+            feature_version_info=feature_version_info_fixture,
             feature_view_requests=feature_view_requests_fixture
         )
 
@@ -53,7 +55,8 @@ class TestFeatureStoreRepositoriesIntegration:
         fetched_features = fetch_repo.get_offline(
             symbol=symbol,
             timestamps=timestamps,
-            feature_version_info=feature_view_requests_fixture[0].feature_version_info
+            feature_version_info=feature_version_info_fixture,
+            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
         )
 
         # Then
@@ -75,7 +78,8 @@ class TestFeatureStoreRepositoriesIntegration:
         self,
         integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequest]
+        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test workflow: store offline, materialize to online, then fetch online."""
         # Given
@@ -89,6 +93,7 @@ class TestFeatureStoreRepositoriesIntegration:
         save_repo.store_computed_features_offline(
             features_df=sample_trading_features_df,
             symbol=symbol,
+            feature_version_info=feature_version_info_fixture,
             feature_view_requests=feature_view_requests_fixture
         )
 
@@ -101,7 +106,8 @@ class TestFeatureStoreRepositoriesIntegration:
         # And fetch from online store
         online_features = fetch_repo.get_online(
             symbol=symbol,
-            feature_version_info=feature_view_requests_fixture[0].feature_version_info
+            feature_version_info=feature_version_info_fixture,
+            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
         )
 
         # Then
@@ -115,7 +121,8 @@ class TestFeatureStoreRepositoriesIntegration:
         self,
         integration_container: Injector,
         sample_trading_features_df: DataFrame,  # Add sample data to setup feature views
-        feature_view_requests_fixture: list[FeatureViewRequest]
+        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test workflow: push single record directly to online, then fetch."""
         # Given
@@ -130,6 +137,7 @@ class TestFeatureStoreRepositoriesIntegration:
         save_repo.store_computed_features_offline(
             features_df=sample_trading_features_df,
             symbol=symbol,
+            feature_version_info=feature_version_info_fixture,
             feature_view_requests=feature_view_requests_fixture
         )
 
@@ -153,7 +161,7 @@ class TestFeatureStoreRepositoriesIntegration:
         # And fetch from online store
         online_features = fetch_repo.get_online(
             symbol=symbol,
-            feature_version_info=feature_view_requests_fixture[0].feature_version_info
+            feature_version_info=feature_version_info_fixture
         )
 
         # Then
@@ -165,7 +173,8 @@ class TestFeatureStoreRepositoriesIntegration:
         self,
         integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequest]
+        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test behavior when feature store operations work correctly."""
         # Given
@@ -176,6 +185,7 @@ class TestFeatureStoreRepositoriesIntegration:
         save_repo.store_computed_features_offline(
             features_df=sample_trading_features_df,
             symbol=symbol,
+            feature_version_info=feature_version_info_fixture,
             feature_view_requests=feature_view_requests_fixture
         )
 
@@ -190,7 +200,8 @@ class TestFeatureStoreRepositoriesIntegration:
         self,
         integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequest],
+        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_version_info_fixture: FeatureConfigVersionInfo,
         feature_role: FeatureRoleEnum
     ) -> None:
         """Test operations specific to different feature roles."""
@@ -202,6 +213,7 @@ class TestFeatureStoreRepositoriesIntegration:
         save_repo.store_computed_features_offline(
             features_df=sample_trading_features_df,
             symbol=symbol,
+            feature_version_info=feature_version_info_fixture,
             feature_view_requests=feature_view_requests_fixture
         )
 
@@ -230,7 +242,8 @@ class TestFeatureStoreRepositoriesIntegration:
     def test_error_handling_missing_event_timestamp(
         self,
         integration_container: Injector,
-        feature_view_requests_fixture: list[FeatureViewRequest]
+        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test error handling when event_timestamp column is missing."""
         # Given
@@ -249,6 +262,7 @@ class TestFeatureStoreRepositoriesIntegration:
             save_repo.store_computed_features_offline(
                 features_df=invalid_df,
                 symbol=symbol,
+                feature_version_info=feature_version_info_fixture,
                 feature_view_requests=feature_view_requests_fixture
             )
 
@@ -268,7 +282,8 @@ class TestFeatureStoreRepositoriesIntegration:
     def test_empty_dataframe_handling(
         self,
         integration_container: Injector,
-        feature_view_requests_fixture: list[FeatureViewRequest]
+        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test handling of empty DataFrames."""
         # Given
@@ -281,6 +296,7 @@ class TestFeatureStoreRepositoriesIntegration:
         save_repo.store_computed_features_offline(
             features_df=empty_df,
             symbol=symbol,
+            feature_version_info=feature_version_info_fixture,
             feature_view_requests=feature_view_requests_fixture
         )
 
@@ -290,7 +306,8 @@ class TestFeatureStoreRepositoriesIntegration:
     def test_large_dataset_performance(
         self,
         integration_container: Injector,
-        feature_view_requests_fixture: list[FeatureViewRequest]
+        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test performance with larger datasets."""
         # Given
@@ -322,6 +339,7 @@ class TestFeatureStoreRepositoriesIntegration:
         save_repo.store_computed_features_offline(
             features_df=large_features_df,
             symbol=symbol,
+            feature_version_info=feature_version_info_fixture,
             feature_view_requests=feature_view_requests_fixture
         )
 
@@ -330,7 +348,7 @@ class TestFeatureStoreRepositoriesIntegration:
         fetched_features = fetch_repo.get_offline(
             symbol=symbol,
             timestamps=subset_timestamps,
-            feature_version_info=feature_view_requests_fixture[0].feature_version_info
+            feature_version_info=feature_version_info_fixture
         )
 
         # Then
@@ -379,7 +397,8 @@ class TestFeatureStoreRepositoriesErrorScenarios:
         self,
         integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequest]
+        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test simulated concurrent access to feature store."""
         # Given
@@ -397,12 +416,10 @@ class TestFeatureStoreRepositoriesErrorScenarios:
             # Create symbol-specific feature view requests
             symbol_specific_requests = []
             for request in feature_view_requests_fixture:
-                modified_request = FeatureViewRequest(
+                modified_request = FeatureViewRequestContainer(
                     symbol=test_symbol,
-                    feature_view_name=request.feature_view_name.replace("EURUSD", test_symbol),
                     feature_role=request.feature_role,
-                    feature_version_info=request.feature_version_info,
-                    features=request.features
+                    feature=request.feature
                 )
                 symbol_specific_requests.append(modified_request)
 
@@ -422,7 +439,7 @@ class TestFeatureStoreRepositoriesErrorScenarios:
                 fetched_features = fetch_repo.get_offline(
                     symbol=test_symbol,
                     timestamps=timestamps,
-                    feature_version_info=feature_view_requests_fixture[0].feature_version_info
+                    feature_version_info=feature_version_info_fixture
                 )
 
                 if not fetched_features.empty:
@@ -444,7 +461,7 @@ class TestFeatureStoreRepositoriesErrorScenarios:
                     # Fetch from online store to verify functionality
                     online_features = fetch_repo.get_online(
                         symbol=test_symbol,
-                        feature_version_info=feature_view_requests_fixture[0].feature_version_info
+                        feature_version_info=feature_version_info_fixture
                     )
 
                     # Verify online operations work

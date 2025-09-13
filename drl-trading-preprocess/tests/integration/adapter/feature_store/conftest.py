@@ -105,7 +105,7 @@ def feature_store_config(temp_feast_repo: str) -> FeatureStoreConfig:
     test_config_dir = os.path.join(os.path.dirname(__file__), "../../../resources/test")
 
     return FeatureStoreConfig(
-        enabled=True,
+        cache_enabled=True,
         entity_name="test_entity",
         ttl_days=30,
         online_enabled=True,

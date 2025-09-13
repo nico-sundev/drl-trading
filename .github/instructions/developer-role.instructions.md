@@ -27,7 +27,10 @@ applyTo: '**'
     - IT below `tests/integration/` directory
     - every testfile postfixed "_test.py" for unittest or "_it.py" for integration test
     - always use pytest
-    - create fixtures for test methods, but use conftest.py for common fixtures
+    - only test public methods of a class
+    - create fixtures for test methods, but use conftest.py for common fixtures among multiple test files
+    - define test data builders for complex objects
+    - define constants for common values used in multiple tests
     - if fixtures are about to be created, scan nearby conftest.py files and check for similar fixtures. combine them if possible and semantically correct
     - use pytest.mark.parametrize for parametrized tests
     - try to cluster similar kind of tests into multiple classes in one test file

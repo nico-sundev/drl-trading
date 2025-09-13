@@ -61,7 +61,7 @@ class TestOfflineFeatureS3RepoInit:
         )
 
         config = FeatureStoreConfig(
-            enabled=True,
+            cache_enabled=True,
             config_directory="/test/config",
             entity_name="test_entity",
             ttl_days=30,

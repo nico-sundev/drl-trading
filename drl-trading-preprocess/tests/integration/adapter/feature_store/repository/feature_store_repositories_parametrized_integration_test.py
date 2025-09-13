@@ -6,7 +6,7 @@ repository strategies (local filesystem and S3).
 """
 
 import logging
-from drl_trading_core.common.model.feature_view_request import FeatureViewRequest
+from drl_trading_core.common.model.feature_view_request import FeatureViewRequestContainer
 from injector import Injector
 from pandas import DataFrame
 
@@ -25,7 +25,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequest]
+        feature_view_requests_fixture: list[FeatureViewRequestContainer]
     ) -> None:
         """Test complete workflow with both local and S3 offline repositories."""
         # Given
@@ -69,7 +69,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequest]
+        feature_view_requests_fixture: list[FeatureViewRequestContainer]
     ) -> None:
         """Test workflow with both offline strategies: store offline, materialize to online, then fetch online."""
         # Given
@@ -110,7 +110,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequest]
+        feature_view_requests_fixture: list[FeatureViewRequestContainer]
     ) -> None:
         """Test that duplicate features are handled correctly with both offline strategies."""
         # Given
@@ -150,7 +150,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequest]
+        feature_view_requests_fixture: list[FeatureViewRequestContainer]
     ) -> None:
         """Test incremental feature storage with both offline strategies."""
         # Given
@@ -197,7 +197,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequest]
+        feature_view_requests_fixture: list[FeatureViewRequestContainer]
     ) -> None:
         """Test storing and fetching features for multiple symbols with both offline strategies."""
         # Given

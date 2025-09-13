@@ -52,7 +52,7 @@ def create_s3_repo() -> OfflineFeatureS3Repo:
     )
 
     config = FeatureStoreConfig(
-        enabled=True,
+        cache_enabled=True,
         entity_name="unit_test_entity",
         ttl_days=1,  # Minimal for unit tests
         online_enabled=False,

@@ -40,7 +40,7 @@ def test_load_config_from_json(temp_config_file, feature_factory, mock_rsi_confi
     assert env_config.max_time_in_trade == 10
 
     features_store_config = config.feature_store_config
-    assert features_store_config.enabled is False
+    assert features_store_config.cache_enabled is False
     assert features_store_config.config_directory == "testrepo"
     assert features_store_config.local_repo_config.repo_path == "test_data"
     assert features_store_config.entity_name == "symbol"

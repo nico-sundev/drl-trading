@@ -11,7 +11,8 @@ from drl_trading_preprocess.adapter.feature_store import FeatureStoreSaveReposit
 import pandas as pd
 import pytest
 from drl_trading_common.enum import FeatureRoleEnum
-from drl_trading_core.common.model.feature_view_request import FeatureViewRequest
+from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
+from drl_trading_core.common.model.feature_view_request import FeatureViewRequestContainer
 from pandas import DataFrame
 
 
@@ -49,7 +50,8 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         sample_features_df: DataFrame,
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
-        feature_view_requests: list[FeatureViewRequest]
+        feature_view_requests: list[FeatureViewRequestContainer],
+        feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test successful storage of computed features offline."""
         # Given
@@ -59,6 +61,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         feature_store_save_repository.store_computed_features_offline(
             sample_features_df,
             eurusd_h1_symbol,
+            feature_version_info,
             feature_view_requests
         )
 
@@ -87,7 +90,8 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         feature_store_save_repository: FeatureStoreSaveRepository,
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
-        feature_view_requests: list[FeatureViewRequest]
+        feature_view_requests: list[FeatureViewRequestContainer],
+        feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test handling of empty DataFrame during offline storage."""
         # Given
@@ -97,6 +101,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         feature_store_save_repository.store_computed_features_offline(
             empty_df,
             eurusd_h1_symbol,
+            feature_version_info,
             feature_view_requests
         )
 
@@ -108,7 +113,8 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         feature_store_save_repository: FeatureStoreSaveRepository,
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
-        feature_view_requests: list[FeatureViewRequest]
+        feature_view_requests: list[FeatureViewRequestContainer],
+        feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test error handling when event_timestamp column is missing."""
         # Given
@@ -123,6 +129,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
             feature_store_save_repository.store_computed_features_offline(
                 invalid_df,
                 eurusd_h1_symbol,
+                feature_version_info,
                 feature_view_requests
             )
 
@@ -132,7 +139,8 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         sample_features_df: DataFrame,
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
-        feature_view_requests: list[FeatureViewRequest]
+        feature_view_requests: list[FeatureViewRequestContainer],
+        feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test handling when no new features are stored (duplicates)."""
         # Given
@@ -142,6 +150,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         feature_store_save_repository.store_computed_features_offline(
             sample_features_df,
             eurusd_h1_symbol,
+            feature_version_info,
             feature_view_requests
         )
 
@@ -158,49 +167,34 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
         mock_feast_provider: Mock,
-        feature_view_requests: list[FeatureViewRequest]
+        feature_view_requests: list[FeatureViewRequestContainer],
+        feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test that feature views are created when new features are stored."""
         # Given
         stored_count = len(sample_features_df)
         mock_offline_repo.store_features_incrementally.return_value = stored_count
 
-        from types import SimpleNamespace
-        mock_obs_fv = SimpleNamespace(name="observation_space_feature_view")
-        mock_reward_fv = SimpleNamespace(name="reward_engineering_feature_view")
         mock_feature_service = Mock()
         mock_feature_service.name = "test_service"
 
-        mock_feast_provider.create_feature_view_from_request.side_effect = [mock_obs_fv, mock_reward_fv]
-        mock_feast_provider.create_feature_service.return_value = mock_feature_service
+        mock_feast_provider.get_or_create_feature_service.return_value = mock_feature_service
 
         # When
         feature_store_save_repository.store_computed_features_offline(
             sample_features_df,
             eurusd_h1_symbol,
+            feature_version_info,
             feature_view_requests
         )
 
         # Then
-        # Verify feature views creation
-        assert mock_feast_provider.create_feature_view_from_request.call_count == 2
-        mock_feast_provider.create_feature_service.assert_called_once_with(
-            feature_views=[mock_obs_fv, mock_reward_fv],
-            symbol=eurusd_h1_symbol,
-            feature_version_info=feature_view_requests[0].feature_version_info
-        )
-
-        # Verify feature store apply (implementation includes entity)
-        call_args = feature_store_save_repository.feature_store.apply.call_args[0][0]
-        # There should be 4 components: entity, observation feature view, reward feature view, and feature service
-        EXPECTED_APPLY_COMPONENTS_COUNT = 4  # entity + obs_fv + reward_fv + feature_service
-        assert len(call_args) == EXPECTED_APPLY_COMPONENTS_COUNT
-
-        # Verify that the apply call includes the expected components
-        # The entity is first, followed by the feature views and service
-        assert mock_obs_fv in call_args
-        assert mock_reward_fv in call_args
-        assert mock_feature_service in call_args
+        # Verify feature service creation
+        mock_feast_provider.get_or_create_feature_service.assert_called_once()
+        call_args = mock_feast_provider.get_or_create_feature_service.call_args
+        assert "service_name" in call_args.kwargs
+        assert "feature_view_requests" in call_args.kwargs
+        assert call_args.kwargs["feature_view_requests"] == feature_view_requests
 
         # Verify logging
         mock_logger.info.assert_called()
@@ -232,7 +226,8 @@ class TestFeatureStoreSaveRepositoryBatchMaterialization:
 
         feature_store_save_repository.feature_store.materialize.assert_called_once_with(
             start_date=expected_start,
-            end_date=expected_end
+            end_date=expected_end,
+            feature_views=['test_feature_view']
         )
 
     def test_batch_materialize_features_missing_timestamp_column(
@@ -425,35 +420,33 @@ class TestFeatureStoreSaveRepositoryPrivateMethods:
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
         mock_feast_provider: Mock,
-        feature_view_requests: list[FeatureViewRequest]
+        feature_view_requests: list[FeatureViewRequestContainer],
+        feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test that _create_and_apply_feature_views is called with correct parameters."""
         # Given
         mock_offline_repo.store_features_incrementally.return_value = len(sample_features_df)
 
-        from types import SimpleNamespace
-        mock_obs_fv = SimpleNamespace(name="observation_space_feature_view")
-        mock_reward_fv = SimpleNamespace(name="reward_engineering_feature_view")
         mock_feature_service = Mock()
         mock_feature_service.name = "test_service"
 
-        mock_feast_provider.create_feature_view_from_request.side_effect = [mock_obs_fv, mock_reward_fv]
-        mock_feast_provider.create_feature_service.return_value = mock_feature_service
+        mock_feast_provider.get_or_create_feature_service.return_value = mock_feature_service
 
         # When
         feature_store_save_repository.store_computed_features_offline(
             sample_features_df,
             eurusd_h1_symbol,
+            feature_version_info,
             feature_view_requests
         )
 
         # Then
-        # Verify feature views are created from requests
-        calls = mock_feast_provider.create_feature_view_from_request.call_args_list
-        assert len(calls) == 2
-        # First and second request should be passed as the first positional arg
-        assert isinstance(calls[0].args[0], FeatureViewRequest)
-        assert isinstance(calls[1].args[0], FeatureViewRequest)
+        # Verify feature service is created with the correct requests
+        mock_feast_provider.get_or_create_feature_service.assert_called_once()
+        call_args = mock_feast_provider.get_or_create_feature_service.call_args
+        assert "service_name" in call_args.kwargs
+        assert "feature_view_requests" in call_args.kwargs
+        assert call_args.kwargs["feature_view_requests"] == feature_view_requests
 
 
 class TestFeatureStoreSaveRepositoryErrorHandling:
@@ -466,18 +459,20 @@ class TestFeatureStoreSaveRepositoryErrorHandling:
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
         mock_feast_provider: Mock,
-        feature_view_requests: list[FeatureViewRequest],
+        feature_view_requests: list[FeatureViewRequestContainer],
+        feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test error handling when feast provider raises exception."""
         # Given
         mock_offline_repo.store_features_incrementally.return_value = len(sample_features_df)
-        mock_feast_provider.create_feature_view_from_request.side_effect = Exception("Feast provider error")
+        mock_feast_provider.get_or_create_feature_service.side_effect = Exception("Feast provider error")
 
         # When & Then
         with pytest.raises(Exception, match="Feast provider error"):
             feature_store_save_repository.store_computed_features_offline(
                 sample_features_df,
                 eurusd_h1_symbol,
+                feature_version_info,
                 feature_view_requests,
             )
 

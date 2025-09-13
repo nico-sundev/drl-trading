@@ -1,28 +1,30 @@
 import logging
-from typing import Optional
 
-from drl_trading_adapter.adapter.feature_store.provider import FeastProvider
-from drl_trading_core.core.port import IFeatureStoreFetchPort
 import pandas as pd
+from injector import inject
+
+from drl_trading_adapter.adapter.feature_store.util.feature_store_utilities import get_feature_service_name
+from drl_trading_adapter.adapter.feature_store.provider import FeastProvider
+from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
-from feast import FeatureService
-from injector import inject
+from drl_trading_core.core.port import IFeatureStoreFetchPort
 
 logger = logging.getLogger(__name__)
+
 
 @inject
 class FeatureStoreFetchRepository(IFeatureStoreFetchPort):
     def __init__(self, feast_provider: FeastProvider):
         self._feast_provider = feast_provider
         self._fs = self._feast_provider.get_feature_store()
-        self._feature_service: Optional[FeatureService] = None
 
     def get_online(
         self,
         symbol: str,
         feature_version_info: FeatureConfigVersionInfo,
+        feature_service_role: FeatureRoleEnum,
     ) -> pd.DataFrame:
         entity_rows = [
             {
@@ -30,18 +32,18 @@ class FeatureStoreFetchRepository(IFeatureStoreFetchPort):
             }
         ]
 
-        if not self._feature_service:
-            self._feature_service = self._feast_provider.create_feature_service(
-                symbol=symbol, feature_version_info=feature_version_info
-            )
+        service_name = get_feature_service_name(
+            feature_service_role=feature_service_role,
+            symbol=symbol,
+            feature_version_info=feature_version_info,
+        )
 
-        if self._feature_service is None:
-            raise RuntimeError(
-                "FeatureService is not initialized. Cannot fetch online features."
-            )
+        feature_service = self._feast_provider.get_feature_service(
+            service_name=service_name
+        )
 
         return self._fs.get_online_features(
-            features=self._feature_service, entity_rows=entity_rows
+            features=feature_service, entity_rows=entity_rows
         ).to_df()
 
     def get_offline(
@@ -49,21 +51,24 @@ class FeatureStoreFetchRepository(IFeatureStoreFetchPort):
         symbol: str,
         timestamps: pd.Series,
         feature_version_info: FeatureConfigVersionInfo,
+        feature_service_role: FeatureRoleEnum,
     ) -> pd.DataFrame:
 
-        if not self._feature_service:
-            self._feature_service = self._feast_provider.create_feature_service(
-                symbol=symbol, feature_version_info=feature_version_info
-            )
+        service_name = get_feature_service_name(
+            feature_service_role=feature_service_role,
+            symbol=symbol,
+            feature_version_info=feature_version_info,
+        )
 
-        if self._feature_service is None:
-            raise RuntimeError(
-                "FeatureService is not initialized. Cannot fetch online features."
-            )
+        feature_service = self._feast_provider.get_feature_service(
+            service_name=service_name
+        )
 
         # Validate and clean timestamps to prevent Dask/Feast issues
         if timestamps.isnull().any():
-            logger.warning(f"Found null values in timestamps for {symbol}, dropping nulls")
+            logger.warning(
+                f"Found null values in timestamps for {symbol}, dropping nulls"
+            )
             timestamps = timestamps.dropna()
 
         if timestamps.empty:
@@ -72,7 +77,7 @@ class FeatureStoreFetchRepository(IFeatureStoreFetchPort):
 
         # Ensure timestamps are timezone-aware to prevent Feast timezone issues
         # Handle both Series and DatetimeIndex cases
-        if hasattr(timestamps, 'dt'):
+        if hasattr(timestamps, "dt"):
             # timestamps is a Series
             if timestamps.dt.tz is None:
                 timestamps = timestamps.dt.tz_localize("UTC")
@@ -87,7 +92,7 @@ class FeatureStoreFetchRepository(IFeatureStoreFetchPort):
 
         try:
             result = self._fs.get_historical_features(
-                features=self._feature_service, entity_df=entity_df
+                features=feature_service, entity_df=entity_df
             ).to_df()
 
             return result
@@ -95,13 +100,23 @@ class FeatureStoreFetchRepository(IFeatureStoreFetchPort):
         except (NotImplementedError, TypeError) as e:
             if "divisions calculation failed" in str(e) or "nulls" in str(e):
                 logger.warning(f"Dask divisions calculation failed for {symbol}: {e}")
-                logger.info("This is a known compatibility issue between Dask and Feast versions")
-                logger.info("Consider using a different offline store backend or upgrading library versions")
+                logger.info(
+                    "This is a known compatibility issue between Dask and Feast versions"
+                )
+                logger.info(
+                    "Consider using a different offline store backend or upgrading library versions"
+                )
                 # Return empty DataFrame as fallback
                 return pd.DataFrame()
             else:
-                raise RuntimeError(f"Historical features fetch failed for {symbol}: {e}") from e
+                raise RuntimeError(
+                    f"Historical features fetch failed for {symbol}: {e}"
+                ) from e
         except Exception as e:
-            logger.error(f"Unexpected error during historical features fetch for {symbol}: {e}")
+            logger.error(
+                f"Unexpected error during historical features fetch for {symbol}: {e}"
+            )
             # For unexpected errors, we should still raise them
-            raise RuntimeError(f"Unexpected error during historical features fetch for {symbol}: {e}") from e
+            raise RuntimeError(
+                f"Unexpected error during historical features fetch for {symbol}: {e}"
+            ) from e

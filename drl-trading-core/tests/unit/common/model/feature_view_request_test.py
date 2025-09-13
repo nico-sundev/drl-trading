@@ -1,180 +1,226 @@
 """
-Test for the improved FeatureViewRequest container pattern.
+Test for the FeatureViewRequest dataclass.
 
-This demonstrates the benefits of using a container class over multiple parameters.
+This demonstrates the container pattern for feature view creation parameters.
 """
-from datetime import datetime
 from typing import Any
 
 import pytest
 from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_common.model.feature_config_version_info import (
-    FeatureConfigVersionInfo,
-)
 
-from drl_trading_core.common.model.feature_view_request import FeatureViewRequest
+from drl_trading_core.common.model.feature_view_request import FeatureViewRequestContainer
 
 
 class TestFeatureViewRequest:
-    """Test the FeatureViewRequest container pattern."""
+    """Test the FeatureViewRequest dataclass."""
 
-    def test_create_valid_request(self, mock_features_list: list[BaseFeature]) -> None:
+    def test_create_valid_request(self, mock_feature: BaseFeature) -> None:
         """Test creating a valid feature view request."""
         # Given
-        feature_version_info = FeatureConfigVersionInfo(
-            semver="1.0.0",
-            hash="test_hash",
-            created_at=datetime.now(),
-            feature_definitions=[]
-        )
+        symbol = "EURUSD"
+        feature_role = FeatureRoleEnum.OBSERVATION_SPACE
 
         # When
-        request = FeatureViewRequest.create(
-            symbol="EURUSD",
-            feature_view_name="test_view",
-            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature_version_info=feature_version_info,
-            features=mock_features_list
+        request = FeatureViewRequestContainer.create(
+            symbol=symbol,
+            feature_role=feature_role,
+            feature=mock_feature
         )
 
         # Then
         assert request.symbol == "EURUSD"
-        assert request.feature_view_name == "test_view"
         assert request.feature_role == FeatureRoleEnum.OBSERVATION_SPACE
-        assert request.feature_version_info == feature_version_info
-        assert request.features == mock_features_list
+        assert request.feature == mock_feature
 
-    def test_request_validation_empty_symbol(self, mock_features_list: list[BaseFeature]) -> None:
-        """Test validation fails for empty symbol."""
+    def test_direct_instantiation(self, mock_feature: BaseFeature) -> None:
+        """Test direct instantiation of FeatureViewRequest."""
         # Given
-        feature_version_info = FeatureConfigVersionInfo(
-            semver="1.0.0",
-            hash="test_hash",
-            created_at=datetime.now(),
-            feature_definitions=[]
-        )
-
-        # When/Then
-        with pytest.raises(ValueError, match="Symbol must be a non-empty string"):
-            FeatureViewRequest.create(
-                symbol="",
-                feature_view_name="test_view",
-                feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-                feature_version_info=feature_version_info,
-                features=mock_features_list
-            )
-
-    def test_sanitized_accessors(self, mock_features_list: list[BaseFeature]) -> None:
-        """Test sanitized accessor methods."""
-        # Given
-        feature_version_info = FeatureConfigVersionInfo(
-            semver="1.0.0",
-            hash="test_hash",
-            created_at=datetime.now(),
-            feature_definitions=[]
-        )
-
-        request = FeatureViewRequest(
-            symbol="  EURUSD  ",
-            feature_view_name="  test_view  ",
-            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature_version_info=feature_version_info,
-            features=mock_features_list
-        )
-
-        # When/Then
-        assert request.get_sanitized_symbol() == "EURUSD"
-        assert request.get_sanitized_feature_view_name() == "test_view"
-        assert request.get_role_description() == "observation_space"
-
-    def test_none_feature_role_handling(self, mock_features_list: list[BaseFeature]) -> None:
-        """Test handling of None feature role for integration tests."""
-        # Given
-        feature_version_info = FeatureConfigVersionInfo(
-            semver="1.0.0",
-            hash="test_hash",
-            created_at=datetime.now(),
-            feature_definitions=[]
-        )
+        symbol = "EURUSD"
+        feature_role = FeatureRoleEnum.OBSERVATION_SPACE
 
         # When
-        request = FeatureViewRequest.create(
-            symbol="EURUSD",
-            feature_view_name="test_view",
-            feature_role=None,
-            feature_version_info=feature_version_info,
-            features=mock_features_list
+        request = FeatureViewRequestContainer(
+            symbol=symbol,
+            feature_role=feature_role,
+            feature=mock_feature
         )
 
         # Then
-        assert request.feature_role is None
-        assert request.get_role_description() == "None"
+        assert request.symbol == "EURUSD"
+        assert request.feature_role == FeatureRoleEnum.OBSERVATION_SPACE
+        assert request.feature == mock_feature
+
+    def test_validation_empty_symbol(self, mock_feature: BaseFeature) -> None:
+        """Test validation fails for empty symbol."""
+        # Given
+        empty_symbol = ""
+
+        # When/Then
+        with pytest.raises(ValueError, match="Symbol must be a non-empty string"):
+            FeatureViewRequestContainer.create(
+                symbol=empty_symbol,
+                feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+                feature=mock_feature
+            )
+
+    def test_validation_whitespace_only_symbol(self, mock_feature: BaseFeature) -> None:
+        """Test validation fails for whitespace-only symbol."""
+        # Given
+        whitespace_symbol = "   "
+
+        # When/Then
+        with pytest.raises(ValueError, match="Symbol must be a non-empty string"):
+            FeatureViewRequestContainer.create(
+                symbol=whitespace_symbol,
+                feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+                feature=mock_feature
+            )
+
+    def test_validation_none_symbol(self, mock_feature: BaseFeature) -> None:
+        """Test validation fails for None symbol."""
+        # Given/When/Then
+        with pytest.raises(ValueError, match="Symbol must be a non-empty string"):
+            FeatureViewRequestContainer.create(
+                symbol=None,  # type: ignore[arg-type]
+                feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+                feature=mock_feature
+            )
 
     @pytest.mark.parametrize("invalid_role", [
         "not_an_enum",
         123,
         [],
-        {}
+        {},
+        None
     ])
-    def test_invalid_feature_role_validation(self, invalid_role: Any, mock_features_list: list[BaseFeature]) -> None:
+    def test_validation_invalid_feature_role(self, invalid_role: Any, mock_feature: BaseFeature) -> None:
         """Test validation fails for invalid feature role types."""
         # Given
-        feature_version_info = FeatureConfigVersionInfo(
-            semver="1.0.0",
-            hash="test_hash",
-            created_at=datetime.now(),
-            feature_definitions=[]
+        symbol = "EURUSD"
+
+        # When/Then
+        with pytest.raises(ValueError, match="Feature role must be a FeatureRoleEnum"):
+            FeatureViewRequestContainer.create(
+                symbol=symbol,
+                feature_role=invalid_role,  # type: ignore[arg-type]
+                feature=mock_feature
+            )
+
+    @pytest.mark.parametrize("invalid_feature", [
+        "not_a_feature",
+        123,
+        [],
+        {},
+        None
+    ])
+    def test_validation_invalid_feature(self, invalid_feature: Any) -> None:
+        """Test validation fails for invalid feature types."""
+        # Given
+        symbol = "EURUSD"
+        feature_role = FeatureRoleEnum.OBSERVATION_SPACE
+
+        # When/Then
+        with pytest.raises(ValueError, match="Feature must be a BaseFeature"):
+            FeatureViewRequestContainer.create(
+                symbol=symbol,
+                feature_role=feature_role,
+                feature=invalid_feature  # type: ignore[arg-type]
+            )
+
+    def test_get_sanitized_symbol(self, mock_feature: BaseFeature) -> None:
+        """Test sanitized symbol accessor method."""
+        # Given
+        symbol_with_whitespace = "  EURUSD  "
+        request = FeatureViewRequestContainer(
+            symbol=symbol_with_whitespace,
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature=mock_feature
+        )
+
+        # When
+        sanitized_symbol = request.get_sanitized_symbol()
+
+        # Then
+        assert sanitized_symbol == "EURUSD"
+
+    def test_get_sanitized_symbol_empty_string(self, mock_feature: BaseFeature) -> None:
+        """Test sanitized symbol returns empty string for None symbol."""
+        # Given
+        request = FeatureViewRequestContainer(
+            symbol=None,  # type: ignore[arg-type]
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature=mock_feature
+        )
+
+        # When
+        sanitized_symbol = request.get_sanitized_symbol()
+
+        # Then
+        assert sanitized_symbol == ""
+
+    def test_validation_called_on_create(self, mock_feature: BaseFeature) -> None:
+        """Test that validation is called when using create factory method."""
+        # Given
+        valid_symbol = "EURUSD"
+        valid_role = FeatureRoleEnum.OBSERVATION_SPACE
+
+        # When
+        request = FeatureViewRequestContainer.create(
+            symbol=valid_symbol,
+            feature_role=valid_role,
+            feature=mock_feature
+        )
+
+        # Then
+        # Should not raise any exception
+        assert request is not None
+        assert request.symbol == valid_symbol
+        assert request.feature_role == valid_role
+        assert request.feature == mock_feature
+
+    def test_manual_validation_call(self, mock_feature: BaseFeature) -> None:
+        """Test calling validation manually on a valid request."""
+        # Given
+        request = FeatureViewRequestContainer(
+            symbol="EURUSD",
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature=mock_feature
         )
 
         # When/Then
-        with pytest.raises(ValueError, match="Feature role must be a FeatureRoleEnum or None"):
-            FeatureViewRequest(
-                symbol="EURUSD",
-                feature_view_name="test_view",
-                feature_role=invalid_role,
-                feature_version_info=feature_version_info,
-                features=mock_features_list
-            ).validate()
+        # Should not raise any exception
+        request.validate()
 
 
 class TestFeatureViewRequestBenefits:
     """Demonstrate the benefits of the container pattern."""
 
-    def test_readability_comparison(self, mock_features_list: list[BaseFeature]) -> None:
+    def test_readability_improvement(self, mock_feature: BaseFeature) -> None:
         """
         Demonstrate how the container improves readability.
 
         Compare:
-        OLD: provider.create_feature_view("EURUSD", "test_view", FeatureRoleEnum.OBSERVATION_SPACE, version_info)
+        OLD: provider.create_feature_view("EURUSD", FeatureRoleEnum.OBSERVATION_SPACE, feature)
         NEW: provider.create_feature_view_from_request(request)
         """
         # Given
-        feature_version_info = FeatureConfigVersionInfo(
-            semver="1.0.0",
-            hash="test_hash",
-            created_at=datetime.now(),
-            feature_definitions=[]
-        )
-
         # New approach: Self-documenting and clear
-        request = FeatureViewRequest.create(
+        request = FeatureViewRequestContainer.create(
             symbol="EURUSD",
-            feature_view_name="observation_features",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature_version_info=feature_version_info,
-            features=mock_features_list
+            feature=mock_feature
         )
 
         # Then
         # The container makes the intent clear and groups related parameters
         assert request.symbol == "EURUSD"
-        assert request.feature_view_name == "observation_features"
+        assert request.feature_role == FeatureRoleEnum.OBSERVATION_SPACE
+        assert request.feature == mock_feature
         # Parameters are validated as a unit
-        # Easy to extend with new parameters without breaking existing calls
         # Better testability - can create test fixtures easily
 
-    def test_extensibility_benefit(self, mock_features_list: list[BaseFeature]) -> None:
+    def test_extensibility_benefit(self, mock_feature: BaseFeature) -> None:
         """
         Demonstrate how the container makes the API more extensible.
 
@@ -187,19 +233,10 @@ class TestFeatureViewRequestBenefits:
         #
         # Without breaking any existing calls!
 
-        feature_version_info = FeatureConfigVersionInfo(
-            semver="1.0.0",
-            hash="test_hash",
-            created_at=datetime.now(),
-            feature_definitions=[]
-        )
-
-        request = FeatureViewRequest.create(
+        request = FeatureViewRequestContainer.create(
             symbol="EURUSD",
-            feature_view_name="test_view",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature_version_info=feature_version_info,
-            features=mock_features_list
+            feature=mock_feature
         )
 
         # When/Then

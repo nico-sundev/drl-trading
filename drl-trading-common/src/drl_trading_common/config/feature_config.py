@@ -24,7 +24,7 @@ class S3RepoConfig(BaseSchema):
 
 
 class FeatureStoreConfig(BaseSchema):
-    enabled: bool
+    cache_enabled: bool
     entity_name: str
     ttl_days: int
     online_enabled: bool = False

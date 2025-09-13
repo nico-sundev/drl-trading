@@ -25,8 +25,7 @@ from testcontainers.minio import MinioContainer
 
 from drl_trading_preprocess.infrastructure.config.preprocess_config import PreprocessConfig
 from drl_trading_preprocess.infrastructure.di.preprocess_module import PreprocessModule
-from drl_trading_core.common.model.feature_view_request import FeatureViewRequest
-from drl_trading_core.core.mapper.feature_view_name_mapper import FeatureViewNameMapper
+from drl_trading_core.common.model.feature_view_request import FeatureViewRequestContainer
 from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
 from datetime import datetime
 
@@ -410,7 +409,7 @@ def s3_feature_store_config(
     test_config_dir = os.path.join(os.path.dirname(__file__), "../../../../resources/test")
 
     return FeatureStoreConfig(
-        enabled=True,
+        cache_enabled=True,
         entity_name="test_entity",
         ttl_days=30,
         online_enabled=True,
@@ -432,7 +431,7 @@ def local_feature_store_config(temp_feast_repo: str) -> FeatureStoreConfig:
     test_config_dir = os.path.join(os.path.dirname(__file__), "../../../../resources/test")
 
     return FeatureStoreConfig(
-        enabled=True,
+        cache_enabled=True,
         entity_name="test_entity",
         ttl_days=30,
         online_enabled=True,
@@ -509,9 +508,8 @@ def feature_version_info_fixture() -> FeatureConfigVersionInfo:
 @pytest.fixture
 def feature_view_requests_fixture(
     feature_version_info_fixture: FeatureConfigVersionInfo,
-) -> list[FeatureViewRequest]:
+) -> list[FeatureViewRequestContainer]:
     """Create feature view requests from feature version info for integration testing."""
-    feature_view_name_mapper = FeatureViewNameMapper()
     symbol = "EURUSD"
 
     # Create dataset identifier and mock indicator service
@@ -563,15 +561,14 @@ def feature_view_requests_fixture(
     requests = []
     for role, features in role_groups.items():
         feature_role = FeatureRoleEnum(role) if role else FeatureRoleEnum.OBSERVATION_SPACE
-        feature_view_name = feature_view_name_mapper.map(feature_role)
 
-        request = FeatureViewRequest(
-            symbol=symbol,
-            feature_view_name=feature_view_name,
-            feature_role=feature_role,
-            feature_version_info=feature_version_info_fixture,
-            features=features
-        )
-        requests.append(request)
+        # Create one request per feature (matching the actual API)
+        for feature in features:
+            request = FeatureViewRequestContainer(
+                symbol=symbol,
+                feature_role=feature_role,
+                feature=feature
+            )
+            requests.append(request)
 
     return requests

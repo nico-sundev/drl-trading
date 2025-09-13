@@ -2,13 +2,8 @@
 
 ## Quick Thoughts
 <!-- Dump ideas here quickly, organize later -->
-### New Package
-- run feast integration tests
-    - refactor feast repo integration tests in preprocessing service <---
+- review/update integration tests for feast after major feast refactoring
 
-### Break up drl-trading-core`s services
--- Refactor core package, comply with hexagonal architecture
--- More specification is coming soon regards inter-service dependencies
 
 
 ## Future Epics (Unrefined)

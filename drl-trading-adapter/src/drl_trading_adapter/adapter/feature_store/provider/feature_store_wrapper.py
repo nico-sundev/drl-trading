@@ -25,7 +25,7 @@ class FeatureStoreWrapper:
         return self._feature_store
 
     def _resolve_feature_store_config_directory(self) -> Optional[str]:
-        if not self._feature_store_config.enabled:
+        if not self._feature_store_config.cache_enabled:
             return None
         base_config_directory = self._feature_store_config.config_directory
         base_resolved_path = (

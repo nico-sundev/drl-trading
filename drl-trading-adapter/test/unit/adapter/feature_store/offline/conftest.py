@@ -26,7 +26,7 @@ def temp_dir() -> Generator[str, None, None]:
 def feature_store_config(temp_dir: str) -> FeatureStoreConfig:
     """Create a feature store configuration for testing."""
     return FeatureStoreConfig(
-        enabled=True,
+        cache_enabled=True,
         config_directory=temp_dir,
         entity_name="test_entity",
         ttl_days=30,
@@ -51,7 +51,7 @@ def s3_feature_store_config(temp_dir: str) -> FeatureStoreConfig:
     )
 
     return FeatureStoreConfig(
-        enabled=True,
+        cache_enabled=True,
         config_directory=temp_dir,
         entity_name="test_entity",
         ttl_days=30,

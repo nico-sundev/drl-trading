@@ -1,7 +1,7 @@
 
 from unittest.mock import Mock
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_core.common.model.feature_view_request import FeatureViewRequest
+from drl_trading_core.common.model.feature_view_request import FeatureViewRequestContainer
 from feast import FeatureStore, Field
 from feast.types import Float32
 from injector import Injector
@@ -92,7 +92,7 @@ class TestFeastIntegration:
         feast_provider.feature_field_mapper = mock_mapper
 
         # Create FeatureViewRequest with synthetic features
-        request = FeatureViewRequest(
+        request = FeatureViewRequestContainer(
             symbol="TESTSYM",
             feature_view_name="synthetic_features",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
@@ -101,7 +101,7 @@ class TestFeastIntegration:
         )
 
         # When
-        feature_view = feast_provider.create_feature_view_from_request(request)
+        feature_view = feast_provider._process_feature_view_creation_request(request)
 
         # Then
         assert feature_view is not None
@@ -136,7 +136,7 @@ class TestFeastIntegration:
         # Inject the mock mapper
         feast_provider.feature_field_mapper = mock_mapper
 
-        request = FeatureViewRequest(
+        request = FeatureViewRequestContainer(
             symbol="MAPPERTEST",
             feature_view_name="mapper_test",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
@@ -145,7 +145,7 @@ class TestFeastIntegration:
         )
 
         # When
-        feature_view = feast_provider.create_feature_view_from_request(request)
+        feature_view = feast_provider._process_feature_view_creation_request(request)
 
         # Then
         assert feature_view is not None
@@ -170,7 +170,7 @@ class TestFeastDataPersistence:
         feast_provider = real_feast_container.get(FeastProvider)
 
         # Create a valid request
-        valid_request = FeatureViewRequest(
+        valid_request = FeatureViewRequestContainer(
             symbol="TESTSYM",
             feature_view_name="validation_test",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
@@ -179,7 +179,7 @@ class TestFeastDataPersistence:
         )
 
         # When & Then - should not raise any validation errors
-        feature_view = feast_provider.create_feature_view_from_request(valid_request)
+        feature_view = feast_provider._process_feature_view_creation_request(valid_request)
         assert feature_view is not None
 
     def test_feast_feature_view_has_correct_metadata(
@@ -191,7 +191,7 @@ class TestFeastDataPersistence:
         """Test that created feature views have correct Feast metadata."""
         # Given
         feast_provider = real_feast_container.get(FeastProvider)
-        request = FeatureViewRequest(
+        request = FeatureViewRequestContainer(
             symbol="METADATA_TEST",
             feature_view_name="metadata_features",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
@@ -200,7 +200,7 @@ class TestFeastDataPersistence:
         )
 
         # When
-        feature_view = feast_provider.create_feature_view_from_request(request)
+        feature_view = feast_provider._process_feature_view_creation_request(request)
 
         # Then - verify Feast-specific metadata
         assert feature_view.name == "metadata_features"

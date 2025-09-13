@@ -10,7 +10,7 @@ from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrate
 def feature_store_config() -> FeatureStoreConfig:
     """Create a feature store configuration for integration tests."""
     return FeatureStoreConfig(
-        enabled=True,
+        cache_enabled=True,
         entity_name="test_entity",
         ttl_days=30,
         online_enabled=False,

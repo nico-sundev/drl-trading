@@ -418,7 +418,7 @@ def config_fixture(temp_feast_repo: str) -> ApplicationConfig:
     config.feature_store_config.offline_repo_strategy = OfflineRepoStrategyEnum.LOCAL
     config.feature_store_config.local_repo_config = local_repo_config
     config.feature_store_config.config_directory = str(test_config_dir)  # Points to tests/resources
-    config.feature_store_config.enabled = True
+    config.feature_store_config.cache_enabled = True
 
     return config
 
@@ -720,7 +720,7 @@ def s3_feature_store_config(
     )
 
     return FeatureStoreConfig(
-        enabled=True,
+        cache_enabled=True,
         entity_name="test_entity",
         ttl_days=30,
         online_enabled=False,
@@ -739,7 +739,7 @@ def local_feature_store_config(temp_feast_repo: str) -> FeatureStoreConfig:
     local_config = LocalRepoConfig(repo_path=os.path.join(temp_feast_repo, "data"))
 
     return FeatureStoreConfig(
-        enabled=True,
+        cache_enabled=True,
         entity_name="test_entity",
         ttl_days=30,
         online_enabled=False,

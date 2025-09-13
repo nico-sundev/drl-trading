@@ -26,7 +26,7 @@ class TestFeatureStoreWrapper:
     def enabled_config(self) -> FeatureStoreConfig:
         """Create an enabled feature store config for testing."""
         return FeatureStoreConfig(
-            enabled=True,
+            cache_enabled=True,
             config_directory="/test/path/feature_store",
             entity_name="test_entity",
             ttl_days=30,
@@ -39,7 +39,7 @@ class TestFeatureStoreWrapper:
     def disabled_config(self) -> FeatureStoreConfig:
         """Create a disabled feature store config for testing."""
         return FeatureStoreConfig(
-            enabled=False,
+            cache_enabled=False,
             config_directory="/test/path/feature_store",
             entity_name="test_entity",
             ttl_days=30,
@@ -92,14 +92,14 @@ entity_key_serialization_version: 2
         assert wrapper._feature_store is None
 
     @patch(
-        "drl_trading_adapter.adapter.feature_store.feast.feature_store_wrapper.FeatureStore"
+        "drl_trading_adapter.adapter.feature_store.provider.feature_store_wrapper.FeatureStore"
     )
     def test_get_feature_store_with_enabled_config(
         self, mock_feast_store: MagicMock, temp_feature_store_dir: str
     ) -> None:
         """Test get_feature_store with enabled config and test stage."""
         config = FeatureStoreConfig(
-            enabled=True,
+            cache_enabled=True,
             config_directory=temp_feature_store_dir,
             entity_name="test_entity",
             ttl_days=30,
@@ -131,14 +131,14 @@ entity_key_serialization_version: 2
         assert result is None
 
     @patch(
-        "drl_trading_adapter.adapter.feature_store.feast.feature_store_wrapper.FeatureStore"
+        "drl_trading_adapter.adapter.feature_store.provider.feature_store_wrapper.FeatureStore"
     )
     def test_get_feature_store_with_absolute_path(
         self, mock_feast_store: MagicMock, temp_feature_store_dir: str
     ) -> None:
         """Test get_feature_store with absolute path to config directory."""
         config = FeatureStoreConfig(
-            enabled=True,
+            cache_enabled=True,
             config_directory=temp_feature_store_dir,  # This is already absolute
             entity_name="test_entity",
             ttl_days=30,
@@ -159,7 +159,7 @@ entity_key_serialization_version: 2
         mock_feast_store.assert_called_once_with(repo_path=expected_path)
 
     @patch(
-        "drl_trading_adapter.adapter.feature_store.feast.feature_store_wrapper.FeatureStore"
+        "drl_trading_adapter.adapter.feature_store.provider.feature_store_wrapper.FeatureStore"
     )
     def test_get_feature_store_with_relative_path(
         self, mock_feast_store: MagicMock
@@ -178,7 +178,7 @@ entity_key_serialization_version: 2
                     f.write("project: test\nregistry: registry.db\nprovider: local\n")
 
             config = FeatureStoreConfig(
-                enabled=True,
+                cache_enabled=True,
                 config_directory=full_path,  # Use the full path since we can't rely on cwd
                 entity_name="test_entity",
                 ttl_days=30,
@@ -201,14 +201,14 @@ entity_key_serialization_version: 2
             assert called_path.endswith(os.path.join("feature_store", "prod"))
 
     @patch(
-        "drl_trading_adapter.adapter.feature_store.feast.feature_store_wrapper.FeatureStore"
+        "drl_trading_adapter.adapter.feature_store.provider.feature_store_wrapper.FeatureStore"
     )
     def test_get_feature_store_caching(
         self, mock_feast_store: MagicMock, temp_feature_store_dir: str
     ) -> None:
         """Test that FeatureStore instance is cached after first creation."""
         config = FeatureStoreConfig(
-            enabled=True,
+            cache_enabled=True,
             config_directory=temp_feature_store_dir,
             entity_name="test_entity",
             ttl_days=30,
@@ -236,7 +236,7 @@ entity_key_serialization_version: 2
     def test_get_feature_store_creation_error(self) -> None:
         """Test error handling when STAGE is missing."""
         config = FeatureStoreConfig(
-            enabled=True,
+            cache_enabled=True,
             config_directory="/nonexistent/path/feature_store",
             entity_name="test_entity",
             ttl_days=30,
@@ -253,7 +253,7 @@ entity_key_serialization_version: 2
     def test_get_feature_store_missing_config_file(self) -> None:
         """Test error handling when feature_store.yaml is missing."""
         config = FeatureStoreConfig(
-            enabled=True,
+            cache_enabled=True,
             config_directory="/nonexistent/path/feature_store",
             entity_name="test_entity",
             ttl_days=30,
@@ -282,7 +282,7 @@ entity_key_serialization_version: 2
     ) -> None:
         """Test _resolve_feature_store_config_directory with absolute path."""
         config = FeatureStoreConfig(
-            enabled=True,
+            cache_enabled=True,
             config_directory=temp_feature_store_dir,
             entity_name="test_entity",
             ttl_days=30,
@@ -312,7 +312,7 @@ entity_key_serialization_version: 2
                 f.write("project: test\nregistry: registry.db\nprovider: local\n")
 
             config = FeatureStoreConfig(
-                enabled=True,
+                cache_enabled=True,
                 config_directory=relative_path,  # Use absolute path for testing
                 entity_name="test_entity",
                 ttl_days=30,
@@ -330,7 +330,7 @@ entity_key_serialization_version: 2
             assert result.endswith(os.path.join("feature_store", "dev"))
 
     @patch(
-        "drl_trading_adapter.adapter.feature_store.feast.feature_store_wrapper.FeatureStore"
+        "drl_trading_adapter.adapter.feature_store.provider.feature_store_wrapper.FeatureStore"
     )
     def test_multiple_wrappers_independent_caching(
         self, mock_feast_store: MagicMock, temp_feature_store_dir: str
@@ -342,7 +342,7 @@ entity_key_serialization_version: 2
 
         # Create two configs with the same path
         config1 = FeatureStoreConfig(
-            enabled=True,
+            cache_enabled=True,
             config_directory=temp_feature_store_dir,
             entity_name="test_entity",
             ttl_days=30,
@@ -352,7 +352,7 @@ entity_key_serialization_version: 2
         )
 
         config2 = FeatureStoreConfig(
-            enabled=True,
+            cache_enabled=True,
             config_directory=temp_feature_store_dir,
             entity_name="test_entity",
             ttl_days=30,
@@ -375,7 +375,7 @@ entity_key_serialization_version: 2
         assert mock_feast_store.call_count == 2
 
     @patch(
-        "drl_trading_adapter.adapter.feature_store.feast.feature_store_wrapper.FeatureStore"
+        "drl_trading_adapter.adapter.feature_store.provider.feature_store_wrapper.FeatureStore"
     )
     def test_path_with_special_characters(self, mock_feast_store: MagicMock) -> None:
         """Test handling of paths with special characters."""
@@ -390,7 +390,7 @@ entity_key_serialization_version: 2
                 f.write("project: test\nregistry: registry.db\nprovider: local\n")
 
             config = FeatureStoreConfig(
-                enabled=True,
+                cache_enabled=True,
                 config_directory=special_path,
                 entity_name="test_entity",
                 ttl_days=30,
@@ -416,7 +416,7 @@ entity_key_serialization_version: 2
         """Test that config object has expected attributes."""
         wrapper = FeatureStoreWrapper(enabled_config, "test")
 
-        assert wrapper._feature_store_config.enabled is True
+        assert wrapper._feature_store_config.cache_enabled is True
         assert (
             wrapper._feature_store_config.config_directory == "/test/path/feature_store"
         )
@@ -449,7 +449,7 @@ entity_key_serialization_version: 2
                     f.write("project: test\nregistry: registry.db\nprovider: local\n")
 
             config = FeatureStoreConfig(
-                enabled=enabled,
+                cache_enabled=enabled,
                 config_directory=test_path,
                 entity_name="test_entity",
                 ttl_days=30,
@@ -502,7 +502,7 @@ entity_key_serialization_version: 2
                 f.write("project: test\nregistry: registry.db\nprovider: local\n")
 
             config = FeatureStoreConfig(
-                enabled=True,
+                cache_enabled=True,
                 config_directory=full_path,
                 entity_name="test_entity",
                 ttl_days=30,

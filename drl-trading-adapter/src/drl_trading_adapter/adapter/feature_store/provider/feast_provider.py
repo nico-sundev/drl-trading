@@ -1,6 +1,5 @@
 import logging
 from datetime import timedelta
-from typing import Optional
 
 from feast import (
     Entity,
@@ -13,15 +12,17 @@ from feast import (
 )
 from injector import inject
 
-from .feature_store_wrapper import FeatureStoreWrapper
-from .mapper.feature_field_mapper import IFeatureFieldMapper
 from drl_trading_adapter.adapter.feature_store.offline import IOfflineFeatureRepository
+from drl_trading_adapter.adapter.feature_store.provider.feature_store_wrapper import (
+    FeatureStoreWrapper,
+)
+from drl_trading_adapter.adapter.feature_store.provider.mapper.feature_field_mapper import (
+    IFeatureFieldMapper,
+)
 from drl_trading_common.base import BaseFeature
 from drl_trading_common.config import FeatureStoreConfig
-from drl_trading_common.model import (
-    FeatureConfigVersionInfo,
-)
-from drl_trading_core.common.model import FeatureViewRequest
+from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+from drl_trading_core.common.model import FeatureViewRequestContainer
 
 logger = logging.getLogger(__name__)
 
@@ -62,81 +63,67 @@ class FeastProvider:
         """
         return self.offline_feature_repo
 
-    def is_enabled(self) -> bool:
+    def _process_feature_view_creation_requests(
+        self, requests: list[FeatureViewRequestContainer]
+    ) -> list[FeatureView]:
         """
-        Check if the feature store is enabled.
-
-        Returns:
-            bool: True if the feature store is enabled, False otherwise
-        """
-        return bool(self.feature_store_config.enabled)
-
-    def create_feature_view_from_request(
-        self, request: FeatureViewRequest
-    ) -> FeatureView:
-        """
-        Create a feature view using a request container for better parameter management.
-
-        This is the preferred method for new code as it provides:
-        - Better parameter grouping and validation
-        - Improved readability at call sites
-        - Easier testing and mocking
+        Create feature views using request containers.
 
         Args:
-            request: Container with all required parameters for feature view creation
+            requests: list of featureview Container with all required parameters for feature view creation
 
         Returns:
-            FeatureView: The created feature view
+            FeatureView: The created feature views
 
         Raises:
             ValueError: If any parameter is invalid or missing required attributes
-            RuntimeError: If feature store is disabled or in invalid state
             OSError: If file system operations fail
             Exception: For unexpected Feast-related errors during feature view creation
         """
+        created_feature_views: list[FeatureView] = []
+
         try:
-            # Validate request parameters
-            request.validate()
+            for request in requests:
+                feature_view_name = self.feature_field_mapper.get_field_base_name(
+                    request.feature
+                )
+                # Validate request parameters
+                request.validate()
 
-            # Validate system state
-            self._validate_feature_store_state()
+                # Validate config
+                self._validate_feature_store_config()
 
-            # Create feature view with validated and sanitized inputs
-            return self._create_feature_view_internal(request)
+                # Create feature view with validated and sanitized inputs
+                created_feature_views.append(
+                    self._handle_feature_view_creation(request)
+                )
 
         except (ValueError, RuntimeError, OSError) as e:
             # Re-raise known exception types with context
             logger.error(
-                f"Error creating feature view '{request.feature_view_name}' for symbol '{request.symbol}': {e}"
+                f"Error creating feature view '{feature_view_name}' for symbol '{request.symbol}': {e}"
             )
             raise
         except Exception as e:
             # Catch any unexpected errors and wrap them
             logger.error(
-                f"Unexpected error creating feature view '{request.feature_view_name}' for symbol '{request.symbol}': {e}"
+                f"Unexpected error creating feature view '{feature_view_name}' for symbol '{request.symbol}': {e}"
             )
             raise RuntimeError(
                 f"Unexpected error during feature view creation: {e}"
             ) from e
 
-    def _validate_feature_store_state(self) -> None:
+        # Batch apply all created feature views to the store
+        self.feature_store.apply([*created_feature_views])
+        return created_feature_views
+
+    def _validate_feature_store_config(self) -> None:
         """
-        Validate that the feature store is in a valid state for operations.
+        Validate that the feature store configuration is valid.
 
         Raises:
             RuntimeError: If feature store is disabled or in invalid state
         """
-        if not self.is_enabled():
-            raise RuntimeError(
-                "Feature store is disabled - cannot create feature views"
-            )
-
-        if self.feature_store is None:
-            raise RuntimeError("Feature store is not initialized")
-
-        # Validate that offline repository is available
-        if self.offline_feature_repo is None:
-            raise RuntimeError("Offline feature repository is not configured")
 
         # Validate TTL configuration
         if (
@@ -145,7 +132,9 @@ class FeastProvider:
         ):
             raise ValueError("Feature store config must have a positive ttl_days value")
 
-    def _create_feature_view_internal(self, request: FeatureViewRequest) -> FeatureView:
+    def _handle_feature_view_creation(
+        self, request: FeatureViewRequestContainer
+    ) -> FeatureView:
         """
         Internal method to create the feature view with validated parameters.
 
@@ -157,33 +146,37 @@ class FeastProvider:
         """
         # Get sanitized inputs
         symbol = request.get_sanitized_symbol()
-        feature_view_name = request.get_sanitized_feature_view_name()
-
-        # Create data directory and file source
-        source = self._create_file_source(
-            feature_view_name, request.feature_version_info, symbol
+        feature_view_name = self.feature_field_mapper.get_field_base_name(
+            request.feature
         )
 
-        # Get features from the request and create fields
-        features_for_role = self._get_features_from_request(request)
-        fields = self._create_fields_for_features(features_for_role)
+        # Create data directory and file source
+        source = self._create_file_source(feature_view_name, symbol)
+
+        fields = self._create_fields_from_features([request.feature])
 
         # Create entity
-        entity = self._create_entity_with_error_handling(symbol)
+        entity = self._get_or_create_entity(symbol)
 
         # Create and return the feature view
-        return self._create_feast_feature_view(
-            feature_view_name=feature_view_name,
+        logger.info(
+            f"Creating feature view '{feature_view_name}' for symbol '{symbol}' and role '{request.feature_role.value}'"
+        )
+        fv = self._create_feature_view(
+            feature_view_name=self.feature_field_mapper.get_field_base_name(
+                request.feature
+            ),
             entity=entity,
             fields=fields,
             source=source,
             symbol=symbol,
+            feature_role=request.feature_role,
         )
+        return fv
 
     def _create_file_source(
         self,
         feature_view_name: str,
-        feature_version_info: FeatureConfigVersionInfo,
         symbol: str,
     ) -> FileSource:
         """Create file source with error handling."""
@@ -198,7 +191,6 @@ class FeastProvider:
         # Create file source with error handling
         try:
             return FileSource(
-                name=f"view_{feature_view_name}_v{feature_version_info.semver}-{feature_version_info.hash}",
                 path=offline_store_path,
                 timestamp_field="event_timestamp",
             )
@@ -207,25 +199,10 @@ class FeastProvider:
                 f"Failed to create FileSource for feature view '{feature_view_name}': {e}"
             ) from e
 
-    def _get_features_from_request(self, request: FeatureViewRequest) -> list[BaseFeature]:
-        """Get features from the FeatureViewRequest with validation."""
-
-        features_from_request = request.features if hasattr(request, 'features') else []
-
-        if not features_from_request:
-            logger.warning(
-                f"No features found in request for role {request.get_role_description()}, creating empty feature view"
-            )
-
-        logger.debug(
-            f"Feast feature view will be created for feature role: {request.get_role_description()}"
-        )
-        return features_from_request
-
-    def _create_fields_for_features(
+    def _create_fields_from_features(
         self, features_for_role: list[BaseFeature]
     ) -> list[Field]:
-        """Create Feast fields from features with error handling."""
+        """Create Feast fields from features."""
         fields = []
 
         try:
@@ -238,22 +215,29 @@ class FeastProvider:
 
         return fields
 
-    def _create_entity_with_error_handling(self, symbol: str) -> Entity:
-        """Create entity with error handling."""
+    def _get_or_create_entity(self, symbol: str) -> Entity:
         try:
-            return self.get_entity(symbol)
+            return self.feature_store.get_entity(
+                name=self.feature_store_config.entity_name,
+                allow_registry_cache=self.feature_store_config.cache_enabled
+            )
         except Exception as e:
-            raise RuntimeError(
-                f"Failed to create entity for symbol '{symbol}': {e}"
-            ) from e
+            logger.debug(
+                f"Entity '{self.feature_store_config.entity_name}' not found, creating new: {e}"
+            )
+            logger.info(f"Creating entity for symbol '{symbol}'")
+            entity = self._create_entity(symbol)
+            self.feature_store.apply([entity])
+            return entity
 
-    def _create_feast_feature_view(
+    def _create_feature_view(
         self,
         feature_view_name: str,
         entity: Entity,
         fields: list[Field],
         source: FileSource,
         symbol: str,
+        feature_role: FeatureRoleEnum,
     ) -> FeatureView:
         """Create the final Feast FeatureView with error handling."""
         try:
@@ -262,9 +246,10 @@ class FeastProvider:
                 entities=[entity],
                 ttl=timedelta(days=self.feature_store_config.ttl_days),
                 schema=fields,
-                online=True,  # Use config setting
+                online=self.feature_store_config.online_enabled,  # Use config setting
                 source=source,
                 tags={
+                    "feature_role": f"{feature_role.value}",
                     "symbol": symbol,
                 },
             )
@@ -273,36 +258,147 @@ class FeastProvider:
                 f"Failed to create FeatureView '{feature_view_name}': {e}"
             ) from e
 
-    def create_feature_service(
-        self,
-        symbol: str,
-        feature_version_info: FeatureConfigVersionInfo,
-        feature_views: Optional[list[FeatureView | OnDemandFeatureView]] = None,
-    ) -> FeatureService:
+    def _get_or_create_feature_views(
+        self, requests: list[FeatureViewRequestContainer]
+    ) -> list[FeatureView | OnDemandFeatureView]:
+        """
+        Get existing feature views or create new ones if not yet existing.
 
-        try:
-            existing_service = self.feature_store.get_feature_service(
-                name=f"service_{symbol}_v{feature_version_info.semver}-{feature_version_info.hash}"
+        Args:
+            requests: List of feature view requests to process
+
+        Returns:
+            list[FeatureView | OnDemandFeatureView]: Existing or newly created feature views
+        """
+
+        if len(requests) == 0:
+            logger.warning(
+                "No feature view requests provided for _get_or_create_feature_views."
             )
-            if existing_service:
-                logger.debug(
-                    f"Feature service already exists for symbol {symbol}, reusing existing service"
-                )
-                return existing_service
-        except Exception as e:
-            logger.debug(
-                f"Feature service not found for symbol {symbol}, creating new service: {e}"
+            return []
+
+        feature_views: list[FeatureView | OnDemandFeatureView] = []
+
+        # Create a dictionary for quick feature name lookup
+        feature_requests_map: dict[str, FeatureViewRequestContainer] = {
+            self.feature_field_mapper.get_field_base_name(request.feature): request
+            for request in requests
+        }
+
+        # Attempt to fetch existing feature views
+        symbol = requests[0].get_sanitized_symbol()
+        role = requests[0].feature_role.value
+        existing_feature_views = self._find_feature_views_by_name(
+            list(feature_requests_map.keys()), symbol=symbol, feature_role=role
+        )
+        feature_views.extend(existing_feature_views)
+
+        # Remove found feature views from the requests map
+        for fv in existing_feature_views:
+            feature_requests_map.pop(fv.name, None)
+
+        # Create any remaining feature views that were not found
+        feature_views.extend(
+            self._process_feature_view_creation_requests(
+                list(feature_requests_map.values())
             )
-
-        if feature_views is None:
-            feature_views = []
-
-        return FeatureService(
-            name=f"service_{symbol}_v{feature_version_info.semver}-{feature_version_info.hash}",
-            features=feature_views,
         )
 
-    def get_entity(self, symbol: str) -> Entity:
+        return feature_views
+
+    def _find_feature_views_by_name(
+        self, feature_view_names: list[str], **kwargs: str
+    ) -> list[FeatureView]:
+        """
+        Find feature views by name.
+
+        Args:
+            name: Name of the feature view to search for
+
+        Returns:
+            list[FeatureView]: List of matching feature views
+        """
+        try:
+            all_feature_views = self.feature_store.list_feature_views(
+                allow_cache=self.feature_store_config.cache_enabled, tags=kwargs
+            )
+            matching_fvs = [
+                fv for fv in all_feature_views if fv.name in feature_view_names
+            ]
+            return matching_fvs
+        except Exception as e:
+            raise RuntimeError(f"Failed to list feature views from store: {e}") from e
+
+    def get_feature_service(self, service_name: str) -> FeatureService:
+        """
+        Get an existing feature service by name.
+
+        Args:
+            service_name: Name of the feature service to retrieve
+
+        Returns:
+            FeatureService: The requested feature service
+        """
+        try:
+            return self.feature_store.get_feature_service(
+                name=service_name,
+                allow_cache=self.feature_store_config.cache_enabled
+            )
+        except Exception as e:
+            raise ValueError(
+                f"Failed to get feature service '{service_name}': {e}"
+            ) from e
+
+    def get_or_create_feature_service(
+        self,
+        service_name: str,
+        feature_view_requests: list[FeatureViewRequestContainer],
+    ) -> FeatureService:
+        """
+        Create a symbol-specific feature service based on feature description.
+
+        Args:
+            symbol: Trading symbol for this service
+            description: Description of the feature service
+            feature_views: List of feature views to include in the service
+
+        Returns:
+            FeatureService: The created or existing feature service
+        """
+        try:
+            return self.get_feature_service(service_name=service_name)
+        except Exception as e:
+            logger.debug(
+                f"Feature service not found for {service_name}, creating new service: {e}"
+            )
+
+        return self._create_feature_service(
+            service_name=service_name,
+            feature_view_requests=feature_view_requests,
+        )
+
+    def _create_feature_service(
+        self,
+        service_name: str,
+        feature_view_requests: list[FeatureViewRequestContainer],
+    ) -> FeatureService:
+        feature_views: list[FeatureView | OnDemandFeatureView] = (
+            self._get_or_create_feature_views(requests=feature_view_requests)
+        )
+
+        if len(feature_views) == 0:
+            raise ValueError(
+                f"No feature views available to create feature service '{service_name}'"
+            )
+
+        logger.info(
+            f"Creating feature service '{service_name}' with {len(feature_views)} feature views"
+        )
+        fs = FeatureService(name=service_name, features=feature_views)
+        self.feature_store.apply([fs])
+        return fs
+
+    def _create_entity(self, symbol: str) -> Entity:
         """
         Create an entity for the given dataset identifier.
 

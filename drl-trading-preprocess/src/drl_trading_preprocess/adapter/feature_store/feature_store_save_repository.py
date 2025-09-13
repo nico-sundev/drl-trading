@@ -4,8 +4,10 @@ from drl_trading_adapter.adapter.feature_store.provider import FeastProvider
 from injector import inject
 from pandas import DataFrame
 
+from drl_trading_adapter.adapter.feature_store.util.feature_store_utilities import get_feature_service_name
 from drl_trading_common.enum import FeatureRoleEnum
-from drl_trading_core.common.model import FeatureViewRequest
+from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
+from drl_trading_core.common.model import FeatureViewRequestContainer
 from drl_trading_core.core.mapper import FeatureViewNameMapper
 
 from ...core.port import IFeatureStoreSavePort
@@ -39,15 +41,12 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
         self,
         features_df: DataFrame,
         symbol: str,
-        feature_view_requests: list[FeatureViewRequest],
+        feature_version_info: FeatureConfigVersionInfo,
+        feature_view_requests: list[FeatureViewRequestContainer],
     ) -> None:
         """
-        Store computed features using the configured offline repository.
-
-        This method:
-        1. Delegates storage to the offline repository implementation
-        2. Creates and applies Feast feature views
-        3. Registers feature services for the dataset
+        Store computed features using the configured offline repository and
+        create Feast feature views and services.
 
         Args:
             features_df: DataFrame containing the computed features
@@ -69,12 +68,6 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
             logger.warning(
                 f"Found null values in event_timestamp for {symbol}, dropping rows with nulls"
             )
-            features_df = features_df.dropna(subset=["event_timestamp"])
-
-        if features_df.empty:
-            logger.warning(
-                f"No valid features to store after dropping nulls for {symbol}"
-            )
             return
 
         # Ensure event_timestamp is timezone-aware to prevent Feast timezone issues
@@ -93,12 +86,12 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
             logger.warning(f"No new features stored for {symbol}")
             # Still create feature views even if no new data was stored
             # This is needed for online operations to work properly
-            self._create_and_apply_feature_views(symbol, feature_view_requests)
+            self._create_or_update_features(symbol, feature_version_info, feature_view_requests)
             return
 
         logger.info(f"Stored {stored_count} feature records for {symbol}")
         # Create and apply Feast feature views
-        self._create_and_apply_feature_views(symbol, feature_view_requests)
+        self._create_or_update_features(symbol, feature_version_info, feature_view_requests)
 
     def batch_materialize_features(
         self,
@@ -243,17 +236,19 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
             f"Pushed {len(filtered_df)} feature records of feature-view {feature_view_name} to online store: {symbol}"
         )
 
-    def _create_and_apply_feature_views(
+    def _create_or_update_features(
         self,
         symbol: str,
-        feature_view_requests: list[FeatureViewRequest],
+        feature_version_info: FeatureConfigVersionInfo,
+        feature_view_requests: list[FeatureViewRequestContainer],
     ) -> None:
         """
         Create and apply Feast feature views and services.
 
         Args:
-            dataset_id: Dataset identifier
-            feature_version_info: Version information for feature tracking
+            symbol: Symbol for which to create feature views
+            feature_version_info: Version info for feature tracking
+            feature_view_requests: List of feature view requests to create
         """
 
         if feature_view_requests is None or len(feature_view_requests) == 0:
@@ -262,28 +257,16 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
             )
             return
 
-        # Create feature views for observation and reward spaces
-        feature_views = [
-            self.feast_provider.create_feature_view_from_request(fv_request)
-            for fv_request in feature_view_requests
-        ]
-        feature_version_info = feature_view_requests[0].feature_version_info
+        feature_service_role = feature_view_requests[0].feature_role
 
-        # Create feature service combining both views
-        feature_service = self.feast_provider.create_feature_service(
-            feature_views=feature_views,
+        service_name = get_feature_service_name(
+            feature_service_role=feature_service_role,
             symbol=symbol,
             feature_version_info=feature_version_info,
         )
 
-        # Create entity (needed for both feature views)
-        entity = self.feast_provider.get_entity(symbol)
-
-        # Apply entities and feature views to Feast registry
-        # IMPORTANT: Entities must be applied before feature views that reference them
-        self.feature_store.apply([entity, *feature_views, feature_service])
-        logger.info(f"Applied feast entity: {entity.name}")
-        logger.info(
-            f"Applied feast feature views: {', '.join(fv.name for fv in feature_views)}"
+        # Create feature service combining both views
+        self.feast_provider.get_or_create_feature_service(
+            service_name=service_name,
+            feature_view_requests=feature_view_requests,
         )
-        logger.info(f"Applied Feast feature service: {feature_service.name}")

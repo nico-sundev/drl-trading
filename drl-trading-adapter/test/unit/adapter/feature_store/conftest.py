@@ -17,7 +17,7 @@ from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrate
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
-from drl_trading_core.common.model.feature_view_request import FeatureViewRequest
+from drl_trading_core.common.model.feature_view_request import FeatureViewRequestContainer
 from feast import FeatureService, FeatureStore
 from pandas import DataFrame
 
@@ -37,7 +37,7 @@ def feature_store_config(temp_dir: str) -> FeatureStoreConfig:
     local_repo_config = LocalRepoConfig(repo_path=temp_dir)
 
     return FeatureStoreConfig(
-        enabled=True,
+        cache_enabled=True,
         config_directory=temp_dir,
         entity_name="trading_entity",
         ttl_days=30,
@@ -167,19 +167,19 @@ def feature_version_info() -> FeatureConfigVersionInfo:
 def feature_view_requests(
     eurusd_h1_symbol: str,
     feature_version_info: FeatureConfigVersionInfo,
-) -> list[FeatureViewRequest]:
+) -> list[FeatureViewRequestContainer]:
     """Create sample FeatureViewRequest list for tests."""
     # Using simple Mock objects as BaseFeature placeholders
     features = [Mock(name="feat1"), Mock(name="feat2")]
     return [
-        FeatureViewRequest(
+        FeatureViewRequestContainer(
             symbol=eurusd_h1_symbol,
             feature_view_name="observation_space_feature_view",
             feature_role=None,  # role is optional for integration; provider logic may infer
             feature_version_info=feature_version_info,
             features=features,
         ),
-        FeatureViewRequest(
+        FeatureViewRequestContainer(
             symbol=eurusd_h1_symbol,
             feature_view_name="reward_engineering_feature_view",
             feature_role=None,

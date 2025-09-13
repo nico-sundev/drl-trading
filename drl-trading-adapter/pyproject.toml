@@ -26,17 +26,17 @@ classifiers = [
 dependencies = [
     # NOTE: Distribution names can differ from import module names.
     # common: distribution 'drl-trading-common' => import package 'drl_trading_common'
-    "drl-trading-common",   # Shared models & config (domain DTOs, config schemas)
+    "drl-trading-common", # Shared models & config (domain DTOs, config schemas)
     # core: distribution & import both use underscores for package
-    "drl-trading-core",     # Core ports & domain services (ports implemented here)
+    "drl-trading-core", # Core ports & domain services (ports implemented here)
     # External libs required only by adapter layer (ideally removed from core over time)
-    "feast",                # Feature store framework (should be isolated to adapter)
-    "protobuf>=5.26.0,<6.0.0",  # Feast compatibility
-    "pandas>=2.0.0",        # DataFrame ops for repositories
-    "numpy>=1.24.0",        # Numeric support (alignment w/ core)
-    "boto3>=1.38.30",       # S3 offline repo
-    "injector>=0.22.0",     # DI framework
-    "PyYAML>=6.0",          # Config consistency
+    "feast", # Feature store framework (should be isolated to adapter)
+    "protobuf>=5.26.0,<6.0.0", # Feast compatibility
+    "pandas>=2.0.0", # DataFrame ops for repositories
+    "numpy>=1.24.0", # Numeric support (alignment w/ core)
+    "boto3>=1.38.30", # S3 offline repo
+    "injector>=0.22.0", # DI framework
+    "PyYAML>=6.0", # Config consistency
     "python-dotenv>=1.1.1", # Env management
 ]
 

@@ -17,7 +17,7 @@ from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrate
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
-from drl_trading_core.common.model.feature_view_request import FeatureViewRequest
+from drl_trading_core.common.model.feature_view_request import FeatureViewRequestContainer
 from feast import FeatureService, FeatureStore
 from pandas import DataFrame
 
@@ -37,7 +37,7 @@ def feature_store_config(temp_dir: str) -> FeatureStoreConfig:
     local_repo_config = LocalRepoConfig(repo_path=temp_dir)
 
     return FeatureStoreConfig(
-        enabled=True,
+        cache_enabled=True,
         config_directory=temp_dir,
         entity_name="trading_entity",
         ttl_days=30,
@@ -74,11 +74,13 @@ def mock_feast_provider() -> Mock:
 
     # Mock feature view with schema
     mock_feature_view = Mock()
+    mock_feature_view.name = "test_feature_view"
     mock_schema_field = Mock()
     mock_schema_field.name = "feature_1"
     mock_feature_view.schema = [mock_schema_field]  # Make schema iterable
 
     mock_feature_store.get_feature_view.return_value = mock_feature_view
+    mock_feature_store.list_feature_views.return_value = [mock_feature_view]  # Make iterable for batch materialization
     mock_feature_store.materialize.return_value = None
     mock_feature_store.write_to_online_store.return_value = None
     mock_feature_store.apply.return_value = None
@@ -166,25 +168,26 @@ def feature_version_info() -> FeatureConfigVersionInfo:
 @pytest.fixture
 def feature_view_requests(
     eurusd_h1_symbol: str,
-    feature_version_info: FeatureConfigVersionInfo,
-) -> list[FeatureViewRequest]:
+) -> list[FeatureViewRequestContainer]:
     """Create sample FeatureViewRequest list for tests."""
-    # Using simple Mock objects as BaseFeature placeholders
-    features = [Mock(name="feat1"), Mock(name="feat2")]
+    # Create mock BaseFeature objects for testing
+    from drl_trading_common.enum import FeatureRoleEnum
+    mock_obs_feature = Mock()
+    mock_obs_feature.name = "mock_obs_feature"
+
+    mock_reward_feature = Mock()
+    mock_reward_feature.name = "mock_reward_feature"
+
     return [
-        FeatureViewRequest(
+        FeatureViewRequestContainer(
             symbol=eurusd_h1_symbol,
-            feature_view_name="observation_space_feature_view",
-            feature_role=None,  # role is optional for integration; provider logic may infer
-            feature_version_info=feature_version_info,
-            features=features,
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature=mock_obs_feature,
         ),
-        FeatureViewRequest(
+        FeatureViewRequestContainer(
             symbol=eurusd_h1_symbol,
-            feature_view_name="reward_engineering_feature_view",
-            feature_role=None,
-            feature_version_info=feature_version_info,
-            features=features,
+            feature_role=FeatureRoleEnum.REWARD_ENGINEERING,
+            feature=mock_reward_feature,
         ),
     ]
 

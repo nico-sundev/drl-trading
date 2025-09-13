@@ -20,7 +20,7 @@ class TestOfflineRepoStrategy:
         # Given
         local_config = LocalRepoConfig(repo_path="/test/local/path")
         config = FeatureStoreConfig(
-            enabled=True,
+            cache_enabled=True,
             config_directory="/test/config",
             entity_name="test_entity",
             ttl_days=30,
@@ -33,7 +33,7 @@ class TestOfflineRepoStrategy:
         strategy = OfflineRepoStrategy(config)
 
         # When
-        with patch('drl_trading_core.preprocess.feature_store.offline_store.offline_feature_local_repo.OfflineFeatureLocalRepo') as mock_local_repo:
+        with patch('drl_trading_adapter.adapter.feature_store.offline.offline_feature_local_repo.OfflineFeatureLocalRepo') as mock_local_repo:
             mock_instance = MagicMock()
             mock_local_repo.return_value = mock_instance
 
@@ -61,7 +61,7 @@ class TestOfflineRepoStrategy:
             secret_access_key="test-secret"
         )
         config = FeatureStoreConfig(
-            enabled=True,
+            cache_enabled=True,
             config_directory="/test/config",
             entity_name="test_entity",
             ttl_days=30,
@@ -74,7 +74,7 @@ class TestOfflineRepoStrategy:
         strategy = OfflineRepoStrategy(config)
 
         # When
-        with patch('drl_trading_core.preprocess.feature_store.offline_store.offline_feature_s3_repo.OfflineFeatureS3Repo') as mock_s3_repo:
+        with patch('drl_trading_adapter.adapter.feature_store.offline.offline_feature_s3_repo.OfflineFeatureS3Repo') as mock_s3_repo:
             mock_instance = MagicMock()
             mock_s3_repo.return_value = mock_instance
 
@@ -99,7 +99,7 @@ class TestOfflineRepoStrategy:
         """Test that unsupported strategy raises ValueError."""
         # Given - Create config with valid enum but test runtime error handling
         config = FeatureStoreConfig(
-            enabled=True,
+            cache_enabled=True,
             config_directory="/test/config",
             entity_name="test_entity",
             ttl_days=30,
@@ -111,17 +111,17 @@ class TestOfflineRepoStrategy:
         strategy = OfflineRepoStrategy(config)
 
         # Mock the strategy to return an invalid value at runtime
-        strategy.feature_store_config.offline_repo_strategy = "UNSUPPORTED"  # type: ignore
+        strategy.config.offline_repo_strategy = "UNSUPPORTED"  # type: ignore
 
         # When/Then
-        with pytest.raises(ValueError, match="Unsupported offline repository strategy"):
+        with pytest.raises(ValueError, match="Unsupported offline repo strategy"):
             strategy.create_offline_repository()
 
     def test_local_repository_missing_config_raises_error(self) -> None:
         """Test that missing local configuration raises ValueError."""
         # Given
         config = FeatureStoreConfig(
-            enabled=True,
+            cache_enabled=True,
             config_directory="/test/config",
             entity_name="test_entity",
             ttl_days=30,
@@ -134,14 +134,14 @@ class TestOfflineRepoStrategy:
         strategy = OfflineRepoStrategy(config)
 
         # When/Then
-        with pytest.raises(ValueError, match="Local repository configuration missing"):
+        with pytest.raises(ValueError, match="local_repo_config required for LOCAL strategy"):
             strategy.create_offline_repository()
 
     def test_s3_repository_missing_config_raises_error(self) -> None:
         """Test that missing S3 configuration raises ValueError."""
         # Given
         config = FeatureStoreConfig(
-            enabled=True,
+            cache_enabled=True,
             config_directory="/test/config",
             entity_name="test_entity",
             ttl_days=30,
@@ -154,5 +154,5 @@ class TestOfflineRepoStrategy:
         strategy = OfflineRepoStrategy(config)
 
         # When/Then
-        with pytest.raises(ValueError, match="S3 repository configuration missing"):
+        with pytest.raises(ValueError, match="s3_repo_config is required for S3 offline repository strategy"):
             strategy.create_offline_repository()

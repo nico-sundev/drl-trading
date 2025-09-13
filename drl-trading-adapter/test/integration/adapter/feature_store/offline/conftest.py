@@ -95,7 +95,7 @@ def s3_feature_store_config(
     )
 
     return FeatureStoreConfig(
-        enabled=True,
+        cache_enabled=True,
         config_directory="/tmp/test_repo",  # Required field for new structure
         entity_name="test_entity",
         ttl_days=30,
