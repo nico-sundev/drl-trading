@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from injector import inject
 from pandas import DataFrame, Series
 
-from drl_trading_core.preprocess.feature.feature_manager import (
+from drl_trading_core.core.service.feature_manager import (
     FeatureManager,
 )
 

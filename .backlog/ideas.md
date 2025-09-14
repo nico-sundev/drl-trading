@@ -2,7 +2,7 @@
 
 ## Quick Thoughts
 <!-- Dump ideas here quickly, organize later -->
-- review/update integration tests for feast after major feast refactoring
+- preprocessing integration tests (dask compatibility issue specifically)
 
 
 

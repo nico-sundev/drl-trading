@@ -3,7 +3,7 @@ from pandas import DataFrame
 
 from drl_trading_common.model import FeatureConfigVersionInfo
 from drl_trading_core.core.port import IFeatureStoreFetchPort
-from drl_trading_core.preprocess.feature import FeatureManager
+from drl_trading_core.core.service import FeatureManager
 
 from ..port import IFeatureStoreSavePort
 

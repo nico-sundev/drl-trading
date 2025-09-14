@@ -9,7 +9,7 @@ from drl_trading_core.common.data_import.data_import_manager import DataImportMa
 from drl_trading_core.common.di.core_module import CoreModule
 from drl_trading_core.common.model.preprocessing_result import PreprocessingResult
 from drl_trading_core.preprocess.data_set_utils.strip_service import StripService
-from drl_trading_core.preprocess.preprocess_service import PreprocessService
+from drl_trading_preprocess.core.service.preprocess_service import PreprocessService
 
 logger = logging.getLogger(__name__)
 

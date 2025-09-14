@@ -24,11 +24,11 @@ classifiers = [
 
 # Runtime dependencies ONLY (installation into deployable services)
 dependencies = [
-    "drl-trading-common",          # Workspace dependency
-    "numpy>=1.24.0",               # Numerical ops
-    "pandas>=2.0.0",               # DataFrames
-    "talipp",                      # Technical indicators (strategy specific)
-    "injector>=0.22.0",            # DI framework
+    "drl-trading-common", # Workspace dependency
+    "numpy>=1.24.0", # Numerical ops
+    "pandas>=2.0.0", # DataFrames
+    "talipp", # Technical indicators (strategy specific)
+    "injector>=0.22.0", # DI framework
 ]
 
 [tool.uv.sources]

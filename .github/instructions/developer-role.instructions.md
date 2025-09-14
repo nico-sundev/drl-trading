@@ -8,7 +8,7 @@ applyTo: '**'
 - Use dependency injection where it makes sense
 - Always take care of proper error handling
 - Code should be cleaned by `ruff check <file_path> --fix`
-- Code should be validated by running `mypy <file_path>`
+- Code should be validated by looking for type errors using the #problems tool
 - Clean up unreferenced code, config left-overs and always think about things if they are actually in use and needed
 - Try your best to find the easiest and most efficient solution to a problem
 - If there is no easy understandable and simple solution, explain complex logic with comments
@@ -26,7 +26,7 @@ applyTo: '**'
     - unit tests below `tests/unit/` directory
     - IT below `tests/integration/` directory
     - every testfile postfixed "_test.py" for unittest or "_it.py" for integration test
-    - always use pytest
+    - to run tests, use the tool #runTests, as fallback use `uv run python -m pytest`
     - only test public methods of a class
     - create fixtures for test methods, but use conftest.py for common fixtures among multiple test files
     - define test data builders for complex objects

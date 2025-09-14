@@ -9,7 +9,7 @@ from drl_trading_core.common.model.preprocessing_result import PreprocessingResu
 from drl_trading_core.common.model.symbol_import_container import (
     SymbolImportContainer,
 )
-from drl_trading_core.preprocess.preprocess_service import (
+from drl_trading_preprocess.core.service.preprocess_service import (
     PreprocessServiceInterface,
 )
 

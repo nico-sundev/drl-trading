@@ -5,6 +5,7 @@ from drl_trading_core.common.model.feature_view_request import FeatureViewReques
 from feast import FeatureStore, Field
 from feast.types import Float32
 from injector import Injector
+from drl_trading_common.base import BaseFeature
 
 from drl_trading_adapter.adapter.feature_store.provider import (
     FeastProvider,
@@ -17,6 +18,39 @@ from drl_trading_adapter.adapter.feature_store.provider.mapper import (
 )
 
 
+class _TestFeature(BaseFeature):
+    """Minimal test implementation of BaseFeature for integration tests."""
+
+    def __init__(self, name: str):
+        # Skip parent constructor to avoid complex dependencies
+        self.name = name
+        self.config = None
+
+    def get_feature_name(self) -> str:
+        return self.name
+
+    def get_sub_features_names(self) -> list[str]:
+        return []
+
+    def get_config_to_string(self) -> str | None:
+        return None
+
+    def get_config(self):
+        return None
+
+    def compute_all(self):
+        # Not used in integration tests
+        return None
+
+    def add(self, df):
+        # Not used in integration tests
+        pass
+
+    def compute_latest(self):
+        # Not used in integration tests
+        return None
+
+
 def create_mock_mapper(field_responses: dict[str, list[Field]]) -> Mock:
     """Create a mock feature field mapper that returns predefined fields."""
     mock_mapper = Mock(spec=IFeatureFieldMapper)
@@ -25,18 +59,17 @@ def create_mock_mapper(field_responses: dict[str, list[Field]]) -> Mock:
         feature_name = feature.get_feature_name()
         return field_responses.get(feature_name, [Field(name=feature_name, dtype=Float32)])
 
+    def side_effect_get_field_base_name(feature):
+        return feature.get_feature_name()
+
     mock_mapper.create_fields.side_effect = side_effect_create_fields
+    mock_mapper.get_field_base_name.side_effect = side_effect_get_field_base_name
     return mock_mapper
 
 
-def create_simple_mock_feature(name: str) -> Mock:
-    """Create a simple mock feature without BaseFeature complexity."""
-    mock_feature = Mock()
-    mock_feature.get_feature_name.return_value = name
-    mock_feature.get_sub_features_names.return_value = []
-    mock_feature.get_config.return_value = None
-    mock_feature.get_config_to_string.return_value = None
-    return mock_feature
+def create_simple_mock_feature(name: str) -> _TestFeature:
+    """Create a TestFeature instance for integration tests."""
+    return _TestFeature(name)
 
 
 class TestFeastIntegration:
@@ -75,7 +108,6 @@ class TestFeastIntegration:
 
         # Verify that we're using a real Feast store, not a mock
         assert isinstance(feast_provider.get_feature_store(), FeatureStore)
-        assert feast_provider.is_enabled() is True
 
         # Create synthetic features for the request (no complex business logic needed)
         mock_feature_1 = create_simple_mock_feature("test_feature_1")
@@ -92,26 +124,35 @@ class TestFeastIntegration:
         feast_provider.feature_field_mapper = mock_mapper
 
         # Create FeatureViewRequest with synthetic features
-        request = FeatureViewRequestContainer(
+        request_1 = FeatureViewRequestContainer(
             symbol="TESTSYM",
-            feature_view_name="synthetic_features",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature_version_info=feature_version_info_fixture,
-            features=[mock_feature_1, mock_feature_2]
+            feature=mock_feature_1
+        )
+
+        request_2 = FeatureViewRequestContainer(
+            symbol="TESTSYM",
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature=mock_feature_2
         )
 
         # When
-        feature_view = feast_provider._process_feature_view_creation_request(request)
+        feature_views = feast_provider._process_feature_view_creation_requests([request_1, request_2])
 
         # Then
-        assert feature_view is not None
-        assert feature_view.name == "synthetic_features"
+        assert feature_views is not None
+        assert len(feature_views) == 2
+
+        # Get the first feature view for detailed assertions
+        feature_view = feature_views[0]
         assert "TESTSYM" in [tag for tag in feature_view.tags.values()]
 
         # Verify fields were created correctly from mock mapper
-        field_names = [field.name for field in feature_view.schema]
-        assert "test_feature_1" in field_names
-        assert "test_feature_2" in field_names
+        all_field_names = []
+        for fv in feature_views:
+            all_field_names.extend([field.name for field in fv.schema])
+        assert "test_feature_1" in all_field_names
+        assert "test_feature_2" in all_field_names
 
     def test_feast_provider_uses_injected_mapper(
         self,
@@ -132,23 +173,24 @@ class TestFeastIntegration:
         mock_mapper.create_fields.return_value = [
             Field(name="custom_mapped_field", dtype=Float32)
         ]
+        mock_mapper.get_field_base_name.return_value = "mapper_test_feature"
 
         # Inject the mock mapper
         feast_provider.feature_field_mapper = mock_mapper
 
         request = FeatureViewRequestContainer(
             symbol="MAPPERTEST",
-            feature_view_name="mapper_test",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature_version_info=feature_version_info_fixture,
-            features=[mock_feature]
+            feature=mock_feature
         )
 
         # When
-        feature_view = feast_provider._process_feature_view_creation_request(request)
+        feature_views = feast_provider._process_feature_view_creation_requests([request])
 
         # Then
-        assert feature_view is not None
+        assert feature_views is not None
+        assert len(feature_views) == 1
+        feature_view = feature_views[0]
         field_names = [field.name for field in feature_view.schema]
         assert "custom_mapped_field" in field_names
 
@@ -172,15 +214,14 @@ class TestFeastDataPersistence:
         # Create a valid request
         valid_request = FeatureViewRequestContainer(
             symbol="TESTSYM",
-            feature_view_name="validation_test",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature_version_info=feature_version_info_fixture,
-            features=[create_simple_mock_feature("test_feature")]
+            feature=create_simple_mock_feature("test_feature")
         )
 
         # When & Then - should not raise any validation errors
-        feature_view = feast_provider._process_feature_view_creation_request(valid_request)
-        assert feature_view is not None
+        feature_views = feast_provider._process_feature_view_creation_requests([valid_request])
+        assert feature_views is not None
+        assert len(feature_views) == 1
 
     def test_feast_feature_view_has_correct_metadata(
         self,
@@ -193,17 +234,17 @@ class TestFeastDataPersistence:
         feast_provider = real_feast_container.get(FeastProvider)
         request = FeatureViewRequestContainer(
             symbol="METADATA_TEST",
-            feature_view_name="metadata_features",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature_version_info=feature_version_info_fixture,
-            features=[create_simple_mock_feature("meta_feature")]
+            feature=create_simple_mock_feature("meta_feature")
         )
 
         # When
-        feature_view = feast_provider._process_feature_view_creation_request(request)
+        feature_views = feast_provider._process_feature_view_creation_requests([request])
 
         # Then - verify Feast-specific metadata
-        assert feature_view.name == "metadata_features"
+        assert feature_views is not None
+        assert len(feature_views) == 1
+        feature_view = feature_views[0]
         assert len(feature_view.entities) == 1
         # Note: Feast stores entity names as strings in feature_view.entities
         assert feature_view.entities[0] == "test_entity"  # This is the entity name from config
