@@ -483,7 +483,7 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         # Given
         mock_feature_service = Mock(spec=FeatureService)
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
-        expected_service_name = f"observation_space_{feature_service_request.symbol}-{feature_service_request.timeframe.value}_{feature_service_request.feature_version_info.semver}-{feature_service_request.feature_version_info.hash}"
+        expected_service_name = f"observation_space_{feature_service_request.symbol}_{feature_service_request.timeframe.value}_{feature_service_request.feature_version_info.semver}_{feature_service_request.feature_version_info.hash}"
 
         # When
         repository.get_online(feature_service_request=feature_service_request)
@@ -505,7 +505,7 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         mock_feature_service = Mock(spec=FeatureService)
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
         sample_timestamps = pd.Series([pd.Timestamp("2024-01-01 09:00:00")])
-        expected_service_name = f"observation_space_{feature_service_request.symbol}-{feature_service_request.timeframe.value}_{feature_service_request.feature_version_info.semver}-{feature_service_request.feature_version_info.hash}"
+        expected_service_name = f"observation_space_{feature_service_request.symbol}_{feature_service_request.timeframe.value}_{feature_service_request.feature_version_info.semver}_{feature_service_request.feature_version_info.hash}"
 
         # When
         repository.get_offline(feature_service_request=feature_service_request, timestamps=sample_timestamps)
@@ -527,7 +527,7 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         mock_feature_service = Mock(spec=FeatureService)
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
         sample_timestamps = pd.Series([pd.Timestamp("2024-01-01 09:00:00")])
-        expected_service_name = f"observation_space_{feature_service_request.symbol}-{feature_service_request.timeframe.value}_{feature_service_request.feature_version_info.semver}-{feature_service_request.feature_version_info.hash}"
+        expected_service_name = f"observation_space_{feature_service_request.symbol}_{feature_service_request.timeframe.value}_{feature_service_request.feature_version_info.semver}_{feature_service_request.feature_version_info.hash}"
 
         # When
         repository.get_online(feature_service_request=feature_service_request)

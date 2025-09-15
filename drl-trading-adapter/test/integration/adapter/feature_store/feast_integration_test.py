@@ -1,6 +1,7 @@
 
 from unittest.mock import Mock
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+from drl_trading_common.model.timeframe import Timeframe
 from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
 from feast import FeatureStore, Field
 from feast.types import Float32
@@ -127,13 +128,15 @@ class TestFeastIntegration:
         request_1 = FeatureViewRequestContainer(
             symbol="TESTSYM",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature=mock_feature_1
+            feature=mock_feature_1,
+            timeframe=Timeframe.HOUR_1
         )
 
         request_2 = FeatureViewRequestContainer(
             symbol="TESTSYM",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature=mock_feature_2
+            feature=mock_feature_2,
+            timeframe=Timeframe.HOUR_1
         )
 
         # When
@@ -181,7 +184,8 @@ class TestFeastIntegration:
         request = FeatureViewRequestContainer(
             symbol="MAPPERTEST",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature=mock_feature
+            feature=mock_feature,
+            timeframe=Timeframe.HOUR_1
         )
 
         # When
@@ -215,7 +219,8 @@ class TestFeastDataPersistence:
         valid_request = FeatureViewRequestContainer(
             symbol="TESTSYM",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature=create_simple_mock_feature("test_feature")
+            feature=create_simple_mock_feature("test_feature"),
+            timeframe=Timeframe.HOUR_1
         )
 
         # When & Then - should not raise any validation errors
@@ -235,7 +240,8 @@ class TestFeastDataPersistence:
         request = FeatureViewRequestContainer(
             symbol="METADATA_TEST",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature=create_simple_mock_feature("meta_feature")
+            feature=create_simple_mock_feature("meta_feature"),
+            timeframe=Timeframe.HOUR_1
         )
 
         # When

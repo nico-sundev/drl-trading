@@ -16,7 +16,9 @@ def get_feature_service_name(
     Returns:
         str: The generated feature service name.
     """
-    return f"{request.feature_service_role.value}_{request.symbol}-{request.timeframe.value}_{request.feature_version_info.semver}-{request.feature_version_info.hash}"
+    # Sanitize timeframe value to be SQL-safe (replace hyphens with underscores)
+    sanitized_timeframe = request.timeframe.value.replace("-", "_")
+    return f"{request.feature_service_role.value}_{request.symbol}_{sanitized_timeframe}_{request.feature_version_info.semver}_{request.feature_version_info.hash}"
 
 def get_feature_view_name(
     base_feature_view_name: str,
@@ -32,4 +34,6 @@ def get_feature_view_name(
     Returns:
         str: The generated feature view name.
     """
-    return f"{base_feature_view_name}_{request.symbol}-{request.timeframe.value}"
+    # Sanitize timeframe value to be SQL-safe (replace hyphens with underscores)
+    sanitized_timeframe = request.timeframe.value.replace("-", "_")
+    return f"{base_feature_view_name}_{request.symbol}_{sanitized_timeframe}"

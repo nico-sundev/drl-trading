@@ -176,6 +176,7 @@ class FeastProvider:
             fields=fields,
             source=source,
             feature_role=request.feature_role,
+            symbol=symbol,
         )
         return fv
 
@@ -253,6 +254,7 @@ class FeastProvider:
         fields: list[Field],
         source: FileSource,
         feature_role: FeatureRoleEnum,
+        symbol: str,
     ) -> FeatureView:
         """Create the final Feast FeatureView with error handling."""
         try:
@@ -264,7 +266,8 @@ class FeastProvider:
                 online=self.feature_store_config.online_enabled,  # Use config setting
                 source=source,
                 tags={
-                    "feature_role": f"{feature_role.value}"
+                    "feature_role": f"{feature_role.value}",
+                    "symbol": symbol
                 },
             )
         except Exception as e:
