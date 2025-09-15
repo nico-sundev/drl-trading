@@ -12,7 +12,7 @@ from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
-from drl_trading_core.common.model.feature_view_request import FeatureViewRequestContainer
+from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
 from injector import Injector
 from pandas import DataFrame
 

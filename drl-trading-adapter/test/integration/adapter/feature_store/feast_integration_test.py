@@ -1,7 +1,7 @@
 
 from unittest.mock import Mock
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_core.common.model.feature_view_request import FeatureViewRequestContainer
+from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
 from feast import FeatureStore, Field
 from feast.types import Float32
 from injector import Injector

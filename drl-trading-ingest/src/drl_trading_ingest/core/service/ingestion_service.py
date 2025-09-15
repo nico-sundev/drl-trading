@@ -10,7 +10,7 @@ from drl_trading_common.logging.trading_log_context import TradingLogContext
 from drl_trading_common.model.trading_context import TradingContext
 from drl_trading_common.model.trading_event_payload import TradingEventPayload
 from drl_trading_ingest.core.port.market_data_repo_interface import (
-    TimescaleRepoInterface,
+    MarketDataRepoPort,
 )
 
 TOPIC_BATCH = "ready.rawdata.batch"
@@ -32,7 +32,7 @@ class IngestionServiceInterface(ABC):
 @inject
 class IngestionService(IngestionServiceInterface):
 
-    def __init__(self, db_repo: TimescaleRepoInterface, producer: Producer):
+    def __init__(self, db_repo: MarketDataRepoPort, producer: Producer):
         self.db_repo = db_repo
         self.producer = producer
 

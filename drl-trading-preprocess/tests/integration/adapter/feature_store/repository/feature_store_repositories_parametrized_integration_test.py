@@ -6,7 +6,9 @@ repository strategies (local filesystem and S3).
 """
 
 import logging
-from drl_trading_core.common.model.feature_view_request import FeatureViewRequestContainer
+from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
+from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
+from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from injector import Injector
 from pandas import DataFrame
 
@@ -25,7 +27,8 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequestContainer]
+        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test complete workflow with both local and S3 offline repositories."""
         # Given
@@ -39,6 +42,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         save_repo.store_computed_features_offline(
             features_df=sample_trading_features_df,
             symbol=symbol,
+            feature_version_info=feature_version_info_fixture,
             feature_view_requests=feature_view_requests_fixture
         )
 
@@ -47,7 +51,8 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         fetched_features = fetch_repo.get_offline(
             symbol=symbol,
             timestamps=timestamps,
-            feature_version_info=feature_view_requests_fixture[0].feature_version_info
+            feature_version_info=feature_version_info_fixture,
+            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
         )
 
         # Then
@@ -69,7 +74,8 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequestContainer]
+        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test workflow with both offline strategies: store offline, materialize to online, then fetch online."""
         # Given
@@ -83,6 +89,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         save_repo.store_computed_features_offline(
             features_df=sample_trading_features_df,
             symbol=symbol,
+            feature_version_info=feature_version_info_fixture,
             feature_view_requests=feature_view_requests_fixture
         )
 
@@ -95,7 +102,8 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         # And fetch from online store
         online_features = fetch_repo.get_online(
             symbol=symbol,
-            feature_version_info=feature_view_requests_fixture[0].feature_version_info
+            feature_version_info=feature_version_info_fixture,
+            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
         )
 
         # Then
@@ -110,7 +118,8 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequestContainer]
+        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test that duplicate features are handled correctly with both offline strategies."""
         # Given
@@ -122,6 +131,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         save_repo.store_computed_features_offline(
             features_df=sample_trading_features_df,
             symbol=symbol,
+            feature_version_info=feature_version_info_fixture,
             feature_view_requests=feature_view_requests_fixture
         )
 
@@ -129,6 +139,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         save_repo.store_computed_features_offline(
             features_df=sample_trading_features_df,
             symbol=symbol,
+            feature_version_info=feature_version_info_fixture,
             feature_view_requests=feature_view_requests_fixture
         )
 
@@ -137,7 +148,8 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         fetched_features = fetch_repo.get_offline(
             symbol=symbol,
             timestamps=timestamps,
-            feature_version_info=feature_view_requests_fixture[0].feature_version_info
+            feature_version_info=feature_version_info_fixture,
+            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
         )
 
         assert not fetched_features.empty
@@ -150,7 +162,8 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequestContainer]
+        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test incremental feature storage with both offline strategies."""
         # Given
@@ -167,6 +180,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         save_repo.store_computed_features_offline(
             features_df=first_batch,
             symbol=symbol,
+            feature_version_info=feature_version_info_fixture,
             feature_view_requests=feature_view_requests_fixture
         )
 
@@ -174,6 +188,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         save_repo.store_computed_features_offline(
             features_df=second_batch,
             symbol=symbol,
+            feature_version_info=feature_version_info_fixture,
             feature_view_requests=feature_view_requests_fixture
         )
 
@@ -182,7 +197,8 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         fetched_features = fetch_repo.get_offline(
             symbol=symbol,
             timestamps=all_timestamps,
-            feature_version_info=feature_view_requests_fixture[0].feature_version_info
+            feature_version_info=feature_version_info_fixture,
+            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
         )
 
         assert not fetched_features.empty
@@ -197,7 +213,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequestContainer]
+        feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test storing and fetching features for multiple symbols with both offline strategies."""
         # Given
@@ -209,23 +225,28 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         for symbol in symbols:
             symbol_features = sample_trading_features_df.copy()
             symbol_features["symbol"] = symbol
+
+            # Import the factory function to create feature view requests for this specific symbol
+            from conftest import create_feature_view_requests
+            symbol_feature_requests = create_feature_view_requests(feature_version_info_fixture, symbol=symbol)
+
             save_repo.store_computed_features_offline(
                 features_df=symbol_features,
                 symbol=symbol,
-                feature_view_requests=feature_view_requests_fixture
+                feature_version_info=feature_version_info_fixture,
+                feature_view_requests=symbol_feature_requests
             )
 
         # Then - Fetch features for each symbol and verify isolation
         timestamps = sample_trading_features_df["event_timestamp"]
-        # Extract feature_version_info from the first feature_view_request for fetch operations
-        feature_version_info = feature_view_requests_fixture[0].feature_version_info
         for symbol in symbols:
             fetched_features = fetch_repo.get_offline(
                 symbol=symbol,
                 timestamps=timestamps,
-                feature_version_info=feature_version_info
+                feature_version_info=feature_version_info_fixture,
+                feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
             )
 
-            assert not fetched_features.empty
+            assert not fetched_features.empty, f"No features fetched for symbol {symbol}"
             assert all(fetched_features["symbol"] == symbol)
             assert len(fetched_features) == len(sample_trading_features_df)

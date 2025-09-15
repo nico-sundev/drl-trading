@@ -4,10 +4,17 @@ from drl_trading_adapter.adapter.feature_store.provider import FeastProvider
 from injector import inject
 from pandas import DataFrame
 
-from drl_trading_adapter.adapter.feature_store.util.feature_store_utilities import get_feature_service_name
+from drl_trading_adapter.adapter.feature_store.util.feature_store_utilities import (
+    get_feature_service_name,
+)
 from drl_trading_common.enum import FeatureRoleEnum
-from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
+from drl_trading_common.model.feature_config_version_info import (
+    FeatureConfigVersionInfo,
+)
 from drl_trading_core.common.model import FeatureViewRequestContainer
+from drl_trading_core.common.model.feature_service_request_container import (
+    FeatureServiceRequestContainer,
+)
 from drl_trading_core.core.mapper import FeatureViewNameMapper
 
 from ...core.port import IFeatureStoreSavePort
@@ -86,12 +93,28 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
             logger.warning(f"No new features stored for {symbol}")
             # Still create feature views even if no new data was stored
             # This is needed for online operations to work properly
-            self._create_or_update_features(symbol, feature_version_info, feature_view_requests)
+            feature_service_request = FeatureServiceRequestContainer(
+                feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
+                symbol=symbol,
+                feature_version_info=feature_version_info,
+                timeframe=feature_view_requests[0].timeframe if feature_view_requests else None,
+            )
+            self._create_or_update_features(
+                feature_service_request, feature_view_requests
+            )
             return
 
         logger.info(f"Stored {stored_count} feature records for {symbol}")
         # Create and apply Feast feature views
-        self._create_or_update_features(symbol, feature_version_info, feature_view_requests)
+        feature_service_request = FeatureServiceRequestContainer(
+            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            symbol=symbol,
+            feature_version_info=feature_version_info,
+            timeframe=feature_view_requests[0].timeframe if feature_view_requests else None,
+        )
+        self._create_or_update_features(
+            feature_service_request, feature_view_requests
+        )
 
     def batch_materialize_features(
         self,
@@ -183,14 +206,13 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
                 allow_cache=self.feast_provider.feature_store_config.cache_enabled
             )
             relevant_feature_views = [
-                fv for fv in all_feature_views
+                fv
+                for fv in all_feature_views
                 if fv.tags.get("feature_role") == feature_role.value
                 and fv.tags.get("symbol") == symbol
             ]
         except Exception as e:
-            raise RuntimeError(
-                f"Failed to list feature views from store: {e}"
-            ) from e
+            raise RuntimeError(f"Failed to list feature views from store: {e}") from e
 
         if not relevant_feature_views:
             raise RuntimeError(
@@ -258,8 +280,7 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
 
     def _create_or_update_features(
         self,
-        symbol: str,
-        feature_version_info: FeatureConfigVersionInfo,
+        feature_service_request: FeatureServiceRequestContainer,
         feature_view_requests: list[FeatureViewRequestContainer],
     ) -> None:
         """
@@ -273,17 +294,11 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
 
         if feature_view_requests is None or len(feature_view_requests) == 0:
             logger.warning(
-                f"No feature view requests provided for {symbol}, skipping creation"
+                f"No feature view requests provided for {feature_service_request.symbol}, skipping creation"
             )
             return
 
-        feature_service_role = feature_view_requests[0].feature_role
-
-        service_name = get_feature_service_name(
-            feature_service_role=feature_service_role,
-            symbol=symbol,
-            feature_version_info=feature_version_info,
-        )
+        service_name = get_feature_service_name(request=feature_service_request)
 
         # Create feature service combining both views
         self.feast_provider.get_or_create_feature_service(

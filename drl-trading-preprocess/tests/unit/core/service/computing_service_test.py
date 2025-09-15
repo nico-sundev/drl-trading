@@ -9,7 +9,7 @@ from drl_trading_common.interface.feature.feature_factory_interface import (
     IFeatureFactory,
 )
 
-from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
+from drl_trading_core.core.service.feature_manager import FeatureManager
 from drl_trading_preprocess.core.service.computing_service import FeatureComputingService
 
 

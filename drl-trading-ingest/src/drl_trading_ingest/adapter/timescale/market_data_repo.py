@@ -18,14 +18,14 @@ from injector import inject
 from pandas import DataFrame
 
 from drl_trading_ingest.core.port.market_data_repo_interface import (
-    TimescaleRepoInterface,
+    MarketDataRepoPort,
 )
 
 logger = logging.getLogger(__name__)
 
 
 @inject
-class TimescaleRepo(TimescaleRepoInterface):
+class MarketDataRepo(MarketDataRepoPort):
     """
     TimescaleDB repository for storing time series data.
 

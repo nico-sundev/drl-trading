@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from drl_trading_common.base import BaseFeature
 from drl_trading_common.enum import FeatureRoleEnum
+from drl_trading_common.model.timeframe import Timeframe
 
 
 @dataclass
@@ -16,11 +17,13 @@ class FeatureViewRequestContainer:
         symbol: The trading symbol for the feature view
         feature_role: Role/type of features
         feature: The feature to include in the view
+        timeframe: The timeframe for the feature view
     """
 
     symbol: str
     feature_role: FeatureRoleEnum
     feature: BaseFeature
+    timeframe: Timeframe
 
     def validate(self) -> None:
         """
@@ -47,13 +50,17 @@ class FeatureViewRequestContainer:
         if not isinstance(self.feature, BaseFeature):
             raise ValueError(f"Feature must be a BaseFeature, got {type(self.feature)}")
 
+        # Timeframe validation
+        if not isinstance(self.timeframe, Timeframe):
+            raise ValueError(f"Timeframe must be a Timeframe, got {type(self.timeframe)}")
+
     def get_sanitized_symbol(self) -> str:
         """Get sanitized symbol string."""
         return self.symbol.strip() if self.symbol else ""
 
     @classmethod
     def create(
-        cls, symbol: str, feature_role: FeatureRoleEnum, feature: BaseFeature
+        cls, symbol: str, feature_role: FeatureRoleEnum, feature: BaseFeature, timeframe: Timeframe
     ) -> "FeatureViewRequestContainer":
         """
         Factory method to create and validate a FeatureViewRequest.
@@ -62,6 +69,7 @@ class FeatureViewRequestContainer:
             symbol: The trading symbol for the feature view
             feature_role: Role/type of features (or None for integration tests)
             feature: The feature to include in the view
+            timeframe: The timeframe for the feature view
 
         Returns:
             FeatureViewRequest: Validated request object
@@ -69,6 +77,6 @@ class FeatureViewRequestContainer:
         Raises:
             ValueError: If any parameter is invalid
         """
-        request = cls(symbol=symbol, feature_role=feature_role, feature=feature)
+        request = cls(symbol=symbol, feature_role=feature_role, feature=feature, timeframe=timeframe)
         request.validate()
         return request

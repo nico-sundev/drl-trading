@@ -1,13 +1,12 @@
 from unittest.mock import MagicMock
 
+from drl_trading_training.core.service.training.util.split_service import SplitService
 import pandas as pd
 import pytest
 
 from drl_trading_core.common.model.split_dataset_container import (
     SplitDataSetContainer,
 )
-from drl_trading_core.preprocess.data_set_utils.split_service import SplitService
-
 
 @pytest.fixture
 def rl_model_config() -> MagicMock:

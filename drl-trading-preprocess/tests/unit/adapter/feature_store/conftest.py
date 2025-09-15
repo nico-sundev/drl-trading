@@ -17,7 +17,8 @@ from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrate
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
-from drl_trading_core.common.model.feature_view_request import FeatureViewRequestContainer
+from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
 from feast import FeatureService, FeatureStore
 from pandas import DataFrame
 
@@ -183,11 +184,13 @@ def feature_view_requests(
             symbol=eurusd_h1_symbol,
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
             feature=mock_obs_feature,
+            timeframe=Timeframe.HOUR_1,
         ),
         FeatureViewRequestContainer(
             symbol=eurusd_h1_symbol,
             feature_role=FeatureRoleEnum.REWARD_ENGINEERING,
             feature=mock_reward_feature,
+            timeframe=Timeframe.HOUR_1,
         ),
     ]
 

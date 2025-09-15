@@ -10,6 +10,7 @@ from feast import (
     FileSource,
     OnDemandFeatureView,
 )
+from feast.data_format import ParquetFormat
 from injector import inject
 
 from drl_trading_adapter.adapter.feature_store.offline import IOfflineFeatureRepository
@@ -19,6 +20,7 @@ from drl_trading_adapter.adapter.feature_store.provider.feature_store_wrapper im
 from drl_trading_adapter.adapter.feature_store.provider.mapper.feature_field_mapper import (
     IFeatureFieldMapper,
 )
+from drl_trading_adapter.adapter.feature_store.util.feature_store_utilities import get_feature_view_name
 from drl_trading_common.base import BaseFeature
 from drl_trading_common.config import FeatureStoreConfig
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
@@ -146,8 +148,14 @@ class FeastProvider:
         """
         # Get sanitized inputs
         symbol = request.get_sanitized_symbol()
-        feature_view_name = self.feature_field_mapper.get_field_base_name(
+        base_feature_view_name = self.feature_field_mapper.get_field_base_name(
             request.feature
+        )
+
+        # Create symbol-specific feature view name for proper isolation
+        feature_view_name = get_feature_view_name(
+            base_feature_view_name=base_feature_view_name,
+            request=request
         )
 
         # Create data directory and file source
@@ -156,20 +164,17 @@ class FeastProvider:
         fields = self._create_fields_from_features([request.feature])
 
         # Create entity
-        entity = self._get_or_create_entity(symbol)
+        entity = self._get_or_create_entity()
 
         # Create and return the feature view
         logger.info(
-            f"Creating feature view '{feature_view_name}' for symbol '{symbol}' and role '{request.feature_role.value}'"
+            f"Creating feature view '{feature_view_name}' for symbol '{symbol}', timeframe '{request.timeframe.value}', role '{request.feature_role.value}'"
         )
         fv = self._create_feature_view(
-            feature_view_name=self.feature_field_mapper.get_field_base_name(
-                request.feature
-            ),
+            feature_view_name=feature_view_name,
             entity=entity,
             fields=fields,
             source=source,
-            symbol=symbol,
             feature_role=request.feature_role,
         )
         return fv
@@ -192,6 +197,8 @@ class FeastProvider:
         try:
             return FileSource(
                 path=offline_store_path,
+                s3_endpoint_override="https://localhost:9000",
+                file_format=ParquetFormat(),
                 timestamp_field="event_timestamp",
             )
         except Exception as e:
@@ -215,18 +222,27 @@ class FeastProvider:
 
         return fields
 
-    def _get_or_create_entity(self, symbol: str) -> Entity:
+    def _get_or_create_entity(self) -> Entity:
+        """
+        Get existing entity or create a shared entity for all symbols.
+
+        Returns:
+            Entity: Shared Feast entity for all trading symbols
+        """
+        # Use single shared entity name for all symbols
+        entity_name = self.feature_store_config.entity_name
+
         try:
             return self.feature_store.get_entity(
-                name=self.feature_store_config.entity_name,
+                name=entity_name,
                 allow_registry_cache=self.feature_store_config.cache_enabled
             )
         except Exception as e:
             logger.debug(
-                f"Entity '{self.feature_store_config.entity_name}' not found, creating new: {e}"
+                f"Entity '{entity_name}' not found, creating new: {e}"
             )
-            logger.info(f"Creating entity for symbol '{symbol}'")
-            entity = self._create_entity(symbol)
+            logger.info("Creating shared entity for all symbols")
+            entity = self._create_entity()
             self.feature_store.apply([entity])
             return entity
 
@@ -236,7 +252,6 @@ class FeastProvider:
         entity: Entity,
         fields: list[Field],
         source: FileSource,
-        symbol: str,
         feature_role: FeatureRoleEnum,
     ) -> FeatureView:
         """Create the final Feast FeatureView with error handling."""
@@ -249,8 +264,7 @@ class FeastProvider:
                 online=self.feature_store_config.online_enabled,  # Use config setting
                 source=source,
                 tags={
-                    "feature_role": f"{feature_role.value}",
-                    "symbol": symbol,
+                    "feature_role": f"{feature_role.value}"
                 },
             )
         except Exception as e:
@@ -398,18 +412,25 @@ class FeastProvider:
         self.feature_store.apply([fs])
         return fs
 
-    def _create_entity(self, symbol: str) -> Entity:
+    def _create_entity(self) -> Entity:
         """
-        Create an entity for the given dataset identifier.
+        Create a shared entity for all trading symbols.
+
+        According to Feast best practices, entities should be reused across
+        feature views. The entity uses 'symbol' as the join key, allowing
+        different symbols to be isolated by their data values while sharing
+        the same entity definition.
 
         Args:
-            dataset_id: Identifier for the dataset containing symbol and timeframe
 
         Returns:
-            Entity: Feast entity for this symbol/timeframe combination
+            Entity: Shared Feast entity for all trading symbols
         """
+        # Create shared entity name for all symbols
+        entity_name = self.feature_store_config.entity_name
+
         return Entity(
-            name=self.feature_store_config.entity_name,
+            name=entity_name,
             join_keys=["symbol"],  # Column name in DataFrame, not the symbol value
-            description=f"Entity for {symbol} asset price data",
+            description="Shared entity for all trading symbol asset price data",
         )

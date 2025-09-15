@@ -16,9 +16,9 @@ from drl_trading_ingest.adapter.rest.ingestion_controller import (
     IngestionController,
     IngestionControllerInterface,
 )
-from drl_trading_ingest.adapter.timescale.market_data_repo import TimescaleRepo
+from drl_trading_ingest.adapter.timescale.market_data_repo import MarketDataRepo
 from drl_trading_ingest.core.port.market_data_repo_interface import (
-    TimescaleRepoInterface,
+    MarketDataRepoPort,
 )
 from drl_trading_ingest.core.port.migration_service_interface import (
     MigrationServiceInterface,
@@ -80,7 +80,7 @@ class IngestModule(Module):
 
         # Adapters
         binder.bind(IngestionControllerInterface, to=IngestionController, scope=singleton)
-        binder.bind(TimescaleRepoInterface, to=TimescaleRepo, scope=singleton)
+        binder.bind(MarketDataRepoPort, to=MarketDataRepo, scope=singleton)
         binder.bind(MigrationServiceInterface, to=AlembicMigrationService, scope=singleton)
 
         # Infrastructure services

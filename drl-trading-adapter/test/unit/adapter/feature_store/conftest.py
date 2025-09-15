@@ -12,17 +12,19 @@ from unittest.mock import Mock
 import pandas as pd
 import pytest
 from drl_trading_common.config.feature_config import FeatureStoreConfig, LocalRepoConfig
-from types import SimpleNamespace
+from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
+from types import SimpleNamespace
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
-from drl_trading_core.common.model.feature_view_request import FeatureViewRequestContainer
+from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_core.common.model.feature_service_request_container import (
+    FeatureServiceRequestContainer,
+)
+from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
 from feast import FeatureService, FeatureStore
 from pandas import DataFrame
-
-from drl_trading_preprocess.adapter.feature_store import FeatureStoreSaveRepository
-
 
 @pytest.fixture
 def temp_dir() -> Generator[str, None, None]:
@@ -164,6 +166,34 @@ def feature_version_info() -> FeatureConfigVersionInfo:
 
 
 @pytest.fixture
+def feature_service_request(
+    eurusd_h1_symbol: str,
+    feature_version_info: FeatureConfigVersionInfo,
+) -> FeatureServiceRequestContainer:
+    """Create a test FeatureServiceRequestContainer."""
+    return FeatureServiceRequestContainer.create(
+        symbol=eurusd_h1_symbol,
+        timeframe=Timeframe.HOUR_1,
+        feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+        feature_config_version=feature_version_info,
+    )
+
+
+@pytest.fixture
+def gbpusd_feature_service_request(
+    gbpusd_m15_symbol: str,
+    feature_version_info: FeatureConfigVersionInfo,
+) -> FeatureServiceRequestContainer:
+    """Create a test FeatureServiceRequestContainer for GBPUSD."""
+    return FeatureServiceRequestContainer.create(
+        symbol=gbpusd_m15_symbol,
+        timeframe=Timeframe.MINUTE_15,
+        feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+        feature_config_version=feature_version_info,
+    )
+
+
+@pytest.fixture
 def feature_view_requests(
     eurusd_h1_symbol: str,
     feature_version_info: FeatureConfigVersionInfo,
@@ -187,22 +217,6 @@ def feature_view_requests(
             features=features,
         ),
     ]
-
-
-@pytest.fixture
-def feature_store_save_repository(
-    mock_feast_provider: Mock,
-    mock_feature_view_name_mapper: Mock,
-    mock_offline_repo: Mock,
-) -> FeatureStoreSaveRepository:
-    """Create a FeatureStoreSaveRepository for testing with mocked dependencies."""
-    # Ensure the repository uses the same offline repo mock as the tests
-    mock_feast_provider.get_offline_repo.return_value = mock_offline_repo
-    return FeatureStoreSaveRepository(
-        feast_provider=mock_feast_provider,
-        feature_view_name_mapper=mock_feature_view_name_mapper,
-    )
-
 
 @pytest.fixture
 def eurusd_h1_symbol() -> str:

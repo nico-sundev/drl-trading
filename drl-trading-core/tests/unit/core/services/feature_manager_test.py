@@ -15,11 +15,7 @@ from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.model.timeframe import Timeframe
 from pandas import DataFrame
 
-from drl_trading_core.preprocess.feature.feature_manager import (
-    FeatureKey,
-    FeatureManager,
-)
-
+from drl_trading_core.core.service.feature_manager import FeatureKey, FeatureManager
 
 class MockFeature(BaseFeature):
     """Mock feature class for testing FeatureManager."""
@@ -847,7 +843,7 @@ class TestComputeAll:
         # Then
         assert result is None
 
-    @patch('drl_trading_core.preprocess.feature.feature_manager.compute')
+    @patch('drl_trading_core.core.service.feature_manager.compute')
     def test_compute_all_with_dask_exception(self, mock_compute, feature_manager):
         """
         Given: Dask compute raises exception
@@ -865,7 +861,7 @@ class TestComputeAll:
         # Then
         assert result is None
 
-    @patch('drl_trading_core.preprocess.feature.feature_manager.compute')
+    @patch('drl_trading_core.core.service.feature_manager.compute')
     def test_compute_all_filters_none_results(self, mock_compute, feature_manager):
         """
         Given: Some features return None results
@@ -889,7 +885,7 @@ class TestComputeAll:
         assert result is not None
         assert result.equals(valid_df)
 
-    @patch('drl_trading_core.preprocess.feature.feature_manager.compute')
+    @patch('drl_trading_core.core.service.feature_manager.compute')
     def test_compute_all_no_valid_results(self, mock_compute, feature_manager):
         """
         Given: All features return None or empty results
@@ -942,7 +938,7 @@ class TestComputeLatest:
         # Then
         assert result is None
 
-    @patch('drl_trading_core.preprocess.feature.feature_manager.compute')
+    @patch('drl_trading_core.core.service.feature_manager.compute')
     def test_compute_latest_with_dask_exception(self, mock_compute, feature_manager):
         """
         Given: Dask compute raises exception

@@ -1,41 +1,14 @@
-import abc
 import logging
 from typing import Dict, Optional
 
+from drl_trading_training.core.service.training.util.util import detect_timeframe
 import pandas as pd
 from drl_trading_common.utils import ensure_datetime_index
 from injector import inject
 
-from drl_trading_core.preprocess.data_set_utils.util import (
-    detect_timeframe,
-)
-
-
-class MergeServiceInterface(abc.ABC):
-    """Interface for services that merge higher timeframe data into lower timeframe datasets."""
-
-    @abc.abstractmethod
-    def merge_timeframes(
-        self, base_df: pd.DataFrame, higher_df: pd.DataFrame
-    ) -> pd.DataFrame:
-        """
-        Merges features from a higher timeframe dataset into a lower timeframe dataset.
-
-        This operation ensures that at each timestamp in the base dataset, only information
-        from completed higher timeframe candles is available - preventing future sight/lookahead bias.
-
-        Args:
-            base_df: The lower timeframe DataFrame with DatetimeIndex
-            higher_df: The higher timeframe DataFrame with DatetimeIndex
-
-        Returns:
-            A DataFrame with the same number of rows as base_df, containing features
-            from the higher timeframe that were available at each base timeframe timestamp
-        """
-        pass
 
 @inject
-class MergeService(MergeServiceInterface):
+class MergeService:
     """
     Merges higher timeframe datasets into lower timeframe datasets.
 

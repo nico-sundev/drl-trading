@@ -7,6 +7,7 @@ from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import ITechnicalIndicatorFacade
 from drl_trading_common.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.model.timeframe import Timeframe
 from pandas import DataFrame
 
 
@@ -53,7 +54,7 @@ class MockFeature(BaseFeature):
 def mock_feature() -> MockFeature:
     """Create a mock feature for testing."""
     mock_indicator_service = MagicMock(spec=ITechnicalIndicatorFacade)
-    mock_dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe="H1")
+    mock_dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe=Timeframe.HOUR_1)
 
     return MockFeature(
         dataset_id=mock_dataset_id,
@@ -66,3 +67,9 @@ def mock_feature() -> MockFeature:
 def mock_features_list(mock_feature: MockFeature) -> list[BaseFeature]:
     """Create a list of mock features for testing."""
     return [mock_feature]
+
+
+@pytest.fixture
+def mock_timeframe() -> Timeframe:
+    """Create a mock timeframe for testing."""
+    return Timeframe.HOUR_1

@@ -82,5 +82,6 @@ omit = ["*/tests/*", "*/setup.py"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["-ra", "-m not slow", "--strict-markers"]
-# Uncomment to enable coverage locally:
-# addopts = ["-ra", "-m not slow", "--strict-markers", "--cov=drl_trading_strategy_example", "--cov-report=term-missing"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/drl_trading_strategy_example"]

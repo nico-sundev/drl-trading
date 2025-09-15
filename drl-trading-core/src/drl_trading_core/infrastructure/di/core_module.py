@@ -24,19 +24,7 @@ from drl_trading_core.common.data_import.data_import_strategy_factory import (
     DataImportStrategyFactory,
 )
 from drl_trading_core.core.mapper.feature_view_name_mapper import FeatureViewNameMapper
-from drl_trading_core.preprocess.data_set_utils.merge_service import (
-    MergeService,
-    MergeServiceInterface,
-)
-from drl_trading_core.preprocess.data_set_utils.split_service import (
-    SplitService,
-    SplitServiceInterface,
-)
-from drl_trading_core.preprocess.data_set_utils.strip_service import (
-    StripService,
-    StripServiceInterface,
-)
-from drl_trading_core.preprocess.feature.feature_manager import FeatureManager
+from drl_trading_core.core.service.feature_manager import FeatureManager
 
 logger = logging.getLogger(__name__)
 
@@ -140,10 +128,6 @@ class CoreModule(Module):
 
         # Auto-wire services that use @inject decorator
         binder.bind(DataImportManager, to=DataImportManager, scope=singleton)
-        binder.bind(MergeServiceInterface, to=MergeService, scope=singleton)
-        binder.bind(StripServiceInterface, to=StripService, scope=singleton)
-        binder.bind(SplitServiceInterface, to=SplitService, scope=singleton)
-
         binder.bind(
             IFeatureConfigRepository, to=FeatureConfigPostgresRepo, scope=singleton
         )

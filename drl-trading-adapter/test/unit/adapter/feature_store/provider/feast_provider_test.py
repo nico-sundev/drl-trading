@@ -23,6 +23,7 @@ from drl_trading_adapter.adapter.feature_store.provider.mapper.feature_field_map
 from drl_trading_common.base import BaseFeature
 from drl_trading_common.config import FeatureStoreConfig
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+from drl_trading_common.model.timeframe import Timeframe
 from drl_trading_core.common.model import FeatureViewRequestContainer
 
 
@@ -82,6 +83,7 @@ class FeatureRequestBuilder:
         self._feature_role = FeatureRoleEnum.OBSERVATION_SPACE
         self._feature = Mock(spec=BaseFeature)
         self._feature.get_sub_features_names.return_value = ["sub1", "sub2"]
+        self._timeframe = Timeframe.HOUR_1
 
     def with_symbol(self, symbol: str) -> "FeatureRequestBuilder":
         self._symbol = symbol
@@ -99,12 +101,17 @@ class FeatureRequestBuilder:
         self._feature.get_sub_features_names.return_value = sub_features
         return self
 
+    def with_timeframe(self, timeframe: Timeframe) -> "FeatureRequestBuilder":
+        self._timeframe = timeframe
+        return self
+
     def build(self) -> FeatureViewRequestContainer:
         """Build a FeatureViewRequestContainer with configured values."""
         return FeatureViewRequestContainer(
             symbol=self._symbol,
             feature_role=self._feature_role,
-            feature=self._feature
+            feature=self._feature,
+            timeframe=self._timeframe
         )
 
 

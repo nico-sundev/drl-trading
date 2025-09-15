@@ -9,9 +9,8 @@ from unittest.mock import Mock
 
 import pandas as pd
 import pytest
-from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_common.model.feature_config_version_info import (
-    FeatureConfigVersionInfo,
+from drl_trading_core.common.model.feature_service_request_container import (
+    FeatureServiceRequestContainer,
 )
 from feast import FeatureService, FeatureStore
 from pandas import DataFrame
@@ -70,20 +69,17 @@ class TestFeatureStoreFetchRepositoryGetOnline:
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        feature_version_info: FeatureConfigVersionInfo
+        feature_service_request: FeatureServiceRequestContainer
     ) -> None:
         """Test that get_online creates feature service on first call."""
         # Given
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
-        symbol = "EURUSD"
-        expected_entity_rows = [{"symbol": symbol}]
+        expected_entity_rows = [{"symbol": feature_service_request.symbol}]
 
         # When
         result = repository.get_online(
-            symbol=symbol,
-            feature_version_info=feature_version_info,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
- )
+            feature_service_request=feature_service_request
+        )
 
         # Then
         mock_feast_provider.get_feature_service.assert_called_once()
@@ -98,20 +94,17 @@ class TestFeatureStoreFetchRepositoryGetOnline:
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        feature_version_info: FeatureConfigVersionInfo
+        feature_service_request: FeatureServiceRequestContainer
     ) -> None:
         """Test that get_online reuses existing feature service on subsequent calls."""
         # Given
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
-        symbol = "EURUSD"
-        expected_entity_rows = [{"symbol": symbol}]
+        expected_entity_rows = [{"symbol": feature_service_request.symbol}]
 
         # When
         result = repository.get_online(
-            symbol=symbol,
-            feature_version_info=feature_version_info,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
- )
+            feature_service_request=feature_service_request
+        )
 
         # Then
         mock_feast_provider.get_feature_service.assert_called_once()
@@ -125,20 +118,16 @@ class TestFeatureStoreFetchRepositoryGetOnline:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        feature_version_info: FeatureConfigVersionInfo
+        feature_service_request: FeatureServiceRequestContainer
     ) -> None:
         """Test that get_online raises error when feature service is not found."""
         # Given
         mock_feast_provider.get_feature_service.side_effect = ValueError("Feature service not found")
-        symbol = "EURUSD"
 
         # When & Then
         with pytest.raises(ValueError, match="Feature service not found"):
             repository.get_online(
-                symbol=symbol,
-                feature_version_info=feature_version_info,
-                feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
-
+                feature_service_request=feature_service_request
             )
 
     def test_get_online_with_different_symbol(
@@ -146,20 +135,17 @@ class TestFeatureStoreFetchRepositoryGetOnline:
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        feature_version_info: FeatureConfigVersionInfo
+        gbpusd_feature_service_request: FeatureServiceRequestContainer
     ) -> None:
         """Test get_online with different symbol."""
         # Given
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
-        symbol = "GBPUSD"
-        expected_entity_rows = [{"symbol": symbol}]
+        expected_entity_rows = [{"symbol": gbpusd_feature_service_request.symbol}]
 
         # When
         result = repository.get_online(
-            symbol=symbol,
-            feature_version_info=feature_version_info,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
- )
+            feature_service_request=gbpusd_feature_service_request
+        )
 
         # Then
         repository._fs.get_online_features.assert_called_once_with(
@@ -173,14 +159,13 @@ class TestFeatureStoreFetchRepositoryGetOnline:
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        feature_version_info: FeatureConfigVersionInfo
+        feature_service_request: FeatureServiceRequestContainer
     ) -> None:
         """Test that get_online returns the DataFrame from Feast response."""
         # Given
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
-        symbol = "EURUSD"
         expected_df = DataFrame({
-            "symbol": [symbol],
+            "symbol": [feature_service_request.symbol],
             "rsi_14": [45.2],
             "sma_20": [1.0855],
             "event_timestamp": [pd.Timestamp("2024-01-01 10:00:00")]
@@ -191,10 +176,8 @@ class TestFeatureStoreFetchRepositoryGetOnline:
 
         # When
         result = repository.get_online(
-            symbol=symbol,
-            feature_version_info=feature_version_info,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
- )
+            feature_service_request=feature_service_request
+        )
 
         # Then
         pd.testing.assert_frame_equal(result, expected_df)
@@ -237,21 +220,18 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        feature_version_info: FeatureConfigVersionInfo,
+        feature_service_request: FeatureServiceRequestContainer,
         sample_timestamps: pd.Series
     ) -> None:
         """Test that get_offline gets feature service on first call."""
         # Given
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
-        symbol = "EURUSD"
 
         # When
         result = repository.get_offline(
-            symbol=symbol,
-            timestamps=sample_timestamps,
-            feature_version_info=feature_version_info,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
- )
+            feature_service_request=feature_service_request,
+            timestamps=sample_timestamps
+        )
 
         # Then
         mock_feast_provider.get_feature_service.assert_called_once()
@@ -262,7 +242,7 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         entity_df = call_args[1]["entity_df"]
 
         pd.testing.assert_series_equal(entity_df["event_timestamp"], sample_timestamps, check_names=False)
-        assert all(entity_df["symbol"] == symbol)
+        assert all(entity_df["symbol"] == feature_service_request.symbol)
 
         assert isinstance(result, DataFrame)
 
@@ -271,20 +251,17 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        feature_version_info: FeatureConfigVersionInfo,
+        feature_service_request: FeatureServiceRequestContainer,
         sample_timestamps: pd.Series
     ) -> None:
         """Test that get_offline reuses existing feature service on subsequent calls."""
         # Given
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
-        symbol = "EURUSD"
 
         # When
         result = repository.get_offline(
-            symbol=symbol,
-            timestamps=sample_timestamps,
-            feature_version_info=feature_version_info,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
+            feature_service_request=feature_service_request,
+            timestamps=sample_timestamps
         )
 
         # Then
@@ -296,21 +273,18 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        feature_version_info: FeatureConfigVersionInfo,
+        feature_service_request: FeatureServiceRequestContainer,
         sample_timestamps: pd.Series
     ) -> None:
         """Test that get_offline raises error when feature service creation returns None."""
         # Given
         mock_feast_provider.get_feature_service.side_effect = ValueError("Feature service not found")
-        symbol = "EURUSD"
 
         # When & Then
         with pytest.raises(ValueError, match="Feature service not found"):
             repository.get_offline(
-                symbol=symbol,
-                timestamps=sample_timestamps,
-                feature_version_info=feature_version_info,
-                feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
+                feature_service_request=feature_service_request,
+                timestamps=sample_timestamps
             )
 
     def test_get_offline_with_different_symbol(
@@ -318,27 +292,24 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        feature_version_info: FeatureConfigVersionInfo,
+        gbpusd_feature_service_request: FeatureServiceRequestContainer,
         sample_timestamps: pd.Series
     ) -> None:
         """Test get_offline with different symbol."""
         # Given
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
-        symbol = "GBPUSD"
 
         # When
         result = repository.get_offline(
-            symbol=symbol,
-            timestamps=sample_timestamps,
-            feature_version_info=feature_version_info,
-     feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
- )
+            feature_service_request=gbpusd_feature_service_request,
+            timestamps=sample_timestamps
+        )
 
         # Then
         call_args = repository._fs.get_historical_features.call_args
         entity_df = call_args[1]["entity_df"]
 
-        assert all(entity_df["symbol"] == symbol)
+        assert all(entity_df["symbol"] == gbpusd_feature_service_request.symbol)
         assert isinstance(result, DataFrame)
 
     def test_get_offline_with_empty_timestamps(
@@ -346,21 +317,18 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        feature_version_info: FeatureConfigVersionInfo
+        feature_service_request: FeatureServiceRequestContainer
     ) -> None:
         """Test get_offline with empty timestamps series."""
         # Given
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
         empty_timestamps = pd.Series([], dtype='datetime64[ns]')
-        symbol = "EURUSD"
 
         # When
         result = repository.get_offline(
-            symbol=symbol,
-            timestamps=empty_timestamps,
-            feature_version_info=feature_version_info,
-     feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
- )
+            feature_service_request=feature_service_request,
+            timestamps=empty_timestamps
+        )
 
         # Then
         # Should return empty DataFrame without calling get_historical_features
@@ -373,16 +341,15 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        feature_version_info: FeatureConfigVersionInfo,
+        feature_service_request: FeatureServiceRequestContainer,
         sample_timestamps: pd.Series
     ) -> None:
         """Test that get_offline returns the DataFrame from Feast response."""
         # Given
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
-        symbol = "EURUSD"
         expected_df = DataFrame({
             "event_timestamp": sample_timestamps,
-            "symbol": [symbol] * 3,
+            "symbol": [feature_service_request.symbol] * 3,
             "rsi_14": [30.5, 45.2, 67.8],
             "sma_20": [1.0850, 1.0855, 1.0860]
         })
@@ -392,11 +359,9 @@ class TestFeatureStoreFetchRepositoryGetOffline:
 
         # When
         result = repository.get_offline(
-            symbol=symbol,
-            timestamps=sample_timestamps,
-            feature_version_info=feature_version_info,
-     feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
- )
+            feature_service_request=feature_service_request,
+            timestamps=sample_timestamps
+        )
 
         # Then
         pd.testing.assert_frame_equal(result, expected_df)
@@ -419,74 +384,59 @@ class TestFeatureStoreFetchRepositoryErrorHandling:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        feature_version_info: FeatureConfigVersionInfo
+        feature_service_request: FeatureServiceRequestContainer
     ) -> None:
         """Test that get_online properly propagates FeastProvider exceptions."""
         # Given
         mock_feast_provider.get_feature_service.side_effect = Exception("Feast provider error")
-        symbol = "EURUSD"
 
         # When & Then
         with pytest.raises(Exception, match="Feast provider error"):
             repository.get_online(
-                symbol=symbol,
-                feature_version_info=feature_version_info,
-
-                feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
-
+                feature_service_request=feature_service_request
             )
 
     def test_get_offline_handles_feast_provider_exception(
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        feature_version_info: FeatureConfigVersionInfo
+        feature_service_request: FeatureServiceRequestContainer
     ) -> None:
         """Test that get_offline properly propagates FeastProvider exceptions."""
         # Given
         mock_feast_provider.get_feature_service.side_effect = Exception("Feast provider error")
         sample_timestamps = pd.Series([pd.Timestamp("2024-01-01 09:00:00")])
-        symbol = "EURUSD"
 
         # When & Then
         with pytest.raises(Exception, match="Feast provider error"):
             repository.get_offline(
-                symbol=symbol,
-                timestamps=sample_timestamps,
-                feature_version_info=feature_version_info,
-
-                feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
-
+                feature_service_request=feature_service_request,
+                timestamps=sample_timestamps
             )
 
     def test_get_online_handles_feature_store_exception(
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        feature_version_info: FeatureConfigVersionInfo
+        feature_service_request: FeatureServiceRequestContainer
     ) -> None:
         """Test that get_online properly propagates FeatureStore exceptions."""
         # Given
         mock_feature_service = Mock(spec=FeatureService)
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
         repository._fs.get_online_features.side_effect = Exception("Feature store error")
-        symbol = "EURUSD"
 
         # When & Then
         with pytest.raises(Exception, match="Feature store error"):
             repository.get_online(
-                symbol=symbol,
-                feature_version_info=feature_version_info,
-
-                feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
-
+                feature_service_request=feature_service_request
             )
 
     def test_get_offline_handles_feature_store_exception(
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        feature_version_info: FeatureConfigVersionInfo
+        feature_service_request: FeatureServiceRequestContainer
     ) -> None:
         """Test that get_offline properly propagates FeatureStore exceptions."""
         # Given
@@ -494,17 +444,12 @@ class TestFeatureStoreFetchRepositoryErrorHandling:
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
         repository._fs.get_historical_features.side_effect = Exception("Feature store error")
         sample_timestamps = pd.Series([pd.Timestamp("2024-01-01 09:00:00")])
-        symbol = "EURUSD"
 
         # When & Then
         with pytest.raises(Exception, match="Feature store error"):
             repository.get_offline(
-                symbol=symbol,
-                timestamps=sample_timestamps,
-                feature_version_info=feature_version_info,
-
-                feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
-
+                feature_service_request=feature_service_request,
+                timestamps=sample_timestamps
             )
 
 
@@ -532,31 +477,18 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        feature_version_info: FeatureConfigVersionInfo
+        feature_service_request: FeatureServiceRequestContainer
     ) -> None:
         """Test that feature service is retrieved for each online call with correct parameters."""
         # Given
         mock_feature_service = Mock(spec=FeatureService)
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
-        symbol = "EURUSD"
-        expected_service_name = f"observation_space_{symbol}_{feature_version_info.semver}-{feature_version_info.hash}"
+        expected_service_name = f"observation_space_{feature_service_request.symbol}-{feature_service_request.timeframe.value}_{feature_service_request.feature_version_info.semver}-{feature_service_request.feature_version_info.hash}"
 
         # When
-        repository.get_online(
-            symbol=symbol,
-            feature_version_info=feature_version_info,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
-        )
-        repository.get_online(
-            symbol=symbol,
-            feature_version_info=feature_version_info,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
-        )
-        repository.get_online(
-            symbol=symbol,
-            feature_version_info=feature_version_info,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
-        )
+        repository.get_online(feature_service_request=feature_service_request)
+        repository.get_online(feature_service_request=feature_service_request)
+        repository.get_online(feature_service_request=feature_service_request)
 
         # Then
         assert mock_feast_provider.get_feature_service.call_count == 3
@@ -566,35 +498,19 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        feature_version_info: FeatureConfigVersionInfo
+        feature_service_request: FeatureServiceRequestContainer
     ) -> None:
         """Test that feature service is retrieved for each offline call with correct parameters."""
         # Given
         mock_feature_service = Mock(spec=FeatureService)
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
         sample_timestamps = pd.Series([pd.Timestamp("2024-01-01 09:00:00")])
-        symbol = "EURUSD"
-        expected_service_name = f"observation_space_{symbol}_{feature_version_info.semver}-{feature_version_info.hash}"
+        expected_service_name = f"observation_space_{feature_service_request.symbol}-{feature_service_request.timeframe.value}_{feature_service_request.feature_version_info.semver}-{feature_service_request.feature_version_info.hash}"
 
         # When
-        repository.get_offline(
-            symbol=symbol,
-            timestamps=sample_timestamps,
-            feature_version_info=feature_version_info,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
-        )
-        repository.get_offline(
-            symbol=symbol,
-            timestamps=sample_timestamps,
-            feature_version_info=feature_version_info,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
-        )
-        repository.get_offline(
-            symbol=symbol,
-            timestamps=sample_timestamps,
-            feature_version_info=feature_version_info,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
-        )
+        repository.get_offline(feature_service_request=feature_service_request, timestamps=sample_timestamps)
+        repository.get_offline(feature_service_request=feature_service_request, timestamps=sample_timestamps)
+        repository.get_offline(feature_service_request=feature_service_request, timestamps=sample_timestamps)
 
         # Then
         assert mock_feast_provider.get_feature_service.call_count == 3
@@ -604,28 +520,18 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        feature_version_info: FeatureConfigVersionInfo
+        feature_service_request: FeatureServiceRequestContainer
     ) -> None:
         """Test that feature service is retrieved consistently for both online and offline calls."""
         # Given
         mock_feature_service = Mock(spec=FeatureService)
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
         sample_timestamps = pd.Series([pd.Timestamp("2024-01-01 09:00:00")])
-        symbol = "EURUSD"
-        expected_service_name = f"observation_space_{symbol}_{feature_version_info.semver}-{feature_version_info.hash}"
+        expected_service_name = f"observation_space_{feature_service_request.symbol}-{feature_service_request.timeframe.value}_{feature_service_request.feature_version_info.semver}-{feature_service_request.feature_version_info.hash}"
 
         # When
-        repository.get_online(
-            symbol=symbol,
-            feature_version_info=feature_version_info,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
-        )
-        repository.get_offline(
-            symbol=symbol,
-            timestamps=sample_timestamps,
-            feature_version_info=feature_version_info,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
-        )
+        repository.get_online(feature_service_request=feature_service_request)
+        repository.get_offline(feature_service_request=feature_service_request, timestamps=sample_timestamps)
 
         # Then
         assert mock_feast_provider.get_feature_service.call_count == 2

@@ -8,14 +8,15 @@ from typing import Any
 import pytest
 from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+from drl_trading_common.model.timeframe import Timeframe
 
-from drl_trading_core.common.model.feature_view_request import FeatureViewRequestContainer
+from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
 
 
 class TestFeatureViewRequest:
     """Test the FeatureViewRequest dataclass."""
 
-    def test_create_valid_request(self, mock_feature: BaseFeature) -> None:
+    def test_create_valid_request(self, mock_feature: BaseFeature, mock_timeframe: Timeframe) -> None:
         """Test creating a valid feature view request."""
         # Given
         symbol = "EURUSD"
@@ -25,15 +26,17 @@ class TestFeatureViewRequest:
         request = FeatureViewRequestContainer.create(
             symbol=symbol,
             feature_role=feature_role,
-            feature=mock_feature
+            feature=mock_feature,
+            timeframe=mock_timeframe
         )
 
         # Then
         assert request.symbol == "EURUSD"
         assert request.feature_role == FeatureRoleEnum.OBSERVATION_SPACE
         assert request.feature == mock_feature
+        assert request.timeframe == mock_timeframe
 
-    def test_direct_instantiation(self, mock_feature: BaseFeature) -> None:
+    def test_direct_instantiation(self, mock_feature: BaseFeature, mock_timeframe: Timeframe) -> None:
         """Test direct instantiation of FeatureViewRequest."""
         # Given
         symbol = "EURUSD"
@@ -43,15 +46,17 @@ class TestFeatureViewRequest:
         request = FeatureViewRequestContainer(
             symbol=symbol,
             feature_role=feature_role,
-            feature=mock_feature
+            feature=mock_feature,
+            timeframe=mock_timeframe
         )
 
         # Then
         assert request.symbol == "EURUSD"
         assert request.feature_role == FeatureRoleEnum.OBSERVATION_SPACE
         assert request.feature == mock_feature
+        assert request.timeframe == mock_timeframe
 
-    def test_validation_empty_symbol(self, mock_feature: BaseFeature) -> None:
+    def test_validation_empty_symbol(self, mock_feature: BaseFeature, mock_timeframe: Timeframe) -> None:
         """Test validation fails for empty symbol."""
         # Given
         empty_symbol = ""
@@ -61,10 +66,11 @@ class TestFeatureViewRequest:
             FeatureViewRequestContainer.create(
                 symbol=empty_symbol,
                 feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-                feature=mock_feature
+                feature=mock_feature,
+                timeframe=mock_timeframe
             )
 
-    def test_validation_whitespace_only_symbol(self, mock_feature: BaseFeature) -> None:
+    def test_validation_whitespace_only_symbol(self, mock_feature: BaseFeature, mock_timeframe: Timeframe) -> None:
         """Test validation fails for whitespace-only symbol."""
         # Given
         whitespace_symbol = "   "
@@ -74,17 +80,19 @@ class TestFeatureViewRequest:
             FeatureViewRequestContainer.create(
                 symbol=whitespace_symbol,
                 feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-                feature=mock_feature
+                feature=mock_feature,
+                timeframe=mock_timeframe
             )
 
-    def test_validation_none_symbol(self, mock_feature: BaseFeature) -> None:
+    def test_validation_none_symbol(self, mock_feature: BaseFeature, mock_timeframe: Timeframe) -> None:
         """Test validation fails for None symbol."""
         # Given/When/Then
         with pytest.raises(ValueError, match="Symbol must be a non-empty string"):
             FeatureViewRequestContainer.create(
                 symbol=None,  # type: ignore[arg-type]
                 feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-                feature=mock_feature
+                feature=mock_feature,
+                timeframe=mock_timeframe
             )
 
     @pytest.mark.parametrize("invalid_role", [
@@ -94,7 +102,7 @@ class TestFeatureViewRequest:
         {},
         None
     ])
-    def test_validation_invalid_feature_role(self, invalid_role: Any, mock_feature: BaseFeature) -> None:
+    def test_validation_invalid_feature_role(self, invalid_role: Any, mock_feature: BaseFeature, mock_timeframe: Timeframe) -> None:
         """Test validation fails for invalid feature role types."""
         # Given
         symbol = "EURUSD"
@@ -104,7 +112,8 @@ class TestFeatureViewRequest:
             FeatureViewRequestContainer.create(
                 symbol=symbol,
                 feature_role=invalid_role,  # type: ignore[arg-type]
-                feature=mock_feature
+                feature=mock_feature,
+                timeframe=mock_timeframe
             )
 
     @pytest.mark.parametrize("invalid_feature", [
@@ -114,7 +123,7 @@ class TestFeatureViewRequest:
         {},
         None
     ])
-    def test_validation_invalid_feature(self, invalid_feature: Any) -> None:
+    def test_validation_invalid_feature(self, invalid_feature: Any, mock_timeframe: Timeframe) -> None:
         """Test validation fails for invalid feature types."""
         # Given
         symbol = "EURUSD"
@@ -125,17 +134,41 @@ class TestFeatureViewRequest:
             FeatureViewRequestContainer.create(
                 symbol=symbol,
                 feature_role=feature_role,
-                feature=invalid_feature  # type: ignore[arg-type]
+                feature=invalid_feature,  # type: ignore[arg-type]
+                timeframe=mock_timeframe
             )
 
-    def test_get_sanitized_symbol(self, mock_feature: BaseFeature) -> None:
+    @pytest.mark.parametrize("invalid_timeframe", [
+        "not_a_timeframe",
+        123,
+        [],
+        {},
+        None
+    ])
+    def test_validation_invalid_timeframe(self, invalid_timeframe: Any, mock_feature: BaseFeature) -> None:
+        """Test validation fails for invalid timeframe types."""
+        # Given
+        symbol = "EURUSD"
+        feature_role = FeatureRoleEnum.OBSERVATION_SPACE
+
+        # When/Then
+        with pytest.raises(ValueError, match="Timeframe must be a Timeframe"):
+            FeatureViewRequestContainer.create(
+                symbol=symbol,
+                feature_role=feature_role,
+                feature=mock_feature,
+                timeframe=invalid_timeframe  # type: ignore[arg-type]
+            )
+
+    def test_get_sanitized_symbol(self, mock_feature: BaseFeature, mock_timeframe: Timeframe) -> None:
         """Test sanitized symbol accessor method."""
         # Given
         symbol_with_whitespace = "  EURUSD  "
         request = FeatureViewRequestContainer(
             symbol=symbol_with_whitespace,
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature=mock_feature
+            feature=mock_feature,
+            timeframe=mock_timeframe
         )
 
         # When
@@ -144,13 +177,14 @@ class TestFeatureViewRequest:
         # Then
         assert sanitized_symbol == "EURUSD"
 
-    def test_get_sanitized_symbol_empty_string(self, mock_feature: BaseFeature) -> None:
+    def test_get_sanitized_symbol_empty_string(self, mock_feature: BaseFeature, mock_timeframe: Timeframe) -> None:
         """Test sanitized symbol returns empty string for None symbol."""
         # Given
         request = FeatureViewRequestContainer(
             symbol=None,  # type: ignore[arg-type]
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature=mock_feature
+            feature=mock_feature,
+            timeframe=mock_timeframe
         )
 
         # When
@@ -159,7 +193,7 @@ class TestFeatureViewRequest:
         # Then
         assert sanitized_symbol == ""
 
-    def test_validation_called_on_create(self, mock_feature: BaseFeature) -> None:
+    def test_validation_called_on_create(self, mock_feature: BaseFeature, mock_timeframe: Timeframe) -> None:
         """Test that validation is called when using create factory method."""
         # Given
         valid_symbol = "EURUSD"
@@ -169,7 +203,8 @@ class TestFeatureViewRequest:
         request = FeatureViewRequestContainer.create(
             symbol=valid_symbol,
             feature_role=valid_role,
-            feature=mock_feature
+            feature=mock_feature,
+            timeframe=mock_timeframe
         )
 
         # Then
@@ -178,14 +213,16 @@ class TestFeatureViewRequest:
         assert request.symbol == valid_symbol
         assert request.feature_role == valid_role
         assert request.feature == mock_feature
+        assert request.timeframe == mock_timeframe
 
-    def test_manual_validation_call(self, mock_feature: BaseFeature) -> None:
+    def test_manual_validation_call(self, mock_feature: BaseFeature, mock_timeframe: Timeframe) -> None:
         """Test calling validation manually on a valid request."""
         # Given
         request = FeatureViewRequestContainer(
             symbol="EURUSD",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature=mock_feature
+            feature=mock_feature,
+            timeframe=mock_timeframe
         )
 
         # When/Then
@@ -196,12 +233,12 @@ class TestFeatureViewRequest:
 class TestFeatureViewRequestBenefits:
     """Demonstrate the benefits of the container pattern."""
 
-    def test_readability_improvement(self, mock_feature: BaseFeature) -> None:
+    def test_readability_improvement(self, mock_feature: BaseFeature, mock_timeframe: Timeframe) -> None:
         """
         Demonstrate how the container improves readability.
 
         Compare:
-        OLD: provider.create_feature_view("EURUSD", FeatureRoleEnum.OBSERVATION_SPACE, feature)
+        OLD: provider.create_feature_view("EURUSD", FeatureRoleEnum.OBSERVATION_SPACE, feature, timeframe)
         NEW: provider.create_feature_view_from_request(request)
         """
         # Given
@@ -209,7 +246,8 @@ class TestFeatureViewRequestBenefits:
         request = FeatureViewRequestContainer.create(
             symbol="EURUSD",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature=mock_feature
+            feature=mock_feature,
+            timeframe=mock_timeframe
         )
 
         # Then
@@ -217,10 +255,11 @@ class TestFeatureViewRequestBenefits:
         assert request.symbol == "EURUSD"
         assert request.feature_role == FeatureRoleEnum.OBSERVATION_SPACE
         assert request.feature == mock_feature
+        assert request.timeframe == mock_timeframe
         # Parameters are validated as a unit
         # Better testability - can create test fixtures easily
 
-    def test_extensibility_benefit(self, mock_feature: BaseFeature) -> None:
+    def test_extensibility_benefit(self, mock_feature: BaseFeature, mock_timeframe: Timeframe) -> None:
         """
         Demonstrate how the container makes the API more extensible.
 
@@ -236,7 +275,8 @@ class TestFeatureViewRequestBenefits:
         request = FeatureViewRequestContainer.create(
             symbol="EURUSD",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature=mock_feature
+            feature=mock_feature,
+            timeframe=mock_timeframe
         )
 
         # When/Then

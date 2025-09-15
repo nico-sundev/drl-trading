@@ -85,3 +85,6 @@ omit = [
     "*/tests/*",
     "*/setup.py",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/drl_trading_preprocess"]

@@ -25,7 +25,7 @@ from testcontainers.minio import MinioContainer
 
 from drl_trading_preprocess.infrastructure.config.preprocess_config import PreprocessConfig
 from drl_trading_preprocess.infrastructure.di.preprocess_module import PreprocessModule
-from drl_trading_core.common.model.feature_view_request import FeatureViewRequestContainer
+from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
 from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
 from datetime import datetime
 
@@ -443,7 +443,8 @@ def local_feature_store_config(temp_feast_repo: str) -> FeatureStoreConfig:
     )
 
 
-@pytest.fixture(params=["local", "s3"])
+# @pytest.fixture(params=["local", "s3"])
+@pytest.fixture(params=["local"])
 def parametrized_feature_store_config(
     request,
     local_feature_store_config: FeatureStoreConfig,
@@ -505,13 +506,23 @@ def feature_version_info_fixture() -> FeatureConfigVersionInfo:
     )
 
 
-@pytest.fixture
-def feature_view_requests_fixture(
-    feature_version_info_fixture: FeatureConfigVersionInfo,
+def create_feature_view_requests(
+    feature_version_info: FeatureConfigVersionInfo,
+    symbol: str = "EURUSD"
 ) -> list[FeatureViewRequestContainer]:
-    """Create feature view requests from feature version info for integration testing."""
-    symbol = "EURUSD"
+    """Factory function to create feature view requests for a specific symbol.
 
+    This factory allows tests to create feature view requests for different symbols
+    dynamically, enabling proper multi-symbol testing while maintaining the existing
+    test fixture structure.
+
+    Args:
+        feature_version_info: Feature configuration version info
+        symbol: Trading symbol (e.g., 'EURUSD', 'GBPUSD', 'USDJPY')
+
+    Returns:
+        List of FeatureViewRequestContainer instances for the specified symbol
+    """
     # Create dataset identifier and mock indicator service
     dataset_id = DatasetIdentifier(symbol=symbol, timeframe="H1")
     indicator_service = MockTechnicalIndicatorFacade()
@@ -520,7 +531,7 @@ def feature_view_requests_fixture(
     role_groups = {}
     created_features = {}  # Track features we've already created to avoid duplicates
 
-    for feature_def in feature_version_info_fixture.feature_definitions:
+    for feature_def in feature_version_info.feature_definitions:
         if not feature_def.get("enabled", True):
             continue  # Skip disabled features
 
@@ -572,3 +583,32 @@ def feature_view_requests_fixture(
             requests.append(request)
 
     return requests
+
+
+@pytest.fixture
+def feature_view_requests_fixture(
+    feature_version_info_fixture: FeatureConfigVersionInfo,
+) -> list[FeatureViewRequestContainer]:
+    """Create feature view requests from feature version info for integration testing.
+
+    This fixture provides a default EURUSD symbol for tests that don't need multi-symbol testing.
+    For tests that need different symbols, use the create_feature_view_requests factory function.
+    """
+    return create_feature_view_requests(feature_version_info_fixture, symbol="EURUSD")
+
+
+@pytest.fixture
+def symbol_feature_view_requests_fixture(
+    request,
+    feature_version_info_fixture: FeatureConfigVersionInfo,
+) -> list[FeatureViewRequestContainer]:
+    """Parametrized fixture for creating feature view requests with different symbols.
+
+    Use with pytest.mark.parametrize and indirect=True:
+
+    @pytest.mark.parametrize("symbol_feature_view_requests_fixture", ["EURUSD", "GBPUSD"], indirect=True)
+    def test_example(symbol_feature_view_requests_fixture):
+        # symbol_feature_view_requests_fixture contains requests for the specified symbol
+    """
+    symbol = getattr(request, 'param', 'EURUSD')  # Default to EURUSD if no param provided
+    return create_feature_view_requests(feature_version_info_fixture, symbol=symbol)

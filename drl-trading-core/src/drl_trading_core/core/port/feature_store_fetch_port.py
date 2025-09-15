@@ -1,18 +1,16 @@
 
 from abc import ABC, abstractmethod
 
-from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_common.model import FeatureConfigVersionInfo
 import pandas as pd
+
+from drl_trading_core.common.model.feature_service_request_container import FeatureServiceRequestContainer
 
 
 class IFeatureStoreFetchPort(ABC):
     @abstractmethod
     def get_online(
         self,
-        symbol: str,
-        feature_version_info: FeatureConfigVersionInfo,
-        feature_service_role: FeatureRoleEnum
+        feature_service_request: FeatureServiceRequestContainer,
     ) -> pd.DataFrame:
         """Fetch the most recent features for a given symbol and timeframe."""
         pass
@@ -20,10 +18,8 @@ class IFeatureStoreFetchPort(ABC):
     @abstractmethod
     def get_offline(
         self,
-        symbol: str,
+        feature_service_request: FeatureServiceRequestContainer,
         timestamps: pd.Series,
-        feature_version_info: FeatureConfigVersionInfo,
-        feature_service_role: FeatureRoleEnum
     ) -> pd.DataFrame:
         """
         Fetch historical features for multiple symbol-timeframe-timestamp rows.

@@ -14,33 +14,22 @@ license = "MIT"
 authors = [
     { name = "sonntagnico", email = "nico-tor@hotmail.com" },
 ]
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Programming Language :: Python :: 3.12",
-    "Intended Audience :: Financial and Insurance Industry",
-    "Topic :: Office/Business :: Financial :: Investment",
-]
 
 # Runtime dependencies ONLY (avoid pulling test/dev tooling)
 dependencies = [
-    "drl-trading-common",           # Workspace shared library
+    "drl-trading-common", # Workspace shared library
     # Data & ML stack
     "numpy>=1.24.0",
     "pandas>=2.0.0",
-    "pandas_ta",
     "stable_baselines3>=2.0.0",
     "gymnasium>=0.29.0",
-    "yfinance",                    # Market data source (lightweight)
-    # Feature store (implemented via adapter; core decoupled)
-    # "feast" now provided in adapter layer only
-    "protobuf>=5.26.0,<6.0.0",     # Keep protobuf for shared message/model use
-    # CLI / utilities
-    "click",
-    # DI / AWS / config
+    "yfinance", # Market data source (lightweight)
+    "protobuf>=5.26.0,<6.0.0", # Keep protobuf for shared message/model use
     "injector>=0.22.0",
     "boto3>=1.38.30",
     "PyYAML>=6.0",
     "python-dotenv>=1.1.1",
+    "dask>=2025.7.0",
 ]
 
 [tool.uv.sources]
@@ -100,5 +89,11 @@ addopts = ["-ra", "-m not slow", "--strict-markers"]
 # Uncomment to enable coverage locally:
 # addopts = ["-ra", "-m not slow", "--strict-markers", "--cov=drl_trading_core", "--cov-report=term-missing"]
 
+#[tool.hatch.build.targets.wheel]
+#packages = ["src"]
+
 [project.scripts]
 add-feature = "drl_trading_core.scripts.add_feature:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/drl_trading_core"]

@@ -881,13 +881,12 @@ version = "0.1.0"
 source = { editable = "drl-trading-core" }
 dependencies = [
     { name = "boto3" },
-    { name = "click" },
+    { name = "dask" },
     { name = "drl-trading-common" },
     { name = "gymnasium" },
     { name = "injector" },
     { name = "numpy" },
     { name = "pandas" },
-    { name = "pandas-ta" },
     { name = "protobuf" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
@@ -942,7 +941,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "boto3", specifier = ">=1.38.30" },
-    { name = "click" },
+    { name = "dask", specifier = ">=2025.7.0" },
     { name = "drl-trading-common", editable = "drl-trading-common" },
     { name = "gymnasium", specifier = ">=0.29.0" },
     { name = "injector", specifier = ">=0.22.0" },
@@ -950,7 +949,6 @@ requires-dist = [
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8.0" },
     { name = "numpy", specifier = ">=1.24.0" },
     { name = "pandas", specifier = ">=2.0.0" },
-    { name = "pandas-ta" },
     { name = "protobuf", specifier = ">=5.26.0,<6.0.0" },
     { name = "pytest", marker = "extra == 'testing'", specifier = ">=8.0.0" },
     { name = "pytest-cov", marker = "extra == 'testing'", specifier = ">=4.0.0" },
@@ -2560,15 +2558,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/ec/df/c1c51c5cec087b8f4
 wheels = [
     { url = "https://files.pythonhosted.org/packages/75/cb/09d5f9bf7c8659af134ae0ffc1a349038a5d0ff93e45aedc225bde2872a3/pandas_stubs-2.3.0.250703-py3-none-any.whl", hash = "sha256:a9265fc69909f0f7a9cabc5f596d86c9d531499fed86b7838fd3278285d76b81", size = 154719, upload-time = "2025-07-02T17:49:10.697Z" },
 ]
-
-[[package]]
-name = "pandas-ta"
-version = "0.3.14b0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pandas" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/f7/0b/1666f0a185d4f08215f53cc088122a73c92421447b04028f0464fabe1ce6/pandas_ta-0.3.14b.tar.gz", hash = "sha256:0fa35aec831d2815ea30b871688a8d20a76b288a7be2d26cc00c35cd8c09a993", size = 115089, upload-time = "2021-07-28T20:51:17.456Z" }
 
 [[package]]
 name = "parso"

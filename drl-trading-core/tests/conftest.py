@@ -3,7 +3,6 @@ from typing import Literal, Optional, Type
 from unittest.mock import MagicMock
 
 from drl_trading_common.interface.feature.feature_factory_interface import IFeatureFactory
-import pandas_ta as ta
 import pytest
 from drl_trading_common import BaseParameterSetConfig
 from drl_trading_common.base.base_feature import BaseFeature
@@ -14,6 +13,7 @@ from injector import Injector
 from pandas import DataFrame
 
 from drl_trading_core.infrastructure.di import CoreModule
+import numpy as np
 
 class RsiConfig(BaseParameterSetConfig):
     """RSI configuration for testing."""
@@ -55,7 +55,7 @@ class RsiFeature(BaseFeature):
     def compute_latest(self) -> Optional[DataFrame]:
         """Compute latest RSI value (mock implementation)."""
         if hasattr(self, 'df_source') and not self.df_source.empty:
-            latest_rsi = ta.rsi(close=self.df_source["Close"], length=self.config.length).iloc[-1:]
+            latest_rsi = np.random.uniform(low=0, high=100, size=1)
             result_df = DataFrame(index=self.df_source.index[-1:])
             result_df[f"rsi_{self.config.length}{self.postfix}"] = latest_rsi
             return result_df
@@ -64,7 +64,7 @@ class RsiFeature(BaseFeature):
     def compute_all(self) -> Optional[DataFrame]:
         """Compute all RSI values (mock implementation)."""
         if hasattr(self, 'df_source') and not self.df_source.empty:
-            rsi_values = ta.rsi(close=self.df_source["Close"], length=self.config.length)
+            rsi_values = np.random.uniform(low=0, high=100, size=len(self.df_source))
             result_df = DataFrame(index=self.df_source.index)
             result_df[f"rsi_{self.config.length}{self.postfix}"] = rsi_values
             return result_df

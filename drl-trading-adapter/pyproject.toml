@@ -93,5 +93,5 @@ omit = ["*/tests/*", "*/setup.py"]
 testpaths = ["tests"]
 addopts = ["-ra", "--strict-markers"]
 
-[project.scripts]
-# (Intentionally no executable entry points yet)
+[tool.hatch.build.targets.wheel]
+packages = ["src/drl_trading_adapter"]

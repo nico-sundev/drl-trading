@@ -2,7 +2,6 @@
 
 import logging
 import math
-from abc import ABC, abstractmethod
 from typing import Optional, Tuple, cast
 
 import pandas as pd
@@ -16,41 +15,7 @@ from drl_trading_core.common.model.split_dataset_container import (
 logger = logging.getLogger(__name__)
 
 
-class SplitServiceInterface(ABC):
-    """
-    Interface for services that split datasets into training, validation, and testing portions.
-
-    Implementations should handle the logic for dividing a dataset in chronological order
-    based on provided split ratios.
-    """
-
-    @abstractmethod
-    def split_dataset(
-        self,
-        df: pd.DataFrame,
-        training_ratio: Optional[float] = None,
-        validation_ratio: Optional[float] = None,
-        testing_ratio: Optional[float] = None,
-    ) -> SplitDataSetContainer:
-        """
-        Split a dataset into training, validation, and testing portions.
-
-        Args:
-            df: The source DataFrame to be split
-            training_ratio: The ratio of data to use for training (0.0-1.0)
-            validation_ratio: The ratio of data to use for validation (0.0-1.0)
-            testing_ratio: The ratio of data to use for testing (0.0-1.0)
-
-        Returns:
-            A container with the three split DataFrames
-
-        Raises:
-            ValueError: If the ratios don't sum to 1.0 or if valid ratios aren't available
-        """
-        pass
-
-
-class SplitService(SplitServiceInterface):
+class SplitService:
     """
     Service for splitting a dataset into training, validation, and testing sets.
 

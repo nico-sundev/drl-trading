@@ -75,3 +75,6 @@ logs/*
 .env
 *.env
 !example.env
+
+# feast
+*.db

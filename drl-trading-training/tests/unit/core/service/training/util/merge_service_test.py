@@ -1,16 +1,12 @@
 from datetime import datetime
 
+from drl_trading_training.core.service.training.util.merge_service import MergeService
 import pandas as pd
 import pytest
 
-from drl_trading_core.preprocess.data_set_utils.merge_service import (
-    MergeService,
-    MergeServiceInterface,
-)
-
 
 @pytest.fixture
-def merge_service() -> MergeServiceInterface:
+def merge_service() -> MergeService:
     """Fixture providing a MergeService instance."""
     return MergeService()
 
@@ -71,7 +67,7 @@ def higher_timeframe_data() -> pd.DataFrame:
 
 
 def test_merge_timeframes_basic(
-    merge_service: MergeServiceInterface,
+    merge_service: MergeService,
     base_timeframe_data: pd.DataFrame,
     higher_timeframe_data: pd.DataFrame,
 ):
@@ -117,7 +113,7 @@ def test_merge_timeframes_basic(
 
 
 def test_merge_timeframes_data_alignment(
-    merge_service: MergeServiceInterface,
+    merge_service: MergeService,
     base_timeframe_data: pd.DataFrame,
     higher_timeframe_data: pd.DataFrame,
 ):
@@ -163,7 +159,7 @@ def test_merge_timeframes_data_alignment(
 
 
 def test_merge_timeframes_unsorted_data(
-    merge_service: MergeServiceInterface,
+    merge_service: MergeService,
     base_timeframe_data: pd.DataFrame,
     higher_timeframe_data: pd.DataFrame,
 ):
@@ -195,7 +191,7 @@ def test_merge_timeframes_unsorted_data(
 
 
 def test_merge_timeframes_empty_higher_data(
-    merge_service: MergeServiceInterface, base_timeframe_data: pd.DataFrame
+    merge_service: MergeService, base_timeframe_data: pd.DataFrame
 ):
     """Test merging with empty higher timeframe data."""
     # Given

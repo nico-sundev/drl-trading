@@ -72,16 +72,8 @@ dev-full = [
     "pandas>=2.0.0",
 ]
 
-# Project-specific ruff configuration (overrides workspace defaults where needed)
-
-# Package discovery configuration
-[tool.setuptools]
-zip-safe = false
-include-package-data = true
-
-[tool.setuptools.packages.find]
-where = ["src"]
-exclude = ["tests*"]
+[tool.hatch.build.targets.wheel]
+packages = ["src/drl_trading_execution"]
 
 # Project-specific ruff configuration (overrides workspace defaults where needed)
 [tool.ruff.lint.isort]

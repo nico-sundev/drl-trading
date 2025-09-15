@@ -5,7 +5,7 @@ from typing import Optional
 from pandas import DataFrame
 
 
-class TimescaleRepoInterface(ABC):
+class MarketDataRepoPort(ABC):
     """
     Interface for TimescaleDB repository operations.
 

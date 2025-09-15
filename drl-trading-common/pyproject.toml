@@ -75,5 +75,6 @@ omit = ["*/tests/*", "*/setup.py"]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 addopts = ["-ra", "--strict-markers"]
-# Uncomment for coverage locally:
-# addopts = ["-ra", "--strict-markers", "--cov=drl_trading_common", "--cov-report=term-missing"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/drl_trading_common"]
