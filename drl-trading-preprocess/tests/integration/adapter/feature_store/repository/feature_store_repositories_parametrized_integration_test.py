@@ -7,7 +7,11 @@ repository strategies (local filesystem and S3).
 
 import logging
 from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
+from drl_trading_core.common.model.feature_service_request_container import (
+    FeatureServiceRequestContainer,
+)
 from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
+from drl_trading_common.model.timeframe import Timeframe
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from injector import Injector
 from pandas import DataFrame
@@ -48,11 +52,15 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
 
         # And fetch them back (offline)
         timestamps = sample_trading_features_df["event_timestamp"]
-        fetched_features = fetch_repo.get_offline(
+        feature_service_request = FeatureServiceRequestContainer(
+            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             symbol=symbol,
-            timestamps=timestamps,
             feature_version_info=feature_version_info_fixture,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
+            timeframe=Timeframe.HOUR_1
+        )
+        fetched_features = fetch_repo.get_offline(
+            feature_service_request=feature_service_request,
+            timestamps=timestamps
         )
 
         # Then
@@ -100,10 +108,14 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         )
 
         # And fetch from online store
-        online_features = fetch_repo.get_online(
+        feature_service_request = FeatureServiceRequestContainer(
+            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
+            timeframe=Timeframe.HOUR_1
+        )
+        online_features = fetch_repo.get_online(
+            feature_service_request=feature_service_request
         )
 
         # Then
@@ -145,11 +157,15 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
 
         # Then - Fetch should still return the correct number of unique features
         timestamps = sample_trading_features_df["event_timestamp"]
-        fetched_features = fetch_repo.get_offline(
+        feature_service_request = FeatureServiceRequestContainer(
+            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             symbol=symbol,
-            timestamps=timestamps,
             feature_version_info=feature_version_info_fixture,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
+            timeframe=Timeframe.HOUR_1
+        )
+        fetched_features = fetch_repo.get_offline(
+            feature_service_request=feature_service_request,
+            timestamps=timestamps
         )
 
         assert not fetched_features.empty
@@ -194,11 +210,15 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
 
         # Then - Fetch all features
         all_timestamps = sample_trading_features_df["event_timestamp"]
-        fetched_features = fetch_repo.get_offline(
+        feature_service_request = FeatureServiceRequestContainer(
+            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             symbol=symbol,
-            timestamps=all_timestamps,
             feature_version_info=feature_version_info_fixture,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
+            timeframe=Timeframe.HOUR_1
+        )
+        fetched_features = fetch_repo.get_offline(
+            feature_service_request=feature_service_request,
+            timestamps=all_timestamps
         )
 
         assert not fetched_features.empty
@@ -240,11 +260,15 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         # Then - Fetch features for each symbol and verify isolation
         timestamps = sample_trading_features_df["event_timestamp"]
         for symbol in symbols:
-            fetched_features = fetch_repo.get_offline(
+            feature_service_request = FeatureServiceRequestContainer(
+                feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
                 symbol=symbol,
-                timestamps=timestamps,
                 feature_version_info=feature_version_info_fixture,
-                feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
+                timeframe=Timeframe.HOUR_1
+            )
+            fetched_features = fetch_repo.get_offline(
+                feature_service_request=feature_service_request,
+                timestamps=timestamps
             )
 
             assert not fetched_features.empty, f"No features fetched for symbol {symbol}"

@@ -1,10 +1,5 @@
 import logging
-from drl_trading_common.db.database_connection_interface import (
-    DatabaseConnectionInterface,
-)
-from drl_trading_common.db.postgresql_connection_service import (
-    PostgreSQLConnectionService,
-)
+from drl_trading_adapter.adapter.database.session_factory import SQLAlchemySessionFactory
 from flask import Flask
 from injector import Binder, Injector, Module, provider, singleton
 from confluent_kafka import Producer
@@ -73,6 +68,12 @@ class IngestModule(Module):
         """
         return FlaskAppFactory.create_app(injector)
 
+    @provider
+    @singleton
+    def provide_session_factory(self, config: IngestConfig) -> SQLAlchemySessionFactory:
+        """Provide a SQLAlchemy session factory instance."""
+        return SQLAlchemySessionFactory(config.infrastructure.database)
+
     def configure(self, binder: Binder) -> None:
         """Configure the module with necessary bindings."""
         # Core services
@@ -82,6 +83,3 @@ class IngestModule(Module):
         binder.bind(IngestionControllerInterface, to=IngestionController, scope=singleton)
         binder.bind(MarketDataRepoPort, to=MarketDataRepo, scope=singleton)
         binder.bind(MigrationServiceInterface, to=AlembicMigrationService, scope=singleton)
-
-        # Infrastructure services
-        binder.bind(DatabaseConnectionInterface, to=PostgreSQLConnectionService, scope=singleton)

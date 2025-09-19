@@ -2,13 +2,23 @@
 
 ## Quick Thoughts
 <!-- Dump ideas here quickly, organize later -->
-- continue with refactoring of the FeatureServiceRequestContainer in Save/fetch
-- refactor tests (new timeframe field)
-- create resampling service in preprocessing
-- move out marketdata to adapter package
-- create marketdataentity with sqlalchemy support
-- implement fetch methods for the marketdatarepo interface
-- impl timescale db client in preprocessing
+- create resampling service in drl-trading-preprocess
+    - in: dict of list of marketdatamodel of all timeframes
+    - out: dict of list of marketdatamodel of all timeframes
+    - scenarios:
+        - first time:
+            - only lowest TF may exist, no higher ones
+            - start resampling lowest TF to each TF individually, beginning from 0
+        - every other time:
+            - multiple TF exist
+            - lowest TF contains the latest timestamps
+            - try to resample for each TF individually (either the new timeseries records can produce a new higher TF record or not yet)
+    - save all newly produced resamplings into database
+    - process with feature computation of each TFs timeseries
+- cleanup common package
+    - move strong business related to core
+    - move adapter related to adapter
+- archunit with hexagonal tests
 
 ## Future Epics (Unrefined)
 

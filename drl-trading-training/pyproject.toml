@@ -29,6 +29,7 @@ dependencies = [
     # Workspace dependencies
     "drl-trading-common",
     "drl-trading-core",
+    "drl-trading-adapter", # For database adapters and entities
     # Core ML dependencies
     "pandas>=2.0.0",
     "gymnasium>=0.29.0",
@@ -42,6 +43,7 @@ dependencies = [
 [tool.uv.sources]
 drl-trading-common = { workspace = true }
 drl-trading-core = { workspace = true }
+drl-trading-adapter = { workspace = true }
 drl-trading-strategy-example = { workspace = true }
 
 [dependency-groups]
@@ -51,6 +53,7 @@ test = [
     "pytest-cov>=4.0.0",
     "pytest-benchmark>=4.0.0",
     "pytest-mock>=3.12.0",
+    "testcontainers>=4.0.0",  # For database integration testing
 ]
 # Development dependencies (following workspace standards)
 dev = [

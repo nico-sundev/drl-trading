@@ -12,7 +12,11 @@ from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
+from drl_trading_common.model.timeframe import Timeframe
 from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
+from drl_trading_core.common.model.feature_service_request_container import (
+    FeatureServiceRequestContainer,
+)
 from injector import Injector
 from pandas import DataFrame
 
@@ -52,11 +56,15 @@ class TestFeatureStoreRepositoriesIntegration:
 
         # And fetch them back (offline)
         timestamps = sample_trading_features_df["event_timestamp"]
-        fetched_features = fetch_repo.get_offline(
+        feature_service_request = FeatureServiceRequestContainer(
+            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             symbol=symbol,
-            timestamps=timestamps,
             feature_version_info=feature_version_info_fixture,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
+            timeframe=Timeframe.HOUR_1
+        )
+        fetched_features = fetch_repo.get_offline(
+            feature_service_request=feature_service_request,
+            timestamps=timestamps
         )
 
         # Then
@@ -104,10 +112,14 @@ class TestFeatureStoreRepositoriesIntegration:
         )
 
         # And fetch from online store
-        online_features = fetch_repo.get_online(
+        feature_service_request = FeatureServiceRequestContainer(
+            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
+            timeframe=Timeframe.HOUR_1
+        )
+        online_features = fetch_repo.get_online(
+            feature_service_request=feature_service_request
         )
 
         # Then
@@ -159,10 +171,14 @@ class TestFeatureStoreRepositoriesIntegration:
         )
 
         # And fetch from online store
-        online_features = fetch_repo.get_online(
+        feature_service_request = FeatureServiceRequestContainer(
+            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
+            timeframe=Timeframe.HOUR_1
+        )
+        online_features = fetch_repo.get_online(
+            feature_service_request=feature_service_request
         )
 
         # Then
@@ -346,11 +362,15 @@ class TestFeatureStoreRepositoriesIntegration:
 
         # And fetch subset back
         subset_timestamps = large_features_df["event_timestamp"].iloc[100:200]
-        fetched_features = fetch_repo.get_offline(
+        feature_service_request = FeatureServiceRequestContainer(
+            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             symbol=symbol,
-            timestamps=subset_timestamps,
             feature_version_info=feature_version_info_fixture,
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
+            timeframe=Timeframe.HOUR_1
+        )
+        fetched_features = fetch_repo.get_offline(
+            feature_service_request=feature_service_request,
+            timestamps=subset_timestamps
         )
 
         # Then
@@ -382,19 +402,27 @@ class TestFeatureStoreRepositoriesErrorScenarios:
 
         # When/Then - Should raise RuntimeError when no feature service can be created
         with pytest.raises((RuntimeError, Exception)):  # Allow broader exception types
-            fetch_repo.get_online(
+            invalid_request = FeatureServiceRequestContainer(
+                feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
                 symbol=symbol,
                 feature_version_info=invalid_version_info,
-                feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
+                timeframe=Timeframe.HOUR_1
+            )
+            fetch_repo.get_online(
+                feature_service_request=invalid_request
             )
 
         with pytest.raises((RuntimeError, Exception)):  # Allow broader exception types
             timestamps = pd.Series([pd.Timestamp("2024-01-01 09:00:00", tz="UTC")])
-            fetch_repo.get_offline(
+            invalid_request = FeatureServiceRequestContainer(
+                feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
                 symbol=symbol,
-                timestamps=timestamps,
                 feature_version_info=invalid_version_info,
-                feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
+                timeframe=Timeframe.HOUR_1
+            )
+            fetch_repo.get_offline(
+                feature_service_request=invalid_request,
+                timestamps=timestamps
             )
 
     def test_concurrent_access_simulation(
@@ -423,7 +451,8 @@ class TestFeatureStoreRepositoriesErrorScenarios:
                 modified_request = FeatureViewRequestContainer(
                     symbol=test_symbol,
                     feature_role=request.feature_role,
-                    feature=request.feature
+                    feature=request.feature,
+                    timeframe=Timeframe.HOUR_1
                 )
                 symbol_specific_requests.append(modified_request)
 
@@ -441,11 +470,15 @@ class TestFeatureStoreRepositoriesErrorScenarios:
 
             try:
                 # Try offline fetch first
-                fetched_features = fetch_repo.get_offline(
+                feature_service_request = FeatureServiceRequestContainer(
+                    feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
                     symbol=test_symbol,
-                    timestamps=timestamps,
                     feature_version_info=feature_version_info_fixture,
-                    feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
+                    timeframe=Timeframe.HOUR_1
+                )
+                fetched_features = fetch_repo.get_offline(
+                    feature_service_request=feature_service_request,
+                    timestamps=timestamps
                 )
 
                 if not fetched_features.empty:
@@ -458,10 +491,14 @@ class TestFeatureStoreRepositoriesErrorScenarios:
 
                     # Try online fetch first to see if it works without additional push
                     try:
-                        online_features = fetch_repo.get_online(
+                        feature_service_request = FeatureServiceRequestContainer(
+                            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
                             symbol=test_symbol,
                             feature_version_info=feature_version_info_fixture,
-                            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
+                            timeframe=Timeframe.HOUR_1
+                        )
+                        online_features = fetch_repo.get_online(
+                            feature_service_request=feature_service_request
                         )
                         # If online fetch works, verify the data
                         if not online_features.empty:
@@ -478,10 +515,14 @@ class TestFeatureStoreRepositoriesErrorScenarios:
                         )
 
                         # Now try online fetch again
-                        online_features = fetch_repo.get_online(
+                        feature_service_request = FeatureServiceRequestContainer(
+                            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
                             symbol=test_symbol,
                             feature_version_info=feature_version_info_fixture,
-                            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE
+                            timeframe=Timeframe.HOUR_1
+                        )
+                        online_features = fetch_repo.get_online(
+                            feature_service_request=feature_service_request
                         )
 
                         # Verify online operations work

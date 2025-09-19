@@ -680,8 +680,10 @@ dependencies = [
     { name = "numpy" },
     { name = "pandas" },
     { name = "protobuf" },
+    { name = "psycopg2-binary" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
+    { name = "sqlalchemy" },
 ]
 
 [package.optional-dependencies]
@@ -737,11 +739,13 @@ requires-dist = [
     { name = "numpy", specifier = ">=1.24.0" },
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "protobuf", specifier = ">=5.26.0,<6.0.0" },
+    { name = "psycopg2-binary", specifier = ">=2.9.0" },
     { name = "pytest", marker = "extra == 'testing'", specifier = ">=8.0.0" },
     { name = "pytest-cov", marker = "extra == 'testing'", specifier = ">=4.0.0" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.0" },
 ]
 provides-extras = ["testing", "dev"]
 
@@ -1142,6 +1146,7 @@ source = { editable = "drl-trading-ingest" }
 dependencies = [
     { name = "alembic" },
     { name = "alpha-vantage" },
+    { name = "drl-trading-adapter" },
     { name = "drl-trading-common" },
     { name = "flask" },
     { name = "injector" },
@@ -1186,6 +1191,7 @@ test = [
 requires-dist = [
     { name = "alembic", specifier = ">=1.12.0" },
     { name = "alpha-vantage", specifier = ">=2.3.0" },
+    { name = "drl-trading-adapter", editable = "drl-trading-adapter" },
     { name = "drl-trading-common", editable = "drl-trading-common" },
     { name = "flask", specifier = ">=3.1.1" },
     { name = "injector", specifier = ">=0.22.0" },
@@ -1389,6 +1395,7 @@ version = "0.1.0"
 source = { editable = "drl-trading-training" }
 dependencies = [
     { name = "click" },
+    { name = "drl-trading-adapter" },
     { name = "drl-trading-common" },
     { name = "drl-trading-core" },
     { name = "gymnasium" },
@@ -1420,11 +1427,13 @@ test = [
     { name = "pytest-benchmark" },
     { name = "pytest-cov" },
     { name = "pytest-mock" },
+    { name = "testcontainers" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "click" },
+    { name = "drl-trading-adapter", editable = "drl-trading-adapter" },
     { name = "drl-trading-common", editable = "drl-trading-common" },
     { name = "drl-trading-core", editable = "drl-trading-core" },
     { name = "gymnasium", specifier = ">=0.29.0" },
@@ -1456,6 +1465,7 @@ test = [
     { name = "pytest-benchmark", specifier = ">=4.0.0" },
     { name = "pytest-cov", specifier = ">=4.0.0" },
     { name = "pytest-mock", specifier = ">=3.12.0" },
+    { name = "testcontainers", specifier = ">=4.0.0" },
 ]
 
 [[package]]

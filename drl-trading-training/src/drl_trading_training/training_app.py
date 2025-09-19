@@ -1,15 +1,14 @@
 import logging
 import os
-from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 from warnings import deprecated
 
 from drl_trading_common.config.feature_config import FeaturesConfig
-from drl_trading_common.config.feature_config_repo import FeatureConfigPostgresRepo
+# Legacy import - this class is deprecated, use FeatureConfigReader/Writer adapters instead
+from drl_trading_training.adapter.feature_config.feature_config_writer import FeatureConfigWriter
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
-from drl_trading_common.utils.utils import compute_feature_config_hash
 from drl_trading_core.common.agents.base_agent import BaseAgent
 from drl_trading_core.common.model.preprocessing_result import PreprocessingResult
 from drl_trading_core.core_engine import CoreEngine
@@ -30,31 +29,20 @@ class TrainingApp:
         """
         self.start_training()
 
-    def register_feature_config(version_store: FeatureConfigPostgresRepo, config: FeaturesConfig, semver: str) -> FeatureConfigVersionInfo:
-        hash = compute_feature_config_hash(config.feature_definitions)
-        entry = version_store.get_config(semver)
+    @staticmethod
+    @deprecated("This method is obsolete. Use FeatureConfigWriter.save_config() and FeatureConfigReader.get_config() directly")
+    def register_feature_config(writer: FeatureConfigWriter, config: FeaturesConfig, semver: str) -> FeatureConfigVersionInfo:
+        """
+        DEPRECATED: This method is no longer functional.
 
-        if entry and entry.hash != hash:
-            raise ValueError(
-                f"Feature config with semver {semver} already exists with a different hash. "
-                "Please use a different semver or update the existing config."
-            )
-
-        if not entry:
-            logging.info(
-                f"Registering new feature config with semver {semver} and hash {hash}"
-            )
-            new_entry = FeatureConfigVersionInfo(
-                    semver=semver,
-                    hash=hash,
-                    feature_definitions=config.feature_definitions,
-                    description=config.description,
-                    created_at=datetime.now()
-                )
-            version_store.save_config(new_entry)
-            return new_entry
-
-        return entry
+        Instead, use the new adapter pattern:
+        - FeatureConfigReader.get_config() to read configurations
+        - FeatureConfigWriter.save_config() to save configurations (has UPSERT semantics)
+        """
+        raise NotImplementedError(
+            "This legacy method is deprecated. Use FeatureConfigWriter.save_config() and "
+            "FeatureConfigReader.get_config() from the new adapter architecture instead."
+        )
 
     def _create_environments_and_train(
         self,

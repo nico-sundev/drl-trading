@@ -1,21 +1,19 @@
 """
-TimescaleDB repository implementation for storing time series data.
+TimescaleDB repository implementation using SQLAlchemy ORM.
 
-This module provides the concrete implementation of TimescaleRepoInterface
-for storing market data in TimescaleDB. It focuses solely on data operations,
-with schema management delegated to the migration service.
+This module provides modern SQLAlchemy-based implementation for market data
+operations, replacing the legacy raw SQL approach with proper entity mapping
+and transaction management.
 """
 
 import logging
-from typing import List, Optional
+from typing import Optional
 
-import psycopg2
-import psycopg2.extras
-from drl_trading_common.db.database_connection_interface import (
-    DatabaseConnectionInterface,
-)
+from drl_trading_adapter.adapter.database.entity.market_data_entity import MarketDataEntity
+from drl_trading_adapter.adapter.database.session_factory import SQLAlchemySessionFactory
 from injector import inject
 from pandas import DataFrame
+from sqlalchemy import func
 
 from drl_trading_ingest.core.port.market_data_repo_interface import (
     MarketDataRepoPort,
@@ -27,31 +25,30 @@ logger = logging.getLogger(__name__)
 @inject
 class MarketDataRepo(MarketDataRepoPort):
     """
-    TimescaleDB repository for storing time series data.
+    TimescaleDB repository using SQLAlchemy ORM for market data operations.
 
-    This repository focuses solely on data operations, assuming that
-    the database schema is properly managed by the migration service.
-    It follows the single responsibility principle by separating
-    data operations from schema management.
+    This repository leverages the modern SQLAlchemy-based architecture
+    with proper entity mapping, replacing the legacy raw SQL approach.
+    It maintains the same interface while providing improved maintainability
+    and testability through ORM abstraction.
     """
 
-    def __init__(self, connection_service: DatabaseConnectionInterface):
+    def __init__(self, session_factory: SQLAlchemySessionFactory):
         """
-        Initialize the repository with database connection service.
+        Initialize the repository with SQLAlchemy session factory.
 
         Args:
-            connection_service: Database connection interface for connection management
+            session_factory: SQLAlchemy session factory for database access
         """
-        self.connection_service = connection_service
+        self.session_factory = session_factory
         self.logger = logging.getLogger(__name__)
 
     def save_market_data(self, symbol: str, timeframe: str, df: DataFrame) -> None:
         """
-        Store time series data to the unified market data table.
+        Store time series data using SQLAlchemy ORM with UPSERT semantics.
 
-        This method assumes that the market_data table already exists and has been
-        created through the migration system. It handles only data insertion with
-        proper conflict resolution.
+        Uses SQLAlchemy's merge() operation to handle conflicts gracefully,
+        providing equivalent functionality to the previous raw SQL UPSERT.
 
         Args:
             symbol: The trading symbol (e.g., "EURUSD")
@@ -60,7 +57,6 @@ class MarketDataRepo(MarketDataRepoPort):
 
         Raises:
             ValueError: If required columns are missing from the DataFrame
-            DatabaseConnectionError: If database operation fails
         """
         # Validate required columns exist
         required_columns = ['timestamp', 'open_price', 'high_price', 'low_price', 'close_price']
@@ -73,38 +69,35 @@ class MarketDataRepo(MarketDataRepoPort):
             return
 
         try:
-            with self.connection_service.get_transaction() as cursor:
-                # Use UPSERT to handle conflicts gracefully
-                upsert_query = """
-                    INSERT INTO market_data (
-                        symbol, timeframe, timestamp,
-                        open_price, high_price, low_price, close_price, volume
-                    ) VALUES %s
-                    ON CONFLICT (symbol, timeframe, timestamp)
-                    DO UPDATE SET
-                        open_price = EXCLUDED.open_price,
-                        high_price = EXCLUDED.high_price,
-                        low_price = EXCLUDED.low_price,
-                        close_price = EXCLUDED.close_price,
-                        volume = EXCLUDED.volume,
-                        created_at = NOW()
-                """
+            with self.session_factory.get_session() as session:
+                entities = []
 
-                # Prepare data tuples for batch insert
-                data_tuples = self._prepare_data_tuples(symbol, timeframe, df)
+                for _, row in df.iterrows():
+                    # Handle volume - default to 0 if not present
+                    volume = row.get('volume', 0)
+                    if volume is None or volume == '':
+                        volume = 0
 
-                # Execute batch insert using psycopg2.extras.execute_values for efficiency
-                psycopg2.extras.execute_values(
-                    cursor,
-                    upsert_query,
-                    data_tuples,
-                    template=None,
-                    page_size=1000  # Process in batches for memory efficiency
-                )
+                    entity = MarketDataEntity(
+                        symbol=symbol,
+                        timeframe=timeframe,
+                        timestamp=row['timestamp'],
+                        open_price=float(row['open_price']),
+                        high_price=float(row['high_price']),
+                        low_price=float(row['low_price']),
+                        close_price=float(row['close_price']),
+                        volume=int(volume)
+                    )
+                    entities.append(entity)
 
-                rows_affected = cursor.rowcount
+                # Use merge for UPSERT behavior - updates if exists, inserts if not
+                for entity in entities:
+                    session.merge(entity)
+
+                session.commit()
+
                 self.logger.info(
-                    f"Successfully stored {rows_affected} rows for {symbol}:{timeframe}"
+                    f"Successfully stored {len(entities)} rows for {symbol}:{timeframe}"
                 )
 
         except Exception as e:
@@ -115,7 +108,7 @@ class MarketDataRepo(MarketDataRepoPort):
 
     def get_latest_timestamp(self, symbol: str, timeframe: str) -> Optional[str]:
         """
-        Get the latest timestamp for a symbol/timeframe combination.
+        Get the latest timestamp for a symbol/timeframe combination using SQLAlchemy.
 
         This is useful for incremental data updates to avoid duplicates.
 
@@ -127,57 +120,18 @@ class MarketDataRepo(MarketDataRepoPort):
             str: Latest timestamp as ISO string, or None if no data exists
         """
         try:
-            with self.connection_service.get_connection() as connection:
-                with connection.cursor() as cursor:
-                    query = """
-                        SELECT MAX(timestamp)
-                        FROM market_data
-                        WHERE symbol = %s AND timeframe = %s
-                    """
+            with self.session_factory.get_session() as session:
+                result = session.query(func.max(MarketDataEntity.timestamp)).filter(
+                    MarketDataEntity.symbol == symbol,
+                    MarketDataEntity.timeframe == timeframe
+                ).scalar()
 
-                    cursor.execute(query, (symbol, timeframe))
-                    result = cursor.fetchone()
-
-                    if result and result[0]:
-                        return result[0].isoformat()
-                    return None
+                if result:
+                    return result.isoformat()
+                return None
 
         except Exception as e:
             self.logger.error(
                 f"Failed to get latest timestamp for {symbol}:{timeframe}: {str(e)}"
             )
             raise
-
-    def _prepare_data_tuples(self, symbol: str, timeframe: str, df: DataFrame) -> List[tuple]:
-        """
-        Prepare data tuples for batch insertion.
-
-        Args:
-            symbol: Trading symbol
-            timeframe: Data timeframe
-            df: DataFrame with market data
-
-        Returns:
-            List[tuple]: Data tuples ready for insertion
-        """
-        data_tuples = []
-
-        for _, row in df.iterrows():
-            # Handle volume - default to 0 if not present
-            volume = row.get('volume', 0)
-            if volume is None or volume == '':
-                volume = 0
-
-            data_tuple = (
-                symbol,
-                timeframe,
-                row['timestamp'],
-                float(row['open_price']),
-                float(row['high_price']),
-                float(row['low_price']),
-                float(row['close_price']),
-                int(volume)
-            )
-            data_tuples.append(data_tuple)
-
-        return data_tuples

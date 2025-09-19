@@ -38,6 +38,8 @@ dependencies = [
     "injector>=0.22.0", # DI framework
     "PyYAML>=6.0", # Config consistency
     "python-dotenv>=1.1.1", # Env management
+    "sqlalchemy>=2.0.0", # ORM for database entities
+    "psycopg2-binary>=2.9.0", # PostgreSQL adapter for SQLAlchemy
 ]
 
 [tool.uv.sources]

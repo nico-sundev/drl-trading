@@ -19,6 +19,7 @@ from drl_trading_common.interface.indicator.technical_indicator_facade_interface
     ITechnicalIndicatorFacade,
 )
 from drl_trading_common.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.model.timeframe import Timeframe
 from injector import Injector
 from pandas import DataFrame
 from testcontainers.minio import MinioContainer
@@ -578,7 +579,8 @@ def create_feature_view_requests(
             request = FeatureViewRequestContainer(
                 symbol=symbol,
                 feature_role=feature_role,
-                feature=feature
+                feature=feature,
+                timeframe=Timeframe.HOUR_1
             )
             requests.append(request)
 

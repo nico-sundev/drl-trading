@@ -9,10 +9,6 @@ from drl_trading_common.config.config_loader import ConfigLoader
 from drl_trading_common.config.context_feature_config import ContextFeatureConfig
 from drl_trading_common.config.environment_config import EnvironmentConfig
 from drl_trading_common.config.feature_config import FeaturesConfig, FeatureStoreConfig
-from drl_trading_common.config.feature_config_repo import (
-    FeatureConfigPostgresRepo,
-    IFeatureConfigRepository,
-)
 from drl_trading_common.config.local_data_import_config import LocalDataImportConfig
 from drl_trading_common.config.rl_model_config import RlModelConfig
 from injector import Module, provider, singleton, Binder
@@ -128,9 +124,7 @@ class CoreModule(Module):
 
         # Auto-wire services that use @inject decorator
         binder.bind(DataImportManager, to=DataImportManager, scope=singleton)
-        binder.bind(
-            IFeatureConfigRepository, to=FeatureConfigPostgresRepo, scope=singleton
-        )
+        # Feature config repository bindings removed - now using read/write adapters
         # Feast / feature store bindings moved to AdapterModule
         binder.bind(
             FeatureViewNameMapper, to=FeatureViewNameMapper, scope=singleton

@@ -21,6 +21,7 @@ license = "MIT"
 dependencies = [
     # Workspace dependencies
     "drl-trading-common", # Provides confluent-kafka
+    "drl-trading-adapter", # Provides MarketDataEntity and session factory
     # Core data processing
     "pandas>=2.0.0",
     "numpy>=1.24.0",
@@ -44,6 +45,7 @@ dependencies = [
 
 [tool.uv.sources]
 drl-trading-common = { workspace = true }
+drl-trading-adapter = { workspace = true }
 
 # Project-specific dependency groups
 # Note: These follow the workspace dependency standards for consistency
