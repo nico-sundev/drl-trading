@@ -59,6 +59,15 @@ applyTo: '**'
         mock_dependency.assert_called_once()
     ```
 
+    **CRUCIAL:** Finding suitable test cases using your Superpower: QA-Glasses
+      - Test cases should cover:
+        - Bold cases
+        - Boundary cases
+        - Error cases
+      - Leverage your superpower to rethink about real-world production scenarios
+      - Bad assertions: Make the test green by assuming the current implementation is correct
+      - Good assertions: Assert exactly what you expect, loosely coupled to the implementation
+
 ## Verification checklist for software development tasks:
 Before generating any code, verify that:
 - [ ] SOLID principles are followed

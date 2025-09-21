@@ -18,3 +18,19 @@ class Timeframe(Enum):
 
     def __str__(self):
         return self.value
+
+    def to_minutes(self) -> int:
+        """Convert timeframe to minutes for comparison and calculations."""
+        timeframe_minutes = {
+            Timeframe.MINUTE_1: 1,
+            Timeframe.MINUTE_5: 5,
+            Timeframe.MINUTE_15: 15,
+            Timeframe.MINUTE_30: 30,
+            Timeframe.HOUR_1: 60,
+            Timeframe.HOUR_4: 240,
+            Timeframe.DAY_1: 1440,
+            Timeframe.WEEK_1: 10080,
+            Timeframe.MONTH_1: 43200,  # Approximate 30 days
+            Timeframe.TICK: 0,  # Special case for tick data
+        }
+        return timeframe_minutes.get(self, 0)

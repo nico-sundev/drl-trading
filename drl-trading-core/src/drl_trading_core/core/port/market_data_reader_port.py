@@ -53,6 +53,39 @@ class MarketDataReaderPort(ABC):
         pass
 
     @abstractmethod
+    def get_symbol_data_range_paginated(
+        self,
+        symbol: str,
+        timeframe: Timeframe,
+        start_time: datetime,
+        end_time: datetime,
+        limit: int,
+        offset: int = 0
+    ) -> List[MarketDataModel]:
+        """
+        Get paginated market data for a symbol within a time range.
+
+        Enables memory-efficient processing of large datasets by fetching
+        data in manageable chunks. Essential for stateful resampling services.
+
+        Args:
+            symbol: Trading symbol (e.g., "EURUSD")
+            timeframe: Data timeframe enum
+            start_time: Start of time range (inclusive)
+            end_time: End of time range (inclusive)
+            limit: Maximum number of records to return
+            offset: Number of records to skip (for pagination)
+
+        Returns:
+            List[MarketDataModel]: Market data sorted by timestamp ascending
+
+        Raises:
+            ValueError: If symbol or timeframe is invalid
+            DatabaseConnectionError: If database access fails
+        """
+        pass
+
+    @abstractmethod
     def get_multiple_symbols_data_range(
         self,
         symbols: List[str],

@@ -44,6 +44,52 @@ class MarketDataRepository(MarketDataReaderPort):
         """Convert MarketDataEntity to MarketDataModel."""
         return MarketDataMapper.entity_to_model(entity)
 
+    def get_symbol_data_range_paginated(
+        self,
+        symbol: str,
+        timeframe: Timeframe,
+        start_time: datetime,
+        end_time: datetime,
+        limit: int,
+        offset: int = 0
+    ) -> List[MarketDataModel]:
+        """Retrieve market data for a symbol within the specified time range with pagination.
+
+        Args:
+            symbol: Trading symbol to fetch data for
+            timeframe: Timeframe for the market data
+            start_time: Start of the time range (inclusive)
+            end_time: End of the time range (inclusive)
+            limit: Maximum number of records to return
+            offset: Number of records to skip (for pagination)
+
+        Returns:
+            List of market data models within the specified range and pagination
+        """
+        with self.session_factory.get_session() as session:
+            try:
+                query = session.query(MarketDataEntity).filter(
+                    and_(
+                        MarketDataEntity.symbol == symbol,
+                        MarketDataEntity.timeframe == timeframe.value,
+                        MarketDataEntity.timestamp >= start_time,
+                        MarketDataEntity.timestamp <= end_time
+                    )
+                ).order_by(MarketDataEntity.timestamp.asc()).limit(limit).offset(offset)
+
+                entities = query.all()
+
+                self.logger.debug(
+                    f"Retrieved {len(entities)} records for {symbol} "
+                    f"(timeframe: {timeframe.value}, limit: {limit}, offset: {offset})"
+                )
+
+                return [self._entity_to_model(entity) for entity in entities]
+
+            except Exception as e:
+                self.logger.error(f"Error fetching paginated market data: {e}")
+                raise
+
     def get_symbol_data_range(
         self,
         symbol: str,

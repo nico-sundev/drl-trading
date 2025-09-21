@@ -1,8 +1,11 @@
 """Dependency injection module for preprocess service (config injected)."""
+from typing import Optional
+
 from drl_trading_common.config.feature_config import FeatureStoreConfig
 from drl_trading_preprocess.adapter.feature_store.feature_store_save_repository import FeatureStoreSaveRepository
 from drl_trading_preprocess.core.port.feature_store_save_port import IFeatureStoreSavePort
 from drl_trading_preprocess.core.service.computing_service import FeatureComputingService, IFeatureComputer
+from drl_trading_preprocess.core.service.state_persistence_service import StatePersistenceService
 from drl_trading_preprocess.infrastructure.config.preprocess_config import PreprocessConfig
 from injector import Binder, Module, provider, singleton
 
@@ -39,3 +42,19 @@ class PreprocessModule(Module):
     def provide_feature_store_config(self) -> FeatureStoreConfig:
         """Provide feature store configuration (no reload)."""
         return self._config.feature_store_config
+
+    @provider
+    @singleton
+    def provide_state_persistence_service(self) -> Optional[StatePersistenceService]:
+        """
+        Conditionally provide StatePersistenceService based on configuration.
+
+        Returns:
+            StatePersistenceService instance if state persistence is enabled, None otherwise
+        """
+        if self._config.resample_config.state_persistence_enabled:
+            return StatePersistenceService(
+                state_file_path=self._config.resample_config.state_file_path,
+                backup_interval=self._config.resample_config.state_backup_interval
+            )
+        return None
