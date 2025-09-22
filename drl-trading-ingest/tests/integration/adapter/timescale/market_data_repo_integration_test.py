@@ -44,7 +44,7 @@ class TestMarketDataRepoIntegration:
     @pytest.fixture(scope="class", autouse=True)
     def setup_database_schema(self, session_factory):
         """Create database schema for tests."""
-        # Create all tables
+        # Create all tables using the engine from session factory
         Base.metadata.create_all(session_factory._engine)
         yield
         # Cleanup after tests
@@ -107,6 +107,9 @@ class TestMarketDataRepoIntegration:
             assert first_entity.low_price == 99.5
             assert first_entity.close_price == 101.0
             assert first_entity.volume == 1000
+
+            # Verify the created_at field is set (audit field)
+            assert first_entity.created_at is not None
 
     def test_upsert_behavior(self, repository, session_factory, sample_market_data):
         """Test UPSERT behavior - update existing records."""
@@ -190,7 +193,7 @@ class TestMarketDataRepoIntegration:
             'high_price': [101.0],
             'low_price': [99.0],
             'close_price': [100.5]
-            # No volume column
+            # No volume column - should default to 0
         })
 
         # When
@@ -205,6 +208,36 @@ class TestMarketDataRepoIntegration:
 
             assert entity is not None
             assert entity.volume == 0
+            assert entity.open_price == 100.0
+            assert entity.close_price == 100.5
+
+    def test_save_data_with_null_volume_values(self, repository, session_factory):
+        """Test handling of None and empty string volume values."""
+        # Given
+        symbol = "NULLVOL"
+        timeframe = "1h"
+        data_with_null_volumes = pd.DataFrame({
+            'timestamp': [datetime(2024, 1, 1, 10, 0), datetime(2024, 1, 1, 11, 0)],
+            'open_price': [100.0, 101.0],
+            'high_price': [101.0, 102.0],
+            'low_price': [99.0, 100.0],
+            'close_price': [100.5, 101.5],
+            'volume': [None, '']  # None and empty string should both become 0
+        })
+
+        # When
+        repository.save_market_data(symbol, timeframe, data_with_null_volumes)
+
+        # Then - Both records should have volume = 0
+        with session_factory.get_read_only_session() as session:
+            entities = session.query(MarketDataEntity).filter(
+                MarketDataEntity.symbol == symbol,
+                MarketDataEntity.timeframe == timeframe
+            ).order_by(MarketDataEntity.timestamp).all()
+
+            assert len(entities) == 2
+            assert entities[0].volume == 0  # None -> 0
+            assert entities[1].volume == 0  # '' -> 0
 
     def test_multiple_symbols_and_timeframes(self, repository, session_factory):
         """Test storing data for multiple symbols and timeframes."""
@@ -281,3 +314,17 @@ class TestMarketDataRepoIntegration:
             entity = entities[0]
             assert entity.open_price == 110.0  # Updated values
             assert entity.volume == 2000
+
+    def test_save_data_with_invalid_columns(self, repository):
+        """Test error handling for missing required columns."""
+        # Given
+        symbol = "INVALID"
+        timeframe = "1h"
+        invalid_df = pd.DataFrame({
+            'wrong_column': [1, 2, 3],
+            'another_wrong_column': ['a', 'b', 'c']
+        })
+
+        # When & Then - Should raise ValueError for missing columns
+        with pytest.raises(ValueError, match="DataFrame missing required columns"):
+            repository.save_market_data(symbol, timeframe, invalid_df)
