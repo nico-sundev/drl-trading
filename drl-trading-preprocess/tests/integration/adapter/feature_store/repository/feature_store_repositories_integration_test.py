@@ -334,7 +334,7 @@ class TestFeatureStoreRepositoriesIntegration:
         timestamps = pd.date_range(
             start="2024-01-01 00:00:00",
             periods=1000,
-            freq="H",
+            freq="h",  # Use lowercase 'h' as 'H' is deprecated in newer pandas versions
             tz="UTC"  # Add UTC timezone
         )
 

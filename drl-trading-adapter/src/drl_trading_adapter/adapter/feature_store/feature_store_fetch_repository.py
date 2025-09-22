@@ -75,11 +75,11 @@ class FeatureStoreFetchRepository(IFeatureStoreFetchPort):
         entity_df["symbol"] = symbol
 
         try:
-            result = self._fs.get_historical_features(
-                features=feature_service, entity_df=entity_df
-            ).to_df()
-
-            return result
+            with pd.option_context("future.no_silent_downcasting", True):
+                result = self._fs.get_historical_features(
+                    features=feature_service, entity_df=entity_df
+                ).to_df()
+                return result
 
         except Exception as e:
             logger.error(

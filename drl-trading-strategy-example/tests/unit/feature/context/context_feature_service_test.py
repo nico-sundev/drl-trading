@@ -108,7 +108,7 @@ def test_validate_primary_columns_missing_columns(context_feature_service):
     # DataFrame missing some primary columns
     incomplete_df = DataFrame(
         {
-            "Time": pd.date_range(start="2022-01-01", periods=10, freq="H"),
+            "Time": pd.date_range(start="2022-01-01", periods=10, freq="h"),
             # Missing High, Low
             "Open": [1.0] * 10,
             "Close": [1.5] * 10,
@@ -170,7 +170,7 @@ def test_prepare_context_features_raises_error_for_missing_required_columns(
     # Create a dataset missing required columns
     incomplete_df = DataFrame(
         {
-            "Time": pd.date_range(start="2022-01-01", periods=10, freq="H"),
+            "Time": pd.date_range(start="2022-01-01", periods=10, freq="h"),
             # Missing High, Low columns
             "Open": [1.0] * 10,
             "Close": [1.5] * 10,
@@ -296,7 +296,7 @@ def test_get_feature_columns(context_feature_service):
     # DataFrame with both context and feature columns
     df = DataFrame(
         {
-            "Time": pd.date_range(start="2022-01-01", periods=10, freq="H"),
+            "Time": pd.date_range(start="2022-01-01", periods=10, freq="h"),
             "Open": [1.0] * 10,
             "High": [2.0] * 10,
             "Low": [0.5] * 10,
@@ -364,7 +364,7 @@ def test_merge_context_features_with_non_matching_indices(
             "feature1": list(range(30)),
         },
         pd.to_datetime(
-            pd.date_range(start="2008-10-03 13:00:00", periods=30, freq="H")
+            pd.date_range(start="2008-10-03 13:00:00", periods=30, freq="h")
         ),
     )
 
@@ -373,7 +373,7 @@ def test_merge_context_features_with_non_matching_indices(
     # Shift context data to create non-matching timestamps
     context_df_shifted = context_df.copy()
     context_df_shifted["Time"] = pd.date_range(
-        start="2008-10-03 15:00:00", periods=30, freq="H"
+        start="2008-10-03 15:00:00", periods=30, freq="h"
     )
     context_df_shifted["Time"] = pd.to_datetime(context_df_shifted["Time"])
     context_df_shifted = context_df_shifted.set_index("Time")

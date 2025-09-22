@@ -30,7 +30,7 @@ dependencies = [
     # core: distribution & import both use underscores for package
     "drl-trading-core", # Core ports & domain services (ports implemented here)
     # External libs required only by adapter layer (ideally removed from core over time)
-    "feast", # Feature store framework (should be isolated to adapter)
+    "feast>=0.53.0", # Feature store framework (should be isolated to adapter)
     "protobuf>=5.26.0,<6.0.0", # Feast compatibility
     "pandas>=2.0.0", # DataFrame ops for repositories
     "numpy>=1.24.0", # Numeric support (alignment w/ core)

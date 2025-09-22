@@ -633,7 +633,7 @@ def sample_trading_features_df() -> DataFrame:
     timestamps = pd.date_range(
         start="2024-01-01 09:00:00",
         periods=50,
-        freq="H",
+        freq="h",
         tz="UTC",  # Add UTC timezone to match Feast expectations
     )
 
@@ -797,7 +797,7 @@ offline_store:
   type: s3
   path: s3://{s3_test_bucket}/features
   s3_endpoint_url: {s3_feature_store_config.s3_repo_config.endpoint_url}
-entity_key_serialization_version: 2
+entity_key_serialization_version: 3
 """
 
     feast_config_path = os.path.join(stage_dir, "feature_store.yaml")

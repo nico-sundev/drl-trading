@@ -104,7 +104,7 @@ class TestStatefulResamplingArchitecture:
         service = MarketDataResamplingService(**mock_dependencies)
 
         # When
-        response = service.resample_symbol_data(
+        response = service.resample_symbol_data_incremental(
             symbol="BTCUSDT",
             base_timeframe=Timeframe.MINUTE_1,
             target_timeframes=[Timeframe.MINUTE_5]

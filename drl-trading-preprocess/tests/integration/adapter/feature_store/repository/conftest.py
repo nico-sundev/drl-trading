@@ -41,7 +41,7 @@ class MockTechnicalIndicatorFacade(ITechnicalIndicatorFacade):
     def register_instance(self, name: str, indicator_type, **params) -> None:
         """Register a mock indicator that returns predictable test data."""
         # Create predictable test data based on indicator type with UTC timezone
-        dates = pd.date_range(start="2024-01-01", periods=100, freq="1H", tz="UTC")
+        dates = pd.date_range(start="2024-01-01", periods=100, freq="1h", tz="UTC")  # Use lowercase 'h' as 'H' is deprecated
 
         if "rsi" in name.lower():
             # Generate RSI-like values between 30-70
@@ -320,7 +320,7 @@ def sample_trading_features_df() -> DataFrame:
     timestamps = pd.date_range(
         start="2024-01-01 09:00:00",
         periods=50,
-        freq="H",
+        freq="h",  # Use lowercase 'h' as 'H' is deprecated in newer pandas versions
         tz="UTC",  # Add UTC timezone to match Feast expectations
     )
 

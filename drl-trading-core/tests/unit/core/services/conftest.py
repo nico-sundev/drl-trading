@@ -53,7 +53,7 @@ def mock_param_set_drop_time() -> BaseParameterSetConfig:
 @pytest.fixture
 def feature_test_asset_df() -> DataFrame:
     """Create a standardized DataFrame for feature testing."""
-    dates = pd.to_datetime(pd.date_range(start="2022-01-01", periods=10, freq="H"))
+    dates = pd.to_datetime(pd.date_range(start="2022-01-01", periods=10, freq="h"))
     data = {
         "Open": [1.0, 1.1, 1.05, 1.2, 1.15, 1.3, 1.25, 1.4, 1.35, 1.5],
         "High": [1.1, 1.2, 1.15, 1.3, 1.25, 1.4, 1.35, 1.5, 1.45, 1.6],

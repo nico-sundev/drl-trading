@@ -1,5 +1,7 @@
 import logging
 
+import pandas as pd
+
 from drl_trading_adapter.adapter.feature_store.provider import FeastProvider
 from injector import inject
 from pandas import DataFrame
@@ -159,11 +161,13 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
                 return
 
             logger.debug(f"Materializing feature views: {feature_view_names}")
-            self.feature_store.materialize(
-                start_date=start_date,
-                end_date=end_date,
-                feature_views=feature_view_names,
-            )
+
+            with pd.option_context("future.no_silent_downcasting", True):
+                self.feature_store.materialize(
+                    start_date=start_date,
+                    end_date=end_date,
+                    feature_views=feature_view_names,
+                )
             logger.info(f"Materialized features for online serving: {symbol}")
 
         except (TypeError, AttributeError) as e:

@@ -50,7 +50,7 @@
 
 #     # Create a real delayed object that returns a dataframe
 #     def create_sample_df(i=0):
-#         dates = pd.date_range(start="2023-01-01", periods=10, freq="H")
+#         dates = pd.date_range(start="2023-01-01", periods=10, freq="h")
 #         return pd.DataFrame({f"feature_{i}": range(10, 20)}, index=dates)
 
 #     # Mock the compute method to return a list of real delayed tasks
@@ -64,7 +64,7 @@
 # @pytest.fixture
 # def mock_base_dataset() -> AssetPriceDataSet:
 #     """Create a mock base dataset."""
-#     dates = pd.to_datetime(pd.date_range(start="2023-01-01", periods=10, freq="H"))
+#     dates = pd.to_datetime(pd.date_range(start="2023-01-01", periods=10, freq="h"))
 #     df = pd.DataFrame(
 #         {
 #             "Open": range(10, 20),
@@ -160,7 +160,7 @@
 #     mock = MagicMock(spec=MergeServiceInterface)
 
 #     # Create sample merged dataframe with HTF240_Volume
-#     dates = pd.date_range(start="2023-01-01", periods=10, freq="H")
+#     dates = pd.date_range(start="2023-01-01", periods=10, freq="h")
 #     merged_df = pd.DataFrame(
 #         {
 #             "Open": range(10, 20),
@@ -202,7 +202,7 @@
 #     # Create sample context features DataFrame
 #     context_features = pd.DataFrame(
 #         {
-#             "Time": pd.date_range(start="2023-01-01", periods=10, freq="H"),
+#             "Time": pd.date_range(start="2023-01-01", periods=10, freq="h"),
 #             "Open": range(10, 20),
 #             "High": range(20, 30),
 #             "Low": range(5, 15),
@@ -367,7 +367,7 @@
 #     # Using preprocess_service fixture which already has all the mocks set up
 #     df = pd.DataFrame(
 #         {
-#             "Time": pd.date_range(start="2023-01-01", periods=5, freq="H"),
+#             "Time": pd.date_range(start="2023-01-01", periods=5, freq="h"),
 #             "Value": range(5),
 #         }
 #     )
@@ -440,7 +440,7 @@
 #         ),
 #     ):
 #         # Setup a real dataframe that will be returned by our compute function
-#         dates = pd.date_range(start="2023-01-01", periods=10, freq="H")
+#         dates = pd.date_range(start="2023-01-01", periods=10, freq="h")
 #         feature_df = pd.DataFrame({"feature1": range(10)}, index=dates)
 
 #         # Instead of using a lambda, create a real value directly

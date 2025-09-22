@@ -353,9 +353,6 @@ class MarketDataResamplingService:
             source_records_processed=0
         )
 
-
-
-
     def get_existing_data_summary(
         self,
         symbol: str,

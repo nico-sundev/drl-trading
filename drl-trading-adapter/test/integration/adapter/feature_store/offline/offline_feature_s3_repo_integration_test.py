@@ -122,7 +122,7 @@ class TestOfflineFeatureS3RepoIntegration:
         timestamps = pd.date_range(
             start="2024-01-01 00:00:00",
             periods=1000,
-            freq="H"
+            freq="h"
         )
         large_features_df = DataFrame({
             "event_timestamp": timestamps,
