@@ -57,6 +57,9 @@ dev = [
     "mypy>=1.8.0",
     "ruff>=0.1.0",
     "ipython>=8.0.0",
+    "pytest-benchmark>=5.1.0",
+    "psutil>=7.0.0",
+    "memory-profiler>=0.61.0",
 ]
 dev-full = [
     # Development dependencies
@@ -84,6 +87,34 @@ branch = true
 omit = [
     "*/tests/*",
     "*/setup.py",
+]
+
+# Pytest configuration for DRL Trading Preprocess service
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=drl_trading_preprocess",
+    "--cov-report=term-missing",
+    "--cov-report=html:tests/coverage_html",
+    "--cov-fail-under=85",
+    "-m", "not load"
+]
+testpaths = ["tests"]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+markers = [
+    "unit: Unit tests for individual components",
+    "integration: Integration tests with external dependencies",
+    "load: Load and performance tests (disabled by default, use --load to enable)",
+    "benchmark: Benchmark tests using pytest-benchmark",
+    "slow: Tests that take longer than 10 seconds",
+    "memory_intensive: Tests that use significant memory",
 ]
 
 [tool.hatch.build.targets.wheel]

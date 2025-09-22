@@ -2,11 +2,8 @@
 
 ## Quick Thoughts
 <!-- Dump ideas here quickly, organize later -->
-- market data repo unit test & IT
-- Prompt: i want to create a load test for this service and measure execution time. lets say 100k randomly generated OHLCV data timeseries for the base timeseries timeframe, no yet cached higher timeframes data, freshly resampled to all timeframes up to the daily. measure the time and rate, how good or bad the current algo performs; identify flaws
 - recreate preprocess service and integrate both resampling service and computing service
 - circuit breakers
-
 - archunit with hexagonal tests
 
 ## Future Epics (Unrefined)
@@ -18,6 +15,7 @@
 
 ## Technical Debt
 
+- rename infrastructure to application
 - cleanup common package
   - move strong business related to core
   - move adapter related to adapter
