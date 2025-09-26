@@ -25,7 +25,7 @@ class MockFeature(BaseFeature):
         super().__init__(dataset_id, indicator_service, config, postfix)
         self._feature_name = feature_name
 
-    def add(self, df: DataFrame) -> None:
+    def update(self, df: DataFrame) -> None:
         """Mock implementation of add method."""
         pass
 

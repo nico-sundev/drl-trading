@@ -39,7 +39,7 @@ class RsiFeature(BaseFeature):
         self.feature_name = f"rsi_{self.config.length}{self.postfix}"
         self.indicator_service.register_instance(self.feature_name, self._get_indicator_type(), period=self.config.length)
 
-    def add(self, df: DataFrame) -> None:
+    def update(self, df: DataFrame) -> None:
         index_corrected_dataframe = self._prepare_source_df(df)
         self.indicator_service.add(self.feature_name, index_corrected_dataframe)
 

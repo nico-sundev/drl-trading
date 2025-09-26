@@ -55,7 +55,7 @@ class FeatureDefinition(BaseSchema):
     enabled: bool
     derivatives: List[int]
     parameter_sets: List[Dict[str, Any]] = Field(default_factory=list)  # raw input from JSON, can be empty
-    parsed_parameter_sets: List[BaseParameterSetConfig] = Field(default_factory=list)
+    parsed_parameter_sets: Dict[str, BaseParameterSetConfig] = Field(default_factory=dict)
 
 class FeaturesConfig(BaseSchema):
     dataset_definitions: Dict[str, List[Timeframe]]

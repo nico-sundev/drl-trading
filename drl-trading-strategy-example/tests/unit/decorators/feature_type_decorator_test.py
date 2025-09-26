@@ -92,7 +92,7 @@ class TestFeatureTypeDecorator:
             def compute_all(self) -> DataFrame:
                 return self.compute()
 
-            def add(self, df: DataFrame) -> None:
+            def update(self, df: DataFrame) -> None:
                 pass
 
             def compute_latest(self) -> DataFrame:
@@ -134,7 +134,7 @@ class TestFeatureTypeDecorator:
             def compute_all(self) -> DataFrame:
                 return self.compute()
 
-            def add(self, df: DataFrame) -> None:
+            def update(self, df: DataFrame) -> None:
                 pass
 
             def compute_latest(self) -> DataFrame:

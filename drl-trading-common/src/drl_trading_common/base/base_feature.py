@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from datetime import datetime
 from typing import Optional
 
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
@@ -24,6 +25,8 @@ class BaseFeature(Computable):
         self.postfix = postfix
         self.indicator_service = indicator_service
         self.dataset_id = dataset_id
+        # Store the last computed data for caught-up checking
+        self.data: Optional[DataFrame] = None
 
     def _prepare_source_df(self, source: DataFrame, description: Optional[str] = None) -> DataFrame:
         """
@@ -66,3 +69,48 @@ class BaseFeature(Computable):
     @abstractmethod
     def get_config_to_string(self) -> Optional[str]:
         ...
+
+    def is_caught_up(self, reference_time: datetime) -> bool:
+        """
+        Check if the feature is caught up based on the last available record time.
+
+        Compares the difference between the last available cached record and the reference time
+        against the configured timeframe duration. If the difference is less than the timeframe
+        duration, the feature is considered caught up.
+
+        Args:
+            reference_time: The current or target datetime to compare against
+
+        Returns:
+            True if the feature is caught up (time difference < timeframe duration), False otherwise
+        """
+        if self.data is None or self.data.empty:
+            return False
+
+        try:
+            # Get the last timestamp from the cached data
+            last_record_time = self.data.index[-1]
+
+            # Convert to datetime if it's not already
+            if hasattr(last_record_time, 'to_pydatetime'):
+                last_record_time = last_record_time.to_pydatetime()
+            elif isinstance(last_record_time, str):
+                # Try to parse string timestamps
+                import pandas as pd
+                last_record_time = pd.to_datetime(last_record_time).to_pydatetime()
+            elif not isinstance(last_record_time, datetime):
+                # If it's not a datetime type, we can't determine catch-up status
+                return False
+
+            # Calculate time difference
+            time_diff = reference_time - last_record_time
+
+            # Get timeframe duration in seconds
+            timeframe_duration_seconds = self.dataset_id.timeframe.to_seconds()
+
+            # Feature is caught up if time difference is less than timeframe duration
+            return time_diff.total_seconds() < timeframe_duration_seconds
+
+        except Exception:
+            # If any error occurs during time comparison, assume not caught up
+            return False

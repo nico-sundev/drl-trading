@@ -193,7 +193,7 @@ class TestRsiFeature(BaseFeature):
         result[self.dataset_id.symbol] = self.dataset_id.symbol
         return result
 
-    def add(self, df: DataFrame) -> None:
+    def update(self, df: DataFrame) -> None:
         """Mock incremental computation - not implemented for current testing."""
         pass
 
@@ -246,7 +246,7 @@ class TestClosePriceFeature(BaseFeature):
         result[self.dataset_id.symbol] = self.dataset_id.symbol
         return result
 
-    def add(self, df: DataFrame) -> None:
+    def update(self, df: DataFrame) -> None:
         """Mock incremental computation - not implemented for current testing."""
         pass
 
@@ -310,7 +310,7 @@ class TestRewardFeature(BaseFeature):
         result[self.dataset_id.symbol] = self.dataset_id.symbol
         return result
 
-    def add(self, df: DataFrame) -> None:
+    def update(self, df: DataFrame) -> None:
         """Mock incremental computation - not implemented for current testing."""
         pass
 

@@ -34,3 +34,7 @@ class Timeframe(Enum):
             Timeframe.TICK: 0,  # Special case for tick data
         }
         return timeframe_minutes.get(self, 0)
+
+    def to_seconds(self) -> int:
+        """Convert timeframe to seconds for time difference calculations."""
+        return self.to_minutes() * 60

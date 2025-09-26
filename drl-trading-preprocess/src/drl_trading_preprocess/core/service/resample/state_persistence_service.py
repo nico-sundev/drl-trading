@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from drl_trading_preprocess.core.model.resampling_context import ResamplingContext
+from drl_trading_preprocess.core.model.resample.resampling_context import ResamplingContext
 
 
 class StatePersistenceService:
@@ -98,7 +98,7 @@ class StatePersistenceService:
             context = ResamplingContext(max_symbols_in_memory=max_symbols)
 
             # Restore symbol states
-            from drl_trading_preprocess.core.model.resampling_context import SymbolTimeframeState
+            from drl_trading_preprocess.core.model.resample.resampling_context import SymbolTimeframeState
             from drl_trading_common.model.timeframe import Timeframe
 
             for symbol, timeframe_data in state_data.get('symbol_states', {}).items():

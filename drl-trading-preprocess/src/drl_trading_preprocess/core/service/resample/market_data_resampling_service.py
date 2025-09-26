@@ -15,8 +15,8 @@ from injector import inject
 from drl_trading_common.model.timeframe import Timeframe
 from drl_trading_core.common.model.market_data_model import MarketDataModel
 from drl_trading_core.core.port.market_data_reader_port import MarketDataReaderPort
-from drl_trading_preprocess.core.model.resampling_response import ResamplingResponse
-from drl_trading_preprocess.core.model.resampling_context import ResamplingContext
+from drl_trading_preprocess.core.model.resample.resampling_response import ResamplingResponse
+from drl_trading_preprocess.core.model.resample.resampling_context import ResamplingContext
 from drl_trading_preprocess.core.port.message_publisher_port import MessagePublisherPort
 from drl_trading_preprocess.core.service.candle_accumulator_service import CandleAccumulatorService
 from drl_trading_preprocess.core.service.state_persistence_service import StatePersistenceService

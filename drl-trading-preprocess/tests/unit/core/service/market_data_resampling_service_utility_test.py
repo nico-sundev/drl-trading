@@ -488,7 +488,7 @@ class TestMarketDataResamplingServiceInitialization:
         resample_config = ResampleConfig()
 
         # Mock existing state
-        from drl_trading_preprocess.core.model.resampling_context import ResamplingContext
+        from drl_trading_preprocess.core.model.resample.resampling_context import ResamplingContext
         existing_context = ResamplingContext(max_symbols_in_memory=150)
         existing_context.update_last_processed_timestamp(
             "BTCUSDT",

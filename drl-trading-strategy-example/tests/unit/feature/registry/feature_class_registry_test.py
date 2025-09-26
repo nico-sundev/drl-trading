@@ -35,7 +35,7 @@ class SampleRsiFeature(BaseFeature):
     def __init__(self, source: DataFrame, config: BaseParameterSetConfig, indicator_service: MockTechnicalIndicatorFacade, postfix: str = "") -> None:
         super().__init__(source, config, indicator_service, postfix)
 
-    def add(self, df: DataFrame) -> None:
+    def update(self, df: DataFrame) -> None:
         pass
 
     def compute_latest(self) -> Optional[DataFrame]:
@@ -57,7 +57,7 @@ class RsiFeature(BaseFeature):
     def __init__(self, source: DataFrame, config: BaseParameterSetConfig, indicator_service: MockTechnicalIndicatorFacade, postfix: str = "") -> None:
         super().__init__(source, config, indicator_service, postfix)
 
-    def add(self, df: DataFrame) -> None:
+    def update(self, df: DataFrame) -> None:
         pass
 
     def compute_latest(self) -> Optional[DataFrame]:

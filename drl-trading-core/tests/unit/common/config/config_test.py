@@ -2,7 +2,7 @@
 from drl_trading_common.config.application_config import ApplicationConfig
 from drl_trading_common.config.config_loader import ConfigLoader
 
-from drl_trading_core.common.config.utils import parse_all_parameters
+from drl_trading_core.common.config.utils import map_and_create_feature_definitions
 
 
 def test_load_config_from_json(temp_config_file, feature_factory, mock_rsi_config_class):
@@ -12,7 +12,7 @@ def test_load_config_from_json(temp_config_file, feature_factory, mock_rsi_confi
     config = ConfigLoader.get_config(ApplicationConfig, temp_file_path)
 
     # Use the utils.parse_all_parameters function with our mock factory
-    parse_all_parameters(config.features_config.feature_definitions, feature_factory)
+    map_and_create_feature_definitions(config.features_config.feature_definitions, feature_factory)
 
     # Helper to extract config by name
     def get_feature_param_set(name, index=0):

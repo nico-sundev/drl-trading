@@ -48,7 +48,7 @@ class RsiFeature(BaseFeature):
         self.feature_name = f"rsi_{self.config.length}{self.postfix}"
         # Mock the indicator service registration for testing
 
-    def add(self, df: DataFrame) -> None:
+    def update(self, df: DataFrame) -> None:
         """Add data to the feature (mock implementation)."""
         pass
 

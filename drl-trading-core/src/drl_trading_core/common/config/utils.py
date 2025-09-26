@@ -26,10 +26,8 @@ def parse_parameters(
         raise ValueError("Feature name is required")
 
     # early exit if parameter sets were already parsed
-    if feature_definition.parsed_parameter_sets:
-        return
-
-    feature_definition.parsed_parameter_sets = []
+    if not feature_definition.parsed_parameter_sets:
+        feature_definition.parsed_parameter_sets = {}
 
     for param_dict in feature_definition.parameter_sets:
         if not isinstance(param_dict, dict):
@@ -41,8 +39,9 @@ def parse_parameters(
             feature_definition.name, param_dict
         )
 
-        if config_instance:
-            feature_definition.parsed_parameter_sets.append(config_instance)
+        # Only add non-None instances and avoid duplicates based on hash_id
+        if config_instance and feature_definition.parsed_parameter_sets.get(config_instance.hash_id()) is None:
+            feature_definition.parsed_parameter_sets[config_instance.hash_id()] = config_instance
 
     if (
         not feature_definition.parsed_parameter_sets
@@ -52,7 +51,7 @@ def parse_parameters(
             f"Failed to parse any parameter sets for feature '{feature_definition.name}'"
         )
 
-def parse_all_parameters(
+def map_and_create_feature_definitions(
     feature_definitions: List[FeatureDefinition],
     feature_factory: IFeatureFactory,
 ) -> None:

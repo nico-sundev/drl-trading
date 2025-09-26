@@ -33,7 +33,7 @@ class CloseFeature(BaseFeature):
         super().__init__(dataset_id, indicator_service, config, postfix)
         self.feature_name = "close"
 
-    def add(self, df: DataFrame) -> None:
+    def update(self, df: DataFrame) -> None:
         self.source_data = df
 
     def compute_latest(self) -> Optional[DataFrame]:

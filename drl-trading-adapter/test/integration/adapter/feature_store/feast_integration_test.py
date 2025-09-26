@@ -43,7 +43,7 @@ class _TestFeature(BaseFeature):
         # Not used in integration tests
         return None
 
-    def add(self, df):
+    def update(self, df):
         # Not used in integration tests
         pass
 

@@ -25,7 +25,7 @@ class MockMacdFeature(BaseFeature):
         self.df_source = None
         self.feature_name = f"macd{postfix}"
 
-    def add(self, df: pd.DataFrame) -> None:
+    def update(self, df: pd.DataFrame) -> None:
         """Add new data to the feature."""
         self.df_source = df
 
@@ -84,7 +84,7 @@ class MockRsiFeature(BaseFeature):
         self.df_source = None
         self.feature_name = f"rsi{postfix}"
 
-    def add(self, df: pd.DataFrame) -> None:
+    def update(self, df: pd.DataFrame) -> None:
         """Add new data to the feature."""
         self.df_source = df
 

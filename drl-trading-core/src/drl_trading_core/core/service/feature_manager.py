@@ -1,22 +1,22 @@
 import logging
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Union, cast
 
 from dask import compute, delayed
 from dask.delayed import Delayed
+from injector import inject
+from pandas import DataFrame
+
 from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
-from drl_trading_common.config.feature_config import FeatureDefinition, FeaturesConfig
-from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+from drl_trading_common.config.feature_config import FeaturesConfig
 from drl_trading_common.interface.computable import Computable
 from drl_trading_common.interface.feature.feature_factory_interface import (
     IFeatureFactory,
 )
 from drl_trading_common.model.dataset_identifier import DatasetIdentifier
-from injector import inject
-from pandas import DataFrame
-
-from drl_trading_core.common.config.utils import parse_all_parameters
+from drl_trading_core.common.config.utils import map_and_create_feature_definitions
 
 logger = logging.getLogger(__name__)
 
@@ -65,20 +65,15 @@ class FeatureManager(Computable):
     """
 
     def __init__(
-        self, config: FeaturesConfig, feature_factory: IFeatureFactory
+        self, feature_factory: IFeatureFactory
     ) -> None:
         """
         Initialize the FeatureManagerService.
 
         Args:
-            config: Configuration for feature definitions.
             feature_factory: Factory for creating feature instances.
         """
-        self.config = config
         self.feature_factory = feature_factory
-
-        # Populate parsed feature configurations
-        parse_all_parameters(self.config.feature_definitions, feature_factory)
 
         # Enhanced feature storage with structured, observable keys
         # Key provides full context: feature + symbol + timeframe + parameters
@@ -94,15 +89,18 @@ class FeatureManager(Computable):
             "features_by_type": {},
         }
 
-    def initialize_features(self) -> None:
+    def _update_features(self, features_config: FeaturesConfig) -> None:
         """
         Initialize feature instances based on the configuration using optimized patterns.
         """
         logger.info("Starting feature initialization process...")
 
+        # Populate parsed feature configurations
+        map_and_create_feature_definitions(features_config.feature_definitions, self.feature_factory)
+
         # Generate all valid feature configurations
-        feature_configs = self._generate_feature_configurations()
-        logger.info(f"Generated {len(feature_configs)} feature configurations")
+        feature_configs = self._generate_feature_configurations(features_config)
+        logger.info(f"Found {len(feature_configs)} feature configuration combinations")
 
         # Create features using batch processing
         created_features = self._create_features_batch(feature_configs)
@@ -120,19 +118,19 @@ class FeatureManager(Computable):
             f"Feature initialization completed: {len(self._features)} instances created from {len(feature_configs)} configurations"
         )
 
-    def get_features_by_role(self, role: FeatureRoleEnum):
-        """
-        Get all features by their role.
-        Args:
-            role: The role to filter features by.
-        Returns:
-            List[BaseFeature]: List of features matching the specified role.
-        """
-        return [
-            feature
-            for feature in self._features.values()
-            if feature.get_feature_role() == role
-        ]
+    # def get_features_by_role(self, role: FeatureRoleEnum):
+    #     """
+    #     Get all features by their role.
+    #     Args:
+    #         role: The role to filter features by.
+    #     Returns:
+    #         List[BaseFeature]: List of features matching the specified role.
+    #     """
+    #     return [
+    #         feature
+    #         for feature in self._features.values()
+    #         if feature.get_feature_role() == role
+    #     ]
 
     def _update_initialization_metrics(
         self, created_features: List[Tuple[FeatureKey, BaseFeature]]
@@ -191,7 +189,7 @@ class FeatureManager(Computable):
         logger.info("=======================================")
 
     def _generate_feature_configurations(
-        self,
+        self, features_config: FeaturesConfig
     ) -> List[Tuple[str, DatasetIdentifier, Optional[BaseParameterSetConfig]]]:
         """
         Generate all combinations of features that need to be computed.
@@ -221,8 +219,8 @@ class FeatureManager(Computable):
         from itertools import product
 
         # Get enabled feature definitions and their parameter sets
-        enabled_features = []
-        for feature_def in self.config.feature_definitions:
+        enabled_features: List[Tuple[str, Optional[BaseParameterSetConfig]]] = []
+        for feature_def in features_config.feature_definitions:
             if not feature_def.enabled:
                 continue
 
@@ -231,14 +229,14 @@ class FeatureManager(Computable):
                 enabled_features.append((feature_def.name, None))
             else:
                 # Include enabled parameter sets
-                for param_set in feature_def.parsed_parameter_sets:
+                for param_set in feature_def.parsed_parameter_sets.values():
                     if param_set.enabled:
                         enabled_features.append((feature_def.name, param_set))
 
         # Get dataset identifiers
         dataset_ids = [
             DatasetIdentifier(symbol, timeframe)
-            for symbol, timeframes in self.config.dataset_definitions.items()
+            for symbol, timeframes in features_config.dataset_definitions.items()
             for timeframe in timeframes
         ]
 
@@ -288,10 +286,10 @@ class FeatureManager(Computable):
                         dataset_id=dataset_id,
                         param_hash=param_hash,
                     )
-                    created_features.append((feature_key, feature_instance))
-
-                    # Log successful creation with full context
-                    logger.debug(f"Created feature: {feature_key}")
+                    if self._features.get(feature_key) is None:
+                        created_features.append((feature_key, feature_instance))
+                        # Log successful creation with full context
+                        logger.debug(f"Created feature: {feature_key}")
                 else:
                     failed_count += 1
                     logger.warning(
@@ -377,7 +375,7 @@ class FeatureManager(Computable):
             logger.error(f"Error creating feature '{feature_name}': {str(e)}")
             return None
 
-    def get_feature(
+    def _get_feature(
         self, feature_name: str, dataset_id: DatasetIdentifier, param_hash: str
     ) -> Optional[BaseFeature]:
         """
@@ -395,16 +393,7 @@ class FeatureManager(Computable):
         )
         return self._features.get(feature_key)
 
-    def get_all_features(self) -> List[BaseFeature]:
-        """
-        Get all feature instances.
-
-        Returns:
-            List of all feature instances.
-        """
-        return list(self._features.values())
-
-    def update_features_data(self, new_data: DataFrame) -> None:
+    def _update_features_data(self, new_data: DataFrame) -> None:
         """
         Update all feature instances with new data.
 
@@ -414,89 +403,11 @@ class FeatureManager(Computable):
         for feature in self._features.values():
             try:
                 computable_feature: Computable = cast(Computable, feature)
-                computable_feature.add(new_data)
+                computable_feature.update(new_data)
             except Exception as e:
                 logger.error(f"Error updating feature {feature}: {str(e)}")
 
-    def compute_feature(
-        self,
-        feature_def: FeatureDefinition,
-        param_set: BaseParameterSetConfig,
-        data: DataFrame,
-        dataset_id: DatasetIdentifier,
-    ) -> Optional[DataFrame]:
-        """
-        Compute a specific feature with the given parameters.
-
-        Args:
-            feature_def: The feature definition.
-            param_set: The parameter set to use for computation.
-            data: The data to compute the feature on.
-
-        Returns:
-            DataFrame with the computed feature, or None if computation fails.
-        """
-        if not feature_def.enabled or not param_set.enabled:
-            return None
-
-        # First check if we already have this feature instance
-        param_hash = param_set.hash_id()
-        feature = self.get_feature(feature_def.name, dataset_id, param_hash)
-
-        if feature is None:
-            # Create a new instance if not found
-            feature = self._create_feature_instance(
-                feature_def.name, dataset_id, param_set
-            )
-
-            if feature is None:
-                return None
-
-            # Store the instance for future use
-            feature_key = FeatureKey(
-                feature_name=feature_def.name,
-                dataset_id=dataset_id,
-                param_hash=param_hash,
-            )
-            self._features[feature_key] = feature
-
-        computable_feature: Computable = cast(Computable, feature)
-
-        # Update the feature with the new data
-        computable_feature.add(data)
-
-        # Compute and return the result
-        try:
-            result = computable_feature.compute_all()
-            return result
-        except Exception as e:
-            logger.error(
-                f"Error computing feature {feature_def.name} with hash {param_hash}: {str(e)}"
-            )
-            return None
-
-    def compute_feature_delayed(
-        self,
-        feature_def: FeatureDefinition,
-        param_set: BaseParameterSetConfig,
-        data: DataFrame,
-        dataset_id: DatasetIdentifier,
-    ) -> Delayed:
-        """
-        Creates a delayed task to compute a specific feature with the given parameters.
-
-        Args:
-            feature_def: The feature definition.
-            param_set: The parameter set to use for computation.
-            data: The data to compute the feature on.
-            dataset_id: Dataset identifier for the feature.
-
-        Returns:
-            Delayed object that will compute and return the feature DataFrame when executed.
-        """
-        return delayed(self.compute_feature)(feature_def, param_set, data, dataset_id)
-
-    def compute_latest_delayed(self, feature: BaseFeature) -> Delayed:
+    def _compute_latest_delayed(self, feature: BaseFeature) -> Delayed:
         """
         Create a delayed task to compute latest values for a specific feature.
 
@@ -514,7 +425,7 @@ class FeatureManager(Computable):
             )
         )(feature)
 
-    def compute_features_latest_delayed(self) -> List[Delayed]:
+    def _compute_features_latest_delayed(self) -> List[Delayed]:
         """
         Create delayed computation tasks for latest values of all features.
 
@@ -522,7 +433,7 @@ class FeatureManager(Computable):
             List of delayed objects for computing latest values of all features.
         """
         delayed_tasks = [
-            self.compute_latest_delayed(feature) for feature in self._features.values()
+            self._compute_latest_delayed(feature) for feature in self._features.values()
         ]
 
         logger.info(
@@ -633,14 +544,25 @@ class FeatureManager(Computable):
                 # Final fallback: return first dataframe if all else fails
                 return dataframes[0] if dataframes else None
 
-    def add(self, df: DataFrame) -> None:
+    def request_features_update(self, new_data: DataFrame, features_config: FeaturesConfig) -> None:
+        """
+        Public method to update features with new data.
+
+        Args:
+            new_data: New data to update features with.
+            features_config: Configuration for the features.
+        """
+        self._update_features(features_config)
+        self._update_features_data(new_data)
+
+    def update(self, df: DataFrame) -> None:
         """
         Add new data to all features.
 
         Args:
             df: New data to add.
         """
-        self.update_features_data(df)
+        self._update_features_data(df)
 
     def compute_latest(self) -> Optional[DataFrame]:
         """
@@ -654,7 +576,7 @@ class FeatureManager(Computable):
             return None
 
         # Create delayed tasks for computing latest values of all features
-        delayed_tasks = self.compute_features_latest_delayed()
+        delayed_tasks = self._compute_features_latest_delayed()
 
         if not delayed_tasks:
             logger.warning("No delayed tasks created for latest feature computation.")
@@ -686,3 +608,46 @@ class FeatureManager(Computable):
                 f"Error during Dask delayed computation for latest values: {str(e)}"
             )
             return None
+
+    def is_caught_up(self, reference_time: datetime) -> bool:
+        """
+        Check if ALL features are caught up based on the last available record time.
+
+        Loops over all features and returns True only if ALL features are caught up.
+        A feature is considered caught up if the time difference between its last
+        record and the reference time is less than its configured timeframe duration.
+
+        Args:
+            reference_time: The current or target datetime to compare against
+
+        Returns:
+            True if ALL features are caught up, False if any feature is not caught up
+            or if no features exist
+        """
+        if not self._features:
+            logger.warning("No features initialized. Cannot determine catch-up status.")
+            return False
+
+        # Check each feature's catch-up status
+        caught_up_count = 0
+        total_features = len(self._features)
+
+        for feature_key, feature in self._features.items():
+            try:
+                is_feature_caught_up = feature.is_caught_up(reference_time)
+                if is_feature_caught_up:
+                    caught_up_count += 1
+                else:
+                    logger.debug(f"Feature {feature_key} is not caught up")
+            except Exception as e:
+                logger.error(f"Error checking catch-up status for feature {feature_key}: {str(e)}")
+                # If we can't determine status, consider it not caught up
+
+        all_caught_up = caught_up_count == total_features
+
+        if all_caught_up:
+            logger.info(f"All {total_features} features are caught up")
+        else:
+            logger.warning(f"Only {caught_up_count}/{total_features} features are caught up")
+
+        return all_caught_up

@@ -3,11 +3,11 @@
 from datetime import datetime
 
 from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_preprocess.core.model.resampling_context import (
+from drl_trading_preprocess.core.model.resample.resampling_context import (
     AccumulatorState,
     ResamplingContext
 )
-from drl_trading_preprocess.core.model.timeframe_candle_accumulator import TimeframeCandleAccumulator
+from drl_trading_preprocess.core.model.resample.timeframe_candle_accumulator import TimeframeCandleAccumulator
 
 
 class TestAccumulatorStateConversion:

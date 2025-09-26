@@ -10,7 +10,7 @@ from drl_trading_common.interface.feature.feature_factory_interface import (
 )
 
 from drl_trading_core.core.service.feature_manager import FeatureManager
-from drl_trading_preprocess.core.service.computing_service import FeatureComputingService
+from drl_trading_preprocess.core.service.compute.computing_service import FeatureComputingService
 
 
 class TestComputingService:

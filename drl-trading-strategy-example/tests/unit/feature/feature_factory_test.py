@@ -143,7 +143,7 @@ def test_create_feature_without_config() -> None:
         def compute_all(self):
             return None
 
-        def add(self, df):
+        def update(self, df):
             pass
 
         def compute_latest(self):

@@ -2,8 +2,8 @@
 Unit tests fofrom drl_trading_preprocess.core.service.candle_accumulator_service import (
     CandleAccumulatorService,
 )
-from drl_trading_preprocess.core.model.resampling_request import ResamplingRequest
-from drl_trading_preprocess.core.model.resampling_response import ResamplingResponse
+from drl_trading_preprocess.core.model.resample.resampling_request import ResamplingRequest
+from drl_trading_preprocess.core.model.resample.resampling_response import ResamplingResponse
 from drl_trading_preprocess.infrastructure.config.preprocess_config import ResampleConfigataResamplingService.
 
 Tests the core resampling logic including OHLCV aggregation, multi-timeframe processing,
@@ -23,7 +23,7 @@ from drl_trading_preprocess.core.service.market_data_resampling_service import (
 from drl_trading_preprocess.core.service.candle_accumulator_service import (
     CandleAccumulatorService,
 )
-from drl_trading_preprocess.core.model.resampling_response import ResamplingResponse
+from drl_trading_preprocess.core.model.resample.resampling_response import ResamplingResponse
 from drl_trading_preprocess.infrastructure.config.preprocess_config import (
     ResampleConfig,
 )

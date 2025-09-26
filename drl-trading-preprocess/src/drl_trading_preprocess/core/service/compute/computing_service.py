@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from injector import inject
 from pandas import DataFrame, Series
 
+from drl_trading_common.config.feature_config import FeaturesConfig
 from drl_trading_core.core.service.feature_manager import (
     FeatureManager,
 )
@@ -13,18 +14,13 @@ logger = logging.getLogger(__name__)
 
 class IFeatureComputer(ABC):
     @abstractmethod
-    def compute_batch(self, data: DataFrame) -> DataFrame:
+    def compute_batch(self, data: DataFrame, features_config: FeaturesConfig) -> DataFrame:
         """Compute results on a batch of data."""
         pass
 
     @abstractmethod
-    def compute_incremental(self, data_point: Series) -> Series:
+    def compute_incremental(self, data_point: Series, features_config: FeaturesConfig) -> Series:
         """Compute results incrementally for a single data point."""
-        pass
-
-    @abstractmethod
-    def initialize(self) -> bool:
-        """Initialize the computing service with initial data."""
         pass
 
 class FeatureComputingService(IFeatureComputer):
@@ -41,43 +37,21 @@ class FeatureComputingService(IFeatureComputer):
             feature_manager_service: Service that manages feature instances.
         """
         self.feature_manager_service = feature_manager_service
-        self._initialized = False
 
-    def initialize(self) -> bool:
-        """
-        Initialize the computing service with initial data.
-
-        Args:
-            initial_data: Initial data to initialize features with.
-
-        Returns:
-            True if initialization was successful, False otherwise.
-        """
-        try:
-            # Initialize feature manager with initial data
-            self.feature_manager_service.initialize_features()
-            self._initialized = True
-            return True
-        except Exception as e:
-            logger.error(f"Failed to initialize computing service: {str(e)}")
-            return False
-
-    def compute_batch(self, data: DataFrame) -> DataFrame:
+    def compute_batch(self, data: DataFrame, features_config: FeaturesConfig) -> DataFrame:
         """
         Compute results on a batch of data.
 
         Args:
             data: Data to compute features for.
+            features_config: Configuration for the features to compute.
 
         Returns:
             DataFrame with computed features.
         """
-        if not self._initialized:
-            logger.warning("ComputingService not initialized. Initializing with provided data.")
-            self.initialize()
 
         # Update features with new data
-        self.feature_manager_service.add(data)
+        self.feature_manager_service.request_features_update(data, features_config)
 
         # Compute all features
         result = self.feature_manager_service.compute_all()
@@ -87,7 +61,7 @@ class FeatureComputingService(IFeatureComputer):
 
         return result
 
-    def compute_incremental(self, data_point: Series) -> Series:
+    def compute_incremental(self, data_point: Series, features_config: FeaturesConfig) -> Series:
         """
         Compute results incrementally for a single data point.
 
@@ -97,15 +71,12 @@ class FeatureComputingService(IFeatureComputer):
         Returns:
             Series with computed features for the data point.
         """
-        if not self._initialized:
-            logger.error("ComputingService not initialized. Cannot compute incremental data.")
-            return Series()
 
         # Convert Series to DataFrame with a single row
         data_df = DataFrame([data_point])
 
         # Update features with new data point
-        self.feature_manager_service.add(data_df)
+        self.feature_manager_service.request_features_update(data_df, features_config)
 
         # Compute latest features
         result_df = self.feature_manager_service.compute_latest()
