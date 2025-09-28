@@ -70,7 +70,7 @@ class BaseFeature(Computable):
     def get_config_to_string(self) -> Optional[str]:
         ...
 
-    def is_caught_up(self, reference_time: datetime) -> bool:
+    def are_features_caught_up(self, reference_time: datetime) -> bool:
         """
         Check if the feature is caught up based on the last available record time.
 

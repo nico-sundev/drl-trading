@@ -18,8 +18,8 @@ from drl_trading_core.core.port.market_data_reader_port import MarketDataReaderP
 from drl_trading_preprocess.core.model.resample.resampling_response import ResamplingResponse
 from drl_trading_preprocess.core.model.resample.resampling_context import ResamplingContext
 from drl_trading_preprocess.core.port.message_publisher_port import MessagePublisherPort
-from drl_trading_preprocess.core.service.candle_accumulator_service import CandleAccumulatorService
-from drl_trading_preprocess.core.service.state_persistence_service import StatePersistenceService
+from drl_trading_preprocess.core.service.resample.candle_accumulator_service import CandleAccumulatorService
+from drl_trading_preprocess.core.service.resample.state_persistence_service import StatePersistenceService
 from drl_trading_preprocess.infrastructure.config.preprocess_config import ResampleConfig
 
 

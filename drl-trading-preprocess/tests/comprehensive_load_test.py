@@ -15,7 +15,7 @@ from unittest.mock import Mock
 import pytest
 from drl_trading_core.common.model.market_data_model import MarketDataModel
 from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_preprocess.core.service.market_data_resampling_service import MarketDataResamplingService
+from drl_trading_preprocess.core.service.resample.market_data_resampling_service import MarketDataResamplingService
 
 
 def generate_ohlcv_data(count: int, symbol: str = "EURUSD") -> List[MarketDataModel]:

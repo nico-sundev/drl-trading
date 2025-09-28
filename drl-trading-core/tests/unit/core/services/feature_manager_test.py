@@ -477,7 +477,7 @@ class TestFeatureManager:
         reference_time = datetime(2024, 1, 1, 10, 5, 0)
 
         # When
-        result = manager.is_caught_up(reference_time)
+        result = manager.are_features_caught_up(reference_time)
 
         # Then
         assert result is False
@@ -522,7 +522,7 @@ class TestFeatureManager:
         reference_time = datetime(2024, 1, 1, 10, 2, 30)
 
         # When
-        result = manager.is_caught_up(reference_time)
+        result = manager.are_features_caught_up(reference_time)
 
         # Then
         assert result is True
@@ -548,7 +548,7 @@ class TestFeatureManager:
         reference_time = datetime(2024, 1, 1, 10, 5, 0)
 
         # When
-        result = manager.is_caught_up(reference_time)
+        result = manager.are_features_caught_up(reference_time)
 
         # Then
         assert result is False
@@ -561,7 +561,7 @@ class TestFeatureManager:
             # Override is_caught_up to raise exception
             def bad_is_caught_up(reference_time):
                 raise Exception("is_caught_up failed")
-            feature.is_caught_up = bad_is_caught_up
+            feature.are_features_caught_up = bad_is_caught_up
             return feature
 
         mock_feature_factory.create_feature.side_effect = create_feature_with_bad_is_caught_up
@@ -571,7 +571,7 @@ class TestFeatureManager:
         reference_time = datetime(2024, 1, 1, 10, 5, 0)
 
         # When
-        result = manager.is_caught_up(reference_time)
+        result = manager.are_features_caught_up(reference_time)
 
         # Then
         assert result is False  # Should return False when exceptions occur
@@ -584,7 +584,7 @@ class TestFeatureManager:
         reference_time = datetime(2024, 1, 1, 10, 2, 30)
 
         # When
-        result = feature.is_caught_up(reference_time)
+        result = feature.are_features_caught_up(reference_time)
 
         # Then
         assert result is True  # 30 seconds < 60 seconds (1 minute timeframe)
@@ -597,7 +597,7 @@ class TestFeatureManager:
         reference_time = datetime(2024, 1, 1, 10, 5, 0)
 
         # When
-        result = feature.is_caught_up(reference_time)
+        result = feature.are_features_caught_up(reference_time)
 
         # Then
         assert result is False  # 3 minutes > 1 minute timeframe
@@ -610,7 +610,7 @@ class TestFeatureManager:
         reference_time = datetime(2024, 1, 1, 10, 5, 0)
 
         # When
-        result = feature.is_caught_up(reference_time)
+        result = feature.are_features_caught_up(reference_time)
 
         # Then
         assert result is False
@@ -623,7 +623,7 @@ class TestFeatureManager:
         reference_time = datetime(2024, 1, 1, 10, 5, 0)
 
         # When
-        result = feature.is_caught_up(reference_time)
+        result = feature.are_features_caught_up(reference_time)
 
         # Then
         assert result is False

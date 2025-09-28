@@ -11,7 +11,7 @@ from datetime import datetime
 from drl_trading_common.model.timeframe import Timeframe
 from drl_trading_core.common.model.market_data_model import MarketDataModel
 from drl_trading_preprocess.core.model.resample.timeframe_candle_accumulator import TimeframeCandleAccumulator
-from drl_trading_preprocess.core.service.candle_accumulator_service import CandleAccumulatorService
+from drl_trading_preprocess.core.service.resample.candle_accumulator_service import CandleAccumulatorService
 
 
 class TestCandleAccumulatorService:

@@ -21,7 +21,7 @@ class Computable(ABC):
         pass
 
     @abstractmethod
-    def is_caught_up(self, reference_time: datetime) -> bool:
+    def are_features_caught_up(self, reference_time: datetime) -> bool:
         """
         Check if the feature is caught up based on the last available record time.
 

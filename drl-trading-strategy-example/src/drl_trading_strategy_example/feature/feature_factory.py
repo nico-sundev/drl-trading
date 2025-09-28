@@ -126,3 +126,37 @@ class FeatureFactory(IFeatureFactory):
             )
             logger.error(error_msg)
             raise ValueError(error_msg) from e
+
+    def is_feature_supported(self, feature_name: str) -> bool:
+        """
+        Check if a feature is fully supported (both class and config available).
+
+        This method orchestrates validation by checking both the feature class
+        registry and config registry to ensure complete feature support.
+
+        Args:
+            feature_name: The name of the feature to check
+
+        Returns:
+            True if the feature can be created successfully, False otherwise
+        """
+        try:
+            # Check if feature class is available
+            has_feature_class = self._registry.has_feature_class(feature_name)
+            if not has_feature_class:
+                logger.debug(f"Feature class not found for '{feature_name}'")
+                return False
+
+            # Check if config class is available (if required)
+            # Note: Some features might not require configuration
+            has_feature_config = self._config_registry.has_feature_config(feature_name)
+
+            # For now, we consider a feature supported if it has a class
+            # Config is optional - features can work without configuration
+            logger.debug(f"Feature '{feature_name}' validation: class={has_feature_class}, config={has_feature_config}")
+
+            return has_feature_class
+
+        except Exception as e:
+            logger.warning(f"Failed to validate feature '{feature_name}': {e}")
+            return False

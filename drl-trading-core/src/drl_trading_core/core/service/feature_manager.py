@@ -10,13 +10,16 @@ from pandas import DataFrame
 
 from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
-from drl_trading_common.config.feature_config import FeaturesConfig
+from drl_trading_common.config.feature_config import FeatureDefinition, FeaturesConfig
+from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.interface.computable import Computable
 from drl_trading_common.interface.feature.feature_factory_interface import (
     IFeatureFactory,
 )
 from drl_trading_common.model.dataset_identifier import DatasetIdentifier
-from drl_trading_core.common.config.utils import map_and_create_feature_definitions
+from drl_trading_core.core.service.feature_definition_parser import (
+    FeatureDefinitionParser,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +68,8 @@ class FeatureManager(Computable):
     """
 
     def __init__(
-        self, feature_factory: IFeatureFactory
+        self, feature_factory: IFeatureFactory,
+        feature_definition_parser: FeatureDefinitionParser
     ) -> None:
         """
         Initialize the FeatureManagerService.
@@ -74,10 +78,12 @@ class FeatureManager(Computable):
             feature_factory: Factory for creating feature instances.
         """
         self.feature_factory = feature_factory
+        self.feature_definition_parser = feature_definition_parser
 
         # Enhanced feature storage with structured, observable keys
         # Key provides full context: feature + symbol + timeframe + parameters
         self._features: Dict[FeatureKey, BaseFeature] = {}
+        self._features_name_role_cache: Dict[str, FeatureRoleEnum] = {}
 
         # Observability metrics
         self._feature_creation_stats: Dict[str, Union[int | Dict]] = {
@@ -96,7 +102,7 @@ class FeatureManager(Computable):
         logger.info("Starting feature initialization process...")
 
         # Populate parsed feature configurations
-        map_and_create_feature_definitions(features_config.feature_definitions, self.feature_factory)
+        self.feature_definition_parser.parse_feature_definitions(features_config.feature_definitions)
 
         # Generate all valid feature configurations
         feature_configs = self._generate_feature_configurations(features_config)
@@ -333,6 +339,7 @@ class FeatureManager(Computable):
 
             self._features[feature_key] = feature_instance
             logger.debug(f"Stored feature: {feature_key}")
+            self._features_name_role_cache[feature_key.feature_name] = feature_instance.get_feature_role()
 
         if conflicts_detected > 0:
             logger.error(
@@ -552,6 +559,7 @@ class FeatureManager(Computable):
             new_data: New data to update features with.
             features_config: Configuration for the features.
         """
+
         self._update_features(features_config)
         self._update_features_data(new_data)
 
@@ -609,7 +617,7 @@ class FeatureManager(Computable):
             )
             return None
 
-    def is_caught_up(self, reference_time: datetime) -> bool:
+    def are_features_caught_up(self, reference_time: datetime) -> bool:
         """
         Check if ALL features are caught up based on the last available record time.
 
@@ -634,7 +642,7 @@ class FeatureManager(Computable):
 
         for feature_key, feature in self._features.items():
             try:
-                is_feature_caught_up = feature.is_caught_up(reference_time)
+                is_feature_caught_up = feature.are_features_caught_up(reference_time)
                 if is_feature_caught_up:
                     caught_up_count += 1
                 else:
@@ -651,3 +659,56 @@ class FeatureManager(Computable):
             logger.warning(f"Only {caught_up_count}/{total_features} features are caught up")
 
         return all_caught_up
+
+    def is_feature_supported(self, feature_name: str) -> bool:
+        """
+        Check if a feature is supported by the feature factory.
+
+        Args:
+            feature_name: Name of the feature to validate
+
+        Returns:
+            True if feature is supported and can be created, False otherwise
+        """
+        try:
+            return self.feature_factory.is_feature_supported(feature_name)
+        except Exception as e:
+            logger.warning(f"Failed to validate feature {feature_name}: {e}")
+            return False
+
+    def validate_feature_definitions(self, feature_definitions: List[FeatureDefinition]) -> Dict[str, bool]:
+        """
+        Validate multiple feature definitions for support.
+
+        Args:
+            feature_definitions: List of feature definitions to validate
+
+        Returns:
+            Dictionary mapping feature names to validation status
+        """
+        validation_results = {}
+
+        for feature_def in feature_definitions:
+            validation_results[feature_def.name] = self.is_feature_supported(feature_def.name)
+
+        logger.debug(f"Validated {len(feature_definitions)} features: "
+                    f"{sum(validation_results.values())}/{len(validation_results)} supported")
+
+        return validation_results
+
+    def get_feature_role(self, feature_name: str) -> Optional[FeatureRoleEnum]:
+        """
+        Get the role of a specific feature.
+
+        Args:
+            feature_name: Name of the feature
+
+        Returns:
+            The role of the feature, or None if not found
+        """
+        # First check the cache
+        cached_feature_role = self._features_name_role_cache.get(feature_name)
+        if cached_feature_role:
+            return cached_feature_role
+        logger.warning(f"Feature {feature_name} not found when retrieving role")
+        return None

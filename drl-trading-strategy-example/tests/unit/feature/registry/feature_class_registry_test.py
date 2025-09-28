@@ -144,6 +144,66 @@ class TestFeatureClassRegistry:
         mock_discover.assert_called_once_with(package_name)
         assert result == expected_result
 
+    def test_has_feature_class_returns_true_for_registered_feature(self, registry: FeatureClassRegistry, decorated_feature_class: Type[BaseFeature]) -> None:
+        """Test that has_feature_class returns True for registered features."""
+        # Given
+        feature_name = "rsi"
+        registry.register_feature_class(feature_name, decorated_feature_class)
+
+        # When
+        has_feature = registry.has_feature_class(feature_name)
+
+        # Then
+        assert has_feature is True
+
+    def test_has_feature_class_returns_false_for_unregistered_feature(self, registry: FeatureClassRegistry) -> None:
+        """Test that has_feature_class returns False for unregistered features."""
+        # Given
+        feature_name = "nonexistent_feature"
+
+        # When
+        has_feature = registry.has_feature_class(feature_name)
+
+        # Then
+        assert has_feature is False
+
+    def test_has_feature_class_handles_case_insensitive_lookup(self, registry: FeatureClassRegistry, decorated_feature_class: Type[BaseFeature]) -> None:
+        """Test that has_feature_class works with case-insensitive feature names."""
+        # Given
+        feature_name = "rsi"
+        registry.register_feature_class(feature_name, decorated_feature_class)
+
+        # When
+        has_feature_upper = registry.has_feature_class("RSI")
+        has_feature_mixed = registry.has_feature_class("RsI")
+
+        # Then
+        assert has_feature_upper is True
+        assert has_feature_mixed is True
+
+    def test_has_feature_class_returns_false_for_invalid_feature_name(self, registry: FeatureClassRegistry) -> None:
+        """Test that has_feature_class handles invalid feature names gracefully."""
+        # Given
+        invalid_names = ["", "invalid_feature_name", "unknown"]
+
+        # When & Then
+        for invalid_name in invalid_names:
+            has_feature = registry.has_feature_class(invalid_name)
+            assert has_feature is False
+
+    def test_has_feature_class_after_reset(self, registry: FeatureClassRegistry, decorated_feature_class: Type[BaseFeature]) -> None:
+        """Test that has_feature_class returns False after registry reset."""
+        # Given
+        feature_name = "rsi"
+        registry.register_feature_class(feature_name, decorated_feature_class)
+        assert registry.has_feature_class(feature_name) is True
+
+        # When
+        registry.reset()
+
+        # Then
+        assert registry.has_feature_class(feature_name) is False
+
 
 class TestFeatureClassRegistryValidation:
     """Test cases for FeatureClassRegistry validation logic."""

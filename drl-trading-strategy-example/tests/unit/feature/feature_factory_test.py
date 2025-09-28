@@ -49,12 +49,18 @@ def class_registry(
         "macd": mock_macd_feature_class,
     }
 
-    def get_feature_class(feature_type: str):
-        if feature_type in feature_mapping:
-            return feature_mapping[feature_type]
+    def get_feature_class(feature_type: str) -> Type[BaseFeature]:
+        if feature_type.lower() in feature_mapping:
+            return feature_mapping[feature_type.lower()]
         return None  # Return None for unknown feature types
 
     mock.get_feature_class.side_effect = get_feature_class
+
+    # Add has_feature_class mock (case-insensitive like real implementation)
+    def has_feature_class(feature_type: str) -> bool:
+        return feature_type.lower() in feature_mapping
+
+    mock.has_feature_class.side_effect = has_feature_class
     mock.reset.side_effect = lambda: None  # Reset method does nothing
     return mock
 
@@ -70,10 +76,16 @@ def config_registry() -> IFeatureConfigRegistry:
         "test": MockConfig,
     }
 
-    def get_config_class(feature_type: str):
+    def get_config_class(feature_type: str) -> Type[BaseParameterSetConfig]:
         return config_mapping.get(feature_type.lower())
 
     mock.get_config_class.side_effect = get_config_class
+
+    # Add has_feature_config mock
+    def has_feature_config(feature_type: str) -> bool:
+        return feature_type.lower() in config_mapping
+
+    mock.has_feature_config.side_effect = has_feature_config
     mock.reset.side_effect = lambda: None
     return mock
 
@@ -201,3 +213,59 @@ def test_create_config_instance(factory: FeatureFactory) -> None:
     # Test nonexistent feature
     nonexistent_config = factory.create_config_instance("nonexistent", {})
     assert nonexistent_config is None
+
+
+def test_is_feature_supported_returns_true_for_supported_features(factory: FeatureFactory) -> None:
+    """Test that is_feature_supported returns True for features with registered classes."""
+    # Given & When & Then
+    assert factory.is_feature_supported("rsi") is True
+    assert factory.is_feature_supported("macd") is True
+    assert factory.is_feature_supported("test") is False  # Has config but no feature class
+
+
+def test_is_feature_supported_returns_false_for_unsupported_features(factory: FeatureFactory) -> None:
+    """Test that is_feature_supported returns False for features without registered classes."""
+    # Given & When & Then
+    assert factory.is_feature_supported("nonexistent") is False
+    assert factory.is_feature_supported("unknown_feature") is False
+    assert factory.is_feature_supported("") is False
+
+
+def test_is_feature_supported_handles_case_insensitive_lookup(factory: FeatureFactory) -> None:
+    """Test that is_feature_supported works with case-insensitive feature names."""
+    # Given & When & Then
+    assert factory.is_feature_supported("RSI") is True
+    assert factory.is_feature_supported("rsi") is True
+    assert factory.is_feature_supported("RsI") is True
+    assert factory.is_feature_supported("MACD") is True
+    assert factory.is_feature_supported("macd") is True
+
+
+def test_is_feature_supported_handles_registry_exceptions(class_registry, config_registry, mock_indicator_service) -> None:
+    """Test that is_feature_supported handles registry exceptions gracefully."""
+    # Given
+    class_registry.has_feature_class.side_effect = Exception("Registry error")
+    factory = FeatureFactory(class_registry, config_registry, mock_indicator_service)
+
+    # When & Then
+    assert factory.is_feature_supported("rsi") is False
+
+
+def test_is_feature_supported_logs_validation_details(factory: FeatureFactory, caplog) -> None:
+    """Test that is_feature_supported provides detailed logging for debugging."""
+    # Given
+    import logging
+    caplog.set_level(logging.DEBUG)
+
+    # When
+    result_supported = factory.is_feature_supported("rsi")
+    result_unsupported = factory.is_feature_supported("nonexistent")
+
+    # Then
+    assert result_supported is True
+    assert result_unsupported is False
+
+    # Check debug logs contain validation details
+    debug_messages = [record.message for record in caplog.records if record.levelname == 'DEBUG']
+    assert any("class=True, config=True" in msg for msg in debug_messages)
+    assert any("Feature class not found for 'nonexistent'" in msg for msg in debug_messages)

@@ -132,6 +132,66 @@ class TestFeatureConfigRegistry:
         mock_discover_classes.assert_called_once_with(package_name)
         assert result == expected_result
 
+    def test_has_feature_config_returns_true_for_registered_config(self, registry: FeatureConfigRegistry, decorated_config_class: Type[BaseParameterSetConfig]) -> None:
+        """Test that has_feature_config returns True for registered configurations."""
+        # Given
+        feature_name = "rsi"
+        registry.register_config_class(feature_name, decorated_config_class)
+
+        # When
+        has_config = registry.has_feature_config(feature_name)
+
+        # Then
+        assert has_config is True
+
+    def test_has_feature_config_returns_false_for_unregistered_config(self, registry: FeatureConfigRegistry) -> None:
+        """Test that has_feature_config returns False for unregistered configurations."""
+        # Given
+        feature_name = "nonexistent_feature"
+
+        # When
+        has_config = registry.has_feature_config(feature_name)
+
+        # Then
+        assert has_config is False
+
+    def test_has_feature_config_handles_case_insensitive_lookup(self, registry: FeatureConfigRegistry, decorated_config_class: Type[BaseParameterSetConfig]) -> None:
+        """Test that has_feature_config works with case-insensitive feature names."""
+        # Given
+        feature_name = "rsi"
+        registry.register_config_class(feature_name, decorated_config_class)
+
+        # When
+        has_config_upper = registry.has_feature_config("RSI")
+        has_config_mixed = registry.has_feature_config("RsI")
+
+        # Then
+        assert has_config_upper is True
+        assert has_config_mixed is True
+
+    def test_has_feature_config_returns_false_for_invalid_feature_name(self, registry: FeatureConfigRegistry) -> None:
+        """Test that has_feature_config handles invalid feature names gracefully."""
+        # Given
+        invalid_names = ["", "invalid_feature_name", "unknown"]
+
+        # When & Then
+        for invalid_name in invalid_names:
+            has_config = registry.has_feature_config(invalid_name)
+            assert has_config is False
+
+    def test_has_feature_config_after_reset(self, registry: FeatureConfigRegistry, decorated_config_class: Type[BaseParameterSetConfig]) -> None:
+        """Test that has_feature_config returns False after registry reset."""
+        # Given
+        feature_name = "rsi"
+        registry.register_config_class(feature_name, decorated_config_class)
+        assert registry.has_feature_config(feature_name) is True
+
+        # When
+        registry.reset()
+
+        # Then
+        assert registry.has_feature_config(feature_name) is False
+
 
 class TestFeatureConfigRegistryValidation:
     """Test cases for FeatureConfigRegistry validation logic."""
@@ -381,7 +441,9 @@ class TestFeatureConfigRegistryInheritance:
         # Given/When/Then
         assert hasattr(registry, 'get_config_class')
         assert hasattr(registry, 'register_config_class')
+        assert hasattr(registry, 'has_feature_config')
         assert hasattr(registry, 'reset')  # From base interface
         assert callable(registry.get_config_class)
         assert callable(registry.register_config_class)
+        assert callable(registry.has_feature_config)
         assert callable(registry.reset)

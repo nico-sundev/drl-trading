@@ -35,6 +35,23 @@ class FeatureConfigRegistry(ThreadSafeDiscoverableRegistry[FeatureTypeEnum, Base
     ) -> None:
         self.register_class(FeatureTypeConverter.string_to_enum(feature_type_string), config_class)
 
+    def has_feature_config(self, feature_name: str) -> bool:
+        """
+        Check if a configuration class is registered for the given feature name.
+
+        Args:
+            feature_name: The name of the feature to check (case-insensitive)
+
+        Returns:
+            True if the configuration class is registered, False otherwise
+        """
+        try:
+            feature_enum = FeatureTypeConverter.string_to_enum(feature_name)
+            return self.get_class(feature_enum) is not None
+        except (ValueError, AttributeError) as e:
+            logger.debug(f"Feature config check failed for '{feature_name}': {e}")
+            return False
+
     def discover_config_classes(
         self, package_name: str
     ) -> Dict[FeatureTypeEnum, Type[BaseParameterSetConfig]]:

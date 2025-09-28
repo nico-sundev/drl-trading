@@ -39,6 +39,19 @@ class IFeatureClassRegistry(ABC):
         pass
 
     @abstractmethod
+    def has_feature_class(self, feature_name: str) -> bool:
+        """
+        Check if a feature class is registered for the given feature name.
+
+        Args:
+            feature_name: The name of the feature to check (case-insensitive)
+
+        Returns:
+            True if the feature class is registered, False otherwise
+        """
+        pass
+
+    @abstractmethod
     def reset(self) -> None:
         """
         Clear all registered feature classes and reset the registry state.

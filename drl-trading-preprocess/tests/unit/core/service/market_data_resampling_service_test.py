@@ -1,5 +1,5 @@
 """
-Unit tests fofrom drl_trading_preprocess.core.service.candle_accumulator_service import (
+Unit tests fofrom drl_trading_preprocess.core.service.resample.candle_accumulator_service import (
     CandleAccumulatorService,
 )
 from drl_trading_preprocess.core.model.resample.resampling_request import ResamplingRequest
@@ -17,10 +17,10 @@ from unittest.mock import Mock
 
 from drl_trading_common.model.timeframe import Timeframe
 from drl_trading_core.common.model.market_data_model import MarketDataModel
-from drl_trading_preprocess.core.service.market_data_resampling_service import (
+from drl_trading_preprocess.core.service.resample.market_data_resampling_service import (
     MarketDataResamplingService,
 )
-from drl_trading_preprocess.core.service.candle_accumulator_service import (
+from drl_trading_preprocess.core.service.resample.candle_accumulator_service import (
     CandleAccumulatorService,
 )
 from drl_trading_preprocess.core.model.resample.resampling_response import ResamplingResponse

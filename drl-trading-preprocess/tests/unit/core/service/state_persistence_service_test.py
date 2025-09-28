@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 
 from drl_trading_common.model.timeframe import Timeframe
 from drl_trading_preprocess.core.model.resample.resampling_context import ResamplingContext
-from drl_trading_preprocess.core.service.state_persistence_service import StatePersistenceService
+from drl_trading_preprocess.core.service.resample.state_persistence_service import StatePersistenceService
 
 
 class TestStatePersistenceServiceInit:
@@ -275,6 +275,31 @@ class TestStatePersistenceServiceLoadContext:
             # Verify symbol state was created with defaults
             timestamp = result.get_last_processed_timestamp("ETHUSDT", Timeframe.MINUTE_5)
             assert timestamp is None
+
+    def test_load_context_backup_also_corrupted(self) -> None:
+        """Test behavior when both main file and backup file are corrupted."""
+        # Given
+        with tempfile.TemporaryDirectory() as temp_dir:
+            state_path = Path(temp_dir) / "state.json"
+            backup_path = Path(temp_dir) / "state.json.backup"
+
+            # Create corrupted main file
+            with open(state_path, 'w') as f:
+                f.write("{ invalid json }")
+
+            # Create corrupted backup file
+            with open(backup_path, 'w') as f:
+                f.write("{ also invalid json }")
+
+            service = StatePersistenceService(str(state_path))
+
+            # When
+            result = service.load_context()
+
+            # Then
+            assert result is None
+
+
 
 
 class TestStatePersistenceServiceAutoSave:

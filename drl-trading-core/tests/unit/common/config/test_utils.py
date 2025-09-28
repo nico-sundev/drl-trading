@@ -10,7 +10,7 @@ from unittest.mock import Mock
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.config.feature_config import FeatureDefinition
 from drl_trading_common.interface.feature.feature_factory_interface import IFeatureFactory
-from drl_trading_core.common.config.utils import map_and_create_feature_definitions, parse_parameters
+from drl_trading_core.core.service.feature_definition_parser import map_and_create_feature_definitions, parse_parameters
 
 
 class TestParseParameters:

@@ -56,3 +56,16 @@ class IFeatureFactory(ABC):
             ValueError: If the provided config_data is invalid for the config class
         """
         pass
+
+    @abstractmethod
+    def is_feature_supported(self, feature_name: str) -> bool:
+        """
+        Check if a feature is fully supported (both class and config available).
+
+        Args:
+            feature_name: The name of the feature to check
+
+        Returns:
+            True if the feature can be created successfully, False otherwise
+        """
+        pass

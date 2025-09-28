@@ -16,7 +16,7 @@ class Timeframe(Enum):
     WEEK_1 = "1w"
     MONTH_1 = "1M"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.value
 
     def to_minutes(self) -> int:
@@ -38,3 +38,36 @@ class Timeframe(Enum):
     def to_seconds(self) -> int:
         """Convert timeframe to seconds for time difference calculations."""
         return self.to_minutes() * 60
+
+    def to_pandas_freq(self) -> str:
+        """
+        Convert timeframe to pandas frequency string.
+
+        Used for generating time ranges and resampling operations with pandas.
+
+        Returns:
+            str: Pandas frequency string compatible with pd.date_range and resample operations
+
+        Raises:
+            ValueError: If timeframe cannot be converted to pandas frequency (e.g., TICK)
+        """
+        timeframe_to_pandas_freq = {
+            Timeframe.MINUTE_1: "1min",
+            Timeframe.MINUTE_5: "5min",
+            Timeframe.MINUTE_15: "15min",
+            Timeframe.MINUTE_30: "30min",
+            Timeframe.HOUR_1: "1h",
+            Timeframe.HOUR_4: "4h",
+            Timeframe.DAY_1: "1D",
+            Timeframe.WEEK_1: "1W",
+            Timeframe.MONTH_1: "1MS",  # Month start frequency
+        }
+
+        if self == Timeframe.TICK:
+            raise ValueError("TICK timeframe cannot be converted to pandas frequency")
+
+        freq = timeframe_to_pandas_freq.get(self)
+        if freq is None:
+            raise ValueError(f"Unsupported timeframe for pandas frequency: {self}")
+
+        return freq

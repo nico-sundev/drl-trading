@@ -2,7 +2,10 @@
 Main preprocessing service that orchestrates market data resampling,
 feature computation, and feature store operations.
 
-This service is the heart of the drl-trading-preprocess package,
+This service i            # Step 7: Store computed features
+            self._store_computed_features(request, computed_features)
+
+            # Step 8: Log successful completionheart of the drl-trading-preprocess package,
 handling real-world scenarios including:
 - Dynamic feature definitions per request
 - Incremental processing with existing feature checking
@@ -12,7 +15,7 @@ handling real-world scenarios including:
 """
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from injector import inject
 from pandas import DataFrame
@@ -20,17 +23,16 @@ from pandas import DataFrame
 from drl_trading_common.config.feature_config import FeatureDefinition
 from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_preprocess.core.model.feature_computation_request import FeatureComputationRequest
-from drl_trading_preprocess.core.model.feature_computation_response import (
-    FeatureComputationResponse,
-    FeatureProcessingStats,
-    FeatureStoreMetadata,
+from drl_trading_preprocess.core.model.computation.feature_preprocessing_request import FeaturePreprocessingRequest
+from drl_trading_preprocess.core.model.computation.feature_computation_response import (
     FeatureExistenceCheckResult,
 )
-from drl_trading_preprocess.core.port.feature_existence_check_port import IFeatureExistenceCheckPort
 from drl_trading_preprocess.core.port.feature_store_save_port import IFeatureStoreSavePort
-from drl_trading_preprocess.core.service.dynamic_feature_computing_service import IDynamicFeatureComputer
-from drl_trading_preprocess.core.service.market_data_resampling_service import MarketDataResamplingService
+from drl_trading_preprocess.core.port.preprocessing_message_publisher_port import PreprocessingMessagePublisherPort
+from drl_trading_preprocess.core.service.compute.computing_service import FeatureComputingService
+from drl_trading_preprocess.core.service.feature_validator import FeatureValidator
+from drl_trading_preprocess.core.service.resample.market_data_resampling_service import MarketDataResamplingService
+from drl_trading_preprocess.infrastructure.adapter.feature_store.feast_feature_existence_checker import FeastFeatureExistenceChecker
 
 logger = logging.getLogger(__name__)
 
@@ -52,9 +54,11 @@ class PreprocessService:
     def __init__(
         self,
         market_data_resampler: MarketDataResamplingService,
-        feature_computer: IDynamicFeatureComputer,
+        feature_computer: FeatureComputingService,
+        feature_validator: FeatureValidator,
         feature_store_port: IFeatureStoreSavePort,
-        feature_existence_checker: IFeatureExistenceCheckPort,
+        feature_existence_checker: FeastFeatureExistenceChecker,
+        message_publisher: PreprocessingMessagePublisherPort,
     ) -> None:
         """
         Initialize the preprocessing service with all required dependencies.
@@ -62,13 +66,17 @@ class PreprocessService:
         Args:
             market_data_resampler: Service for resampling market data to higher timeframes
             feature_computer: Service for dynamic feature computation
+            feature_validator: Service for validating feature definitions
             feature_store_port: Port for saving features to Feast
             feature_existence_checker: Port for checking existing features
+            message_publisher: Port for publishing preprocessing notifications
         """
         self.market_data_resampler = market_data_resampler
         self.feature_computer = feature_computer
+        self.feature_validator = feature_validator
         self.feature_store_port = feature_store_port
         self.feature_existence_checker = feature_existence_checker
+        self.message_publisher = message_publisher
 
         # Performance tracking
         self._total_requests_processed = 0
@@ -79,10 +87,10 @@ class PreprocessService:
 
     def process_feature_computation_request(
         self,
-        request: FeatureComputationRequest,
-    ) -> FeatureComputationResponse:
+        request: FeaturePreprocessingRequest,
+    ) -> None:
         """
-        Process a complete feature computation request.
+        Process a complete feature computation request (fire-and-forget).
 
         This is the main entry point that handles:
         1. Request validation
@@ -90,13 +98,10 @@ class PreprocessService:
         3. Market data resampling to target timeframes
         4. Dynamic feature computation
         5. Feature store persistence
-        6. Comprehensive response generation
+        6. Async notification via Kafka (future implementation)
 
         Args:
             request: Complete feature computation request
-
-        Returns:
-            Detailed response with processing results and metadata
         """
         processing_start = datetime.now()
         self._total_requests_processed += 1
@@ -123,50 +128,72 @@ class PreprocessService:
 
             # Step 3: Early exit if no computation needed
             if not features_to_compute:
-                return self._create_no_computation_response(
-                    request, processing_start, existing_features_info
-                )
+                logger.info(f"No features to compute for {request.symbol} - all exist or none enabled")
+                return
 
-            # Step 4: Resample market data to target timeframes
+            # Step 4: Handle feature warmup if needed
+            warmup_successful = self._handle_feature_warmup(request, features_to_compute)
+            if not warmup_successful:
+                logger.error(f"Feature warmup failed for {request.symbol}")
+                return
+
+            # Step 5: Resample market data to target timeframes
             resampled_data = self._resample_market_data(request)
 
-            # Step 5: Compute features for each timeframe
+            # Step 6: Compute features for each timeframe
             computed_features = self._compute_features_for_timeframes(
                 request, features_to_compute, resampled_data
             )
 
-            # Step 6: Store features in feature store
-            feature_store_metadata = self._store_computed_features(
-                request, computed_features
-            )
+            # Step 7: Store features in feature store
+            self._store_computed_features(request, computed_features)
 
-            # Step 7: Create success response
+            # Step 8: Publish successful completion notification
             processing_end = datetime.now()
-            response = self._create_success_response(
-                request,
-                processing_start,
-                processing_end,
-                computed_features,
-                feature_store_metadata,
-                existing_features_info,
-            )
+            total_features = sum(len(features_df.columns) for features_df in computed_features.values())
+            duration = (processing_end - processing_start).total_seconds()
 
-            self._update_performance_metrics(response)
+            # Update performance tracking
+            self._total_features_computed += total_features
+            self._total_processing_time_ms += int(duration * 1000)
+
+            # Create success details
+            success_details = {}
+            for timeframe, features_df in computed_features.items():
+                success_details[f"features_{timeframe.value}"] = len(features_df.columns)
+                success_details[f"records_{timeframe.value}"] = len(features_df)
+
+            # Publish async notification
+            self.message_publisher.publish_preprocessing_completed(
+                request=request,
+                processing_duration_seconds=duration,
+                total_features_computed=total_features,
+                timeframes_processed=list(computed_features.keys()),
+                success_details=success_details
+            )
 
             logger.info(
                 f"Successfully completed request {request.request_id}: "
-                f"{response.stats.features_computed} features computed, "
-                f"{response.stats.features_skipped} skipped, "
-                f"duration: {response.get_processing_duration_seconds():.2f}s"
+                f"{total_features} features computed across {len(computed_features)} timeframes, "
+                f"duration: {duration:.2f}s"
             )
 
-            return response
-
         except Exception as e:
-            logger.error(f"Failed to process request {request.request_id}: {str(e)}")
-            return self._create_error_response(request, processing_start, str(e))
+            processing_end = datetime.now()
+            duration = (processing_end - processing_start).total_seconds()
 
-    def _validate_request(self, request: FeatureComputationRequest) -> None:
+            # Publish error notification
+            self.message_publisher.publish_preprocessing_error(
+                request=request,
+                processing_duration_seconds=duration,
+                error_message=str(e),
+                error_details={"exception_type": type(e).__name__, "traceback": str(e)},
+                failed_step="processing_pipeline"
+            )
+
+            logger.error(f"Failed to process request {request.request_id}: {str(e)}")
+
+    def _validate_request(self, request: FeaturePreprocessingRequest) -> None:
         """
         Validate the feature computation request.
 
@@ -184,19 +211,23 @@ class PreprocessService:
             raise ValueError("No enabled features found in request")
 
         # Validate feature definitions against what we can actually compute
-        validation_results = self.feature_computer.validate_feature_definitions(
-            enabled_features,
-            # Create a dataset identifier for validation
-            # We'll use the first target timeframe for validation
-            dataset_id=self._create_dataset_identifier(request.symbol, request.target_timeframes[0]),
-        )
+        validation_results = self.feature_validator.validate_definitions(enabled_features)
 
         invalid_features = [name for name, valid in validation_results.items() if not valid]
         if invalid_features:
+            validation_errors = {name: "Feature definition validation failed" for name in invalid_features}
+
+            # Publish validation error notification
+            self.message_publisher.publish_feature_validation_error(
+                request=request,
+                invalid_features=invalid_features,
+                validation_errors=validation_errors
+            )
+
             raise ValueError(f"Invalid feature definitions: {invalid_features}")
 
     def _check_existing_features(
-        self, request: FeatureComputationRequest
+        self, request: FeaturePreprocessingRequest
     ) -> Dict[Timeframe, FeatureExistenceCheckResult]:
         """
         Check which features already exist in the feature store.
@@ -230,7 +261,7 @@ class PreprocessService:
 
     def _filter_features_to_compute(
         self,
-        request: FeatureComputationRequest,
+        request: FeaturePreprocessingRequest,
         existing_features_info: Dict[Timeframe, FeatureExistenceCheckResult],
     ) -> List[FeatureDefinition]:
         """
@@ -263,7 +294,7 @@ class PreprocessService:
         return []
 
     def _resample_market_data(
-        self, request: FeatureComputationRequest
+        self, request: FeaturePreprocessingRequest
     ) -> Dict[Timeframe, DataFrame]:
         """
         Resample market data to all target timeframes.
@@ -319,7 +350,7 @@ class PreprocessService:
 
     def _compute_features_for_timeframes(
         self,
-        request: FeatureComputationRequest,
+        request: FeaturePreprocessingRequest,
         features_to_compute: List[FeatureDefinition],
         resampled_data: Dict[Timeframe, DataFrame],
     ) -> Dict[Timeframe, DataFrame]:
@@ -342,23 +373,14 @@ class PreprocessService:
                 f"{request.symbol} {timeframe.value} ({len(market_data)} data points)"
             )
 
-            # Create a modified request for this specific timeframe
-            timeframe_request = FeatureComputationRequest(
-                symbol=request.symbol,
-                base_timeframe=request.base_timeframe,
-                target_timeframes=[timeframe],  # Single timeframe
-                feature_definitions=features_to_compute,
-                start_time=request.start_time,
-                end_time=request.end_time,
-                request_id=f"{request.request_id}_{timeframe.value}",
-                force_recompute=request.force_recompute,
-                incremental_mode=request.incremental_mode,
-                processing_context=request.processing_context,
+            # Compute features for this timeframe using batch computation
+            from drl_trading_common.config.feature_config import FeaturesConfig
+            features_config = FeaturesConfig(
+                dataset_definitions={request.symbol: [timeframe]},
+                feature_definitions=features_to_compute
             )
-
-            # Compute features for this timeframe
-            features_df = self.feature_computer.compute_features_for_request(
-                timeframe_request, market_data
+            features_df = self.feature_computer.compute_batch(
+                market_data, features_config
             )
 
             if not features_df.empty:
@@ -372,22 +394,210 @@ class PreprocessService:
 
         return computed_features
 
+    def _handle_feature_warmup(
+        self,
+        request: FeaturePreprocessingRequest,
+        features_to_compute: List[FeatureDefinition]
+    ) -> bool:
+        """
+        Handle feature warmup based on the three scenarios:
+
+        1. Features fully covered by feast -> no warmup needed
+        2. Features partially covered -> warmup with historical data up to coverage gap
+        3. Features not in feast -> full warmup with ~500 OHLCV records
+
+        Args:
+            request: Feature computation request
+            features_to_compute: Features that need computation
+
+        Returns:
+            True if warmup successful or not needed, False on failure
+        """
+        logger.info(f"Handling feature warmup for {len(features_to_compute)} features")
+
+        try:
+            # For each target timeframe, determine warmup needs
+            for timeframe in request.target_timeframes:
+                warmup_needed = self._assess_warmup_needs(request, features_to_compute, timeframe)
+
+                if warmup_needed:
+                    success = self._perform_feature_warmup(request, features_to_compute, timeframe)
+                    if not success:
+                        logger.error(f"Failed to warmup features for {timeframe.value}")
+                        return False
+
+            logger.info("Feature warmup completed successfully")
+            return True
+
+        except Exception as e:
+            logger.error(f"Feature warmup failed: {e}")
+            return False
+
+    def _assess_warmup_needs(
+        self,
+        request: FeaturePreprocessingRequest,
+        features_to_compute: List[FeatureDefinition],
+        timeframe: Timeframe
+    ) -> bool:
+        """
+        Assess whether warmup is needed for the given features and timeframe.
+
+        Args:
+            request: Feature computation request
+            features_to_compute: Features to assess
+            timeframe: Target timeframe
+
+        Returns:
+            True if warmup is needed, False otherwise
+        """
+        # Check if features exist and have recent data
+        try:
+            feature_names = [f.name for f in features_to_compute]
+
+            # Get latest timestamps for each feature
+            latest_timestamps = {}
+            for feature_name in feature_names:
+                latest_ts = self.feature_existence_checker.get_latest_feature_timestamp(
+                    symbol=request.symbol,
+                    timeframe=timeframe,
+                    feature_name=feature_name
+                )
+                latest_timestamps[feature_name] = latest_ts
+
+            # Determine if warmup is needed
+            # If any feature has no data or data is too old, warmup is needed
+            warmup_threshold = request.start_time  # Features should be up to request start
+
+            needs_warmup = any(
+                ts is None or ts < warmup_threshold
+                for ts in latest_timestamps.values()
+            )
+
+            if needs_warmup:
+                logger.info(
+                    f"Warmup needed for {request.symbol} {timeframe.value}: "
+                    f"features outdated or missing"
+                )
+            else:
+                logger.debug(f"No warmup needed for {request.symbol} {timeframe.value}")
+
+            return needs_warmup
+
+        except Exception as e:
+            logger.warning(f"Failed to assess warmup needs: {e}. Assuming warmup needed.")
+            return True
+
+    def _perform_feature_warmup(
+        self,
+        request: FeaturePreprocessingRequest,
+        features_to_compute: List[FeatureDefinition],
+        timeframe: Timeframe
+    ) -> bool:
+        """
+        Perform actual feature warmup with historical data.
+
+        Args:
+            request: Feature computation request
+            features_to_compute: Features to warmup
+            timeframe: Target timeframe
+
+        Returns:
+            True if warmup successful, False otherwise
+        """
+        logger.info(f"Performing feature warmup for {request.symbol} {timeframe.value}")
+
+        try:
+            # Determine warmup period (default: ~500 candles or up to earliest missing data)
+            warmup_candles = 500
+
+            # Calculate warmup start time based on timeframe
+            # This is a simplified calculation - in reality you'd want more sophisticated logic
+            from datetime import timedelta
+
+            timeframe_minutes = timeframe.to_minutes()
+            warmup_period = timedelta(minutes=warmup_candles * timeframe_minutes)
+            warmup_start = request.start_time - warmup_period
+
+            logger.info(
+                f"Warmup period: {warmup_start} to {request.start_time} "
+                f"({warmup_candles} candles)"
+            )
+
+            # Get historical data for warmup
+            # Note: This uses the base timeframe to get raw data, then resamples if needed
+            warmup_response = self.market_data_resampler.resample_symbol_data_incremental(
+                symbol=request.symbol,
+                base_timeframe=request.base_timeframe,
+                target_timeframes=[timeframe]
+            )
+
+            if not warmup_response.resampled_data or timeframe not in warmup_response.resampled_data:
+                logger.warning(f"No warmup data available for {request.symbol} {timeframe.value}")
+                return False
+
+            # Convert to DataFrame
+            warmup_market_data = warmup_response.resampled_data[timeframe]
+            warmup_df_data = []
+            for market_data in warmup_market_data:
+                warmup_df_data.append({
+                    'timestamp': market_data.timestamp,
+                    'open': market_data.open_price,
+                    'high': market_data.high_price,
+                    'low': market_data.low_price,
+                    'close': market_data.close_price,
+                    'volume': market_data.volume,
+                })
+
+            warmup_df = DataFrame(warmup_df_data)
+            warmup_df.set_index('timestamp', inplace=True)
+
+            # Filter to warmup period
+            warmup_df = warmup_df[
+                (warmup_df.index >= warmup_start) &
+                (warmup_df.index < request.start_time)
+            ]
+
+            if warmup_df.empty:
+                logger.warning(f"No warmup data in specified period for {request.symbol} {timeframe.value}")
+                return False
+
+            # Perform warmup using compute_batch method
+            from drl_trading_common.config.feature_config import FeaturesConfig
+            features_config = FeaturesConfig(
+                dataset_definitions={request.symbol: [timeframe]},
+                feature_definitions=features_to_compute
+            )
+            warmup_result = self.feature_computer.compute_batch(
+                warmup_df, features_config
+            )
+
+            success = not warmup_result.empty
+            if success:
+                logger.info(
+                    f"Successfully warmed up features for {request.symbol} {timeframe.value} "
+                    f"with {len(warmup_df)} data points, computed {len(warmup_result.columns)} features"
+                )
+            else:
+                logger.error(f"Feature warmup failed for {request.symbol} {timeframe.value}")
+
+            return success
+
+        except Exception as e:
+            logger.error(f"Feature warmup error: {e}")
+            return False
+
     def _store_computed_features(
         self,
-        request: FeatureComputationRequest,
+        request: FeaturePreprocessingRequest,
         computed_features: Dict[Timeframe, DataFrame],
-    ) -> FeatureStoreMetadata:
+    ) -> None:
         """
         Store computed features in the feature store.
 
         Args:
             request: Original request
             computed_features: Computed features by timeframe
-
-        Returns:
-            Metadata about feature store operations
         """
-        metadata = FeatureStoreMetadata()
 
         for timeframe, features_df in computed_features.items():
             try:
@@ -402,10 +612,15 @@ class PreprocessService:
                 from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
 
                 version_info = FeatureConfigVersionInfo(
-                    version=f"v{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-                    creation_timestamp=datetime.now(),
-                    feature_count=len(features_df.columns),
-                    dataset_identifier=self._create_dataset_identifier(request.symbol, timeframe)
+                    semver=f"1.0.{datetime.now().strftime('%Y%m%d%H%M%S')}",
+                    hash=f"feat_{request.symbol}_{timeframe.value}_{hash(str(features_df.columns))}",
+                    created_at=datetime.now(),
+                    feature_definitions=[f.dict() for f in request.get_enabled_features()],
+                    base_timeframe=request.base_timeframe,
+                    target_timeframes=[timeframe],
+                    start_time=request.start_time,
+                    end_time=request.end_time,
+                    description=f"Features for {request.symbol} {timeframe.value}"
                 )
 
                 self.feature_store_port.store_computed_features_offline(
@@ -421,20 +636,15 @@ class PreprocessService:
                         features_df=features_df,
                         symbol=request.symbol,
                     )
-                    metadata.online_store_updated = True
+                    logger.info(f"Features materialized to online store for {request.symbol} {timeframe.value}")
 
-                metadata.offline_store_paths.append(f"{request.symbol}_{timeframe.value}")
+                logger.info(f"Features stored successfully for {request.symbol} {timeframe.value}")
 
             except Exception as e:
                 logger.error(
                     f"Failed to store features for {request.symbol} {timeframe.value}: {e}"
                 )
                 raise
-
-        metadata.materialization_completed = True
-        metadata.computation_timestamp = datetime.now()
-
-        return metadata
 
     def _create_dataset_identifier(self, symbol: str, timeframe: Timeframe) -> DatasetIdentifier:
         """Create a dataset identifier for the given symbol and timeframe."""
@@ -443,121 +653,7 @@ class PreprocessService:
         from drl_trading_common.model.dataset_identifier import DatasetIdentifier
         return DatasetIdentifier(symbol=symbol, timeframe=timeframe)
 
-    def _create_success_response(
-        self,
-        request: FeatureComputationRequest,
-        processing_start: datetime,
-        processing_end: datetime,
-        computed_features: Dict[Timeframe, DataFrame],
-        feature_store_metadata: FeatureStoreMetadata,
-        existing_features_info: Optional[Dict[Timeframe, FeatureExistenceCheckResult]],
-    ) -> FeatureComputationResponse:
-        """Create a successful response."""
 
-        # Calculate statistics
-        total_features_computed = sum(len(df.columns) for df in computed_features.values())
-        total_data_points = sum(len(df) for df in computed_features.values())
-
-        features_skipped = 0
-        if existing_features_info:
-            for existence_result in existing_features_info.values():
-                features_skipped += len(existence_result.existing_features)
-
-        processing_duration_ms = int((processing_end - processing_start).total_seconds() * 1000)
-
-        stats = FeatureProcessingStats(
-            features_requested=len(request.get_enabled_features()) * len(request.target_timeframes),
-            features_computed=total_features_computed,
-            features_skipped=features_skipped,
-            features_failed=0,  # No failures if we got here
-            timeframes_processed={tf.value: len(df) for tf, df in computed_features.items()},
-            processing_duration_ms=processing_duration_ms,
-            data_points_processed=total_data_points,
-            computation_rate_per_second=(
-                total_data_points / max(0.001, processing_duration_ms / 1000.0)
-            ),
-        )
-
-        return FeatureComputationResponse(
-            request_id=request.request_id,
-            symbol=request.symbol,
-            processing_context=request.processing_context,
-            success=True,
-            stats=stats,
-            feature_store_metadata=feature_store_metadata,
-            started_at=processing_start,
-            completed_at=processing_end,
-        )
-
-    def _create_no_computation_response(
-        self,
-        request: FeatureComputationRequest,
-        processing_start: datetime,
-        existing_features_info: Optional[Dict[Timeframe, FeatureExistenceCheckResult]],
-    ) -> FeatureComputationResponse:
-        """Create a response when no computation was needed."""
-
-        processing_end = datetime.now()
-
-        features_skipped = 0
-        if existing_features_info:
-            for existence_result in existing_features_info.values():
-                features_skipped += len(existence_result.existing_features)
-
-        stats = FeatureProcessingStats(
-            features_requested=len(request.get_enabled_features()) * len(request.target_timeframes),
-            features_computed=0,
-            features_skipped=features_skipped,
-            features_failed=0,
-            processing_duration_ms=int((processing_end - processing_start).total_seconds() * 1000),
-            data_points_processed=0,
-            computation_rate_per_second=0.0,
-        )
-
-        return FeatureComputationResponse(
-            request_id=request.request_id,
-            symbol=request.symbol,
-            processing_context=request.processing_context,
-            success=True,
-            stats=stats,
-            feature_store_metadata=FeatureStoreMetadata(),
-            started_at=processing_start,
-            completed_at=processing_end,
-        )
-
-    def _create_error_response(
-        self, request: FeatureComputationRequest, processing_start: datetime, error_message: str
-    ) -> FeatureComputationResponse:
-        """Create an error response."""
-
-        processing_end = datetime.now()
-
-        stats = FeatureProcessingStats(
-            features_requested=len(request.get_enabled_features()) * len(request.target_timeframes),
-            features_computed=0,
-            features_skipped=0,
-            features_failed=len(request.get_enabled_features()) * len(request.target_timeframes),
-            processing_duration_ms=int((processing_end - processing_start).total_seconds() * 1000),
-            data_points_processed=0,
-            computation_rate_per_second=0.0,
-        )
-
-        return FeatureComputationResponse(
-            request_id=request.request_id,
-            symbol=request.symbol,
-            processing_context=request.processing_context,
-            success=False,
-            error_message=error_message,
-            stats=stats,
-            feature_store_metadata=FeatureStoreMetadata(),
-            started_at=processing_start,
-            completed_at=processing_end,
-        )
-
-    def _update_performance_metrics(self, response: FeatureComputationResponse) -> None:
-        """Update internal performance tracking metrics."""
-        self._total_features_computed += response.stats.features_computed
-        self._total_processing_time_ms += response.stats.processing_duration_ms
 
     def get_performance_summary(self) -> Dict[str, Any]:
         """Get performance summary for monitoring."""
@@ -573,117 +669,3 @@ class PreprocessService:
                 self._total_features_computed / max(1, self._total_requests_processed)
             ),
         }
-#         final_result = self.context_feature_service.merge_context_features(
-#             merged_result, context_features
-#         )
-
-#         logger.info("6. Preprocessing finished.")
-#         return PreprocessingResult(
-#             symbol_container=symbol_container,
-#             computed_dataset_containers=computed_dataset_containers,
-#             base_computed_container=base_computed_container,
-#             other_computed_containers=other_computed_containers,
-#             merged_result=merged_result,
-#             context_features=context_features,
-#             final_result=final_result,
-#         )
-
-#     def _merge_all_timeframes_features_together(
-#         self,
-#         base_computed_container: ComputedDataSetContainer,
-#         other_computed_containers: list[ComputedDataSetContainer],
-#     ) -> DataFrame:
-#         """
-#         Merges all computed features across different timeframes into a single DataFrame.
-
-#         Returns:
-#             DataFrame: The merged DataFrame with all features.
-#         """
-#         base_frame: DataFrame = base_computed_container.computed_dataframe
-#         # Ensure base_frame has a DatetimeIndex
-#         base_frame = ensure_datetime_index(base_frame, "base frame for merging")
-
-#         delayed_tasks = []
-
-#         for _i, container in enumerate(other_computed_containers):
-#             # Ensure higher timeframe dataframe has a DatetimeIndex
-#             higher_df = ensure_datetime_index(
-#                 container.computed_dataframe,
-#                 f"higher timeframe for {container.source_dataset.timeframe}",
-#             )
-#             task = delayed(self.merge_service.merge_timeframes)(
-#                 base_frame.copy(), higher_df.copy()
-#             )
-#             delayed_tasks.append(task)
-
-#         all_timeframes_computed_features: List[DataFrame] = dask.compute(*delayed_tasks)
-#         len_bf = len(base_frame)
-#         # Validate if all dataframes have same length as base_frame
-#         any_length_mismatch = False
-#         for i, df in enumerate(all_timeframes_computed_features):
-#             len_df = len(df)
-#             if len_df != len_bf:
-#                 logger.error(
-#                     f"DataFrame {i} has a different length ({len_df}) than the base frame ({len_bf}). Skipping merge."
-#                 )
-#                 any_length_mismatch = True
-
-#         if any_length_mismatch:
-#             raise ValueError(
-#                 "One or more DataFrames have a different length than the base frame. Merging aborted."
-#             )
-
-#         # Merge all timeframes into the base frame using pd.concat
-#         try:
-#             # Ensure all DataFrames have DatetimeIndex before concatenation
-#             all_dfs = [base_frame] + [
-#                 ensure_datetime_index(df, f"higher timeframe result {i}")
-#                 for i, df in enumerate(all_timeframes_computed_features)
-#             ]
-#             # Use pd.concat to merge all dataframes at once along the column axis (axis=1)
-#             merged_result = pd.concat(all_dfs, axis=1)
-
-#             # Ensure we don't have duplicate columns after concat
-#             if len(merged_result.columns) != sum(len(df.columns) for df in all_dfs):
-#                 logger.warning(
-#                     "Detected duplicate column names during concatenation. Some data may be overwritten."
-#                 )
-#         except Exception as e:
-#             logger.error(f"Error merging timeframes with pd.concat: {e}")
-#             raise
-
-#         return merged_result
-
-#     def _compute_features_for_all_timeframes(
-#         self,
-#         datasets: List[AssetPriceDataSet],
-#         symbol: str,
-#     ) -> List[ComputedDataSetContainer]:
-#         """
-#         Computes features for all datasets in parallel.
-
-#         Args:
-#             datasets: List of AssetPriceDataSet to compute features for
-#             symbol: The symbol name
-
-#         Returns:
-#             List of ComputedDataSetContainer with computed features
-#         """
-
-#         # Process each dataset (timeframe) in parallel
-#         delayed_timeframe_computation = []
-#         for dataset in datasets:
-#             task = delayed(self._compute_features_for_dataset)(dataset, symbol)
-#             delayed_timeframe_computation.append(task)
-
-#         # Execute all processing tasks
-#         processed_timeframe_containers: list[Optional[ComputedDataSetContainer]] = (
-#             dask.compute(*delayed_timeframe_computation)
-#         )
-
-#         # Filter out None results
-#         return [
-#             container
-#             for container in processed_timeframe_containers
-#             if container is not None
-#         ]

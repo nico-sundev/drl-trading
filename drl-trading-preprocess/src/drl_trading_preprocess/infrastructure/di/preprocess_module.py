@@ -4,8 +4,7 @@ from typing import Optional
 from drl_trading_common.config.feature_config import FeatureStoreConfig
 from drl_trading_preprocess.adapter.feature_store.feature_store_save_repository import FeatureStoreSaveRepository
 from drl_trading_preprocess.core.port.feature_store_save_port import IFeatureStoreSavePort
-from drl_trading_preprocess.core.service.compute.computing_service import FeatureComputingService, IFeatureComputer
-from drl_trading_preprocess.core.service.state_persistence_service import StatePersistenceService
+from drl_trading_preprocess.core.service.resample.state_persistence_service import StatePersistenceService
 from drl_trading_preprocess.infrastructure.config.preprocess_config import PreprocessConfig
 from injector import Binder, Module, provider, singleton
 
@@ -20,11 +19,6 @@ class PreprocessModule(Module):
         self._config = config
 
     def configure(self, binder: Binder) -> None:
-        binder.bind(
-            IFeatureComputer,
-            to=FeatureComputingService,
-            scope=singleton,
-        )
         binder.bind(
             IFeatureStoreSavePort,
             to=FeatureStoreSaveRepository,
