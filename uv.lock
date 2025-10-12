@@ -1272,6 +1272,7 @@ name = "drl-trading-preprocess"
 version = "0.1.0"
 source = { editable = "drl-trading-preprocess" }
 dependencies = [
+    { name = "dask", extra = ["dataframe"] },
     { name = "drl-trading-adapter" },
     { name = "drl-trading-common" },
     { name = "drl-trading-core" },
@@ -1301,16 +1302,19 @@ dev-full = [
     { name = "pytest-cov" },
     { name = "pytest-mock" },
     { name = "ruff" },
+    { name = "testcontainers" },
 ]
 test = [
     { name = "pytest" },
     { name = "pytest-benchmark" },
     { name = "pytest-cov" },
     { name = "pytest-mock" },
+    { name = "testcontainers" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "dask", extras = ["dataframe"], specifier = ">=2024.1.0" },
     { name = "drl-trading-adapter", editable = "drl-trading-adapter" },
     { name = "drl-trading-common", editable = "drl-trading-common" },
     { name = "drl-trading-core", editable = "drl-trading-core" },
@@ -1340,12 +1344,14 @@ dev-full = [
     { name = "pytest-cov", specifier = ">=4.0.0" },
     { name = "pytest-mock", specifier = ">=3.12.0" },
     { name = "ruff", specifier = ">=0.1.0" },
+    { name = "testcontainers", specifier = ">=4.0.0" },
 ]
 test = [
     { name = "pytest", specifier = ">=8.0.0" },
     { name = "pytest-benchmark", specifier = ">=4.0.0" },
     { name = "pytest-cov", specifier = ">=4.0.0" },
     { name = "pytest-mock", specifier = ">=3.12.0" },
+    { name = "testcontainers", specifier = ">=4.0.0" },
 ]
 
 [[package]]

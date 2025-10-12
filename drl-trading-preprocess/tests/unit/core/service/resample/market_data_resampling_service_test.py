@@ -1,10 +1,5 @@
 """
-Unit tests fofrom drl_trading_preprocess.core.service.resample.candle_accumulator_service import (
-    CandleAccumulatorService,
-)
-from drl_trading_preprocess.core.model.resample.resampling_request import ResamplingRequest
-from drl_trading_preprocess.core.model.resample.resampling_response import ResamplingResponse
-from drl_trading_preprocess.infrastructure.config.preprocess_config import ResampleConfigataResamplingService.
+Unit tests for drl_trading_preprocess.core.service.resample.candle_accumulator_service.
 
 Tests the core resampling logic including OHLCV aggregation, multi-timeframe processing,
 error handling, and performance characteristics.
@@ -446,11 +441,11 @@ class TestMarketDataResamplingService:
         assert response_disabled.total_new_candles == 1
 
     def test_incremental_resampling_from_existing_data(
-        self,
-        mock_market_data_reader,
-        mock_message_publisher,
-        candle_accumulator_service,
-        resample_config,
+        self: "TestMarketDataResamplingService",
+        mock_market_data_reader: Mock,
+        mock_message_publisher: Mock,
+        candle_accumulator_service: CandleAccumulatorService,
+        resample_config: ResampleConfig,
     ) -> None:
         """
         Test incremental resampling scenario where existing HTF data exists and new base data arrives.
@@ -558,7 +553,9 @@ class TestMarketDataResamplingService:
         assert response.source_records_processed == 10
 
         # Should have generated new 5-minute candles:
-        # Starting from 10:26, we expect:
+
+
+        # Then - Verify incremental processing behavior
         # 1. 10:25:00 candle (partial from 10:26-10:30 data) - depends on period boundary logic
         # 2. 10:30:00 candle (complete from 10:30-10:35 data, if we have 10:30 data)
         # 3. 10:35:00 candle (incomplete from remaining data)
@@ -1072,8 +1069,6 @@ class TestMarketDataResamplingService:
         assert response.source_records_processed == 6  # Raw input count
 
         candles_5m = response.resampled_data[Timeframe.MINUTE_5]
-        assert len(candles_5m) >= 1
-
         # With current implementation, volumes are summed without deduplication:
         # - 10:00 timestamp: 1000 (first) + 500 (duplicate) = 1500
         # - 10:01 timestamp: 1000
@@ -1085,6 +1080,8 @@ class TestMarketDataResamplingService:
 
         # Verify volume aggregation includes all records (no deduplication)
         # 1000 + 500 (10:00 records) + 1000 (10:01) + 800 + 1200 + 600 (10:02 records) = 5100
+        assert first_candle.volume == 5100  # All volumes summed # Verify service doesn't crash with duplicates
+        assert first_candle.volume > 0
         assert first_candle.volume == 5100  # All volumes summed# Verify service doesn't crash with duplicates
         assert first_candle.volume > 0
 

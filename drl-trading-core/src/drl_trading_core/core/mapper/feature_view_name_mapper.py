@@ -1,13 +1,21 @@
+from injector import inject
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_core.core.enum.feature_view_name_enum import (
     FeatureViewNameEnum,
 )
 
 
+@inject
 class FeatureViewNameMapper:
     """
     A class to map feature view names to their corresponding feature store names.
+
+    This is a stateless mapper with no dependencies, so no DI is needed.
     """
+
+    def __init__(self) -> None:
+        """Initialize the FeatureViewNameMapper."""
+        pass
 
     def map(self, feature_role: FeatureRoleEnum) -> str:
         """

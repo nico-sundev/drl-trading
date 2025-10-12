@@ -1,18 +1,22 @@
 
+import pytest
 from drl_trading_common.config.application_config import ApplicationConfig
 from drl_trading_common.config.config_loader import ConfigLoader
 
-from drl_trading_core.core.service.feature_definition_parser import map_and_create_feature_definitions
+from drl_trading_core.core.service.feature_definition_parser import FeatureDefinitionParser
 
+@pytest.fixture
+def feature_definition_parser():
+    return FeatureDefinitionParser()
 
-def test_load_config_from_json(temp_config_file, feature_factory, mock_rsi_config_class):
+def test_load_config_from_json(temp_config_file, feature_factory, mock_rsi_config_class, feature_definition_parser):
     temp_file_path, expected_data = temp_config_file
 
     # Load config with patched feature factory
     config = ConfigLoader.get_config(ApplicationConfig, temp_file_path)
 
     # Use the utils.parse_all_parameters function with our mock factory
-    map_and_create_feature_definitions(config.features_config.feature_definitions, feature_factory)
+    feature_definition_parser.map_and_create_feature_definitions(config.features_config.feature_definitions, feature_factory)
 
     # Helper to extract config by name
     def get_feature_param_set(name, index=0):

@@ -1,0 +1,415 @@
+"""
+Tests for PreprocessingOrchestrator fire-and-forget architecture.
+
+Tests the orchestrator's coordination logic and message publishing behavior.
+"""
+from typing import TYPE_CHECKING
+
+from drl_trading_common.model.timeframe import Timeframe
+
+if TYPE_CHECKING:
+    from unittest.mock import Mock
+    from pandas import DataFrame
+    from drl_trading_preprocess.core.orchestrator.preprocessing_orchestrator import PreprocessingOrchestrator
+    from builders import FeaturePreprocessingRequestBuilder
+
+
+class TestPreprocessingOrchestratorSuccessFlow:
+    """Test successful preprocessing with proper dependency mocking."""
+
+    def test_successful_processing_publishes_completion_notification(
+        self,
+        preprocessing_orchestrator: "PreprocessingOrchestrator",
+        mock_dependencies: dict[str, "Mock"],
+        request_builder: "FeaturePreprocessingRequestBuilder",
+        sample_features_df: "DataFrame",
+        resampling_response_factory,
+    ) -> None:
+        """Test end-to-end successful processing flow."""
+        # Given
+        request = request_builder.for_training().with_skip_existing(False).build()
+
+        # Configure mock resampler to return data
+        resampling_response = resampling_response_factory()
+        mock_dependencies['market_data_resampler'].resample_symbol_data_incremental.return_value = resampling_response
+
+        # Configure validator to pass all features
+        mock_dependencies['feature_validator'].validate_definitions.return_value = {
+            'test_feature': True
+        }
+
+        # Configure feature computer to return features
+        mock_dependencies['feature_computer'].compute_batch.return_value = sample_features_df
+
+        # When
+        result = preprocessing_orchestrator.process_feature_computation_request(request)
+
+        # Then
+        assert result is None, "Fire-and-forget should return None"
+
+        # Verify message publisher was called
+        mock_dependencies['message_publisher'].publish_preprocessing_completed.assert_called_once()
+
+        # Verify call arguments
+        call_args = mock_dependencies['message_publisher'].publish_preprocessing_completed.call_args
+        assert call_args.kwargs['request'] == request
+        assert call_args.kwargs['processing_context'] == "training"
+        assert call_args.kwargs['total_features_computed'] == 2
+        assert call_args.kwargs['timeframes_processed'] == [Timeframe.MINUTE_5]
+
+        # Verify success details contain metrics
+        success_details = call_args.kwargs['success_details']
+        assert 'features_5m' in success_details
+        assert 'records_5m' in success_details
+
+    def test_multiple_timeframes_publishes_correct_metrics(
+        self,
+        preprocessing_orchestrator: "PreprocessingOrchestrator",
+        mock_dependencies: dict[str, "Mock"],
+        request_builder: "FeaturePreprocessingRequestBuilder",
+        sample_features_df: "DataFrame",
+        resampling_response_factory,
+    ) -> None:
+        """Test processing multiple timeframes publishes correct feature counts."""
+        # Given
+        request = (request_builder
+                   .for_training()
+                   .with_skip_existing(False)
+                   .with_target_timeframes([Timeframe.MINUTE_5, Timeframe.MINUTE_15])
+                   .build())
+
+        # Configure mock resampler to return data for both timeframes
+        resampling_response = resampling_response_factory(
+            timeframes=[Timeframe.MINUTE_5, Timeframe.MINUTE_15]
+        )
+        mock_dependencies['market_data_resampler'].resample_symbol_data_incremental.return_value = resampling_response
+
+        # Configure validator to pass all features
+        mock_dependencies['feature_validator'].validate_definitions.return_value = {
+            'test_feature': True
+        }
+
+        # Configure feature computer to return features
+        mock_dependencies['feature_computer'].compute_batch.return_value = sample_features_df
+
+        # When
+        result = preprocessing_orchestrator.process_feature_computation_request(request)
+
+        # Then
+        assert result is None, "Fire-and-forget should return None"
+
+        # Verify message publisher was called
+        mock_dependencies['message_publisher'].publish_preprocessing_completed.assert_called_once()
+
+        # Verify both timeframes were processed
+        call_args = mock_dependencies['message_publisher'].publish_preprocessing_completed.call_args
+        timeframes_processed = call_args.kwargs['timeframes_processed']
+        assert Timeframe.MINUTE_5 in timeframes_processed
+        assert Timeframe.MINUTE_15 in timeframes_processed
+        assert len(timeframes_processed) == 2
+
+        # Verify total feature count (2 features per timeframe = 4 total)
+        assert call_args.kwargs['total_features_computed'] == 4
+
+
+class TestPreprocessingOrchestratorErrorHandling:
+    """Test error handling and notification publishing."""
+
+    def test_validation_errors_publish_failure_notification(
+        self,
+        preprocessing_orchestrator: "PreprocessingOrchestrator",
+        mock_dependencies: dict[str, "Mock"],
+        request_builder: "FeaturePreprocessingRequestBuilder",
+    ) -> None:
+        """Test that validation errors trigger failure notification."""
+        # Given
+        request = request_builder.for_training().with_skip_existing(False).build()
+
+        # Configure validator to fail all features
+        mock_dependencies['feature_validator'].validate_definitions.return_value = {
+            'test_feature': False
+        }
+
+        # When
+        result = preprocessing_orchestrator.process_feature_computation_request(request)
+
+        # Then
+        assert result is None, "Fire-and-forget should return None even on failure"
+
+        # Verify feature validation error notification was published
+        mock_dependencies['message_publisher'].publish_feature_validation_error.assert_called_once()
+
+        # Verify error details contain validation info
+        call_args = mock_dependencies['message_publisher'].publish_feature_validation_error.call_args
+        assert call_args.kwargs['request'] == request
+        assert 'invalid_features' in call_args.kwargs
+
+    def test_storage_failure_publishes_failure_notification(
+        self,
+        preprocessing_orchestrator: "PreprocessingOrchestrator",
+        mock_dependencies: dict[str, "Mock"],
+        request_builder: "FeaturePreprocessingRequestBuilder",
+        sample_features_df: "DataFrame",
+        resampling_response_factory,
+    ) -> None:
+        """Test that storage failures trigger failure notification."""
+        # Given
+        request = request_builder.for_training().with_skip_existing(False).build()
+
+        # Configure resampler and validator to succeed
+        resampling_response = resampling_response_factory()
+        mock_dependencies['market_data_resampler'].resample_symbol_data_incremental.return_value = resampling_response
+
+        mock_dependencies['feature_validator'].validate_definitions.return_value = {
+            'test_feature': True
+        }
+
+        mock_dependencies['feature_computer'].compute_batch.return_value = sample_features_df
+
+        # Configure feature store to raise an exception
+        mock_dependencies['feature_store_port'].store_computed_features_offline.side_effect = RuntimeError("Database connection failed")
+
+        # When
+        result = preprocessing_orchestrator.process_feature_computation_request(request)
+
+        # Then
+        assert result is None, "Fire-and-forget should return None even on failure"
+
+        # Verify error notification was published
+        mock_dependencies['message_publisher'].publish_preprocessing_error.assert_called_once()
+
+        # Verify error details contain storage info
+        call_args = mock_dependencies['message_publisher'].publish_preprocessing_error.call_args
+        assert call_args.kwargs['request'] == request
+        assert 'error_message' in call_args.kwargs
+        error_message = call_args.kwargs['error_message']
+        assert 'database' in error_message.lower() or 'failed' in error_message.lower()
+
+    def test_empty_resampling_result_handles_gracefully(
+        self,
+        preprocessing_orchestrator: "PreprocessingOrchestrator",
+        mock_dependencies: dict[str, "Mock"],
+        request_builder: "FeaturePreprocessingRequestBuilder",
+        resampling_response_factory,
+    ) -> None:
+        """Test that empty resampling results are handled gracefully."""
+        # Given
+        request = request_builder.for_training().with_skip_existing(False).build()
+
+        # Configure resampler to return empty data
+        resampling_response = resampling_response_factory(candles_per_timeframe=0)
+        mock_dependencies['market_data_resampler'].resample_symbol_data_incremental.return_value = resampling_response
+
+        mock_dependencies['feature_validator'].validate_definitions.return_value = {
+            'test_feature': True
+        }
+
+        # When
+        result = preprocessing_orchestrator.process_feature_computation_request(request)
+
+        # Then
+        assert result is None
+
+        # Verify completion notification was published with zero features
+        mock_dependencies['message_publisher'].publish_preprocessing_completed.assert_called_once()
+
+        call_args = mock_dependencies['message_publisher'].publish_preprocessing_completed.call_args
+        assert call_args.kwargs['total_features_computed'] == 0
+
+
+class TestPreprocessingOrchestratorContextBehavior:
+    """Test context-specific behavior (training, inference, backfill)."""
+
+    def test_inference_context_forces_recompute(
+        self,
+        preprocessing_orchestrator: "PreprocessingOrchestrator",
+        mock_dependencies: dict[str, "Mock"],
+        request_builder: "FeaturePreprocessingRequestBuilder",
+        sample_features_df: "DataFrame",
+        resampling_response_factory,
+    ) -> None:
+        """Test that inference context forces recomputation."""
+        # Given
+        request = request_builder.for_inference().build()
+
+        # Configure successful processing
+        resampling_response = resampling_response_factory()
+        mock_dependencies['market_data_resampler'].resample_symbol_data_incremental.return_value = resampling_response
+
+        mock_dependencies['feature_validator'].validate_definitions.return_value = {
+            'test_feature': True
+        }
+
+        mock_dependencies['feature_computer'].compute_batch.return_value = sample_features_df
+
+        # When
+        result = preprocessing_orchestrator.process_feature_computation_request(request)
+
+        # Then
+        assert result is None
+
+        # Verify request has force_recompute enabled (inference default)
+        assert request.force_recompute is True
+
+        # Verify completion notification published
+        mock_dependencies['message_publisher'].publish_preprocessing_completed.assert_called_once()
+
+        call_args = mock_dependencies['message_publisher'].publish_preprocessing_completed.call_args
+        assert call_args.kwargs['processing_context'] == "inference"
+
+
+class TestPreprocessingOrchestratorEdgeCases:
+    """Test edge cases and boundary conditions."""
+
+    def test_partial_timeframe_failure_still_publishes_successful_timeframes(
+        self,
+        preprocessing_orchestrator: "PreprocessingOrchestrator",
+        mock_dependencies: dict[str, "Mock"],
+        request_builder: "FeaturePreprocessingRequestBuilder",
+        sample_features_df: "DataFrame",
+        resampling_response_factory,
+    ) -> None:
+        """Test that partial failures still publish results for successful timeframes."""
+        # Given
+        request = (request_builder
+                   .for_training()
+                   .with_skip_existing(False)
+                   .with_target_timeframes([Timeframe.MINUTE_5, Timeframe.MINUTE_15])
+                   .build())
+
+        # Configure resampler to return data for both timeframes
+        resampling_response = resampling_response_factory(
+            timeframes=[Timeframe.MINUTE_5, Timeframe.MINUTE_15]
+        )
+        mock_dependencies['market_data_resampler'].resample_symbol_data_incremental.return_value = resampling_response
+
+        mock_dependencies['feature_validator'].validate_definitions.return_value = {
+            'test_feature': True
+        }
+
+        # Configure feature computer to succeed for first call, fail for second
+        mock_dependencies['feature_computer'].compute_batch.side_effect = [
+            sample_features_df,  # First timeframe succeeds
+            RuntimeError("Computation failed for second timeframe"),  # Second fails
+        ]
+
+        # When
+        result = preprocessing_orchestrator.process_feature_computation_request(request)
+
+        # Then
+        assert result is None
+
+        # Verify error notification was published (partial failure)
+        mock_dependencies['message_publisher'].publish_preprocessing_error.assert_called_once()
+
+        call_args = mock_dependencies['message_publisher'].publish_preprocessing_error.call_args
+        assert call_args.kwargs['request'] == request
+        error_message = call_args.kwargs['error_message']
+        assert 'failed' in error_message.lower() or 'error' in error_message.lower()
+
+    def test_request_with_large_feature_set_handles_correctly(
+        self,
+        preprocessing_orchestrator: "PreprocessingOrchestrator",
+        mock_dependencies: dict[str, "Mock"],
+        request_builder: "FeaturePreprocessingRequestBuilder",
+        resampling_response_factory,
+    ) -> None:
+        """Test processing large feature sets (stress test)."""
+        # Given
+        from drl_trading_common.config.feature_config import FeatureDefinition
+
+        # Create 100 features
+        large_feature_set = [
+            FeatureDefinition(
+                name=f"feature_{i}",
+                enabled=True,
+                derivatives=[0],
+                parameter_sets=[]
+            )
+            for i in range(100)
+        ]
+
+        request = (request_builder
+                   .for_training()
+                   .with_skip_existing(False)
+                   .with_features(large_feature_set)
+                   .build())
+
+        # Configure successful processing
+        resampling_response = resampling_response_factory()
+        mock_dependencies['market_data_resampler'].resample_symbol_data_incremental.return_value = resampling_response
+
+        # All features valid
+        mock_dependencies['feature_validator'].validate_definitions.return_value = {
+            f"feature_{i}": True for i in range(100)
+        }
+
+        # Create large feature DataFrame (100 features)
+        import pandas as pd
+        large_df = pd.DataFrame({
+            f"feature_{i}": [1.0, 2.0, 3.0] for i in range(100)
+        })
+        large_df.index = pd.date_range('2023-01-01', periods=3, freq='5min')
+        large_df.index.name = 'timestamp'
+        mock_dependencies['feature_computer'].compute_batch.return_value = large_df
+
+        # When
+        result = preprocessing_orchestrator.process_feature_computation_request(request)
+
+        # Then
+        assert result is None
+
+        # Verify completion with correct feature count
+        mock_dependencies['message_publisher'].publish_preprocessing_completed.assert_called_once()
+
+        call_args = mock_dependencies['message_publisher'].publish_preprocessing_completed.call_args
+        assert call_args.kwargs['total_features_computed'] == 100
+
+    def test_concurrent_timeframe_processing_with_parallel_enabled(
+        self,
+        preprocessing_orchestrator: "PreprocessingOrchestrator",
+        mock_dependencies: dict[str, "Mock"],
+        request_builder: "FeaturePreprocessingRequestBuilder",
+        sample_features_df: "DataFrame",
+        resampling_response_factory,
+    ) -> None:
+        """Test parallel processing of multiple timeframes."""
+        # Given
+        request = (request_builder
+                   .for_training()
+                   .with_skip_existing(False)
+                   .with_parallel_processing(True)
+                   .with_target_timeframes([Timeframe.MINUTE_5, Timeframe.MINUTE_15, Timeframe.MINUTE_30])
+                   .build())
+
+        # Configure resampler to return data for all timeframes
+        resampling_response = resampling_response_factory(
+            timeframes=[Timeframe.MINUTE_5, Timeframe.MINUTE_15, Timeframe.MINUTE_30],
+            candles_per_timeframe=5
+        )
+        mock_dependencies['market_data_resampler'].resample_symbol_data_incremental.return_value = resampling_response
+
+        mock_dependencies['feature_validator'].validate_definitions.return_value = {
+            'test_feature': True
+        }
+
+        mock_dependencies['feature_computer'].compute_batch.return_value = sample_features_df
+
+        # When
+        result = preprocessing_orchestrator.process_feature_computation_request(request)
+
+        # Then
+        assert result is None
+
+        # Verify completion with all timeframes
+        mock_dependencies['message_publisher'].publish_preprocessing_completed.assert_called_once()
+
+        call_args = mock_dependencies['message_publisher'].publish_preprocessing_completed.call_args
+        timeframes_processed = call_args.kwargs['timeframes_processed']
+        assert len(timeframes_processed) == 3
+        assert Timeframe.MINUTE_5 in timeframes_processed
+        assert Timeframe.MINUTE_15 in timeframes_processed
+        assert Timeframe.MINUTE_30 in timeframes_processed
+
+        # Total features = 2 features * 3 timeframes = 6
+        assert call_args.kwargs['total_features_computed'] == 6

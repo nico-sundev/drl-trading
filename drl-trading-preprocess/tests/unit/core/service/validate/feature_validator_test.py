@@ -8,7 +8,7 @@ import pytest
 
 from drl_trading_common.config.feature_config import FeatureDefinition
 from drl_trading_core.core.service.feature_manager import FeatureManager
-from drl_trading_preprocess.core.service.feature_validator import FeatureValidator
+from drl_trading_preprocess.core.service.validate.feature_validator import FeatureValidator
 
 
 class TestFeatureValidator:

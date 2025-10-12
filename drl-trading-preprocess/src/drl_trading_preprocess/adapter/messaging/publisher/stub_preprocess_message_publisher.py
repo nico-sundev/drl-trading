@@ -10,8 +10,8 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List
 
+from drl_trading_common.model.feature_preprocessing_request import FeaturePreprocessingRequest
 from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_preprocess.core.model.computation.feature_preprocessing_request import FeaturePreprocessingRequest
 from drl_trading_preprocess.core.port.preprocessing_message_publisher_port import PreprocessingMessagePublisherPort
 
 
@@ -42,6 +42,7 @@ class StubPreprocessingMessagePublisher(PreprocessingMessagePublisherPort):
     def publish_preprocessing_completed(
         self,
         request: FeaturePreprocessingRequest,
+        processing_context: str,
         processing_duration_seconds: float,
         total_features_computed: int,
         timeframes_processed: List[Timeframe],
@@ -56,7 +57,7 @@ class StubPreprocessingMessagePublisher(PreprocessingMessagePublisherPort):
             "type": "preprocessing_completed",
             "request_id": request.request_id,
             "symbol": request.symbol,
-            "processing_context": request.processing_context,
+            "processing_context": processing_context,
             "processing_duration_seconds": processing_duration_seconds,
             "total_features_computed": total_features_computed,
             "timeframes_processed": [tf.value for tf in timeframes_processed],

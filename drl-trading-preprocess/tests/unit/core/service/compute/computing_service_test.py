@@ -119,8 +119,8 @@ class TestComputingService:
             "feature1": Mock(),
             "feature2": Mock()
         }
-        mock_features["feature1"].is_caught_up.return_value = True
-        mock_features["feature2"].is_caught_up.return_value = False
+        mock_features["feature1"].are_features_caught_up.return_value = True
+        mock_features["feature2"].are_features_caught_up.return_value = False
 
         feature_manager_service_mock._features = mock_features
 
@@ -182,9 +182,9 @@ class TestComputingService:
             "feature2": Mock(),
             "feature3": Mock()
         }
-        mock_features["feature1"].is_caught_up.return_value = True
-        mock_features["feature2"].is_caught_up.return_value = True
-        mock_features["feature3"].is_caught_up.return_value = True
+        mock_features["feature1"].are_features_caught_up.return_value = True
+        mock_features["feature2"].are_features_caught_up.return_value = True
+        mock_features["feature3"].are_features_caught_up.return_value = True
 
         feature_manager_service_mock._features = mock_features
 
@@ -201,13 +201,13 @@ class TestComputingService:
         assert result.reference_time == reference_time
 
     def test_check_catchup_status_exception_handling(self, computing_service: FeatureComputingService, feature_manager_service_mock: Mock, caplog: pytest.LogCaptureFixture) -> None:
-        """Test check_catchup_status when feature.is_caught_up raises exception."""
+        """Test check_catchup_status when feature.are_features_caught_up raises exception."""
         # Given
         reference_time = datetime.now()
         mock_feature_good = Mock()
         mock_feature_bad = Mock()
-        mock_feature_good.is_caught_up.return_value = True
-        mock_feature_bad.is_caught_up.side_effect = RuntimeError("Feature computation error")
+        mock_feature_good.are_features_caught_up.return_value = True
+        mock_feature_bad.are_features_caught_up.side_effect = RuntimeError("Feature computation error")
 
         mock_features = {
             "good_feature": mock_feature_good,

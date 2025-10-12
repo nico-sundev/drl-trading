@@ -1,10 +1,8 @@
 """
-Main preprocessing service that orchestrates market data resampling,
-feature computation, and feature store operations.
+Preprocessing orchestrator that coordinates the complete feature computation pipeline.
 
-This service is the heart of the drl-trading-preprocess package,
-This is the heart of the drl-trading-preprocess package,
-handling real-world scenarios including:
+This orchestrator is the heart of the drl-trading-preprocess package,
+coordinating multiple specialized services to handle real-world scenarios including:
 - Dynamic feature definitions per request
 - Incremental processing with existing feature checking
 - Multiple timeframe resampling
@@ -38,9 +36,21 @@ from drl_trading_preprocess.core.service.coverage.feature_coverage_analyzer impo
 logger = logging.getLogger(__name__)
 
 
-class PreprocessService:
+class PreprocessingOrchestrator:
     """
-    Main preprocessing service orchestrating the complete feature computation pipeline.
+    Orchestrates the complete feature preprocessing pipeline.
+
+    This orchestrator coordinates multiple specialized services to fulfill feature
+    computation requests through an 8-step workflow:
+
+    1. Request validation
+    2. Existing feature coverage analysis
+    3. Market data resampling to target timeframes
+    4. Feature warmup for derivatives
+    5. Feature computation across timeframes
+    6. Feature store persistence
+    7. Online materialization (optional)
+    8. Async notification publishing
 
     Real-world capabilities:
     - Handles dynamic feature definitions per processing request
@@ -49,6 +59,12 @@ class PreprocessService:
     - Manages multiple timeframe resampling efficiently
     - Integrates with Feast feature store for storage and retrieval
     - Optimized for production deployment with comprehensive error handling
+
+    Architecture:
+    - Follows Hexagonal Architecture (Ports & Adapters)
+    - Delegates work to specialized services
+    - Manages workflow coordination and error handling
+    - Publishes fire-and-forget notifications via ports
     """
 
     @inject
@@ -62,7 +78,7 @@ class PreprocessService:
         message_publisher: PreprocessingMessagePublisherPort,
     ) -> None:
         """
-        Initialize the preprocessing service with all required dependencies.
+        Initialize the preprocessing orchestrator with all required dependencies.
 
         Args:
             market_data_resampler: Service for resampling market data to higher timeframes
@@ -84,7 +100,7 @@ class PreprocessService:
         self._total_features_computed = 0
         self._total_processing_time_ms = 0
 
-        logger.info("PreprocessService initialized with all dependencies")
+        logger.info("PreprocessingOrchestrator initialized with all dependencies")
 
     def process_feature_computation_request(
         self,
@@ -93,13 +109,15 @@ class PreprocessService:
         """
         Process a complete feature computation request (fire-and-forget).
 
-        This is the main entry point that handles:
+        This is the main orchestration entry point that coordinates the 8-step workflow:
         1. Request validation
         2. Existing feature checking (if enabled)
         3. Market data resampling to target timeframes
-        4. Dynamic feature computation
-        5. Feature store persistence
-        6. Async notification via Kafka (future implementation)
+        4. Feature warmup handling
+        5. Dynamic feature computation
+        6. Feature store persistence
+        7. Online materialization (optional)
+        8. Async notification via Kafka
 
         Args:
             request: Complete feature computation request

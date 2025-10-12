@@ -15,6 +15,7 @@ from drl_trading_adapter.adapter.database.repository.market_data_repository impo
 from drl_trading_common.config.infrastructure_config import DatabaseConfig
 from drl_trading_common.model.timeframe import Timeframe
 from drl_trading_core.common.model.market_data_model import MarketDataModel
+from drl_trading_core.common.model.data_availability_summary import DataAvailabilitySummary
 
 
 class TestMarketDataRepositoryIntegration:
@@ -197,38 +198,36 @@ class TestMarketDataRepositoryIntegration:
     def test_get_data_availability_success(self, repository, sample_market_data_entities):
         """Test successful retrieval of data availability summary."""
         # Given
-        symbols = ["EURUSD", "GBPUSD"]
+        symbol = "EURUSD"
         timeframe = Timeframe.MINUTE_1
 
         # When
-        result = repository.get_data_availability(symbols, timeframe)
+        result = repository.get_data_availability(symbol, timeframe)
 
         # Then
-        assert len(result) == len(symbols)
-        for availability in result:
-            assert availability.symbol in symbols
-            assert availability.timeframe == timeframe
-            assert availability.record_count > 0
-            assert availability.earliest_timestamp is not None
-            assert availability.latest_timestamp is not None
-            assert availability.earliest_timestamp <= availability.latest_timestamp
+        assert isinstance(result, DataAvailabilitySummary)
+        assert result.symbol == symbol
+        assert result.timeframe == timeframe
+        assert result.record_count > 0
+        assert result.earliest_timestamp is not None
+        assert result.latest_timestamp is not None
+        assert result.earliest_timestamp <= result.latest_timestamp
 
     def test_get_data_availability_no_data(self, repository):
-        """Test data availability for symbols with no data."""
+        """Test data availability for symbol with no data."""
         # Given
-        symbols = ["NONEXISTENT"]
+        symbol = "NONEXISTENT"
         timeframe = Timeframe.MINUTE_1
 
         # When
-        result = repository.get_data_availability(symbols, timeframe)
+        result = repository.get_data_availability(symbol, timeframe)
 
         # Then
-        assert len(result) == 1
-        availability = result[0]
-        assert availability.symbol == "NONEXISTENT"
-        assert availability.record_count == 0
-        assert availability.earliest_timestamp is None
-        assert availability.latest_timestamp is None
+        assert isinstance(result, DataAvailabilitySummary)
+        assert result.symbol == symbol
+        assert result.record_count == 0
+        assert result.earliest_timestamp is None
+        assert result.latest_timestamp is None
 
     def test_get_symbol_available_timeframes_success(self, repository, sample_market_data_entities):
         """Test successful retrieval of available timeframes for a symbol."""

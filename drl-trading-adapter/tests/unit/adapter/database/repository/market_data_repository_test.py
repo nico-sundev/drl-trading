@@ -162,10 +162,10 @@ class TestMarketDataRepositoryRead:
 
     @patch('drl_trading_adapter.adapter.database.repository.market_data_repository.DataAvailabilityMapper')
     def test_get_data_availability_success(self, mock_mapper, repository, mock_session_factory, mock_session):
-        """Test successful retrieval of data availability for specific symbols."""
+        """Test successful retrieval of data availability for a specific symbol."""
         # Given
-        symbols = ["AAPL", "GOOGL"]
-        timeframe = Timeframe.HOUR_1  # Single timeframe, not list
+        symbol = "AAPL"
+        timeframe = Timeframe.HOUR_1
 
         # Mock query result
         mock_result = Mock()
@@ -181,12 +181,12 @@ class TestMarketDataRepositoryRead:
         mock_mapper.query_result_to_model.return_value = mock_availability
 
         # When
-        result = repository.get_data_availability(symbols, timeframe)
+        result = repository.get_data_availability(symbol, timeframe)
 
         # Then
-        assert isinstance(result, list)
-        # Should be called for each symbol (2 symbols = 2 calls)
-        assert mock_mapper.query_result_to_model.call_count == 2
+        assert isinstance(result, DataAvailabilitySummary)
+        # Should be called once for the single symbol
+        assert mock_mapper.query_result_to_model.call_count == 1
 
     @patch('drl_trading_adapter.adapter.database.repository.market_data_repository.DataAvailabilityMapper')
     def test_get_data_availability_summary_success(self, mock_mapper, repository, mock_session_factory, mock_session):

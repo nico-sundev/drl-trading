@@ -9,8 +9,8 @@ architecture by providing async notifications about preprocessing results.
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
+from drl_trading_common.model.feature_preprocessing_request import FeaturePreprocessingRequest
 from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_preprocess.core.model.computation.feature_preprocessing_request import FeaturePreprocessingRequest
 
 
 class PreprocessingMessagePublisherPort(ABC):
@@ -30,7 +30,7 @@ class PreprocessingMessagePublisherPort(ABC):
     def publish_preprocessing_completed(
         self,
         request: FeaturePreprocessingRequest,
-        processing_duration_seconds: float,
+        processing_context: str,
         total_features_computed: int,
         timeframes_processed: List[Timeframe],
         success_details: Dict[str, Any]
@@ -38,9 +38,14 @@ class PreprocessingMessagePublisherPort(ABC):
         """
         Publish notification about successful preprocessing completion.
 
+        Topic routing based on processing_context:
+        - "training": Publishes to training topic (e.g., topic X)
+        - "inference": Publishes to inference topic (e.g., topic Y)
+        - "backfill": May use different topic or same as training
+
         Args:
             request: Original preprocessing request
-            processing_duration_seconds: Total processing time in seconds
+            processing_context: Processing mode ("training", "inference", "backfill")
             total_features_computed: Number of features computed across all timeframes
             timeframes_processed: List of timeframes that were successfully processed
             success_details: Additional details about the successful processing
@@ -51,7 +56,7 @@ class PreprocessingMessagePublisherPort(ABC):
     def publish_preprocessing_error(
         self,
         request: FeaturePreprocessingRequest,
-        processing_duration_seconds: float,
+        processing_context: str,
         error_message: str,
         error_details: Dict[str, str],
         failed_step: str
@@ -59,9 +64,13 @@ class PreprocessingMessagePublisherPort(ABC):
         """
         Publish notification about preprocessing failure.
 
+        Topic routing based on processing_context:
+        - "training": Publishes to training error topic
+        - "inference": Publishes to inference error topic
+
         Args:
             request: Original preprocessing request
-            processing_duration_seconds: Processing time until failure
+            processing_context: Processing mode ("training", "inference", "backfill")
             error_message: Human-readable error message
             error_details: Detailed error information for debugging
             failed_step: Which step of the preprocessing pipeline failed

@@ -184,51 +184,43 @@ class MarketDataRepository(MarketDataReaderPort):
 
     def get_data_availability(
         self,
-        symbols: List[str],
+        symbol: str,
         timeframe: Timeframe
-    ) -> List[DataAvailabilitySummary]:
-        """Get data availability summary for symbols and timeframe."""
-        if not symbols:
-            return []
-
+    ) -> DataAvailabilitySummary:
+        """Get data availability summary for a symbol and timeframe."""
         with self.session_factory.get_session() as session:
             try:
-                availability_list = []
+                query = session.query(
+                    func.count(MarketDataEntity.timestamp).label('record_count'),
+                    func.min(MarketDataEntity.timestamp).label('earliest'),
+                    func.max(MarketDataEntity.timestamp).label('latest')
+                ).filter(
+                    and_(
+                        MarketDataEntity.symbol == symbol,
+                        MarketDataEntity.timeframe == timeframe.value
+                    )
+                )
 
-                for symbol in symbols:
-                    query = session.query(
-                        func.count(MarketDataEntity.timestamp).label('record_count'),
-                        func.min(MarketDataEntity.timestamp).label('earliest'),
-                        func.max(MarketDataEntity.timestamp).label('latest')
-                    ).filter(
-                        and_(
-                            MarketDataEntity.symbol == symbol,
-                            MarketDataEntity.timeframe == timeframe.value
-                        )
+                result = query.first()
+
+                if result and result[0] > 0:  # record_count is the 1st column (index 0)
+                    availability = DataAvailabilityMapper.query_result_to_model(
+                        symbol=symbol,
+                        timeframe=timeframe.value,
+                        record_count=result[0],  # record_count
+                        earliest_timestamp=result[1],  # earliest
+                        latest_timestamp=result[2]  # latest
+                    )
+                else:
+                    availability = DataAvailabilityMapper.query_result_to_model(
+                        symbol=symbol,
+                        timeframe=timeframe.value,
+                        record_count=0,
+                        earliest_timestamp=None,
+                        latest_timestamp=None
                     )
 
-                    result = query.first()
-
-                    if result and result[0] > 0:  # record_count is the 1st column (index 0)
-                        availability = DataAvailabilityMapper.query_result_to_model(
-                            symbol=symbol,
-                            timeframe=timeframe.value,
-                            record_count=result[0],  # record_count
-                            earliest_timestamp=result[1],  # earliest
-                            latest_timestamp=result[2]  # latest
-                        )
-                        availability_list.append(availability)
-                    else:
-                        availability = DataAvailabilityMapper.query_result_to_model(
-                            symbol=symbol,
-                            timeframe=timeframe.value,
-                            record_count=0,
-                            earliest_timestamp=None,
-                            latest_timestamp=None
-                        )
-                        availability_list.append(availability)
-
-                return availability_list
+                return availability
 
             except Exception as e:
                 self.logger.error(f"Error checking data availability: {e}")

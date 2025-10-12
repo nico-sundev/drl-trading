@@ -3,6 +3,8 @@
 import logging
 from typing import Dict, Type
 
+from injector import inject
+
 from drl_trading_common.config.local_data_import_config import LocalDataImportConfig
 
 from drl_trading_core.common.data_import.base_data_import_service import (
@@ -18,6 +20,7 @@ from drl_trading_core.common.data_import.web.yahoo_data_import_service import (
 logger = logging.getLogger(__name__)
 
 
+@inject
 class DataImportStrategyFactory:
     """Factory for creating data import strategy instances based on configuration."""
 

@@ -3,9 +3,9 @@
 ## Quick Thoughts
 <!-- Dump ideas here quickly, organize later -->
 
-- fetch existence checker add further functionality and cover business cases
-- circuit breakers
+- drltradingadapter contains both test and tests directories
 - archunit with hexagonal tests
+- circuit breakers
 
 ## Future Epics (Unrefined)
 

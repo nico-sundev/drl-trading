@@ -138,6 +138,32 @@ class MarketDataReaderPort(ABC):
         pass
 
     @abstractmethod
+    def get_data_availability(
+        self,
+        symbol: str,
+        timeframe: Timeframe
+    ) -> DataAvailabilitySummary:
+        """
+        Get data availability summary for a specific symbol and timeframe.
+
+        Performs efficient database aggregation (COUNT, MIN, MAX) to determine
+        data availability without fetching actual records. This is 100-1000x faster
+        than fetching all data for availability checking.
+
+        Args:
+            symbol: Trading symbol
+            timeframe: Data timeframe enum
+
+        Returns:
+            DataAvailabilitySummary: Availability summary for the symbol
+
+        Raises:
+            ValueError: If symbol or timeframe is invalid
+            DatabaseConnectionError: If database access fails
+        """
+        pass
+
+    @abstractmethod
     def get_symbol_available_timeframes(self, symbol: str) -> List[Timeframe]:
         """
         Get all available timeframes for a symbol.
