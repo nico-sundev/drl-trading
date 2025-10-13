@@ -28,6 +28,7 @@ dependencies = [
     "numpy>=1.24.0", # Numerical ops
     "pandas>=2.0.0", # DataFrames
     "talipp", # Technical indicators (strategy specific)
+    "jsonpickle>=3.0.0", # Indicator state serialization
     "injector>=0.22.0", # DI framework
 ]
 
@@ -81,7 +82,11 @@ omit = ["*/tests/*", "*/setup.py"]
 ## Pytest configuration (extends workspace defaults)
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = ["-ra", "-m not slow", "--strict-markers"]
+addopts = ["-ra", "-m not slow and not benchmark", "--strict-markers"]
+markers = [
+    "slow: marks tests as slow (deselected by default)",
+    "benchmark: marks tests as benchmarks (deselected by default, run with -m benchmark)",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/drl_trading_strategy_example"]

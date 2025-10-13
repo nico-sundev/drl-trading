@@ -8,7 +8,7 @@ class FeatureConfigVersionInfo:
     semver: str
     hash: str
     created_at: datetime
-    feature_definitions: List[dict]
+    feature_definitions: List[dict] # Note for AI Agent: Represents objects compliant with FeatureDefinition model (will be refactored later)
     description: Optional[str] = None
 
     def to_dict(self) -> dict:

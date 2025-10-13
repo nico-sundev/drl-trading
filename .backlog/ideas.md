@@ -3,7 +3,10 @@
 ## Quick Thoughts
 <!-- Dump ideas here quickly, organize later -->
 
+- preprocessing IT is almost passing ... check if features really have to be passes to the adapter and
+  - if so, then create a response object from featuremanager, adding the features
 - drltradingadapter contains both test and tests directories
+- featureversioninfoconfig use list[featuredefinition] instead of list[dict]
 - archunit with hexagonal tests
 - circuit breakers
 

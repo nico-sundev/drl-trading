@@ -7,9 +7,10 @@ from pathlib import Path
 from typing import Optional
 
 from drl_trading_preprocess.core.model.resample.resampling_context import ResamplingContext
+from drl_trading_preprocess.core.port.state_persistence_port import IStatePersistencePort
 
 
-class StatePersistenceService:
+class StatePersistenceService(IStatePersistencePort):
     """Service for persisting and restoring ResamplingContext state.
 
     This service handles saving and loading of resampling context state

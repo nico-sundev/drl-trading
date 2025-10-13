@@ -328,18 +328,28 @@ class PreprocessingOrchestrator:
 
         for timeframe, analysis in coverage_analyses.items():
             if not analysis.ohlcv_available:
+                # No OHLCV data available for this timeframe
+                # This means we need to resample from base timeframe first,
+                # then compute all requested features on the resampled data
                 logger.warning(
                     f"No OHLCV data available for {request.symbol} {timeframe.value}. "
-                    "Cannot compute features without market data."
+                    f"Will resample from base timeframe and compute all features."
                 )
-                continue
-
-            needing_comp = analysis.features_needing_computation
-            if needing_comp:
-                features_needing_computation.update(needing_comp)
-                logger.info(
-                    f"Features needing computation for {timeframe.value}: {needing_comp}"
-                )
+                # Add all requested features for this timeframe
+                needing_comp = analysis.features_needing_computation
+                if needing_comp:
+                    features_needing_computation.update(needing_comp)
+                    logger.debug(
+                        f"Features needing computation for {timeframe.value} (fresh): {needing_comp}"
+                    )
+            else:
+                # OHLCV data exists, check which features are missing
+                needing_comp = analysis.features_needing_computation
+                if needing_comp:
+                    features_needing_computation.update(needing_comp)
+                    logger.info(
+                        f"Features needing computation for {timeframe.value}: {needing_comp}"
+                    )
 
         if not features_needing_computation:
             logger.info("All requested features are fully covered. No computation needed.")

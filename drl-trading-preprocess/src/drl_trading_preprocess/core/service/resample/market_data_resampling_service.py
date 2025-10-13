@@ -18,8 +18,8 @@ from drl_trading_core.core.port.market_data_reader_port import MarketDataReaderP
 from drl_trading_preprocess.core.model.resample.resampling_response import ResamplingResponse
 from drl_trading_preprocess.core.model.resample.resampling_context import ResamplingContext
 from drl_trading_preprocess.core.port.message_publisher_port import MessagePublisherPort
+from drl_trading_preprocess.core.port.state_persistence_port import IStatePersistencePort
 from drl_trading_preprocess.core.service.resample.candle_accumulator_service import CandleAccumulatorService
-from drl_trading_preprocess.core.service.resample.state_persistence_service import StatePersistenceService
 from drl_trading_preprocess.infrastructure.config.preprocess_config import ResampleConfig
 
 
@@ -38,7 +38,7 @@ class MarketDataResamplingService:
         message_publisher: MessagePublisherPort,
         candle_accumulator_service: CandleAccumulatorService,
         resample_config: ResampleConfig,
-        state_persistence: Optional[StatePersistenceService] = None
+        state_persistence: IStatePersistencePort
     ):
         """
         Initialize resampling service with required dependencies.
@@ -72,12 +72,11 @@ class MarketDataResamplingService:
         Returns:
             Initialized ResamplingContext (either restored from disk or new)
         """
-        if self.state_persistence:
-            # Try to restore from persistent storage
-            restored_context = self.state_persistence.load_context()
-            if restored_context:
-                self.logger.info("Restored resampling context from persistent storage")
-                return restored_context
+        # Try to restore from persistent storage
+        restored_context = self.state_persistence.load_context()
+        if restored_context:
+            self.logger.info("Restored resampling context from persistent storage")
+            return restored_context
 
         # Create new context with configuration
         max_symbols = getattr(self.resample_config, 'max_symbols_in_memory', 100)

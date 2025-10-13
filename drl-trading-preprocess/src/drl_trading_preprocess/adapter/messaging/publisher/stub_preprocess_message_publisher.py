@@ -43,7 +43,6 @@ class StubPreprocessingMessagePublisher(PreprocessingMessagePublisherPort):
         self,
         request: FeaturePreprocessingRequest,
         processing_context: str,
-        processing_duration_seconds: float,
         total_features_computed: int,
         timeframes_processed: List[Timeframe],
         success_details: Dict[str, Any]
@@ -58,7 +57,6 @@ class StubPreprocessingMessagePublisher(PreprocessingMessagePublisherPort):
             "request_id": request.request_id,
             "symbol": request.symbol,
             "processing_context": processing_context,
-            "processing_duration_seconds": processing_duration_seconds,
             "total_features_computed": total_features_computed,
             "timeframes_processed": [tf.value for tf in timeframes_processed],
             "feature_definitions_count": len(request.get_enabled_features()),
@@ -74,9 +72,8 @@ class StubPreprocessingMessagePublisher(PreprocessingMessagePublisherPort):
 
         self.logger.info(
             f"[STUB] Preprocessing completed: {request.symbol} "
-            f"(Request: {request.request_id}) "
-            f"- {total_features_computed} features across {len(timeframes_processed)} timeframes "
-            f"in {processing_duration_seconds:.2f}s"
+            f"(Request: {request.request_id}, Context: {processing_context}) "
+            f"- {total_features_computed} features across {len(timeframes_processed)} timeframes"
         )
 
         # Log detailed breakdown per timeframe
@@ -90,7 +87,7 @@ class StubPreprocessingMessagePublisher(PreprocessingMessagePublisherPort):
     def publish_preprocessing_error(
         self,
         request: FeaturePreprocessingRequest,
-        processing_duration_seconds: float,
+        processing_context: str,
         error_message: str,
         error_details: Dict[str, str],
         failed_step: str
@@ -104,8 +101,7 @@ class StubPreprocessingMessagePublisher(PreprocessingMessagePublisherPort):
             "type": "preprocessing_error",
             "request_id": request.request_id,
             "symbol": request.symbol,
-            "processing_context": request.processing_context,
-            "processing_duration_seconds": processing_duration_seconds,
+            "processing_context": processing_context,
             "error_message": error_message,
             "error_details": error_details,
             "failed_step": failed_step,
@@ -120,8 +116,8 @@ class StubPreprocessingMessagePublisher(PreprocessingMessagePublisherPort):
 
         self.logger.error(
             f"[STUB] Preprocessing failed: {request.symbol} "
-            f"(Request: {request.request_id}) "
-            f"at step '{failed_step}' after {processing_duration_seconds:.2f}s: {error_message}"
+            f"(Request: {request.request_id}, Context: {processing_context}) "
+            f"at step '{failed_step}': {error_message}"
         )
 
         if error_details:
