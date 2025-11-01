@@ -6,6 +6,7 @@ repository strategies (local filesystem and S3).
 """
 
 import logging
+import pytest
 from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
 from drl_trading_core.common.model.feature_service_request_container import (
     FeatureServiceRequestContainer,
@@ -229,48 +230,55 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         expected_timestamps = set(sample_trading_features_df["event_timestamp"])
         assert fetched_timestamps == expected_timestamps
 
+    @pytest.mark.parametrize(
+        "symbol_feature_view_requests_fixture",
+        ["EURUSD", "GBPUSD", "USDJPY"],
+        indirect=True
+    )
     def test_multiple_symbols_parametrized(
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_version_info_fixture: FeatureConfigVersionInfo
+        symbol_feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_version_info_fixture: FeatureConfigVersionInfo,
+        request
     ) -> None:
-        """Test storing and fetching features for multiple symbols with both offline strategies."""
+        """Test storing and fetching features for different symbols with both offline strategies.
+
+        This test is parametrized to run for EURUSD, GBPUSD, and USDJPY separately,
+        verifying that each symbol's data is properly isolated.
+        """
         # Given
-        symbols = ["EURUSD", "GBPUSD", "USDJPY"]
+        # Get the symbol from the indirect parametrization
+        symbol = request.node.callspec.params.get("symbol_feature_view_requests_fixture", "EURUSD")
         save_repo = parametrized_integration_container.get(IFeatureStoreSavePort)
         fetch_repo = parametrized_integration_container.get(IFeatureStoreFetchPort)
 
-        # When - Store features for multiple symbols
-        for symbol in symbols:
-            symbol_features = sample_trading_features_df.copy()
-            symbol_features["symbol"] = symbol
+        # Prepare symbol-specific features
+        symbol_features = sample_trading_features_df.copy()
+        symbol_features["symbol"] = symbol
 
-            # Import the factory function to create feature view requests for this specific symbol
-            from conftest import create_feature_view_requests
-            symbol_feature_requests = create_feature_view_requests(feature_version_info_fixture, symbol=symbol)
+        # When - Store features for this symbol
+        save_repo.store_computed_features_offline(
+            features_df=symbol_features,
+            symbol=symbol,
+            feature_version_info=feature_version_info_fixture,
+            feature_view_requests=symbol_feature_view_requests_fixture
+        )
 
-            save_repo.store_computed_features_offline(
-                features_df=symbol_features,
-                symbol=symbol,
-                feature_version_info=feature_version_info_fixture,
-                feature_view_requests=symbol_feature_requests
-            )
-
-        # Then - Fetch features for each symbol and verify isolation
+        # Then - Fetch features and verify correctness
         timestamps = sample_trading_features_df["event_timestamp"]
-        for symbol in symbols:
-            feature_service_request = FeatureServiceRequestContainer(
-                feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
-                symbol=symbol,
-                feature_version_info=feature_version_info_fixture,
-                timeframe=Timeframe.HOUR_1
-            )
-            fetched_features = fetch_repo.get_offline(
-                feature_service_request=feature_service_request,
-                timestamps=timestamps
-            )
+        feature_service_request = FeatureServiceRequestContainer(
+            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            symbol=symbol,
+            feature_version_info=feature_version_info_fixture,
+            timeframe=Timeframe.HOUR_1
+        )
+        fetched_features = fetch_repo.get_offline(
+            feature_service_request=feature_service_request,
+            timestamps=timestamps
+        )
 
-            assert not fetched_features.empty, f"No features fetched for symbol {symbol}"
-            assert all(fetched_features["symbol"] == symbol)
-            assert len(fetched_features) == len(sample_trading_features_df)
+        assert not fetched_features.empty, f"No features fetched for symbol {symbol}"
+        assert all(fetched_features["symbol"] == symbol), f"Symbol mismatch for {symbol}"
+        assert len(fetched_features) == len(sample_trading_features_df), f"Feature count mismatch for {symbol}"

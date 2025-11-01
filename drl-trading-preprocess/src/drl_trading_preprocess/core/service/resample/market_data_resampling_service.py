@@ -21,6 +21,7 @@ from drl_trading_preprocess.core.port.message_publisher_port import MessagePubli
 from drl_trading_preprocess.core.port.state_persistence_port import IStatePersistencePort
 from drl_trading_preprocess.core.service.resample.candle_accumulator_service import CandleAccumulatorService
 from drl_trading_preprocess.infrastructure.config.preprocess_config import ResampleConfig
+from drl_trading_preprocess.infrastructure.adapter.state_persistence.noop_state_persistence_service import NoOpStatePersistenceService
 
 
 @inject
@@ -54,7 +55,9 @@ class MarketDataResamplingService:
         self.message_publisher = message_publisher
         self.candle_accumulator_service = candle_accumulator_service
         self.resample_config = resample_config
+        # Use NoOpStatePersistenceService directly to leverage the Null Object pattern
         self.state_persistence = state_persistence
+        
         self.logger = logging.getLogger(__name__)
 
         # Initialize or restore resampling context
@@ -72,11 +75,12 @@ class MarketDataResamplingService:
         Returns:
             Initialized ResamplingContext (either restored from disk or new)
         """
-        # Try to restore from persistent storage
-        restored_context = self.state_persistence.load_context()
-        if restored_context:
-            self.logger.info("Restored resampling context from persistent storage")
-            return restored_context
+        # Try to restore from persistent storage if enabled
+        if self.state_persistence:
+            restored_context = self.state_persistence.load_context()
+            if restored_context:
+                self.logger.info("Restored resampling context from persistent storage")
+                return restored_context
 
         # Create new context with configuration
         max_symbols = getattr(self.resample_config, 'max_symbols_in_memory', 100)
@@ -409,19 +413,20 @@ class MarketDataResamplingService:
         """Reset and cleanup the resampling context state.
 
         Returns:
-            True if reset was successful, False otherwise
+            True if context was reset successfully, False if persistent cleanup failed
         """
         # Clear in-memory context
         self.context = ResamplingContext(
             max_symbols_in_memory=getattr(self.resample_config, 'max_symbols_in_memory', 100)
         )
 
-        # Clean up persistent state
+        # Clean up persistent state if enabled
         if self.state_persistence:
             success = self.state_persistence.cleanup_state_file()
             self.logger.info("Reset resampling context and cleaned up persistent state")
             return success
         else:
+            # No persistent state to clean, but in-memory reset succeeded
             self.logger.info("Reset resampling context (no persistent state to clean)")
             return True
 

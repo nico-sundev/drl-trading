@@ -19,6 +19,7 @@ from drl_trading_preprocess.core.service.resample.candle_accumulator_service imp
     CandleAccumulatorService,
 )
 from drl_trading_preprocess.core.model.resample.resampling_response import ResamplingResponse
+from drl_trading_preprocess.infrastructure.adapter.state_persistence.noop_state_persistence_service import NoOpStatePersistenceService
 from drl_trading_preprocess.infrastructure.config.preprocess_config import (
     ResampleConfig,
 )
@@ -80,6 +81,7 @@ class TestMarketDataResamplingService:
             message_publisher=mock_message_publisher,
             candle_accumulator_service=candle_accumulator_service,
             resample_config=resample_config,
+            state_persistence=NoOpStatePersistenceService()
         )
 
     @pytest.fixture
@@ -191,6 +193,7 @@ class TestMarketDataResamplingService:
             message_publisher=mock_message_publisher,
             candle_accumulator_service=candle_accumulator_service,
             resample_config=custom_config,
+            state_persistence=NoOpStatePersistenceService()
         )
 
         symbol = "BTCUSD"
@@ -407,6 +410,7 @@ class TestMarketDataResamplingService:
             message_publisher=mock_message_publisher,
             candle_accumulator_service=candle_accumulator_service,
             resample_config=config_enabled,
+            state_persistence=NoOpStatePersistenceService()
         )
 
         # When
@@ -427,6 +431,7 @@ class TestMarketDataResamplingService:
             message_publisher=mock_message_publisher,
             candle_accumulator_service=candle_accumulator_service,
             resample_config=config_disabled,
+            state_persistence=NoOpStatePersistenceService()
         )
 
         # When
@@ -533,6 +538,7 @@ class TestMarketDataResamplingService:
             message_publisher=mock_message_publisher,
             candle_accumulator_service=candle_accumulator_service,
             resample_config=resample_config,
+            state_persistence=NoOpStatePersistenceService()
         )
 
         # When - First get existing data summary to determine incremental start point
@@ -650,6 +656,7 @@ class TestMarketDataResamplingService:
             message_publisher=mock_message_publisher,
             candle_accumulator_service=candle_accumulator_service,
             resample_config=resample_config,
+            state_persistence=NoOpStatePersistenceService()
         )
 
         # When
@@ -775,6 +782,7 @@ class TestMarketDataResamplingService:
             message_publisher=mock_message_publisher,
             candle_accumulator_service=candle_accumulator_service,
             resample_config=resample_config,
+            state_persistence=NoOpStatePersistenceService()
         )
 
         # When & Then
@@ -913,6 +921,7 @@ class TestMarketDataResamplingService:
             message_publisher=mock_message_publisher,
             candle_accumulator_service=candle_accumulator_service,
             resample_config=resample_config,
+            state_persistence=NoOpStatePersistenceService()
         )
 
         # When
@@ -1054,6 +1063,7 @@ class TestMarketDataResamplingService:
             message_publisher=mock_message_publisher,
             candle_accumulator_service=candle_accumulator_service,
             resample_config=resample_config,
+            state_persistence=NoOpStatePersistenceService()
         )
 
         # When
@@ -1186,6 +1196,7 @@ class TestMarketDataResamplingService:
             message_publisher=mock_message_publisher,
             candle_accumulator_service=candle_accumulator_service,
             resample_config=resample_config,
+            state_persistence=NoOpStatePersistenceService()
         )
 
         # When
@@ -1221,7 +1232,7 @@ class TestMarketDataResamplingService:
         assert first_candle.volume >= 158000  # Sum of all volumes
 
         # Verify extreme movements don't crash the service
-        assert response.processing_duration_ms > 0
+        assert response.processing_duration_ms >= 0  # Duration can be 0 for very fast processing
         mock_message_publisher.publish_resampled_data.assert_called_once()
 
         # No errors should be published for extreme (but valid) movements

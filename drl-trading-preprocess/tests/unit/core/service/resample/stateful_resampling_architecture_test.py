@@ -7,6 +7,7 @@ from unittest.mock import Mock
 from drl_trading_common.model.timeframe import Timeframe
 from drl_trading_core.common.model.market_data_model import MarketDataModel
 from drl_trading_preprocess.core.service.resample.market_data_resampling_service import MarketDataResamplingService
+from drl_trading_preprocess.infrastructure.adapter.state_persistence.noop_state_persistence_service import NoOpStatePersistenceService
 from drl_trading_preprocess.infrastructure.config.preprocess_config import ResampleConfig
 
 
@@ -39,12 +40,14 @@ class TestStatefulResamplingArchitecture:
         message_publisher = Mock()
         candle_accumulator_service = Mock()
         resample_config = ResampleConfig()
+        state_persistence = NoOpStatePersistenceService()
 
         return {
             'market_data_reader': market_data_reader,
             'message_publisher': message_publisher,
             'candle_accumulator_service': candle_accumulator_service,
-            'resample_config': resample_config
+            'resample_config': resample_config,
+            'state_persistence': state_persistence,
         }
 
     def test_resampling_service_can_be_instantiated(self, mock_dependencies: dict) -> None:

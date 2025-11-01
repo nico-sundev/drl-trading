@@ -6,6 +6,7 @@ from unittest.mock import Mock
 from drl_trading_common.model.timeframe import Timeframe
 from drl_trading_core.common.model.market_data_model import MarketDataModel
 from drl_trading_preprocess.core.service.resample.market_data_resampling_service import MarketDataResamplingService
+from drl_trading_preprocess.infrastructure.adapter.state_persistence.noop_state_persistence_service import NoOpStatePersistenceService
 from drl_trading_preprocess.infrastructure.config.preprocess_config import ResampleConfig
 
 
@@ -24,7 +25,8 @@ class TestMarketDataResamplingServiceStateManagement:
             market_data_reader=mock_market_data_reader,
             message_publisher=mock_message_publisher,
             candle_accumulator_service=mock_candle_accumulator,
-            resample_config=resample_config
+            resample_config=resample_config,
+            state_persistence=NoOpStatePersistenceService()
         )
 
         # Add some processing activity to context
@@ -53,7 +55,8 @@ class TestMarketDataResamplingServiceStateManagement:
             market_data_reader=mock_market_data_reader,
             message_publisher=mock_message_publisher,
             candle_accumulator_service=mock_candle_accumulator,
-            resample_config=resample_config
+            resample_config=resample_config,
+            state_persistence=NoOpStatePersistenceService()
         )
 
         # Add symbol state
@@ -86,7 +89,8 @@ class TestMarketDataResamplingServiceStateManagement:
             market_data_reader=mock_market_data_reader,
             message_publisher=mock_message_publisher,
             candle_accumulator_service=mock_candle_accumulator,
-            resample_config=resample_config
+            resample_config=resample_config,
+            state_persistence=NoOpStatePersistenceService()
         )
 
         # Add symbols to context
@@ -151,7 +155,7 @@ class TestMarketDataResamplingServiceStateManagement:
             message_publisher=mock_message_publisher,
             candle_accumulator_service=mock_candle_accumulator,
             resample_config=resample_config,
-            state_persistence=None  # No persistence
+            state_persistence=NoOpStatePersistenceService()
         )
 
         # When
@@ -212,7 +216,7 @@ class TestMarketDataResamplingServiceStateManagement:
             message_publisher=mock_message_publisher,
             candle_accumulator_service=mock_candle_accumulator,
             resample_config=resample_config,
-            state_persistence=None
+            state_persistence=NoOpStatePersistenceService()
         )
 
         # Add some state first
@@ -226,9 +230,10 @@ class TestMarketDataResamplingServiceStateManagement:
         result = service.reset_context_state()
 
         # Then
-        assert result is True
+        # NoOpStatePersistenceService returns False (no actual cleanup performed)
+        assert result is False
 
-        # Verify context was reset
+        # Verify context was reset in memory though
         symbols = service.get_symbols_in_context()
         assert len(symbols) == 0
 
@@ -248,7 +253,8 @@ class TestMarketDataResamplingServiceDataValidation:
             market_data_reader=mock_market_data_reader,
             message_publisher=mock_message_publisher,
             candle_accumulator_service=mock_candle_accumulator,
-            resample_config=resample_config
+            resample_config=resample_config,
+            state_persistence=NoOpStatePersistenceService()
         )
 
         # Create record with negative price
@@ -281,7 +287,8 @@ class TestMarketDataResamplingServiceDataValidation:
             market_data_reader=mock_market_data_reader,
             message_publisher=mock_message_publisher,
             candle_accumulator_service=mock_candle_accumulator,
-            resample_config=resample_config
+            resample_config=resample_config,
+            state_persistence=NoOpStatePersistenceService()
         )
 
         # Create record with high < low
@@ -314,7 +321,8 @@ class TestMarketDataResamplingServiceDataValidation:
             market_data_reader=mock_market_data_reader,
             message_publisher=mock_message_publisher,
             candle_accumulator_service=mock_candle_accumulator,
-            resample_config=resample_config
+            resample_config=resample_config,
+            state_persistence=NoOpStatePersistenceService()
         )
 
         # Create record with open outside range
@@ -347,7 +355,8 @@ class TestMarketDataResamplingServiceDataValidation:
             market_data_reader=mock_market_data_reader,
             message_publisher=mock_message_publisher,
             candle_accumulator_service=mock_candle_accumulator,
-            resample_config=resample_config
+            resample_config=resample_config,
+            state_persistence=NoOpStatePersistenceService()
         )
 
         # Create record with negative volume
@@ -380,7 +389,8 @@ class TestMarketDataResamplingServiceDataValidation:
             market_data_reader=mock_market_data_reader,
             message_publisher=mock_message_publisher,
             candle_accumulator_service=mock_candle_accumulator,
-            resample_config=resample_config
+            resample_config=resample_config,
+            state_persistence=NoOpStatePersistenceService()
         )
 
         # Create valid record
@@ -413,7 +423,8 @@ class TestMarketDataResamplingServiceDataValidation:
             market_data_reader=mock_market_data_reader,
             message_publisher=mock_message_publisher,
             candle_accumulator_service=mock_candle_accumulator,
-            resample_config=resample_config
+            resample_config=resample_config,
+            state_persistence=NoOpStatePersistenceService()
         )
 
         # Create record with missing attributes
@@ -437,6 +448,7 @@ class TestMarketDataResamplingServiceInitialization:
         mock_message_publisher = Mock()
         mock_candle_accumulator = Mock()
         resample_config = ResampleConfig()
+        noop_state_persistence = NoOpStatePersistenceService()
 
         # When
         service = MarketDataResamplingService(
@@ -444,11 +456,11 @@ class TestMarketDataResamplingServiceInitialization:
             message_publisher=mock_message_publisher,
             candle_accumulator_service=mock_candle_accumulator,
             resample_config=resample_config,
-            state_persistence=None
+            state_persistence=noop_state_persistence
         )
 
         # Then
-        assert service.state_persistence is None
+        assert service.state_persistence is noop_state_persistence
         assert service.context is not None
         assert isinstance(service.context.max_symbols_in_memory, int)
 

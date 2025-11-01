@@ -24,6 +24,7 @@ from injector import Injector
 from pandas import DataFrame
 from testcontainers.minio import MinioContainer
 
+
 from drl_trading_preprocess.infrastructure.config.preprocess_config import PreprocessConfig
 from drl_trading_preprocess.infrastructure.di.preprocess_module import PreprocessModule
 from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
@@ -507,39 +508,30 @@ def feature_version_info_fixture() -> FeatureConfigVersionInfo:
     )
 
 
-def create_feature_view_requests(
+def _create_feature_view_requests(
     feature_version_info: FeatureConfigVersionInfo,
-    symbol: str = "EURUSD"
+    symbol: str
 ) -> list[FeatureViewRequestContainer]:
-    """Factory function to create feature view requests for a specific symbol.
-
-    This factory allows tests to create feature view requests for different symbols
-    dynamically, enabling proper multi-symbol testing while maintaining the existing
-    test fixture structure.
-
-    Args:
-        feature_version_info: Feature configuration version info
-        symbol: Trading symbol (e.g., 'EURUSD', 'GBPUSD', 'USDJPY')
-
-    Returns:
-        List of FeatureViewRequestContainer instances for the specified symbol
+    """Internal helper to create feature view requests for a specific symbol.
+    
+    This is an internal helper function used only by fixtures in this conftest file.
+    Do not import or use directly from tests.
     """
     # Create dataset identifier and mock indicator service
     dataset_id = DatasetIdentifier(symbol=symbol, timeframe="H1")
     indicator_service = MockTechnicalIndicatorFacade()
 
-    # Group feature definitions by role and create concrete feature instances
-    role_groups = {}
+    # Create list of Feature ViewRequestContainers, one per feature
+    result = []
     created_features = {}  # Track features we've already created to avoid duplicates
 
     for feature_def in feature_version_info.feature_definitions:
         if not feature_def.get("enabled", True):
             continue  # Skip disabled features
 
-        role = feature_def.get("role", "observation_space")
-        if role not in role_groups:
-            role_groups[role] = []
-
+        role_str = feature_def.get("role", "observation_space")
+        role = FeatureRoleEnum[role_str.upper()] if isinstance(role_str, str) else role_str
+        
         # Create concrete feature instances based on feature name, avoiding duplicates
         feature_name = feature_def["name"]
         feature_key = f"{role}_{feature_name}"
@@ -550,41 +542,46 @@ def create_feature_view_requests(
             if reward_key not in created_features:
                 feature = TestRewardFeature(dataset_id, indicator_service)
                 created_features[reward_key] = feature
-                role_groups[role].append(feature)
+                result.append(FeatureViewRequestContainer(
+                    symbol=symbol,
+                    feature_role=role,
+                    feature=feature,
+                    timeframe=Timeframe.HOUR_1
+                ))
         elif feature_name == "rsi_14":
             if feature_key not in created_features:
                 config = TestRsiConfig()
                 feature = TestRsiFeature(dataset_id, indicator_service, config)
                 created_features[feature_key] = feature
-                role_groups[role].append(feature)
+                result.append(FeatureViewRequestContainer(
+                    symbol=symbol,
+                    feature_role=role,
+                    feature=feature,
+                    timeframe=Timeframe.HOUR_1
+                ))
         elif feature_name == "close_1":
             if feature_key not in created_features:
                 feature = TestClosePriceFeature(dataset_id, indicator_service)
                 created_features[feature_key] = feature
-                role_groups[role].append(feature)
+                result.append(FeatureViewRequestContainer(
+                    symbol=symbol,
+                    feature_role=role,
+                    feature=feature,
+                    timeframe=Timeframe.HOUR_1
+                ))
         else:
             # Default to close price feature for unknown features
             if feature_key not in created_features:
                 feature = TestClosePriceFeature(dataset_id, indicator_service)
                 created_features[feature_key] = feature
-                role_groups[role].append(feature)
+                result.append(FeatureViewRequestContainer(
+                    symbol=symbol,
+                    feature_role=role,
+                    feature=feature,
+                    timeframe=Timeframe.HOUR_1
+                ))
 
-    # Create FeatureViewRequest for each role group
-    requests = []
-    for role, features in role_groups.items():
-        feature_role = FeatureRoleEnum(role) if role else FeatureRoleEnum.OBSERVATION_SPACE
-
-        # Create one request per feature (matching the actual API)
-        for feature in features:
-            request = FeatureViewRequestContainer(
-                symbol=symbol,
-                feature_role=feature_role,
-                feature=feature,
-                timeframe=Timeframe.HOUR_1
-            )
-            requests.append(request)
-
-    return requests
+    return result
 
 
 @pytest.fixture
@@ -594,9 +591,9 @@ def feature_view_requests_fixture(
     """Create feature view requests from feature version info for integration testing.
 
     This fixture provides a default EURUSD symbol for tests that don't need multi-symbol testing.
-    For tests that need different symbols, use the create_feature_view_requests factory function.
+    For tests that need different symbols, use the symbol_feature_view_requests_fixture with parametrization.
     """
-    return create_feature_view_requests(feature_version_info_fixture, symbol="EURUSD")
+    return _create_feature_view_requests(feature_version_info_fixture, symbol="EURUSD")
 
 
 @pytest.fixture
@@ -613,4 +610,4 @@ def symbol_feature_view_requests_fixture(
         # symbol_feature_view_requests_fixture contains requests for the specified symbol
     """
     symbol = getattr(request, 'param', 'EURUSD')  # Default to EURUSD if no param provided
-    return create_feature_view_requests(feature_version_info_fixture, symbol=symbol)
+    return _create_feature_view_requests(feature_version_info_fixture, symbol=symbol)
