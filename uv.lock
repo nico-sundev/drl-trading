@@ -829,6 +829,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
+    { name = "tenacity" },
     { name = "typing-extensions" },
 ]
 
@@ -885,6 +886,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
+    { name = "tenacity", specifier = ">=8.0.0" },
     { name = "typing-extensions", specifier = ">=4.0.0" },
 ]
 provides-extras = ["testing", "dev"]
@@ -1294,6 +1296,7 @@ dev = [
 ]
 dev-full = [
     { name = "ipython" },
+    { name = "minio" },
     { name = "mypy" },
     { name = "numpy" },
     { name = "pandas" },
@@ -1305,6 +1308,7 @@ dev-full = [
     { name = "testcontainers" },
 ]
 test = [
+    { name = "minio" },
     { name = "pytest" },
     { name = "pytest-benchmark" },
     { name = "pytest-cov" },
@@ -1336,6 +1340,7 @@ dev = [
 ]
 dev-full = [
     { name = "ipython", specifier = ">=8.0.0" },
+    { name = "minio", specifier = ">=7.2.10" },
     { name = "mypy", specifier = ">=1.8.0" },
     { name = "numpy", specifier = ">=1.24.0" },
     { name = "pandas", specifier = ">=2.0.0" },
@@ -1347,6 +1352,7 @@ dev-full = [
     { name = "testcontainers", specifier = ">=4.0.0" },
 ]
 test = [
+    { name = "minio", specifier = ">=7.2.10" },
     { name = "pytest", specifier = ">=8.0.0" },
     { name = "pytest-benchmark", specifier = ">=4.0.0" },
     { name = "pytest-cov", specifier = ">=4.0.0" },

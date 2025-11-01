@@ -513,7 +513,7 @@ def _create_feature_view_requests(
     symbol: str
 ) -> list[FeatureViewRequestContainer]:
     """Internal helper to create feature view requests for a specific symbol.
-    
+
     This is an internal helper function used only by fixtures in this conftest file.
     Do not import or use directly from tests.
     """
@@ -531,7 +531,7 @@ def _create_feature_view_requests(
 
         role_str = feature_def.get("role", "observation_space")
         role = FeatureRoleEnum[role_str.upper()] if isinstance(role_str, str) else role_str
-        
+
         # Create concrete feature instances based on feature name, avoiding duplicates
         feature_name = feature_def["name"]
         feature_key = f"{role}_{feature_name}"

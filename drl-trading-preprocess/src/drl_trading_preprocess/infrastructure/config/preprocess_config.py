@@ -1,5 +1,6 @@
 """Service-specific configuration for preprocess service."""
 from datetime import datetime
+from typing import List
 from pydantic import Field
 from drl_trading_common.base.base_application_config import BaseApplicationConfig
 from drl_trading_common.base.base_schema import BaseSchema
@@ -56,6 +57,94 @@ class ResampleConfig(BaseSchema):
     inactive_symbol_threshold_hours: int = 24  # Hours after which symbols are considered inactive
 
 
+class TopicSubscription(BaseSchema):
+    """Configuration for a single Kafka topic subscription.
+    
+    Maps a Kafka topic to a handler identifier that will be looked up
+    in the DI container's handler registry.
+    
+    Attributes:
+        topic: Name of the Kafka topic to subscribe to.
+        handler_id: Identifier for the handler function in the DI registry.
+            This allows topic names to be configured in YAML while handler
+            implementations remain in code.
+    """
+    topic: str = Field(..., description="Kafka topic name")
+    handler_id: str = Field(..., description="Handler identifier for DI lookup")
+
+
+class KafkaConsumerConfig(BaseSchema):
+    """Service-specific Kafka consumer configuration.
+    
+    This configuration extends the infrastructure-level KafkaConnectionConfig
+    with service-specific consumer settings and topic subscriptions.
+    
+    Design: Configuration-driven handler mapping
+    - Topic names live in YAML (infrastructure concern)
+    - Handler IDs link to implementations in DI module (application concern)
+    - Clean separation between deployment config and code
+    
+    Attributes:
+        consumer_group_id: Kafka consumer group ID for this service.
+            Should be unique per service to enable independent consumption.
+        topic_subscriptions: List of topics this service consumes from.
+            Each subscription maps to a handler in the DI registry.
+    """
+    consumer_group_id: str = Field(
+        default="drl-trading-preprocess-group",
+        description="Kafka consumer group ID for this service"
+    )
+    topic_subscriptions: List[TopicSubscription] = Field(
+        default_factory=list,
+        description="List of topic-to-handler mappings"
+    )
+
+
+class KafkaTopicConfig(BaseSchema):
+    """Configuration for a single Kafka producer topic.
+    
+    Maps a topic name to its associated retry configuration key.
+    This allows per-topic resilience behavior (e.g., critical data
+    gets more aggressive retries than best-effort notifications).
+    
+    Attributes:
+        topic: Name of the Kafka topic to publish to.
+        retry_config_key: Key to look up retry configuration from
+            infrastructure.resilience.retry_configs. Should reference
+            a constant from resilience_constants.py for type safety.
+    """
+    topic: str = Field(..., description="Kafka topic name")
+    retry_config_key: str = Field(
+        ...,
+        description="Retry configuration key from infrastructure.resilience.retry_configs"
+    )
+
+
+class KafkaTopicsConfig(BaseSchema):
+    """Configuration for all Kafka producer topics in the preprocess service.
+    
+    This maps use cases to topic configurations, allowing each producer
+    to have its own topic name and retry behavior.
+    
+    Attributes:
+        resampled_data: Topic for publishing resampled market data.
+        preprocessing_completed: Topic for preprocessing completion events.
+        preprocessing_error: Dead letter queue for preprocessing errors.
+    """
+    resampled_data: KafkaTopicConfig = Field(
+        ...,
+        description="Topic for publishing resampled market data"
+    )
+    preprocessing_completed: KafkaTopicConfig = Field(
+        ...,
+        description="Topic for preprocessing completion events"
+    )
+    preprocessing_error: KafkaTopicConfig = Field(
+        ...,
+        description="Dead letter queue for preprocessing errors"
+    )
+
+
 class PreprocessConfig(BaseApplicationConfig):
     """Configuration for preprocess service - focused on data processing."""
     app_name: str = "drl-trading-preprocess"
@@ -64,3 +153,8 @@ class PreprocessConfig(BaseApplicationConfig):
     logging: ServiceLoggingConfig = Field(default_factory=ServiceLoggingConfig)
     feature_store_config: FeatureStoreConfig = Field(default_factory=FeatureStoreConfig)
     resample_config: ResampleConfig = Field(default_factory=ResampleConfig)
+    kafka_consumers: KafkaConsumerConfig = Field(default_factory=KafkaConsumerConfig)
+    kafka_topics: KafkaTopicsConfig | None = Field(
+        default=None,
+        description="Kafka producer topic configurations"
+    )

@@ -3,13 +3,6 @@ version: "1.0.0"
 stage: "local"
 
 infrastructure:
-  messaging:
-    provider: "in_memory"
-    host: null
-    port: null
-    username: null
-    password: null
-    vhost: null
 
   database:
     provider: "postgresql"
@@ -24,6 +17,65 @@ infrastructure:
     host: "0.0.0.0"
     debug: true
 
-# T005 ServiceLogger overrides (top-level)
+  kafka:
+    bootstrap_servers: "localhost:9092"
+    security_protocol: "PLAINTEXT"
+    consumer_auto_offset_reset: "earliest"
+    consumer_enable_auto_commit: false
+    consumer_session_timeout_ms: 30000
+    consumer_max_poll_interval_ms: 600000
+    producer_acks: "all"
+    producer_retries: 3
+    producer_compression_type: "snappy"
+
+  resilience:
+    retry_configs:
+      kafka_resampled_data_retry:
+        max_attempts: 5
+        wait_exponential_multiplier: 1.0
+        wait_exponential_max: 60.0
+        wait_jitter_max: 2.0
+        stop_after_delay: null
+      kafka_preprocessing_completed_retry:
+        max_attempts: 3
+        wait_exponential_multiplier: 2.0
+        wait_exponential_max: 120.0
+        wait_jitter_max: 5.0
+        stop_after_delay: null
+      kafka_dlq_retry:
+        max_attempts: 1
+        wait_exponential_multiplier: 1.0
+        wait_exponential_max: 1.0
+        wait_jitter_max: 0.0
+        stop_after_delay: null
+
+kafka_consumers:
+  consumer_group_id: "drl-trading-preprocess-group"
+  topic_subscriptions:
+    - topic: "requested.preprocess-data"
+      handler_id: "preprocessing_request_handler"
+
+kafka_topics:
+  resampled_data:
+    topic: "requested.store-resampled-data"
+    retry_config_key: "kafka_resampled_data_retry"
+  preprocessing_completed:
+    topic: "completed.preprocess-data"
+    retry_config_key: "kafka_preprocessing_completed_retry"
+  preprocessing_error:
+    topic: "error.preprocess-data"
+    retry_config_key: "kafka_dlq_retry"
+
+feature_engineering:
+  enabled_features: ["technical_indicators", "market_data", "sentiment"]
+  lookback_period: 30
+  scaling_method: "standard"
+
 logging:
   level: "DEBUG"
+  json_format: false
+  file_logging: true
+  file_path: "logs/drl-trading-preprocess.log"
+  console_enabled: true
+  max_file_size: 10485760
+  backup_count: 5
