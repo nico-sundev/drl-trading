@@ -28,6 +28,7 @@ dependencies = [
     "python-dotenv>=1.1.1",         # .env support
     "flask>=3.0.0",                 # Lightweight web (health endpoints)
     "psutil>=5.9.0",                # System metrics
+    "tenacity>=8.0.0",              # Retry/resilience patterns
 ]
 
 ## Optional extras (minimal; prefer dependency groups)

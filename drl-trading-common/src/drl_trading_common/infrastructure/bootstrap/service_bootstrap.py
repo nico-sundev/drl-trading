@@ -338,9 +338,8 @@ class ServiceBootstrap(ABC):
             return
 
         try:
-            handler_registry: Dict[str, KafkaMessageHandler] = self.injector.get(
-                Dict[str, KafkaMessageHandler]  # type: ignore[type-abstract]
-            )
+            from drl_trading_common.messaging.kafka_handler_registry import KafkaHandlerRegistry
+            handler_registry: KafkaHandlerRegistry = self.injector.get(KafkaHandlerRegistry)  # type: ignore
         except Exception as e:
             logger.warning(
                 f"No Kafka handler registry found in DI container: {e}. "
@@ -357,11 +356,11 @@ class ServiceBootstrap(ABC):
             topic = subscription.topic
             handler_id = subscription.handler_id
 
-            handler = handler_registry.get(handler_id)
+            handler = handler_registry.get_handler(handler_id)
             if not handler:
                 logger.warning(
                     f"No handler found for handler_id '{handler_id}' (topic: '{topic}'). "
-                    f"Available handlers: {list(handler_registry.keys())}"
+                    f"Available handlers: {handler_registry.list_handler_ids()}"
                 )
                 continue
 

@@ -2,6 +2,7 @@
 from typing import Optional
 from drl_trading_common.base.base_schema import BaseSchema
 from drl_trading_common.config.kafka_config import KafkaConnectionConfig
+from drl_trading_common.config.resilience_config import ResilienceConfig
 
 
 class MessagingConfig(BaseSchema):
@@ -70,3 +71,4 @@ class InfrastructureConfig(BaseSchema):
     monitoring: MonitoringConfig = MonitoringConfig()
     webapi: Optional[WebApiConfig] = None
     kafka: Optional[KafkaConnectionConfig] = None
+    resilience: Optional[ResilienceConfig] = None
