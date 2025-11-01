@@ -127,6 +127,21 @@ class ServiceBootstrap(ABC):
         """Gracefully stop the service."""
         if self.is_running:
             logger.info(f"Stopping {self.service_name} service...")
+
+            # Stop Kafka consumers first (if running)
+            if hasattr(self, "_kafka_adapter") and self._kafka_adapter:
+                logger.info("Stopping Kafka consumer adapter...")
+                self._kafka_adapter.stop()
+
+                # Wait for consumer thread to finish (with timeout)
+                if hasattr(self, "_kafka_thread") and self._kafka_thread:
+                    self._kafka_thread.join(timeout=10.0)
+                    if self._kafka_thread.is_alive():
+                        logger.warning("Kafka consumer thread did not stop within timeout")
+                    else:
+                        logger.info("Kafka consumer stopped successfully")
+
+            # Stop service-specific logic
             self._stop_service()
             self._cleanup()
             self.is_running = False
@@ -278,6 +293,123 @@ class ServiceBootstrap(ABC):
         """Handle shutdown signals gracefully."""
         logger.info(f"Received signal {signum}, initiating graceful shutdown...")
         self.stop()
+
+    def _start_kafka_consumers(self) -> None:
+        """
+        Initialize and start Kafka consumers based on service configuration.
+
+        This method:
+        1. Checks if Kafka is configured in infrastructure config
+        2. Retrieves handler registry from DI container
+        3. Maps topics to handlers based on YAML configuration
+        4. Creates and starts KafkaConsumerAdapter in a background thread
+
+        Design: Configuration-driven, DI-injected handler mapping
+        - Topic names come from YAML (infrastructure.kafka_consumers.topic_subscriptions)
+        - Handler implementations come from DI (provide_kafka_handler_registry)
+        - No hardcoded topics or handlers in bootstrap code
+
+        Should be called from service-specific bootstrap's _run_main_loop()
+        or _start_service() method.
+
+        Thread Safety: Starts consumer in a daemon=False thread for graceful shutdown.
+        """
+        import threading
+        from typing import Dict
+        from drl_trading_common.messaging.kafka_message_handler import KafkaMessageHandler
+        from drl_trading_common.adapter.messaging.kafka_consumer_adapter import KafkaConsumerAdapter
+
+        # Check if Kafka is configured
+        infrastructure = getattr(self.config, "infrastructure", None)
+        if not infrastructure:
+            logger.debug("No infrastructure config found, skipping Kafka consumers")
+            return
+
+        kafka_config = getattr(infrastructure, "kafka", None)
+        kafka_consumer_config = getattr(self.config, "kafka_consumers", None)
+
+        if not kafka_config or not kafka_consumer_config:
+            logger.debug("No Kafka consumer configuration found, skipping")
+            return
+
+        # Get handler registry from DI container
+        if not self.injector:
+            logger.warning("DI injector not initialized, cannot start Kafka consumers")
+            return
+
+        try:
+            handler_registry: Dict[str, KafkaMessageHandler] = self.injector.get(
+                Dict[str, KafkaMessageHandler]  # type: ignore[type-abstract]
+            )
+        except Exception as e:
+            logger.warning(
+                f"No Kafka handler registry found in DI container: {e}. "
+                "If this service needs Kafka consumers, ensure provide_kafka_handler_registry() "
+                "is implemented in the DI module."
+            )
+            return
+
+        # Build topic-to-handler mapping from config
+        topic_handlers: Dict[str, KafkaMessageHandler] = {}
+        topic_subscriptions = getattr(kafka_consumer_config, "topic_subscriptions", [])
+
+        for subscription in topic_subscriptions:
+            topic = subscription.topic
+            handler_id = subscription.handler_id
+
+            handler = handler_registry.get(handler_id)
+            if not handler:
+                logger.warning(
+                    f"No handler found for handler_id '{handler_id}' (topic: '{topic}'). "
+                    f"Available handlers: {list(handler_registry.keys())}"
+                )
+                continue
+
+            topic_handlers[topic] = handler
+            logger.info(
+                "Registered Kafka handler",
+                extra={
+                    "topic": topic,
+                    "handler_id": handler_id,
+                    "service": self.service_name
+                }
+            )
+
+        if not topic_handlers:
+            logger.warning("No valid topic handlers configured, skipping Kafka consumer startup")
+            return
+
+        # Build consumer config
+        consumer_group_id = getattr(kafka_consumer_config, "consumer_group_id", None)
+        if not consumer_group_id:
+            logger.error("consumer_group_id not configured, cannot start Kafka consumer")
+            return
+
+        consumer_config = kafka_config.get_consumer_config(group_id=consumer_group_id)
+
+        # Create adapter
+        self._kafka_adapter = KafkaConsumerAdapter(
+            consumer_config=consumer_config,
+            topic_handlers=topic_handlers
+        )
+
+        # Start in background thread (not daemon - we want graceful shutdown)
+        self._kafka_thread = threading.Thread(
+            target=self._kafka_adapter.start,
+            daemon=False,
+            name=f"kafka-consumer-{self.service_name}"
+        )
+        self._kafka_thread.start()
+
+        logger.info(
+            "Kafka consumer started in background thread",
+            extra={
+                "service": self.service_name,
+                "group_id": consumer_group_id,
+                "topics": list(topic_handlers.keys()),
+                "handler_count": len(topic_handlers)
+            }
+        )
 
     # Abstract methods for service-specific implementation
     @abstractmethod
