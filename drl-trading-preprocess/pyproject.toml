@@ -93,6 +93,7 @@ branch = true
 omit = [
     "*/tests/*",
     "*/setup.py",
+    "*/infrastructure/*",
 ]
 
 # Pytest configuration for DRL Trading Preprocess service

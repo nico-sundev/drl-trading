@@ -13,10 +13,10 @@ from drl_trading_common.adapter.messaging.kafka_producer_adapter import (
 )
 from drl_trading_common.model.timeframe import Timeframe
 from drl_trading_core.common.model.market_data_model import MarketDataModel
-from drl_trading_preprocess.core.port.message_publisher_port import MessagePublisherPort
+from drl_trading_preprocess.core.port.message_publisher_port import StoreResampledDataMessagePublisherPort
 
 
-class KafkaMessagePublisher(MessagePublisherPort):
+class KafkaMessagePublisher(StoreResampledDataMessagePublisherPort):
     """
     Kafka-based message publisher for resampled market data.
 

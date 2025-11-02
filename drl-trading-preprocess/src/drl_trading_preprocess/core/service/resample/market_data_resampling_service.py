@@ -15,13 +15,24 @@ from injector import inject
 from drl_trading_common.model.timeframe import Timeframe
 from drl_trading_core.common.model.market_data_model import MarketDataModel
 from drl_trading_core.core.port.market_data_reader_port import MarketDataReaderPort
-from drl_trading_preprocess.core.model.resample.resampling_response import ResamplingResponse
-from drl_trading_preprocess.core.model.resample.resampling_context import ResamplingContext
-from drl_trading_preprocess.core.port.message_publisher_port import MessagePublisherPort
-from drl_trading_preprocess.core.port.state_persistence_port import IStatePersistencePort
-from drl_trading_preprocess.core.service.resample.candle_accumulator_service import CandleAccumulatorService
-from drl_trading_preprocess.infrastructure.config.preprocess_config import ResampleConfig
-from drl_trading_preprocess.infrastructure.adapter.state_persistence.noop_state_persistence_service import NoOpStatePersistenceService
+from drl_trading_preprocess.core.model.resample.resampling_context import (
+    ResamplingContext,
+)
+from drl_trading_preprocess.core.model.resample.resampling_response import (
+    ResamplingResponse,
+)
+from drl_trading_preprocess.core.port.message_publisher_port import (
+    StoreResampledDataMessagePublisherPort,
+)
+from drl_trading_preprocess.core.port.state_persistence_port import (
+    IStatePersistencePort,
+)
+from drl_trading_preprocess.core.service.resample.candle_accumulator_service import (
+    CandleAccumulatorService,
+)
+from drl_trading_preprocess.infrastructure.config.preprocess_config import (
+    ResampleConfig,
+)
 
 
 @inject
@@ -36,7 +47,7 @@ class MarketDataResamplingService:
     def __init__(
         self,
         market_data_reader: MarketDataReaderPort,
-        message_publisher: MessagePublisherPort,
+        message_publisher: StoreResampledDataMessagePublisherPort,
         candle_accumulator_service: CandleAccumulatorService,
         resample_config: ResampleConfig,
         state_persistence: IStatePersistencePort
@@ -57,7 +68,7 @@ class MarketDataResamplingService:
         self.resample_config = resample_config
         # Use NoOpStatePersistenceService directly to leverage the Null Object pattern
         self.state_persistence = state_persistence
-        
+
         self.logger = logging.getLogger(__name__)
 
         # Initialize or restore resampling context

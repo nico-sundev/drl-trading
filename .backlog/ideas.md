@@ -3,7 +3,7 @@
 ## Quick Thoughts
 <!-- Dump ideas here quickly, organize later -->
 
-- fix featuremanager compute_all, currently multiple event_timestamps in final result
+- currently orchestrator multiple calls of featurecoverageanalysis
 - test cov in adapter -> 40%
 - preprocessing IT is almost passing ... check if features really have to be passed to the adapter and
   - if so, then create a response object from featuremanager, adding the features

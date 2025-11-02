@@ -12,7 +12,7 @@ from drl_trading_common.interface.indicator.technical_indicator_facade_interface
     ITechnicalIndicatorFacade,
 )
 from drl_trading_core.infrastructure.di.core_module import CoreModule
-from drl_trading_preprocess.core.port.message_publisher_port import MessagePublisherPort
+from drl_trading_preprocess.core.port.message_publisher_port import StoreResampledDataMessagePublisherPort
 from drl_trading_preprocess.core.port.preprocessing_message_publisher_port import (
     PreprocessingMessagePublisherPort,
 )
@@ -29,7 +29,7 @@ class TestBindingsModule(Module):
     def __init__(
         self,
         preprocessing_message_publisher: PreprocessingMessagePublisherPort,
-        resampling_message_publisher: MessagePublisherPort,
+        resampling_message_publisher: StoreResampledDataMessagePublisherPort,
         database_config: DatabaseConfig,
         feature_factory: IFeatureFactory,
         indicator_facade: ITechnicalIndicatorFacade,
@@ -52,7 +52,7 @@ class TestBindingsModule(Module):
 
     @provider  # type: ignore[misc]
     @singleton
-    def provide_resampling_message_publisher(self) -> MessagePublisherPort:
+    def provide_resampling_message_publisher(self) -> StoreResampledDataMessagePublisherPort:
         """Provide the test resampling message publisher instance."""
         return self._resampling_message_publisher
 
@@ -76,13 +76,13 @@ class TestBindingsModule(Module):
 
 
 @pytest.fixture(scope="function")
-def spy_resampling_message_publisher() -> MessagePublisherPort:
+def spy_resampling_message_publisher() -> StoreResampledDataMessagePublisherPort:
     """Create a mock resampling message publisher for verification.
 
     Returns:
         Mock: Mock publisher for resampling notifications (spec=MessagePublisherPort)
     """
-    return Mock(spec=MessagePublisherPort)
+    return Mock(spec=StoreResampledDataMessagePublisherPort)
 
 
 @pytest.fixture(scope="function")
@@ -108,7 +108,7 @@ def test_preprocess_config(feature_store_config: FeatureStoreConfig) -> Preproce
 def real_feast_container(
     temp_feast_repo: str,
     spy_message_publisher: PreprocessingMessagePublisherPort,
-    spy_resampling_message_publisher: MessagePublisherPort,
+    spy_resampling_message_publisher: StoreResampledDataMessagePublisherPort,
     database_config: DatabaseConfig,
     test_feature_factory: IFeatureFactory,
     mock_indicator_facade: ITechnicalIndicatorFacade,

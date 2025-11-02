@@ -28,18 +28,18 @@ from drl_trading_preprocess.core.orchestrator.preprocessing_orchestrator import 
 from drl_trading_preprocess.core.port.feature_store_save_port import (
     IFeatureStoreSavePort,
 )
-from drl_trading_preprocess.core.port.message_publisher_port import MessagePublisherPort
+from drl_trading_preprocess.core.port.message_publisher_port import StoreResampledDataMessagePublisherPort
 from drl_trading_preprocess.core.port.preprocessing_message_publisher_port import (
     PreprocessingMessagePublisherPort,
 )
 from drl_trading_preprocess.core.port.state_persistence_port import (
     IStatePersistencePort,
 )
+from drl_trading_preprocess.core.service.resample.noop_state_persistence_service import (
+    NoOpStatePersistenceService,
+)
 from drl_trading_preprocess.core.service.resample.state_persistence_service import (
     StatePersistenceService,
-)
-from drl_trading_preprocess.infrastructure.adapter.state_persistence.noop_state_persistence_service import (
-    NoOpStatePersistenceService,
 )
 from drl_trading_preprocess.infrastructure.config.preprocess_config import (
     PreprocessConfig,
@@ -117,7 +117,7 @@ class PreprocessModule(Module):
 
     @provider
     @singleton
-    def provide_message_publisher(self) -> MessagePublisherPort:
+    def provide_message_publisher(self) -> StoreResampledDataMessagePublisherPort:
         """
         Provide MessagePublisherPort implementation with Kafka producers.
 
@@ -222,4 +222,3 @@ class PreprocessModule(Module):
             completion_topic=completion_topic,
             error_topic=error_topic,
         )
-

@@ -12,7 +12,7 @@ from drl_trading_common.model.timeframe import Timeframe
 from drl_trading_core.common.model.market_data_model import MarketDataModel
 
 
-class MessagePublisherPort(ABC):
+class StoreResampledDataMessagePublisherPort(ABC):
     """
     Interface for publishing resampled market data messages.
 

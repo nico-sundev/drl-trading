@@ -504,6 +504,7 @@ class FeatureManager(Computable):
         Efficiently combine multiple DataFrames using pandas.concat.
 
         More efficient than iterative joins, especially for many DataFrames.
+        Handles duplicate columns (like event_timestamp) by keeping only the first occurrence.
 
         Args:
             dataframes: List of DataFrames to combine
@@ -521,6 +522,16 @@ class FeatureManager(Computable):
             import pandas as pd
 
             combined_df = pd.concat(dataframes, axis=1, join="outer", sort=False)
+
+            # Handle duplicate columns: keep only the first occurrence
+            # This commonly happens with event_timestamp when multiple features include it
+            if combined_df.columns.duplicated().any():
+                duplicate_cols = combined_df.columns[combined_df.columns.duplicated()].unique()
+                logger.debug(f"Found duplicate columns after concat: {list(duplicate_cols)}")
+                # Keep first occurrence, drop subsequent duplicates
+                combined_df = combined_df.loc[:, ~combined_df.columns.duplicated()]
+                logger.debug(f"Removed duplicate columns, final columns: {list(combined_df.columns)}")
+
             return combined_df
         except Exception as e:
             logger.error(f"Error combining DataFrames with concat: {str(e)}")
@@ -536,6 +547,11 @@ class FeatureManager(Computable):
                 # Manually add columns from other dataframes
                 for df in dataframes[1:]:
                     for col in df.columns:
+                        # Skip columns that already exist (e.g., event_timestamp, symbol)
+                        if col in combined_df.columns:
+                            logger.debug(f"Skipping duplicate column '{col}' during manual combination")
+                            continue
+
                         # Align indexes and add the column
                         if len(df) == len(combined_df):
                             combined_df[col] = df[col].values
