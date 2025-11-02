@@ -17,6 +17,9 @@ from drl_trading_common.interface.feature.feature_factory_interface import (
     IFeatureFactory,
 )
 from drl_trading_common.model.dataset_identifier import DatasetIdentifier
+from drl_trading_core.core.config.feature_computation_config import (
+    FeatureComputationConfig,
+)
 from drl_trading_core.core.service.feature_definition_parser import (
     FeatureDefinitionParser,
 )
@@ -68,17 +71,22 @@ class FeatureManager(Computable):
     """
 
     def __init__(
-        self, feature_factory: IFeatureFactory,
-        feature_definition_parser: FeatureDefinitionParser
+        self,
+        feature_factory: IFeatureFactory,
+        feature_definition_parser: FeatureDefinitionParser,
+        feature_computation_config: FeatureComputationConfig,
     ) -> None:
         """
         Initialize the FeatureManagerService.
 
         Args:
             feature_factory: Factory for creating feature instances.
+            feature_definition_parser: Parser for feature definitions.
+            feature_computation_config: Configuration for feature computation parallelization.
         """
         self.feature_factory = feature_factory
         self.feature_definition_parser = feature_definition_parser
+        self.feature_computation_config = feature_computation_config
 
         # Enhanced feature storage with structured, observable keys
         # Key provides full context: feature + symbol + timeframe + parameters
@@ -102,7 +110,9 @@ class FeatureManager(Computable):
         logger.info("Starting feature initialization process...")
 
         # Populate parsed feature configurations
-        self.feature_definition_parser.parse_feature_definitions(features_config.feature_definitions)
+        self.feature_definition_parser.parse_feature_definitions(
+            features_config.feature_definitions
+        )
 
         # Generate all valid feature configurations
         feature_configs = self._generate_feature_configurations(features_config)
@@ -259,7 +269,9 @@ class FeatureManager(Computable):
 
     def _create_features_batch(
         self,
-        feature_configs: List[Tuple[str, DatasetIdentifier, Optional[BaseParameterSetConfig]]],
+        feature_configs: List[
+            Tuple[str, DatasetIdentifier, Optional[BaseParameterSetConfig]]
+        ],
     ) -> List[Tuple[FeatureKey, BaseFeature]]:
         """
         Create feature instances in batch.
@@ -339,7 +351,9 @@ class FeatureManager(Computable):
 
             self._features[feature_key] = feature_instance
             logger.debug(f"Stored feature: {feature_key}")
-            self._features_name_role_cache[feature_key.feature_name] = feature_instance.get_feature_role()
+            self._features_name_role_cache[feature_key.feature_name] = (
+                feature_instance.get_feature_role()
+            )
 
         if conflicts_detected > 0:
             logger.error(
@@ -452,6 +466,9 @@ class FeatureManager(Computable):
         """
         Compute all features using Dask delayed execution for parallel processing.
 
+        Uses the injected FeatureComputationConfig to configure Dask scheduler,
+        workers, and memory limits for optimal CPU-bound feature computation.
+
         Returns:
             DataFrame with all computed features, or None if computation fails.
         """
@@ -476,11 +493,22 @@ class FeatureManager(Computable):
             return None
 
         try:
-            # Execute all delayed tasks in parallel
+            # Get Dask configuration from injected config
+            dask_config = self.feature_computation_config.dask
+
+            # Execute all delayed tasks with configured scheduler
             logger.info(
-                f"Computing {len(delayed_tasks)} features using Dask delayed execution..."
+                f"Computing {len(delayed_tasks)} features using Dask "
+                f"(scheduler={dask_config.scheduler}, workers={dask_config.num_workers})..."
             )
-            results = compute(*delayed_tasks)
+
+            # Pass scheduler configuration to compute()
+            # For processes/threads schedulers, Dask handles worker pool management
+            results = compute(
+                *delayed_tasks,
+                scheduler=dask_config.scheduler,
+                num_workers=dask_config.num_workers,
+            )
 
             # Filter out None results and empty DataFrames
             valid_results = [
@@ -526,11 +554,17 @@ class FeatureManager(Computable):
             # Handle duplicate columns: keep only the first occurrence
             # This commonly happens with event_timestamp when multiple features include it
             if combined_df.columns.duplicated().any():
-                duplicate_cols = combined_df.columns[combined_df.columns.duplicated()].unique()
-                logger.debug(f"Found duplicate columns after concat: {list(duplicate_cols)}")
+                duplicate_cols = combined_df.columns[
+                    combined_df.columns.duplicated()
+                ].unique()
+                logger.debug(
+                    f"Found duplicate columns after concat: {list(duplicate_cols)}"
+                )
                 # Keep first occurrence, drop subsequent duplicates
                 combined_df = combined_df.loc[:, ~combined_df.columns.duplicated()]
-                logger.debug(f"Removed duplicate columns, final columns: {list(combined_df.columns)}")
+                logger.debug(
+                    f"Removed duplicate columns, final columns: {list(combined_df.columns)}"
+                )
 
             return combined_df
         except Exception as e:
@@ -549,7 +583,9 @@ class FeatureManager(Computable):
                     for col in df.columns:
                         # Skip columns that already exist (e.g., event_timestamp, symbol)
                         if col in combined_df.columns:
-                            logger.debug(f"Skipping duplicate column '{col}' during manual combination")
+                            logger.debug(
+                                f"Skipping duplicate column '{col}' during manual combination"
+                            )
                             continue
 
                         # Align indexes and add the column
@@ -567,7 +603,9 @@ class FeatureManager(Computable):
                 # Final fallback: return first dataframe if all else fails
                 return dataframes[0] if dataframes else None
 
-    def request_features_update(self, new_data: DataFrame, features_config: FeaturesConfig) -> None:
+    def request_features_update(
+        self, new_data: DataFrame, features_config: FeaturesConfig
+    ) -> None:
         """
         Public method to update features with new data.
 
@@ -592,6 +630,9 @@ class FeatureManager(Computable):
         """
         Compute latest values for all features using Dask delayed execution for parallel processing.
 
+        Uses the injected FeatureComputationConfig to configure Dask scheduler,
+        workers, and memory limits for optimal CPU-bound feature computation.
+
         Returns:
             DataFrame with latest computed features, or None if computation fails.
         """
@@ -607,11 +648,21 @@ class FeatureManager(Computable):
             return None
 
         try:
-            # Execute all delayed tasks in parallel
+            # Get Dask configuration from injected config
+            dask_config = self.feature_computation_config.dask
+
+            # Execute all delayed tasks with configured scheduler
             logger.info(
-                f"Computing latest values for {len(delayed_tasks)} features using Dask delayed execution..."
+                f"Computing latest values for {len(delayed_tasks)} features using Dask "
+                f"(scheduler={dask_config.scheduler}, workers={dask_config.num_workers})..."
             )
-            results = compute(*delayed_tasks)
+
+            # Pass scheduler configuration to compute()
+            results = compute(
+                *delayed_tasks,
+                scheduler=dask_config.scheduler,
+                num_workers=dask_config.num_workers,
+            )
 
             # Filter out None results and empty DataFrames
             valid_results = [
@@ -664,7 +715,9 @@ class FeatureManager(Computable):
                 else:
                     logger.debug(f"Feature {feature_key} is not caught up")
             except Exception as e:
-                logger.error(f"Error checking catch-up status for feature {feature_key}: {str(e)}")
+                logger.error(
+                    f"Error checking catch-up status for feature {feature_key}: {str(e)}"
+                )
                 # If we can't determine status, consider it not caught up
 
         all_caught_up = caught_up_count == total_features
@@ -672,7 +725,9 @@ class FeatureManager(Computable):
         if all_caught_up:
             logger.info(f"All {total_features} features are caught up")
         else:
-            logger.warning(f"Only {caught_up_count}/{total_features} features are caught up")
+            logger.warning(
+                f"Only {caught_up_count}/{total_features} features are caught up"
+            )
 
         return all_caught_up
 
@@ -692,7 +747,9 @@ class FeatureManager(Computable):
             logger.warning(f"Failed to validate feature {feature_name}: {e}")
             return False
 
-    def validate_feature_definitions(self, feature_definitions: List[FeatureDefinition]) -> Dict[str, bool]:
+    def validate_feature_definitions(
+        self, feature_definitions: List[FeatureDefinition]
+    ) -> Dict[str, bool]:
         """
         Validate multiple feature definitions for support.
 
@@ -705,10 +762,14 @@ class FeatureManager(Computable):
         validation_results = {}
 
         for feature_def in feature_definitions:
-            validation_results[feature_def.name] = self.is_feature_supported(feature_def.name)
+            validation_results[feature_def.name] = self.is_feature_supported(
+                feature_def.name
+            )
 
-        logger.debug(f"Validated {len(feature_definitions)} features: "
-                    f"{sum(validation_results.values())}/{len(validation_results)} supported")
+        logger.debug(
+            f"Validated {len(feature_definitions)} features: "
+            f"{sum(validation_results.values())}/{len(validation_results)} supported"
+        )
 
         return validation_results
 

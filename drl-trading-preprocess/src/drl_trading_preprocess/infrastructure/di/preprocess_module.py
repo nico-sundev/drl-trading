@@ -43,6 +43,10 @@ from drl_trading_preprocess.core.service.resample.state_persistence_service impo
 )
 from drl_trading_preprocess.infrastructure.config.preprocess_config import (
     PreprocessConfig,
+    DaskConfigs,
+)
+from drl_trading_core.core.config.feature_computation_config import (
+    FeatureComputationConfig,
 )
 from drl_trading_preprocess.infrastructure.config.resilience_constants import (
     RETRY_CONFIG_KAFKA_DLQ,
@@ -84,6 +88,30 @@ class PreprocessModule(Module):
     def provide_feature_store_config(self) -> FeatureStoreConfig:
         """Provide feature store configuration (no reload)."""
         return self._config.feature_store_config
+
+    @provider
+    @singleton
+    def provide_dask_configs(self) -> DaskConfigs:
+        """Provide Dask configurations collection for parallel processing."""
+        return self._config.dask_configs
+
+    @provider
+    @singleton
+    def provide_feature_computation_config(self, dask_configs: DaskConfigs) -> FeatureComputationConfig:
+        """
+        Provide feature computation configuration for FeatureManager.
+
+        Extracts the feature_computation Dask config from the service's DaskConfigs
+        collection and wraps it in a FeatureComputationConfig for injection into
+        the core FeatureManager.
+
+        Args:
+            dask_configs: The service's collection of Dask configurations
+
+        Returns:
+            FeatureComputationConfig with the feature_computation Dask settings
+        """
+        return FeatureComputationConfig(dask=dask_configs.feature_computation)
 
     @provider  # type: ignore[misc]
     @singleton

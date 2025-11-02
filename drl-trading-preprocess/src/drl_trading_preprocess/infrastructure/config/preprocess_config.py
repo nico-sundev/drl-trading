@@ -1,11 +1,14 @@
 """Service-specific configuration for preprocess service."""
 from datetime import datetime
-from typing import List
+
 from pydantic import Field
+
 from drl_trading_common.base.base_application_config import BaseApplicationConfig
 from drl_trading_common.base.base_schema import BaseSchema
+from drl_trading_common.config.dask_config import DaskConfig
 from drl_trading_common.config.feature_config import FeatureStoreConfig
 from drl_trading_common.config.infrastructure_config import InfrastructureConfig
+from drl_trading_common.config.kafka_config import KafkaConsumerConfig, KafkaTopicConfig
 from drl_trading_common.config.service_logging_config import ServiceLoggingConfig
 
 
@@ -57,75 +60,47 @@ class ResampleConfig(BaseSchema):
     inactive_symbol_threshold_hours: int = 24  # Hours after which symbols are considered inactive
 
 
-class TopicSubscription(BaseSchema):
-    """Configuration for a single Kafka topic subscription.
-    
-    Maps a Kafka topic to a handler identifier that will be looked up
-    in the DI container's handler registry.
-    
-    Attributes:
-        topic: Name of the Kafka topic to subscribe to.
-        handler_id: Identifier for the handler function in the DI registry.
-            This allows topic names to be configured in YAML while handler
-            implementations remain in code.
-    """
-    topic: str = Field(..., description="Kafka topic name")
-    handler_id: str = Field(..., description="Handler identifier for DI lookup")
+class DaskConfigs(BaseSchema):
+    """Collection of Dask configurations for different use cases.
 
+    Similar to KafkaTopicsConfig, this allows different parts of the service
+    to use appropriately tuned Dask configurations based on workload characteristics.
 
-class KafkaConsumerConfig(BaseSchema):
-    """Service-specific Kafka consumer configuration.
-    
-    This configuration extends the infrastructure-level KafkaConnectionConfig
-    with service-specific consumer settings and topic subscriptions.
-    
-    Design: Configuration-driven handler mapping
-    - Topic names live in YAML (infrastructure concern)
-    - Handler IDs link to implementations in DI module (application concern)
-    - Clean separation between deployment config and code
-    
+    Use cases:
+    - coverage_analysis: I/O-bound operations (DB queries, Feast fetches) across 1-4 timeframes
+    - feature_computation: CPU-bound operations (computing hundreds of features) with parallelization
+      across both features and timeframes
+
     Attributes:
-        consumer_group_id: Kafka consumer group ID for this service.
-            Should be unique per service to enable independent consumption.
-        topic_subscriptions: List of topics this service consumes from.
-            Each subscription maps to a handler in the DI registry.
+        coverage_analysis: Dask config for I/O-bound coverage analysis operations
+        feature_computation: Dask config for CPU-bound feature computation operations
     """
-    consumer_group_id: str = Field(
-        default="drl-trading-preprocess-group",
-        description="Kafka consumer group ID for this service"
+    coverage_analysis: DaskConfig = Field(
+        default_factory=lambda: DaskConfig(
+            scheduler="threads",  # Good for I/O-bound operations
+            num_workers=None,  # Auto-detect for I/O
+            threads_per_worker=1,
+            memory_limit_per_worker_mb=512,
+        ),
+        description="Dask config for I/O-bound coverage analysis (DB/Feast queries)"
     )
-    topic_subscriptions: List[TopicSubscription] = Field(
-        default_factory=list,
-        description="List of topic-to-handler mappings"
-    )
-
-
-class KafkaTopicConfig(BaseSchema):
-    """Configuration for a single Kafka producer topic.
-    
-    Maps a topic name to its associated retry configuration key.
-    This allows per-topic resilience behavior (e.g., critical data
-    gets more aggressive retries than best-effort notifications).
-    
-    Attributes:
-        topic: Name of the Kafka topic to publish to.
-        retry_config_key: Key to look up retry configuration from
-            infrastructure.resilience.retry_configs. Should reference
-            a constant from resilience_constants.py for type safety.
-    """
-    topic: str = Field(..., description="Kafka topic name")
-    retry_config_key: str = Field(
-        ...,
-        description="Retry configuration key from infrastructure.resilience.retry_configs"
+    feature_computation: DaskConfig = Field(
+        default_factory=lambda: DaskConfig(
+            scheduler="processes",  # True parallelism for CPU-bound work
+            num_workers=4,  # Explicit count for predictable resource usage
+            threads_per_worker=1,
+            memory_limit_per_worker_mb=1024,  # More memory for feature computation
+        ),
+        description="Dask config for CPU-bound feature computation (hundreds of features)"
     )
 
 
 class KafkaTopicsConfig(BaseSchema):
     """Configuration for all Kafka producer topics in the preprocess service.
-    
+
     This maps use cases to topic configurations, allowing each producer
     to have its own topic name and retry behavior.
-    
+
     Attributes:
         resampled_data: Topic for publishing resampled market data.
         preprocessing_completed: Topic for preprocessing completion events.
@@ -153,6 +128,7 @@ class PreprocessConfig(BaseApplicationConfig):
     logging: ServiceLoggingConfig = Field(default_factory=ServiceLoggingConfig)
     feature_store_config: FeatureStoreConfig = Field(default_factory=FeatureStoreConfig)
     resample_config: ResampleConfig = Field(default_factory=ResampleConfig)
+    dask_configs: DaskConfigs = Field(default_factory=DaskConfigs)
     kafka_consumers: KafkaConsumerConfig = Field(default_factory=KafkaConsumerConfig)
     kafka_topics: KafkaTopicsConfig | None = Field(
         default=None,

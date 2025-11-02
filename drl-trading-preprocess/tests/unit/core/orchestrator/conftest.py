@@ -142,6 +142,25 @@ def preprocessing_orchestrator(mock_dependencies: dict) -> PreprocessingOrchestr
     go through mocks. This allows us to test the orchestration
     logic without hitting real databases or message queues.
     """
+    from drl_trading_preprocess.infrastructure.config.preprocess_config import DaskConfigs
+    from drl_trading_common.config.dask_config import DaskConfig
+
+    # Create default DaskConfigs for tests (synchronous scheduler for deterministic behavior)
+    dask_configs = DaskConfigs(
+        coverage_analysis=DaskConfig(
+            scheduler="synchronous",
+            num_workers=1,
+            threads_per_worker=1,
+            memory_limit_per_worker_mb=512,
+        ),
+        feature_computation=DaskConfig(
+            scheduler="synchronous",
+            num_workers=1,
+            threads_per_worker=1,
+            memory_limit_per_worker_mb=512,
+        ),
+    )
+
     return PreprocessingOrchestrator(
         market_data_resampler=mock_dependencies['market_data_resampler'],
         feature_computer=mock_dependencies['feature_computer'],
@@ -149,6 +168,7 @@ def preprocessing_orchestrator(mock_dependencies: dict) -> PreprocessingOrchestr
         feature_store_port=mock_dependencies['feature_store_port'],
         feature_coverage_analyzer=mock_dependencies['feature_coverage_analyzer'],
         message_publisher=mock_dependencies['message_publisher'],
+        dask_configs=dask_configs,
     )
 
 

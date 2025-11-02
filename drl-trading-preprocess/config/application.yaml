@@ -14,3 +14,15 @@ infrastructure:
 
 logging:
   level: "INFO"
+
+# Dask Configurations for different use cases
+# Dask automatically handles task queuing based on num_workers
+dask_configs:
+  coverage_analysis:
+    scheduler: "threads"              # I/O-bound: DB/Feast queries
+    num_workers: null                 # Auto-detect for I/O operations
+    threads_per_worker: 1
+  feature_computation:
+    scheduler: "processes"            # CPU-bound: Feature computation
+    num_workers: 4                    # Explicit for predictable CPU usage
+    threads_per_worker: 1

@@ -95,12 +95,40 @@ def test_preprocess_config(feature_store_config: FeatureStoreConfig) -> Preproce
     Returns:
         PreprocessConfig: Test configuration with optimized settings
     """
+    from drl_trading_preprocess.infrastructure.config.preprocess_config import DaskConfigs
+    from drl_trading_common.config.dask_config import DaskConfig
+    from drl_trading_common.config.kafka_config import KafkaConsumerConfig
+
     # Create ResampleConfig with state persistence disabled for testing
     resample_config = ResampleConfig(state_persistence_enabled=False)
+
+    # Create DaskConfigs for tests (synchronous scheduler for deterministic behavior)
+    dask_configs = DaskConfigs(
+        coverage_analysis=DaskConfig(
+            scheduler="synchronous",
+            num_workers=1,
+            threads_per_worker=1,
+            memory_limit_per_worker_mb=512,
+        ),
+        feature_computation=DaskConfig(
+            scheduler="synchronous",
+            num_workers=1,
+            threads_per_worker=1,
+            memory_limit_per_worker_mb=512,
+        ),
+    )
+
+    # Create KafkaConsumerConfig for tests (no actual consumption in integration tests)
+    kafka_consumers = KafkaConsumerConfig(
+        consumer_group_id="test-preprocess-consumer-group",
+        topic_subscriptions=[],
+    )
 
     return PreprocessConfig(
         feature_store_config=feature_store_config,
         resample_config=resample_config,
+        dask_configs=dask_configs,
+        kafka_consumers=kafka_consumers,
     )
 
 

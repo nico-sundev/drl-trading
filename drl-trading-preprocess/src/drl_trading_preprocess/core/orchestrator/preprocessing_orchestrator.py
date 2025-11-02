@@ -32,6 +32,7 @@ from drl_trading_preprocess.core.service.compute.computing_service import Featur
 from drl_trading_preprocess.core.service.validate.feature_validator import FeatureValidator
 from drl_trading_preprocess.core.service.resample.market_data_resampling_service import MarketDataResamplingService
 from drl_trading_preprocess.core.service.coverage.feature_coverage_analyzer import FeatureCoverageAnalyzer
+from drl_trading_preprocess.infrastructure.config.preprocess_config import DaskConfigs
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +77,7 @@ class PreprocessingOrchestrator:
         feature_store_port: IFeatureStoreSavePort,
         feature_coverage_analyzer: FeatureCoverageAnalyzer,
         message_publisher: PreprocessingMessagePublisherPort,
+        dask_configs: DaskConfigs,
     ) -> None:
         """
         Initialize the preprocessing orchestrator with all required dependencies.
@@ -87,6 +89,7 @@ class PreprocessingOrchestrator:
             feature_store_port: Port for saving features to Feast
             feature_coverage_analyzer: Service for analyzing feature coverage
             message_publisher: Port for publishing preprocessing notifications
+            dask_configs: Collection of Dask configurations for different workloads
         """
         self.market_data_resampler = market_data_resampler
         self.feature_computer = feature_computer
@@ -94,6 +97,7 @@ class PreprocessingOrchestrator:
         self.feature_store_port = feature_store_port
         self.feature_coverage_analyzer = feature_coverage_analyzer
         self.message_publisher = message_publisher
+        self.dask_configs = dask_configs
 
         # Performance tracking
         self._total_requests_processed = 0
@@ -111,13 +115,18 @@ class PreprocessingOrchestrator:
 
         This is the main orchestration entry point that coordinates the 8-step workflow:
         1. Request validation
-        2. Existing feature checking (if enabled)
-        3. Market data resampling to target timeframes
-        4. Feature warmup handling
-        5. Dynamic feature computation
-        6. Feature store persistence
-        7. Online materialization (optional)
+        2. Feature coverage analysis (ONCE - reused by steps 3 and 5)
+        3. Feature filtering based on skip_existing logic
+        4. Market data resampling to target timeframes
+        5. Feature warmup handling (reuses coverage from step 2)
+        6. Dynamic feature computation
+        7. Feature store persistence
         8. Async notification via Kafka
+
+        Performance optimization:
+        - Coverage analysis performed ONCE and reused by both skip_existing and warmup logic
+        - Eliminates redundant Feast fetches and TimescaleDB queries
+        - Dask parallelization for multi-timeframe analysis
 
         Args:
             request: Complete feature computation request
@@ -133,17 +142,19 @@ class PreprocessingOrchestrator:
             # Step 1: Validate request
             self._validate_request(request)
 
-            # Step 2: Check existing features if enabled
-            features_to_compute = request.get_enabled_features()
-            existing_features_info = None
+            # Step 2: Analyze feature coverage (ONCE for entire pipeline)
+            # This single analysis provides:
+            # - features_needing_computation (for skip_existing logic)
+            # - features_needing_warmup (for warmup phase)
+            # - OHLCV availability constraints
+            coverage_analyses = self._analyze_feature_coverage(request)
 
-            if request.skip_existing_features and not request.force_recompute:
-                existing_features_info = self._check_existing_features(request)
-                features_to_compute = self._filter_features_to_compute(
-                    request, existing_features_info
-                )
+            # Step 3: Determine features to compute based on coverage
+            features_to_compute = self._filter_features_to_compute(
+                request, coverage_analyses
+            )
 
-            # Step 3: Early exit if no computation needed
+            # Step 4: Early exit if no computation needed
             if not features_to_compute:
                 logger.info(f"No features to compute for {request.symbol} - all exist or none enabled")
 
@@ -160,9 +171,9 @@ class PreprocessingOrchestrator:
             # Step 4: Resample market data to target timeframes (ONCE for all timeframes)
             resampled_data = self._resample_market_data(request)
 
-            # Step 5: Handle feature warmup if needed (reuses resampled_data, no redundant resampling)
+            # Step 5: Handle feature warmup if needed (reuses coverage_analyses and resampled_data)
             warmup_successful = self._handle_feature_warmup(
-                request, features_to_compute, resampled_data
+                request, features_to_compute, resampled_data, coverage_analyses
             )
             if not warmup_successful:
                 logger.error(f"Feature warmup failed for {request.symbol}")
@@ -258,16 +269,22 @@ class PreprocessingOrchestrator:
 
             raise ValueError(f"Invalid feature definitions: {invalid_features}")
 
-    def _check_existing_features(
+    def _analyze_feature_coverage(
         self, request: FeaturePreprocessingRequest
     ) -> Dict[Timeframe, FeatureCoverageAnalysis]:
         """
         Analyze feature coverage for each target timeframe using Dask parallelization.
 
-        This method:
-        1. Checks OHLCV data availability in TimescaleDB
-        2. Batch fetches existing features from Feast
-        3. Analyzes coverage gaps and computation needs
+        This single analysis provides all coverage information needed by the entire pipeline:
+        - features_needing_computation (for skip_existing optimization)
+        - features_needing_warmup (for warmup phase)
+        - OHLCV availability constraints
+        - Existing feature data from Feast
+
+        This method performs:
+        1. OHLCV data availability check in TimescaleDB
+        2. Batch fetch of existing features from Feast
+        3. Coverage gap analysis and computation needs assessment
 
         Args:
             request: Feature computation request
@@ -278,6 +295,7 @@ class PreprocessingOrchestrator:
         feature_names = [f.name for f in request.get_enabled_features()]
 
         # Parallelize coverage analysis using Dask
+        # Dask internally handles task queuing based on num_workers
         @delayed
         def analyze_timeframe(timeframe: Timeframe) -> tuple[Timeframe, FeatureCoverageAnalysis]:
             coverage_analysis = self.feature_coverage_analyzer.analyze_feature_coverage(
@@ -296,12 +314,27 @@ class PreprocessingOrchestrator:
             )
             return timeframe, coverage_analysis
 
-        # Execute coverage analysis in parallel
-        logger.info(f"Analyzing feature coverage across {len(request.target_timeframes)} timeframes (parallel)")
-        delayed_results = [analyze_timeframe(tf) for tf in request.target_timeframes]
-        results = dask.compute(*delayed_results)
+        # Execute coverage analysis with Dask configuration
+        # Dask will automatically queue tasks and execute them as workers become available
+        total_timeframes = len(request.target_timeframes)
 
-        # Convert to dictionary
+        logger.info(
+            f"Analyzing feature coverage across {total_timeframes} timeframes "
+            f"(scheduler={self.dask_configs.coverage_analysis.scheduler}, "
+            f"num_workers={self.dask_configs.coverage_analysis.num_workers})"
+        )
+
+        # Create delayed tasks for all timeframes
+        delayed_results = [analyze_timeframe(tf) for tf in request.target_timeframes]
+
+        # Dask will handle parallelism based on scheduler and num_workers
+        results = dask.compute(
+            *delayed_results,
+            scheduler=self.dask_configs.coverage_analysis.scheduler,
+            num_workers=self.dask_configs.coverage_analysis.num_workers,
+        )
+
+        # Convert results to dictionary
         coverage_analyses = {timeframe: analysis for timeframe, analysis in results}
         return coverage_analyses
 
@@ -313,6 +346,12 @@ class PreprocessingOrchestrator:
         """
         Determine which features need computation based on coverage analysis.
 
+        When skip_existing_features=False or force_recompute=True:
+        - Returns all enabled features (ignores coverage, computes everything)
+
+        When skip_existing_features=True and force_recompute=False:
+        - Returns only features that need computation based on coverage analysis
+
         Args:
             request: Original request
             coverage_analyses: Coverage analysis results per timeframe
@@ -320,6 +359,12 @@ class PreprocessingOrchestrator:
         Returns:
             Filtered list of feature definitions to compute
         """
+        # If force_recompute or not skipping existing, compute all enabled features
+        if request.force_recompute or not request.skip_existing_features:
+            logger.info("Computing all enabled features (skip_existing=False or force_recompute=True)")
+            return request.get_enabled_features()
+
+        # Otherwise, use coverage analysis to filter features
         if not coverage_analyses:
             return request.get_enabled_features()
 
@@ -467,74 +512,48 @@ class PreprocessingOrchestrator:
         self,
         request: FeaturePreprocessingRequest,
         features_to_compute: List[FeatureDefinition],
-        resampled_data: Dict[Timeframe, DataFrame]
+        resampled_data: Dict[Timeframe, DataFrame],
+        coverage_analyses: Dict[Timeframe, FeatureCoverageAnalysis]
     ) -> bool:
         """
-        Handle feature warmup using coverage analysis and already-resampled data.
+        Handle feature warmup using pre-computed coverage analysis and already-resampled data.
+
+        This method REUSES the coverage analysis performed earlier in _analyze_feature_coverage()
+        instead of re-analyzing, eliminating redundant database queries and Feast fetches.
 
         Warmup scenarios:
         1. Features fully covered by feast -> no warmup needed
         2. Features partially covered -> warmup with historical data up to coverage gap
         3. Features not in feast -> full warmup with ~500 OHLCV records
 
-        This method reuses the resampled data from _resample_market_data() to avoid
-        redundant database calls and resampling operations.
-
-        Coverage analysis is parallelized using Dask since it's read-only.
+        This method reuses:
+        - coverage_analyses: Pre-computed coverage from _analyze_feature_coverage()
+        - resampled_data: Already resampled market data from _resample_market_data()
 
         Args:
             request: Feature computation request
             features_to_compute: Features that need computation
             resampled_data: Already resampled market data for all timeframes
+            coverage_analyses: Pre-computed coverage analysis results (REUSED, not re-fetched)
 
         Returns:
             True if warmup successful or not needed, False on failure
         """
         logger.info(f"Handling feature warmup for {len(features_to_compute)} features")
 
-        # Check if any features need warmup by analyzing coverage
-        feature_names = [f.name for f in features_to_compute]
-
         try:
-            # Parallelize warmup analysis using Dask
-            @delayed
-            def analyze_warmup_needs(timeframe: Timeframe) -> tuple[Timeframe, FeatureCoverageAnalysis, bool]:
-                # Analyze coverage to determine warmup needs
-                coverage_analysis = self.feature_coverage_analyzer.analyze_feature_coverage(
-                    symbol=request.symbol,
-                    timeframe=timeframe,
-                    feature_names=feature_names,
-                    requested_start_time=request.start_time,
-                    requested_end_time=request.end_time,
-                    feature_config_version_info=request.feature_config_version_info,
-                )
-
-                # Check if warmup is needed
+            # Iterate through each timeframe and check if warmup is needed
+            # REUSE the coverage analysis instead of calling feature_coverage_analyzer again
+            for timeframe, coverage_analysis in coverage_analyses.items():
+                # Check if warmup is needed for this timeframe
                 if not coverage_analysis.features_needing_warmup:
                     logger.info(f"No warmup needed for {request.symbol} {timeframe.value}")
-                    return timeframe, coverage_analysis, False
+                    continue
 
                 # Get warmup period from coverage analysis
                 warmup_period = coverage_analysis.get_warmup_period(warmup_candles=500)
-
                 if not warmup_period:
                     logger.info(f"No warmup period calculated for {request.symbol} {timeframe.value}")
-                    return timeframe, coverage_analysis, False
-
-                return timeframe, coverage_analysis, True
-
-            # Execute warmup analysis in parallel
-            logger.info(f"Analyzing warmup needs across {len(request.target_timeframes)} timeframes (parallel)")
-            delayed_analyses = [analyze_warmup_needs(tf) for tf in request.target_timeframes]
-            warmup_analyses = dask.compute(*delayed_analyses)
-
-            # Perform actual warmup for timeframes that need it
-            for timeframe, coverage_analysis, needs_warmup in warmup_analyses:
-                if not needs_warmup:
-                    continue
-
-                warmup_period = coverage_analysis.get_warmup_period(warmup_candles=500)
-                if not warmup_period:
                     continue
 
                 # Perform warmup using ALREADY RESAMPLED DATA
