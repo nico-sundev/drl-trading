@@ -2,7 +2,6 @@ import logging
 from drl_trading_adapter.adapter.database.session_factory import SQLAlchemySessionFactory
 from flask import Flask
 from injector import Binder, Injector, Module, provider, singleton
-from confluent_kafka import Producer
 
 from drl_trading_ingest.adapter.migration.alembic_migration_service import (
     AlembicMigrationService,
@@ -44,18 +43,6 @@ class IngestModule(Module):
     def provide_ingest_config(self) -> IngestConfig:
         """Provide the already loaded IngestConfig instance."""
         return self._config
-
-    @provider
-    @singleton
-    def provide_kafka_producer(
-        self, application_config: IngestConfig
-    ) -> Producer:
-        """Provide a Kafka producer instance."""
-        # KAFKA_BROKER = os.getenv("KAFKA_BROKER", "kafka:29092")
-        producer = Producer({
-            'bootstrap.servers': application_config.infrastructure.messaging.host
-        })
-        return producer
 
     @provider
     @singleton

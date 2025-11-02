@@ -4,17 +4,6 @@ from drl_trading_common.base.base_schema import BaseSchema
 from drl_trading_common.config.kafka_config import KafkaConnectionConfig
 from drl_trading_common.config.resilience_config import ResilienceConfig
 
-
-class MessagingConfig(BaseSchema):
-    """Message bus configuration."""
-    provider: str = "kafka"  # rabbitmq | in_memory
-    host: Optional[str] = None
-    port: Optional[int] = None
-    username: Optional[str] = None
-    password: Optional[str] = None
-    vhost: Optional[str] = None
-
-
 class DatabaseConfig(BaseSchema):
     """Database configuration."""
     provider: str = "postgresql"  # postgresql | sqlite
@@ -65,7 +54,6 @@ class WebApiConfig(BaseSchema):
 
 class InfrastructureConfig(BaseSchema):
     """Infrastructure configuration for deployment environment."""
-    messaging: MessagingConfig = MessagingConfig()
     database: DatabaseConfig = DatabaseConfig()
     logging: LoggingConfig = LoggingConfig()
     monitoring: MonitoringConfig = MonitoringConfig()
