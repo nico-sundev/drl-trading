@@ -1,5 +1,6 @@
 from typing import Generator, Optional
 from datetime import datetime, timedelta
+from unittest.mock import Mock
 
 import pandas as pd
 import pytest
@@ -19,9 +20,6 @@ from drl_trading_adapter.adapter.database.entity.market_data_entity import Base,
 from drl_trading_adapter.adapter.database.session_factory import SQLAlchemySessionFactory
 from drl_trading_common.config.infrastructure_config import DatabaseConfig
 from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_preprocess.adapter.messaging.publisher.stub_preprocess_message_publisher import (
-    StubPreprocessingMessagePublisher,
-)
 
 
 # Test Feature Implementations for Core Integration Testing
@@ -392,16 +390,19 @@ def populated_market_data(
 
 
 @pytest.fixture(scope="function")
-def spy_message_publisher() -> StubPreprocessingMessagePublisher:
-    """Create a spy message publisher to verify notification calls.
+def spy_message_publisher() -> Mock:
+    """Create a mock message publisher to verify notification calls.
 
-    Returns a real StubPreprocessingMessagePublisher instance that we can
-    inspect to verify the orchestrator publishes correct notifications.
+    Returns a Mock instance that can be inspected to verify the orchestrator
+    publishes correct notifications.
 
     Returns:
-        StubPreprocessingMessagePublisher: Publisher with inspection capabilities
+        Mock: Mock publisher with inspection capabilities (spec=PreprocessingMessagePublisherPort)
     """
-    return StubPreprocessingMessagePublisher(log_level="DEBUG")
+    from drl_trading_preprocess.core.port.preprocessing_message_publisher_port import (
+        PreprocessingMessagePublisherPort,
+    )
+    return Mock(spec=PreprocessingMessagePublisherPort)
 
 
 @pytest.fixture(scope="function")

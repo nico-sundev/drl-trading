@@ -6,7 +6,7 @@ using real implementations:
 - PostgreSQL/TimescaleDB via testcontainers for market data
 - Local Feast feature store for feature storage
 - Real resampling, computing, and coverage services
-- Spy message publisher for verification
+- Mock message publisher for verification
 
 Test Philosophy:
 - Each test gets a fresh database container and Feast repository
@@ -18,14 +18,12 @@ Test Philosophy:
 import pytest
 from datetime import datetime
 from injector import Injector
+from unittest.mock import Mock
 
 from drl_trading_adapter.adapter.database.entity.market_data_entity import MarketDataEntity
 from drl_trading_adapter.adapter.feature_store.provider import FeatureStoreWrapper
 from drl_trading_common.model.feature_preprocessing_request import FeaturePreprocessingRequest
 from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_preprocess.adapter.messaging.publisher.stub_preprocess_message_publisher import (
-    StubPreprocessingMessagePublisher,
-)
 from drl_trading_preprocess.core.orchestrator.preprocessing_orchestrator import (
     PreprocessingOrchestrator,
 )
@@ -59,26 +57,26 @@ class TestPreprocessingOrchestratorIntegration:
         return integration_container.get(FeatureStoreWrapper)
 
     @pytest.fixture
-    def spy_publisher(self, integration_container: Injector) -> StubPreprocessingMessagePublisher:
-        """Get spy message publisher for verification.
+    def spy_publisher(self, integration_container: Injector) -> Mock:
+        """Get mock message publisher for verification.
 
         Args:
             integration_container: Configured DI container
 
         Returns:
-            StubPreprocessingMessagePublisher: Publisher with inspection capabilities
+            Mock: Mock publisher with inspection capabilities
         """
         from drl_trading_preprocess.core.port.preprocessing_message_publisher_port import (
             PreprocessingMessagePublisherPort,
         )
-        # Retrieve via interface, cast to concrete type for test inspection
+        # Retrieve via interface, cast to Mock for test inspection
         return integration_container.get(PreprocessingMessagePublisherPort)  # type: ignore[return-value]
 
     def test_happy_path_fresh_environment(
         self,
         orchestrator: PreprocessingOrchestrator,
         feature_store: FeatureStoreWrapper,
-        spy_publisher: StubPreprocessingMessagePublisher,
+        spy_publisher: Mock,
         populated_market_data: list[MarketDataEntity],
     ) -> None:
         """Test complete preprocessing workflow with fresh database and feature store.

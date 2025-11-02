@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import Mock
 from drl_trading_adapter.infrastructure.di.adapter_module import AdapterModule
 from injector import Injector, Binder, Module, provider, singleton
 
@@ -11,9 +12,6 @@ from drl_trading_common.interface.indicator.technical_indicator_facade_interface
     ITechnicalIndicatorFacade,
 )
 from drl_trading_core.infrastructure.di.core_module import CoreModule
-from drl_trading_preprocess.adapter.messaging.publisher.stub_message_publisher import (
-    StubMessagePublisher,
-)
 from drl_trading_preprocess.core.port.message_publisher_port import MessagePublisherPort
 from drl_trading_preprocess.core.port.preprocessing_message_publisher_port import (
     PreprocessingMessagePublisherPort,
@@ -79,12 +77,12 @@ class TestBindingsModule(Module):
 
 @pytest.fixture(scope="function")
 def spy_resampling_message_publisher() -> MessagePublisherPort:
-    """Create a spy resampling message publisher for verification.
+    """Create a mock resampling message publisher for verification.
 
     Returns:
-        StubMessagePublisher: Publisher for resampling notifications
+        Mock: Mock publisher for resampling notifications (spec=MessagePublisherPort)
     """
-    return StubMessagePublisher(log_level="DEBUG")
+    return Mock(spec=MessagePublisherPort)
 
 
 @pytest.fixture(scope="function")

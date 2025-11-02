@@ -258,6 +258,192 @@ class TestPreprocessingOrchestratorContextBehavior:
         assert call_args.kwargs['processing_context'] == "inference"
 
 
+class TestPreprocessingOrchestratorSkipExisting:
+    """Test skip_existing_features logic and early exit behavior."""
+
+    def test_all_features_fully_covered_skips_computation(
+        self,
+        preprocessing_orchestrator: "PreprocessingOrchestrator",
+        mock_dependencies: dict[str, "Mock"],
+        request_builder: "FeaturePreprocessingRequestBuilder",
+    ) -> None:
+        """Test that fully covered features trigger early exit with skipped notification."""
+        # Given
+        import pandas as pd
+        from datetime import datetime, timezone
+        from drl_trading_preprocess.core.model.coverage.feature_coverage_analysis import (
+            FeatureCoverageAnalysis,
+            FeatureCoverageInfo,
+        )
+
+        request = request_builder.for_training().with_skip_existing(True).build()
+
+        # Create coverage analysis indicating all features fully covered
+        existing_features_df = pd.DataFrame({
+            'test_feature': [1.0, 2.0, 3.0],
+        })
+        existing_features_df.index = pd.date_range('2023-01-01', periods=3, freq='5min', tz=timezone.utc)
+        existing_features_df.index.name = 'event_timestamp'
+
+        full_coverage = FeatureCoverageAnalysis(
+            symbol="BTCUSD",
+            timeframe=Timeframe.MINUTE_5,
+            requested_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            requested_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            ohlcv_available=True,
+            ohlcv_earliest_timestamp=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            ohlcv_latest_timestamp=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            ohlcv_record_count=288,
+            adjusted_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            adjusted_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            feature_coverage={
+                'test_feature': FeatureCoverageInfo(
+                    feature_name='test_feature',
+                    is_fully_covered=True,
+                    earliest_timestamp=datetime(2023, 1, 1, tzinfo=timezone.utc),
+                    latest_timestamp=datetime(2023, 1, 2, tzinfo=timezone.utc),
+                    record_count=288,
+                    coverage_percentage=100.0,
+                    missing_periods=[],
+                )
+            },
+            existing_features_df=existing_features_df,
+        )
+
+        mock_dependencies['feature_coverage_analyzer'].analyze_feature_coverage.return_value = full_coverage
+        mock_dependencies['feature_validator'].validate_definitions.return_value = {'test_feature': True}
+
+        # When
+        result = preprocessing_orchestrator.process_feature_computation_request(request)
+
+        # Then
+        assert result is None, "Fire-and-forget should return None"
+
+        # Verify early exit - no resampling, computing, or storage occurred
+        mock_dependencies['market_data_resampler'].resample_symbol_data_incremental.assert_not_called()
+        mock_dependencies['feature_computer'].compute_batch.assert_not_called()
+        mock_dependencies['feature_store_port'].store_computed_features_offline.assert_not_called()
+
+        # Verify completion notification with skipped=True
+        mock_dependencies['message_publisher'].publish_preprocessing_completed.assert_called_once()
+        call_args = mock_dependencies['message_publisher'].publish_preprocessing_completed.call_args
+        assert call_args.kwargs['request'] == request
+        assert call_args.kwargs['total_features_computed'] == 0
+        assert call_args.kwargs['timeframes_processed'] == []
+        assert call_args.kwargs['success_details']['skipped'] is True
+        assert call_args.kwargs['success_details']['reason'] == "all_features_exist"
+
+    def test_no_ohlcv_data_forces_resampling_and_computation(
+        self,
+        preprocessing_orchestrator: "PreprocessingOrchestrator",
+        mock_dependencies: dict[str, "Mock"],
+        request_builder: "FeaturePreprocessingRequestBuilder",
+        sample_features_df: "DataFrame",
+        resampling_response_factory,
+    ) -> None:
+        """Test that missing OHLCV data forces resampling from base timeframe."""
+        # Given
+        from datetime import datetime, timezone
+        from drl_trading_preprocess.core.model.coverage.feature_coverage_analysis import (
+            FeatureCoverageAnalysis,
+            FeatureCoverageInfo,
+        )
+
+        request = request_builder.for_training().with_skip_existing(True).build()
+
+        # Coverage analysis: no OHLCV data available but features DON'T need warmup
+        # (warmup only needed if missing_periods or coverage < 100%)
+        no_ohlcv_coverage = FeatureCoverageAnalysis(
+            symbol="BTCUSD",
+            timeframe=Timeframe.MINUTE_5,
+            requested_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            requested_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            ohlcv_available=False,  # Forces resampling
+            ohlcv_earliest_timestamp=None,
+            ohlcv_latest_timestamp=None,
+            ohlcv_record_count=0,
+            adjusted_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            adjusted_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            feature_coverage={
+                'test_feature': FeatureCoverageInfo(
+                    feature_name='test_feature',
+                    is_fully_covered=True,  # Fully covered (no warmup needed)
+                    earliest_timestamp=None,
+                    latest_timestamp=None,
+                    record_count=0,
+                    coverage_percentage=100.0,  # 100% coverage (no warmup needed)
+                    missing_periods=[],  # No missing periods (no warmup needed)
+                ),
+            },
+            existing_features_df=None,
+        )
+
+        mock_dependencies['feature_coverage_analyzer'].analyze_feature_coverage.return_value = no_ohlcv_coverage
+        mock_dependencies['feature_validator'].validate_definitions.return_value = {'test_feature': True}
+
+        # Configure resampler and computer
+        resampling_response = resampling_response_factory()
+        mock_dependencies['market_data_resampler'].resample_symbol_data_incremental.return_value = resampling_response
+        mock_dependencies['feature_computer'].compute_batch.return_value = sample_features_df
+
+        # When
+        result = preprocessing_orchestrator.process_feature_computation_request(request)
+
+        # Then
+        assert result is None
+
+        # Verify resampling occurred (OHLCV not available, must resample from base)
+        mock_dependencies['market_data_resampler'].resample_symbol_data_incremental.assert_called_once()
+
+        # Verify feature computation occurred
+        mock_dependencies['feature_computer'].compute_batch.assert_called()
+
+        # Verify completion notification published
+        mock_dependencies['message_publisher'].publish_preprocessing_completed.assert_called_once()
+
+    def test_warmup_failure_publishes_error_notification(
+        self,
+        preprocessing_orchestrator: "PreprocessingOrchestrator",
+        mock_dependencies: dict[str, "Mock"],
+        request_builder: "FeaturePreprocessingRequestBuilder",
+        resampling_response_factory,
+    ) -> None:
+        """Test that warmup failure triggers error notification and early exit."""
+        # Given
+        from unittest.mock import patch
+
+        request = request_builder.for_training().with_skip_existing(False).build()
+
+        mock_dependencies['feature_validator'].validate_definitions.return_value = {'test_feature': True}
+
+        # Configure resampler to succeed
+        resampling_response = resampling_response_factory()
+        mock_dependencies['market_data_resampler'].resample_symbol_data_incremental.return_value = resampling_response
+
+        # Mock _handle_feature_warmup to return False (warmup failure)
+        with patch.object(preprocessing_orchestrator, '_handle_feature_warmup', return_value=False):
+            # When
+            result = preprocessing_orchestrator.process_feature_computation_request(request)
+
+            # Then
+            assert result is None, "Fire-and-forget should return None even on failure"
+
+            # Verify early exit - no feature computation or storage occurred after warmup failure
+            mock_dependencies['feature_computer'].compute_batch.assert_not_called()
+            mock_dependencies['feature_store_port'].store_computed_features_offline.assert_not_called()
+
+            # Verify error notification was published with warmup failure details
+            mock_dependencies['message_publisher'].publish_preprocessing_error.assert_called_once()
+            call_args = mock_dependencies['message_publisher'].publish_preprocessing_error.call_args
+            assert call_args.kwargs['request'] == request
+            assert call_args.kwargs['error_message'] == "Feature warmup failed"
+            assert call_args.kwargs['error_details']['failed_step'] == "feature_warmup"
+            assert call_args.kwargs['failed_step'] == "feature_warmup"
+
+            # Verify NO completion notification was published
+            mock_dependencies['message_publisher'].publish_preprocessing_completed.assert_not_called()
+
+
 class TestPreprocessingOrchestratorEdgeCases:
     """Test edge cases and boundary conditions."""
 
