@@ -9,14 +9,14 @@ import unittest.mock as mock
 import pytest
 from stable_baselines3.common.vec_env import VecEnv
 
-from drl_trading_core.common.agents.agent_factory import AgentFactory
-from drl_trading_core.common.agents.ppo_agent import PPOAgent
+from drl_trading_training.core.agents.agent_factory import AgentFactory
+from drl_trading_training.core.agents.ppo_agent import PPOAgent
 
 
 class TestAgentFactory:
     """Tests for the AgentFactory class."""
 
-    def test_factory_initialization(self):
+    def test_factory_initialization(self) -> None:
         """Test that the factory initializes with the expected agent mappings."""
         # Given
         # When
@@ -28,7 +28,7 @@ class TestAgentFactory:
 
     @mock.patch.object(PPOAgent, "__init__", return_value=None)
     @mock.patch.object(PPOAgent, "predict")
-    def test_create_agent_with_valid_type(self, mock_predict, mock_init):
+    def test_create_agent_with_valid_type(self, mock_predict: mock.Mock, mock_init: mock.Mock) -> None:
         """Test creating an agent with a valid agent type."""
         # Given
         factory = AgentFactory()
@@ -43,7 +43,7 @@ class TestAgentFactory:
         assert isinstance(agent, PPOAgent)
         mock_init.assert_called_once_with(mock_env, total_timesteps, threshold)
 
-    def test_create_agent_with_invalid_type(self):
+    def test_create_agent_with_invalid_type(self) -> None:
         """Test creating an agent with an invalid agent type raises ValueError."""
         # Given
         factory = AgentFactory()
@@ -56,7 +56,7 @@ class TestAgentFactory:
 
     @mock.patch.object(PPOAgent, "__init__", return_value=None)
     @mock.patch.object(PPOAgent, "predict")
-    def test_create_multiple_agents(self, mock_predict, mock_init):
+    def test_create_multiple_agents(self, mock_predict: mock.Mock, mock_init: mock.Mock) -> None:
         """Test creating multiple agents from a list of types."""
         # Given
         factory = AgentFactory()
@@ -78,7 +78,7 @@ class TestAgentFactory:
 
     @mock.patch.object(PPOAgent, "__init__", return_value=None)
     @mock.patch.object(PPOAgent, "predict")
-    def test_create_multiple_agents_with_some_invalid(self, mock_predict, mock_init):
+    def test_create_multiple_agents_with_some_invalid(self, mock_predict: mock.Mock, mock_init: mock.Mock) -> None:
         """Test creating multiple agents where some agent types are invalid."""
         # Given
         factory = AgentFactory()

@@ -6,6 +6,7 @@ from drl_trading_common.adapter.messaging.kafka_producer_adapter import (
     KafkaProducerAdapter,
 )
 from drl_trading_common.config.feature_config import FeatureStoreConfig
+from drl_trading_common.config.infrastructure_config import DatabaseConfig
 from drl_trading_common.messaging.kafka_handler_registry import KafkaHandlerRegistry
 from drl_trading_preprocess.adapter.messaging.kafka_handler_constants import (
     HANDLER_ID_PREPROCESSING_REQUEST,
@@ -94,6 +95,12 @@ class PreprocessModule(Module):
     def provide_dask_configs(self) -> DaskConfigs:
         """Provide Dask configurations collection for parallel processing."""
         return self._config.dask_configs
+
+    @provider
+    @singleton
+    def provide_database_config(self) -> DatabaseConfig:
+        """Provide database configuration."""
+        return self._config.infrastructure.database
 
     @provider
     @singleton

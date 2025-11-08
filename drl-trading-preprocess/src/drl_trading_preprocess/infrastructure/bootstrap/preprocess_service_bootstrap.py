@@ -10,11 +10,15 @@ include class/module names and service context consistently across services.
 """
 
 import logging
-from typing import List
+import threading
+from typing import List, Optional
 
 from injector import Module
 
 from drl_trading_adapter.infrastructure.di.adapter_module import AdapterModule
+from drl_trading_common.adapter.messaging.kafka_consumer_header_adapter import (
+    KafkaConsumerHeaderAdapter,
+)
 from drl_trading_common.infrastructure.bootstrap.flask_service_bootstrap import FlaskServiceBootstrap
 from drl_trading_common.infrastructure.health.basic_health_checks import (
     SystemResourcesHealthCheck,
@@ -22,6 +26,7 @@ from drl_trading_common.infrastructure.health.basic_health_checks import (
     ConfigurationHealthCheck,
 )
 from drl_trading_common.infrastructure.health.health_check import HealthCheck
+from drl_trading_common.messaging.kafka_handler_registry import KafkaHandlerRegistry
 from drl_trading_core.infrastructure.di.core_module import CoreModule
 from drl_trading_preprocess.infrastructure.config.preprocess_config import PreprocessConfig
 
@@ -46,6 +51,8 @@ class PreprocessServiceBootstrap(FlaskServiceBootstrap):
         """Initialize the preprocess service bootstrap."""
         super().__init__(service_name="drl-trading-preprocess", config_class=PreprocessConfig)
         self._startup_health_check = ServiceStartupHealthCheck("preprocess_startup")
+        self._kafka_consumer: Optional[KafkaConsumerHeaderAdapter] = None
+        self._kafka_consumer_thread: Optional[threading.Thread] = None
 
     def get_dependency_modules(self, app_config: PreprocessConfig) -> List[Module]:
         """Return DI modules using existing loaded config instance.
@@ -53,8 +60,16 @@ class PreprocessServiceBootstrap(FlaskServiceBootstrap):
         The provided app_config avoids redundant config reloads inside DI.
         """
         from drl_trading_preprocess.infrastructure.di.preprocess_module import PreprocessModule  # type: ignore
+        from drl_trading_strategy_example.infrastructure.di.feature_computation_module import (
+            FeatureComputationModule,
+        )
 
-        return [PreprocessModule(app_config), CoreModule(), AdapterModule()]
+        return [
+            PreprocessModule(app_config),
+            CoreModule(),
+            AdapterModule(),
+            FeatureComputationModule(),  # Provides features + indicators only (no RL environment)
+        ]
 
     def get_health_checks(self) -> List[HealthCheck]:
         """Return health checks (always includes configuration check)."""
@@ -95,7 +110,24 @@ class PreprocessServiceBootstrap(FlaskServiceBootstrap):
         service_logger = logging.getLogger(__name__)
         service_logger.info("=== STOPPING PREPROCESS SERVICE BUSINESS LOGIC ===")
         try:
-            # Placeholder for future cleanup
+            # Stop Kafka consumer gracefully
+            if self._kafka_consumer:
+                service_logger.info("Stopping Kafka consumer...")
+                self._kafka_consumer.stop()
+
+                # Wait for consumer thread to finish
+                if self._kafka_consumer_thread and self._kafka_consumer_thread.is_alive():
+                    service_logger.info("Waiting for Kafka consumer thread to finish...")
+                    self._kafka_consumer_thread.join(timeout=10)
+
+                    if self._kafka_consumer_thread.is_alive():
+                        service_logger.warning("Kafka consumer thread did not finish within timeout")
+                    else:
+                        service_logger.info("Kafka consumer thread finished successfully")
+
+                self._kafka_consumer = None
+                self._kafka_consumer_thread = None
+
             service_logger.info("Preprocess service business logic stopped successfully")
         except Exception as e:  # pragma: no cover - defensive
             service_logger.error("Error stopping preprocess service: %s", e, exc_info=True)
@@ -126,8 +158,66 @@ class PreprocessServiceBootstrap(FlaskServiceBootstrap):
 
     def _setup_messaging(self) -> None:
         """Setup messaging infrastructure."""
-        logger.info("Setting up messaging (placeholder)...")
-        # TODO: Implement messaging setup
+        logger.info("Setting up Kafka consumer...")
+
+        # Type narrow config to PreprocessConfig
+        config: PreprocessConfig = self.config  # type: ignore[assignment]
+
+        # Check if Kafka is configured
+        if not config.infrastructure.kafka:
+            logger.warning("No Kafka configuration found, skipping Kafka consumer setup")
+            return
+
+        if not config.kafka_consumers:
+            logger.warning("No Kafka consumer configuration found, skipping Kafka consumer setup")
+            return
+
+        # Get handler registry from DI container
+        if not self.injector:
+            logger.error("DI injector not initialized, cannot setup Kafka consumer")
+            return
+
+        try:
+            handler_registry: KafkaHandlerRegistry = self.injector.get(KafkaHandlerRegistry)
+        except Exception as e:
+            logger.error(
+                f"Failed to get Kafka handler registry from DI container: {e}",
+                exc_info=True
+            )
+            return
+
+        # Get consumer configuration
+        consumer_group_id = config.kafka_consumers.consumer_group_id
+        consumer_config = config.infrastructure.kafka.get_consumer_config(
+            group_id=consumer_group_id
+        )
+
+        # Extract topics from subscriptions
+        topics = [sub.topic for sub in config.kafka_consumers.topic_subscriptions]
+
+        # Create Kafka consumer adapter
+        self._kafka_consumer = KafkaConsumerHeaderAdapter(
+            consumer_config=consumer_config,
+            topics=topics,
+            handler_registry=handler_registry,
+        )
+
+        # Start consumer in background thread (daemon=False for graceful shutdown)
+        self._kafka_consumer_thread = threading.Thread(
+            target=self._kafka_consumer.start,
+            daemon=False,
+            name="kafka-consumer-preprocess"
+        )
+        self._kafka_consumer_thread.start()
+
+        logger.info(
+            "Kafka consumer started in background thread",
+            extra={
+                "group_id": consumer_group_id,
+                "topics": topics,
+                "handler_count": len(handler_registry),
+            }
+        )
 
     def _run_main_loop(self) -> None:
         """

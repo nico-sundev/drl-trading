@@ -6,8 +6,8 @@ from drl_trading_common.config.application_config import ApplicationConfig
 from injector import inject
 from stable_baselines3.common.vec_env import DummyVecEnv
 
-from drl_trading_core.common.agents.agent_factory import AgentFactory
-from drl_trading_core.common.agents.base_agent import BaseAgent
+from drl_trading_training.core.agents.agent_factory import AgentFactory
+from drl_trading_training.core.agents.base_agent import BaseAgent
 from drl_trading_core.common.model.split_dataset_container import (
     SplitDataSetContainer,
 )

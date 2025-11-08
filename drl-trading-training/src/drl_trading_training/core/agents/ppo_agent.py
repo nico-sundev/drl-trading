@@ -4,7 +4,7 @@ import numpy as np
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecEnv
 
-from drl_trading_core.common.agents.base_agent import BaseAgent
+from drl_trading_training.core.agents.base_agent import BaseAgent
 
 
 class PPOAgent(BaseAgent):

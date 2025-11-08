@@ -6,8 +6,8 @@ from typing import Dict, List, Type
 
 from stable_baselines3.common.vec_env import VecEnv
 
-from drl_trading_core.common.agents.base_agent import BaseAgent
-from drl_trading_core.common.agents.ppo_agent import PPOAgent
+from drl_trading_training.core.agents.base_agent import BaseAgent
+from drl_trading_training.core.agents.ppo_agent import PPOAgent
 
 
 class AgentFactory:

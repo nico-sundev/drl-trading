@@ -4,7 +4,6 @@ from .base_feature import BaseFeature
 from .base_parameter_set_config import BaseParameterSetConfig
 from .base_schema import BaseSchema
 from .base_trading_env import BaseTradingEnv
-from .base_strategy_module import BaseStrategyModule
 from .base_indicator import BaseIndicator
 from .discoverable_registry import DiscoverableRegistry
 
@@ -14,6 +13,5 @@ __all__ = [
     "BaseParameterSetConfig",
     "BaseSchema",
     "BaseTradingEnv",
-    "BaseStrategyModule",
     "DiscoverableRegistry"
 ]

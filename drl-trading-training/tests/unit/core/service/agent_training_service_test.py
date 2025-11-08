@@ -7,8 +7,8 @@ import pytest
 from drl_trading_common.config.environment_config import EnvironmentConfig
 from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv
 
-from drl_trading_core.common.agents.agent_factory import AgentFactory
-from drl_trading_core.common.agents.base_agent import BaseAgent
+from drl_trading_training.core.agents.agent_factory import AgentFactory
+from drl_trading_training.core.agents.base_agent import BaseAgent
 
 
 # Mock implementation of AbstractBaseAgent for testing

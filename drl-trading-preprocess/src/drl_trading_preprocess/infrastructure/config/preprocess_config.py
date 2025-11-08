@@ -126,10 +126,10 @@ class PreprocessConfig(BaseApplicationConfig):
     infrastructure: InfrastructureConfig = Field(default_factory=InfrastructureConfig)
     # T005 logging configuration for ServiceLogger
     logging: ServiceLoggingConfig = Field(default_factory=ServiceLoggingConfig)
-    feature_store_config: FeatureStoreConfig = Field(default_factory=FeatureStoreConfig)
+    feature_store_config: FeatureStoreConfig | None = None  # Stage-specific override
     resample_config: ResampleConfig = Field(default_factory=ResampleConfig)
     dask_configs: DaskConfigs = Field(default_factory=DaskConfigs)
-    kafka_consumers: KafkaConsumerConfig = Field(default_factory=KafkaConsumerConfig)
+    kafka_consumers: KafkaConsumerConfig | None = None  # Stage-specific override
     kafka_topics: KafkaTopicsConfig | None = Field(
         default=None,
         description="Kafka producer topic configurations"

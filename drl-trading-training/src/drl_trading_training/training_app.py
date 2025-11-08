@@ -9,7 +9,7 @@ from drl_trading_training.adapter.feature_config.feature_config_writer import Fe
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
-from drl_trading_core.common.agents.base_agent import BaseAgent
+from drl_trading_training.core.agents.base_agent import BaseAgent
 from drl_trading_core.common.model.preprocessing_result import PreprocessingResult
 from drl_trading_core.core_engine import CoreEngine
 from drl_trading_core.preprocess.data_set_utils.split_service import SplitService

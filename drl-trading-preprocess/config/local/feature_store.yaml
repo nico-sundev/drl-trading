@@ -1,0 +1,19 @@
+# Feast Feature Store Configuration for Local Development
+# This configuration uses local file system for both online and offline stores
+
+project: drl_trading_preprocess
+registry:
+  path: data/feature_store/registry.db
+provider: local
+
+# Online store configuration (SQLite for local development)
+online_store:
+  type: sqlite
+  path: data/feature_store/online_store.db
+
+# Offline store configuration (local file system)
+offline_store:
+  type: file
+
+# Entity key serialization version
+entity_key_serialization_version: 3

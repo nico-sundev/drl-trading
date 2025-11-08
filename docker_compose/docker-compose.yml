@@ -1,5 +1,12 @@
 version: '3.8'
 
+# Centralized infrastructure + all microservices
+# Usage:
+#   docker-compose up                           # All infrastructure
+#   docker-compose --profile preprocess up      # Infrastructure + preprocess service
+#   docker-compose --profile ingest up          # Infrastructure + ingest service
+#   docker-compose --profile all up             # Everything
+
 services:
   timescaledb:
     image: timescale/timescaledb:latest-pg14
@@ -51,6 +58,18 @@ services:
         --replication-factor 1 --partitions 1 && \
       kafka-topics.sh --create --if-not-exists --topic ready.rawdata.increment \
         --bootstrap-server kafka:29092 \
+        --replication-factor 1 --partitions 1 && \
+      kafka-topics.sh --create --if-not-exists --topic requested.preprocess-data \
+        --bootstrap-server kafka:29092 \
+        --replication-factor 1 --partitions 1 && \
+      kafka-topics.sh --create --if-not-exists --topic requested.store-resampled-data \
+        --bootstrap-server kafka:29092 \
+        --replication-factor 1 --partitions 1 && \
+      kafka-topics.sh --create --if-not-exists --topic completed.preprocess-data \
+        --bootstrap-server kafka:29092 \
+        --replication-factor 1 --partitions 1 && \
+      kafka-topics.sh --create --if-not-exists --topic error.preprocess-data \
+        --bootstrap-server kafka:29092 \
         --replication-factor 1 --partitions 1"
 
   postgres:
@@ -66,6 +85,37 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # Microservices (use profiles to selectively start)
+  preprocess-service:
+    build:
+      context: ..
+      dockerfile: drl-trading-preprocess/docker/Dockerfile
+    image: drl-trading-preprocess:local
+    container_name: preprocess-service
+    profiles: ["preprocess", "all"]
+    ports:
+      - "8080:8080"
+    environment:
+      - STAGE=local
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - DB_HOST=timescaledb
+      - DB_PORT=5432
+      - DB_NAME=marketdata
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+    depends_on:
+      - kafka
+      - timescaledb
+    networks:
+      - default
+    volumes:
+      # Mount logs for easier debugging
+      - ../drl-trading-preprocess/logs:/app/logs
+
+networks:
+  default:
+    driver: bridge
 
 volumes:
   timescale_data:

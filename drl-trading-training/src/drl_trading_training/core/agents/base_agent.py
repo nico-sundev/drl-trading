@@ -4,7 +4,7 @@ from typing import List
 import numpy as np
 from stable_baselines3.common.vec_env import VecEnv
 
-from drl_trading_core.common.policies.pol_grad_loss_cb import (
+from drl_trading_training.core.policies.pol_grad_loss_cb import (
     PolicyGradientLossCallback,
 )
 

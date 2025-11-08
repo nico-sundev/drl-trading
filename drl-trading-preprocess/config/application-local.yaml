@@ -6,11 +6,11 @@ infrastructure:
 
   database:
     provider: "postgresql"
-    host: "localhost"
-    port: 5432
-    database: "trading_preprocess_dev"
-    username: "dev_user"
-    password: "dev_password"
+    host: "${DB_HOST:localhost}"
+    port: ${DB_PORT:5432}
+    database: "${DB_NAME:marketdata}"
+    username: "${DB_USER:postgres}"
+    password: "${DB_PASSWORD:postgres}"
 
   webapi:
     port: 8082
@@ -18,7 +18,7 @@ infrastructure:
     debug: true
 
   kafka:
-    bootstrap_servers: "localhost:9092"
+    bootstrap_servers: "${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}"
     security_protocol: "PLAINTEXT"
     consumer_auto_offset_reset: "earliest"
     consumer_enable_auto_commit: false
@@ -50,7 +50,7 @@ infrastructure:
         stop_after_delay: null
 
 kafka_consumers:
-  consumer_group_id: "drl-trading-preprocess-group"
+  consumer_group_id: "preprocess-service-group"
   topic_subscriptions:
     - topic: "requested.preprocess-data"
       handler_id: "preprocessing_request_handler"
@@ -70,6 +70,18 @@ feature_engineering:
   enabled_features: ["technical_indicators", "market_data", "sentiment"]
   lookback_period: 30
   scaling_method: "standard"
+
+feature_store_config:
+  cache_enabled: true
+  entity_name: "symbol"
+  ttl_days: 1
+  online_enabled: false
+  service_name: "drl_trading_preprocess"
+  service_version: "1.0.0"
+  config_directory: "config/local"
+  offline_repo_strategy: "local"
+  local_repo_config:
+    repo_path: "data/feature_store"
 
 logging:
   level: "DEBUG"

@@ -21,6 +21,7 @@ from injector import inject
 logger = logging.getLogger(__name__)
 
 
+@inject
 class FeatureFactory(IFeatureFactory):
     """
     Concrete implementation of FeatureFactoryInterface.
@@ -30,7 +31,6 @@ class FeatureFactory(IFeatureFactory):
     managing class types.
     """
 
-    @inject
     def __init__(
         self,
         registry: IFeatureClassRegistry,

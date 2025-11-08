@@ -13,6 +13,7 @@ from injector import inject
 from pandas import DataFrame
 
 
+@inject
 class TaLippIndicatorService(ITechnicalIndicatorFacade):
     """
     Thread-safe technical indicator service for concurrent access.
@@ -27,7 +28,6 @@ class TaLippIndicatorService(ITechnicalIndicatorFacade):
     - Thread-safe instance management
     """
 
-    @inject
     def __init__(self, registry: IndicatorClassRegistryInterface) -> None:
         self.instances: Dict[str, BaseIndicator] = {}
         self.registry = registry

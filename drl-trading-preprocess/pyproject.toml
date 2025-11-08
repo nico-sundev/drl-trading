@@ -28,6 +28,8 @@ dependencies = [
     # Workspace dependencies
     "drl-trading-common", # Provides confluent-kafka
     "drl-trading-core",
+    "drl-trading-adapter",
+    "drl-trading-strategy-example", # Feature discovery and strategy-specific indicators
     # Core data processing
     "pandas>=2.0.0",
     "numpy>=1.24.0",
@@ -35,7 +37,6 @@ dependencies = [
     "injector>=0.22.0",
     # Configuration support - required by drl-trading-common
     "PyYAML>=6.0",
-    "drl-trading-adapter",
     "feast>=0.53.0",
     # Parallel processing for coverage analysis
     "dask[dataframe]>=2024.1.0",
@@ -45,6 +46,7 @@ dependencies = [
 drl-trading-common = { workspace = true }
 drl-trading-core = { workspace = true }
 drl-trading-adapter = { workspace = true }
+drl-trading-strategy-example = { workspace = true }
 
 [dependency-groups]
 # Testing dependencies (following workspace standards)
@@ -84,7 +86,7 @@ dev-full = [
 
 # Project-specific ruff configuration (overrides workspace defaults where needed)
 [tool.ruff.lint.isort]
-known-first-party = ["drl_trading_preprocess", "drl_trading_core", "drl_trading_common"]
+known-first-party = ["drl_trading_preprocess", "drl_trading_core", "drl_trading_common", "drl_trading_strategy_example"]
 
 # Project-specific coverage configuration
 [tool.coverage.run]

@@ -5,7 +5,6 @@ enabling multiple handlers per topic based on 'handler_id' message header.
 """
 
 import logging
-import signal
 import threading
 from typing import Any, Dict, Optional, Union
 
@@ -103,37 +102,27 @@ class KafkaConsumerHeaderAdapter:
         self._handler_registry = handlers_dict
         self._poll_timeout = poll_timeout_seconds
         self._running = False
+        # Event set by signal handler to request shutdown (safe to set from signal handler)
+        self._shutdown_event = threading.Event()
         self._shutdown_lock = threading.Lock()
 
         # Extract group ID for logging
         self._group_id = consumer_config.get("group.id", "unknown")
 
-        # Register signal handlers for graceful shutdown
-        signal.signal(signal.SIGINT, self._signal_handler)
-        signal.signal(signal.SIGTERM, self._signal_handler)
+        # Note: Signal handler registration removed. The consumer should be stopped
+        # by the service's shutdown lifecycle (_stop_service) rather than registering
+        # its own handlers. Multiple signal handlers can conflict and prevent proper
+        # service shutdown coordination.
 
         logger.info(
             "KafkaConsumerHeaderAdapter initialized",
             extra={
                 "group_id": self._group_id,
                 "topics": self._topics,
-                "handler_ids": list(handler_registry.keys()),
+                "handler_ids": list(handlers_dict.keys()),
                 "poll_timeout_seconds": poll_timeout_seconds,
             }
         )
-
-    def _signal_handler(self, signum: int, frame: Any) -> None:
-        """Handle OS signals for graceful shutdown.
-
-        Args:
-            signum: Signal number (SIGINT=2, SIGTERM=15).
-            frame: Current stack frame (unused).
-        """
-        logger.info(
-            f"Received signal {signum}, initiating graceful shutdown...",
-            extra={"signal": signum, "group_id": self._group_id}
-        )
-        self.stop()
 
     def start(self) -> None:
         """Start consuming messages from subscribed topics.
@@ -165,6 +154,11 @@ class KafkaConsumerHeaderAdapter:
 
         try:
             while self._running:
+                # If a shutdown was requested via signal handler, stop gracefully
+                if self._shutdown_event.is_set():
+                    # Call stop() from this thread (not the signal handler)
+                    self.stop()
+                    break
                 msg = self._consumer.poll(timeout=self._poll_timeout)
 
                 if msg is None:
@@ -316,7 +310,9 @@ class KafkaConsumerHeaderAdapter:
     def stop(self) -> None:
         """Signal the consumer to stop gracefully.
 
-        Thread-safe: Can be called from signal handlers or other threads.
+        Thread-safe: Can be called from other threads.
+        Sets both the shutdown event and running flag to ensure the
+        consumer loop terminates promptly.
         """
         with self._shutdown_lock:
             if self._running:
@@ -325,6 +321,7 @@ class KafkaConsumerHeaderAdapter:
                     extra={"group_id": self._group_id}
                 )
                 self._running = False
+                self._shutdown_event.set()  # Signal the consumer loop to exit
 
     def _cleanup(self) -> None:
         """Clean up consumer resources.
