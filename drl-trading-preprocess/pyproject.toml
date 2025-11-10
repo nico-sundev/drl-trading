@@ -120,6 +120,7 @@ filterwarnings = [
 markers = [
     "unit: Unit tests for individual components",
     "integration: Integration tests with external dependencies",
+    "e2e: End-to-end tests with real infrastructure",
     "load: Load and performance tests (disabled by default, use --load to enable)",
     "benchmark: Benchmark tests using pytest-benchmark",
     "slow: Tests that take longer than 10 seconds",

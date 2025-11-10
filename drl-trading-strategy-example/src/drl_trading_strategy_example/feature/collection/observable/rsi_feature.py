@@ -37,7 +37,7 @@ class RsiFeature(BaseFeature):
             raise TypeError(f"RsiFeature requires config to be of type RsiConfig, got {type(config).__name__}")
         self.config: RsiConfig = config
         self.feature_name = f"rsi_{self.config.length}{self.postfix}"
-        self.indicator_service.register_instance(self.feature_name, self._get_indicator_type(), period=self.config.length)
+        self.indicator_service.register_instance(self.feature_name, self._get_indicator_type(), config=self.config)
 
     def update(self, df: DataFrame) -> None:
         index_corrected_dataframe = self._prepare_source_df(df)

@@ -4,16 +4,19 @@
 
 End-to-end tests validate complete service workflows with real infrastructure:
 - Real Kafka message passing
-- Real database interactions
+- Real database interactions (with schema migrations)
 - Real service processing logic
 
 **Philosophy**: Test the service as it runs in production, not mocked simulations.
+
+**Important**: E2E tests require the `market_data` table owned by `drl-trading-ingest`. The initialization script automatically runs the necessary migrations.
 
 ## Prerequisites
 
 - Docker & Docker Compose installed
 - Service dependencies built: `uv sync --group dev-all`
 - Kafka & databases configured in `docker_compose/docker-compose.yml`
+- **PostgreSQL client tools** (`psql`) for database initialization verification
 
 ## Quick Start
 
@@ -33,16 +36,55 @@ End-to-end tests validate complete service workflows with real infrastructure:
 # 1. Start infrastructure
 docker-compose -f docker_compose/docker-compose.yml up -d
 
-# 2. Start service (in separate terminal)
+# 2. Initialize database schema (REQUIRED - creates market_data table)
+./scripts/init_e2e_database.sh
+
+# 3. Start service (in separate terminal)
+# IMPORTANT: Restart service between test runs to clear resampling state
 cd drl-trading-preprocess
 STAGE=local uv run python main.py
 
-# 3. Run tests (in another terminal)
+# 4. Run tests (in another terminal)
 pytest tests/e2e/ -v
 
-# 4. Cleanup
+# 5. Cleanup
 kill <service_pid>
 docker-compose -f docker_compose/docker-compose.yml down
+```
+
+**⚠️ Important**: If you run the same E2E test multiple times:
+- The service maintains a **resampling state** (`state/resampling_context.json`)
+- This tracks the last processed timestamp for each symbol
+- **Restart the service** between test runs, OR
+- Delete `drl-trading-preprocess/state/resampling_context.json*` before re-running tests
+- The test fixture automatically clears this file, but the service must reload it
+
+### Database Initialization Details
+
+The E2E tests depend on the `market_data` table, which is **owned by the `drl-trading-ingest` service**.
+
+**Why is this needed?**
+- Per the [Market Data Shared Access Architecture](../../docs/MARKET_DATA_SHARED_ACCESS.md):
+  - **Write Operations**: `drl-trading-ingest` owns schema migrations and data ingestion
+  - **Read Operations**: `drl-trading-preprocess` and other services consume via `MarketDataReaderPort`
+
+**What the initialization script does:**
+1. Waits for TimescaleDB to be ready
+2. Runs `drl-trading-ingest` Alembic migrations
+3. Creates the `market_data` TimescaleDB hypertable
+4. Verifies the schema is properly set up
+
+**Manual initialization (if needed):**
+```bash
+# From project root
+export DB_HOST=localhost
+export DB_PORT=5432
+export DB_NAME=marketdata
+export DB_USER=postgres
+export DB_PASSWORD=postgres
+
+cd drl-trading-ingest
+STAGE=ci uv run python -m drl_trading_ingest.adapter.cli.migration_cli migrate
 ```
 
 ## Test Structure
@@ -311,12 +353,35 @@ jobs:
 - Ensure topic names match configuration
 - Increase timeout if processing is slow
 
+### "relation 'market_data' does not exist"
+
+This error means the database schema hasn't been initialized.
+
+**Solution:**
+```bash
+# Run the database initialization script
+./scripts/init_e2e_database.sh
+```
+
+**Root Cause:**
+- The `market_data` table is owned by `drl-trading-ingest` service
+- E2E tests need this table but the automated runner now handles this
+- Manual test runs require manual initialization
+
+**Verification:**
+```bash
+# Check if table exists
+PGPASSWORD=postgres psql -h localhost -U postgres -d marketdata \
+  -c "SELECT tablename FROM pg_tables WHERE tablename = 'market_data';"
+```
+
 ### "Service failed to start"
 
 - Check service logs: `cat logs/e2e-test.log`
 - Verify configuration file exists: `ls config/application-ci.yaml`
 - Check database connections
 - Ensure ports are not already in use
+- **Verify database schema is initialized** (see above)
 
 ### "Kafka connection refused"
 

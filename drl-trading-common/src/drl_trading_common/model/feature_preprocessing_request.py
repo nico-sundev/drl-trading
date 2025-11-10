@@ -6,7 +6,7 @@ feature computation. It encapsulates all information needed for dynamic feature
 processing without coupling to static configuration.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import uuid4
 
@@ -76,6 +76,20 @@ class FeaturePreprocessingRequest(BaseSchema):
     )
 
     # Validation
+    @field_validator("start_time", "end_time", mode="after")
+    @classmethod
+    def normalize_timezone(cls, v: datetime) -> datetime:
+        """
+        Normalize datetime timezone to Python's built-in datetime.timezone.utc.
+
+        Pydantic's datetime deserialization can return various timezone implementations
+        (pytz.UTC, dateutil.tz.UTC, etc.) depending on the source. This validator ensures
+        all timestamps use the same timezone object type for consistency across the application.
+        """
+        if v.tzinfo is not None:
+            return v.astimezone(timezone.utc)
+        return v.replace(tzinfo=timezone.utc)
+
     @field_validator("symbol")
     @classmethod
     def validate_symbol(cls, v: str) -> str:

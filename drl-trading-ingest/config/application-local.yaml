@@ -8,7 +8,12 @@ infrastructure:
     debug: true  # Enable debug mode for local development
 
   database:
-    password: "dev_password"  # Local development password
+    provider: "postgresql"
+    host: "${DB_HOST}"
+    port: ${DB_PORT}
+    database: "${DB_NAME}"
+    username: "${DB_USER}"
+    password: "${DB_PASSWORD}"
 
   monitoring:
     prometheus_enabled: false

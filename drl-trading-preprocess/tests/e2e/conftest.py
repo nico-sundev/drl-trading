@@ -257,3 +257,153 @@ def publish_kafka_message(kafka_producer: Producer) -> Any:
             raise AssertionError(f"Failed to publish message to topic '{topic}': {e}") from e
 
     return publish
+
+
+@pytest.fixture(scope="session")
+def seed_market_data() -> Generator[None, None, None]:
+    """
+    Seed TimescaleDB with test market data for E2E tests.
+
+    Creates sample OHLCV data for BTCUSD, ETHUSD, and SOLUSD symbols
+    covering the period 2024-01-01 00:00:00 to 2024-01-01 01:00:00.
+
+    Also clears resampling state to ensure clean test runs without stale timestamps.
+
+    This is a session-scoped fixture that runs once before all tests
+    and cleans up after all tests complete.
+
+    Yields:
+        None (data is seeded in database)
+    """
+    import os
+    from datetime import UTC, datetime, timedelta
+    from pathlib import Path
+
+    import psycopg2
+
+    # Clear resampling state file to prevent using stale timestamps from previous test runs
+    # This ensures the service fetches all data, not just incremental updates
+    state_dir = Path("state")
+    state_file = state_dir / "resampling_context.json"
+    backup_file = state_dir / "resampling_context.json.backup"
+
+    if state_file.exists():
+        state_file.unlink()
+        print(f"Cleared resampling state file: {state_file}")
+    if backup_file.exists():
+        backup_file.unlink()
+        print(f"Cleared resampling backup file: {backup_file}")
+
+    # Database connection parameters
+    db_host = os.getenv("DB_HOST", "localhost")
+    db_port = int(os.getenv("DB_PORT", "5432"))
+    db_name = os.getenv("DB_NAME", "marketdata")
+    db_user = os.getenv("DB_USER", "postgres")
+    db_password = os.getenv("DB_PASSWORD", "postgres")
+
+    # Connect to database
+    conn = psycopg2.connect(
+        host=db_host,
+        port=db_port,
+        database=db_name,
+        user=db_user,
+        password=db_password,
+    )
+    conn.autocommit = True
+    cursor = conn.cursor()
+
+    try:
+        # Define test symbols and time range
+        symbols = ["BTCUSD", "ETHUSD", "SOLUSD"]
+        # Start earlier to provide warmup data for indicators (RSI needs ~70 min for period=14 on 5m)
+        start_time = datetime(2023, 12, 31, 22, 0, 0, tzinfo=UTC)  # 2 hours before test period
+        base_timeframe = "1m"
+        target_timeframe = "5m"
+
+        # Generate 180 minutes of 1-minute data (2 hours warmup + 1 hour test period)
+        # Also pre-generate corresponding 5m candles so warmup can find them
+        for symbol in symbols:
+            print(f"Seeding market data for {symbol}...")
+
+            # Seed 1m data
+            for minute in range(180):
+                timestamp = start_time + timedelta(minutes=minute)
+
+                # Generate sample OHLCV data (realistic-looking values)
+                if symbol == "BTCUSD":
+                    base_price = 42000.0 + (minute * 10)  # Trending up slightly
+                elif symbol == "ETHUSD":
+                    base_price = 2200.0 + (minute * 2)
+                else:  # SOLUSD
+                    base_price = 100.0 + (minute * 0.5)
+
+                open_price = base_price
+                high_price = base_price * 1.001  # 0.1% higher
+                low_price = base_price * 0.999   # 0.1% lower
+                close_price = base_price + (minute % 2 * 5)  # Slight variation
+                volume = 1000 + (minute * 100)
+
+                # Insert into market_data table (1m)
+                cursor.execute(
+                    """
+                    INSERT INTO market_data (timestamp, symbol, timeframe, open_price, high_price, low_price, close_price, volume)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (timestamp, symbol, timeframe) DO NOTHING
+                    """,
+                    (timestamp, symbol, base_timeframe, open_price, high_price, low_price, close_price, volume),
+                )
+
+            # Seed 5m data (36 candles from 180 minutes)
+            # This ensures warmup can find data in the target timeframe
+            for candle_index in range(36):
+                # 5m candles start at 22:00, 22:05, 22:10, etc.
+                timestamp = start_time + timedelta(minutes=candle_index * 5)
+
+                # Aggregate 5 minutes of 1m data into one 5m candle
+                minute_offset = candle_index * 5
+                if symbol == "BTCUSD":
+                    base_price = 42000.0 + (minute_offset * 10)
+                elif symbol == "ETHUSD":
+                    base_price = 2200.0 + (minute_offset * 2)
+                else:  # SOLUSD
+                    base_price = 100.0 + (minute_offset * 0.5)
+
+                open_price = base_price
+                high_price = base_price * 1.005  # 0.5% higher over 5min
+                low_price = base_price * 0.995   # 0.5% lower over 5min
+                close_price = base_price + 25  # Price movement over 5min
+                volume = 5000 + (candle_index * 500)  # Aggregate of 5 minutes
+
+                # Insert into market_data table (5m)
+                cursor.execute(
+                    """
+                    INSERT INTO market_data (timestamp, symbol, timeframe, open_price, high_price, low_price, close_price, volume)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (timestamp, symbol, timeframe) DO NOTHING
+                    """,
+                    (timestamp, symbol, target_timeframe, open_price, high_price, low_price, close_price, volume),
+                )
+
+            print(f"Seeded 180 rows (1m) + 36 rows (5m) for {symbol}")
+
+        print("Market data seeding completed successfully")
+
+        yield
+
+    finally:
+        # Cleanup: Delete test data (warmup + test period, both timeframes)
+        print("Cleaning up test market data...")
+        for symbol in symbols:
+            # Delete 1m data
+            cursor.execute(
+                "DELETE FROM market_data WHERE symbol = %s AND timeframe = %s AND timestamp >= %s AND timestamp < %s",
+                (symbol, "1m", start_time, start_time + timedelta(hours=3)),  # 3 hours total
+            )
+            # Delete 5m data
+            cursor.execute(
+                "DELETE FROM market_data WHERE symbol = %s AND timeframe = %s AND timestamp >= %s AND timestamp < %s",
+                (symbol, "5m", start_time, start_time + timedelta(hours=3)),  # 3 hours total
+            )
+        cursor.close()
+        conn.close()
+        print("Test data cleanup completed")

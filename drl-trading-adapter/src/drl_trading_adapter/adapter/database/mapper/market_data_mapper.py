@@ -6,7 +6,7 @@ and business domain models, ensuring clean separation of persistence and
 business concerns.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from drl_trading_common.model.timeframe import Timeframe
@@ -28,6 +28,10 @@ class MarketDataMapper:
         """
         Convert MarketDataEntity to MarketDataModel.
 
+        Normalizes timestamps to Python's built-in datetime.timezone.utc to ensure
+        consistency across the application, regardless of which timezone implementation
+        the database driver uses (pytz.UTC, dateutil.tz.UTC, etc.).
+
         Args:
             entity: Database entity from SQLAlchemy query
 
@@ -47,9 +51,13 @@ class MarketDataMapper:
             raise ValueError("Entity has None values in required fields: " + ", ".join(none_fields))
 
         try:
+            # Normalize timestamp to Python's built-in datetime.timezone.utc
+            # This handles cases where SQLAlchemy returns pytz.UTC or dateutil.tz.UTC
+            normalized_timestamp = entity.timestamp.astimezone(timezone.utc) if entity.timestamp.tzinfo else entity.timestamp.replace(tzinfo=timezone.utc)
+
             return MarketDataModel(
                 symbol=entity.symbol,
-                timestamp=entity.timestamp,
+                timestamp=normalized_timestamp,
                 timeframe=Timeframe(entity.timeframe),
                 open_price=entity.open_price,
                 high_price=entity.high_price,
@@ -112,6 +120,10 @@ class DataAvailabilityMapper:
         """
         Convert aggregated query result to DataAvailabilitySummary model.
 
+        Normalizes timestamps to Python's built-in datetime.timezone.utc to ensure
+        consistency across the application, regardless of which timezone implementation
+        the database driver uses.
+
         Args:
             symbol: Trading symbol
             timeframe: Timeframe string value
@@ -131,12 +143,21 @@ class DataAvailabilityMapper:
             raise ValueError("Record count cannot be negative")
 
         try:
+            # Normalize timestamps to Python's built-in datetime.timezone.utc
+            normalized_earliest = None
+            if earliest_timestamp is not None:
+                normalized_earliest = earliest_timestamp.astimezone(timezone.utc) if earliest_timestamp.tzinfo else earliest_timestamp.replace(tzinfo=timezone.utc)
+
+            normalized_latest = None
+            if latest_timestamp is not None:
+                normalized_latest = latest_timestamp.astimezone(timezone.utc) if latest_timestamp.tzinfo else latest_timestamp.replace(tzinfo=timezone.utc)
+
             return DataAvailabilitySummary(
                 symbol=symbol,
                 timeframe=Timeframe(timeframe),
                 record_count=record_count,
-                earliest_timestamp=earliest_timestamp,
-                latest_timestamp=latest_timestamp
+                earliest_timestamp=normalized_earliest,
+                latest_timestamp=normalized_latest
             )
         except Exception as e:
             raise ValueError(f"Failed to create DataAvailabilitySummary: {e}") from e

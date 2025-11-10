@@ -65,6 +65,11 @@ class FeatureCoverageAnalysis:
     # Feature-specific coverage
     feature_coverage: Dict[str, FeatureCoverageInfo]
 
+    # Resampling flag for cold start scenarios
+    # When True, indicates coverage was determined from base timeframe
+    # and target timeframe data needs to be resampled before feature computation
+    requires_resampling: bool = False
+
     # Fetched features DataFrame (if any exist)
     existing_features_df: Optional[DataFrame] = None
 

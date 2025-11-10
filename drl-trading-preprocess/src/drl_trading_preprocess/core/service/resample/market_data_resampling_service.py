@@ -130,7 +130,7 @@ class MarketDataResamplingService:
         try:
             self.logger.info(
                 f"Starting incremental resampling for {symbol}: "
-                f"{base_timeframe.value} → {[tf.value for tf in target_timeframes]}"
+                f"{base_timeframe.value} to {[tf.value for tf in target_timeframes]}"
             )
 
             # Get last processed timestamp for incremental fetch
@@ -179,7 +179,7 @@ class MarketDataResamplingService:
 
             self.logger.info(
                 f"Completed incremental resampling for {symbol} in {response.processing_duration_ms}ms: "
-                f"{len(base_data)} source records → {response.total_new_candles} new candles"
+                f"{len(base_data)} source records to {response.total_new_candles} new candles"
             )
 
             # Save context state if persistence is enabled

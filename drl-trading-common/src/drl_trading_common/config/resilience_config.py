@@ -5,9 +5,12 @@ circuit breakers, and other resilience patterns. Services define their own
 use case-specific constants and mappings to these configurations.
 """
 
-from typing import Dict
+from typing import TYPE_CHECKING, Any, Dict
 
 from pydantic import BaseModel, Field
+
+if TYPE_CHECKING:
+    from drl_trading_common.config.kafka_config import ConsumerFailurePolicy
 
 
 class RetryConfig(BaseModel):
@@ -70,16 +73,29 @@ class ResilienceConfig(BaseModel):
                 max_attempts: 1
                 wait_exponential_multiplier: 1.0
                 wait_exponential_max: 1.0
+            consumer_failure_policies:
+              critical_data_policy:
+                max_retries: 3
+                dlq_topic: "dlq.preprocess-data"
+                track_retry_in_headers: true
         ```
 
     Attributes:
         retry_configs: Flat registry of retry configurations keyed by use case.
             Services define the keys via constants (e.g., RETRY_CONFIG_KAFKA_RESAMPLED_DATA).
+        consumer_failure_policies: Registry of consumer failure handling policies.
+            Maps policy keys to ConsumerFailurePolicy configurations.
     """
 
     retry_configs: Dict[str, RetryConfig] = Field(
         default_factory=dict,
         description="Registry of retry configurations by use case key",
+    )
+
+    # Import at runtime to avoid circular dependency
+    consumer_failure_policies: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Registry of consumer failure policies by key",
     )
 
     def get_retry_config(self, key: str) -> RetryConfig:
@@ -102,3 +118,26 @@ class ResilienceConfig(BaseModel):
                 f"Available keys: {list(self.retry_configs.keys())}"
             )
         return self.retry_configs[key]
+
+    def get_consumer_failure_policy(self, key: str) -> "ConsumerFailurePolicy":
+        """Retrieve a consumer failure policy by key.
+
+        Args:
+            key: The policy key for the consumer failure configuration.
+
+        Returns:
+            The consumer failure policy for the specified key.
+
+        Raises:
+            KeyError: If the key is not found in the registry.
+        """
+        from drl_trading_common.config.kafka_config import ConsumerFailurePolicy
+
+        if key not in self.consumer_failure_policies:
+            raise KeyError(
+                f"Consumer failure policy key '{key}' not found in resilience configuration. "
+                f"Available keys: {list(self.consumer_failure_policies.keys())}"
+            )
+
+        policy_dict = self.consumer_failure_policies[key]
+        return ConsumerFailurePolicy.model_validate(policy_dict)

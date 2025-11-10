@@ -6,7 +6,21 @@ type-safe interfaces for message payloads.
 """
 
 import json
+from datetime import datetime
+from enum import Enum
 from typing import Any, Dict
+
+
+class EnumEncoder(json.JSONEncoder):
+    """Custom JSON encoder that handles Enum and datetime types."""
+
+    def default(self, obj: Any) -> Any:
+        """Convert Enum to its value, datetime to ISO format, otherwise use default encoding."""
+        if isinstance(obj, Enum):
+            return obj.value
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 
 def serialize_to_json(data: Dict[str, Any]) -> bytes:
@@ -22,7 +36,7 @@ def serialize_to_json(data: Dict[str, Any]) -> bytes:
         TypeError: If the data contains non-serializable types.
         ValueError: If the data structure is invalid.
     """
-    return json.dumps(data, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    return json.dumps(data, ensure_ascii=False, separators=(",", ":"), cls=EnumEncoder).encode("utf-8")
 
 
 def deserialize_from_json(data: bytes) -> Dict[str, Any]:

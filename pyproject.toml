@@ -92,12 +92,9 @@ module = [
 ignore_missing_imports = true
 
 # Pytest Configuration (Testing Framework)
+# Individual services define their own testpaths in their pyproject.toml
+# This section only provides shared configuration for all workspace projects
 [tool.pytest.ini_options]
-testpaths = [
-    "tests/integration",
-    "tests/unit",
-    "tests/e2e"
-]
 python_files = ["*_test.py", "*_it.py", "*_e2e_test.py"]
 python_functions = "test_*"
 log_cli = true

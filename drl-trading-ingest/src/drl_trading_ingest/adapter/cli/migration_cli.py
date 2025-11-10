@@ -7,7 +7,6 @@ creating new migrations, and checking migration status.
 """
 
 import logging
-import os
 import sys
 
 import click
@@ -132,9 +131,4 @@ def init():
 
 
 if __name__ == "__main__":
-    # Ensure SERVICE_CONFIG_PATH is set
-    if not os.environ.get("SERVICE_CONFIG_PATH"):
-        click.echo("❌ SERVICE_CONFIG_PATH environment variable must be set", err=True)
-        sys.exit(1)
-
     cli()

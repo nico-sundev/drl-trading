@@ -112,7 +112,7 @@ class KafkaMessagePublisher(StoreResampledDataMessagePublisherPort):
 
         self.logger.info(
             f"Published resampled data: {symbol} "
-            f"({base_timeframe.value} → {list(resampled_data.keys())}) "
+            f"({base_timeframe.value} to {list(resampled_data.keys())}) "
             f"- {total_records} records, {total_new_candles} new candles"
         )
 
@@ -162,7 +162,7 @@ class KafkaMessagePublisher(StoreResampledDataMessagePublisherPort):
 
         self.logger.error(
             f"Published resampling error for {symbol} "
-            f"({base_timeframe.value} → {[tf.value for tf in target_timeframes]}): "
+            f"({base_timeframe.value} to {[tf.value for tf in target_timeframes]}): "
             f"{error_message}"
         )
 

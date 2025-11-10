@@ -72,7 +72,7 @@ class KafkaProducerAdapter:
             A configured retry decorator that can be applied to methods.
         """
         stop_strategy: Any = stop_after_attempt(self._retry_config.max_attempts)
-        
+
         # Add optional stop_after_delay if configured
         if self._retry_config.stop_after_delay is not None:
             stop_strategy = stop_strategy | stop_after_delay(
@@ -178,7 +178,7 @@ class KafkaProducerAdapter:
 
         self._producer.produce(
             topic=topic,
-            key=key.encode("utf-8"),
+            key=key.encode("utf-8") if key else None,
             value=serialized_value,
             headers=kafka_headers,
             callback=self._delivery_callback,

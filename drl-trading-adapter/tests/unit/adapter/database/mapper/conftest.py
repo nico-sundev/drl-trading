@@ -1,7 +1,7 @@
 """Test configuration for mapper unit tests."""
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from drl_trading_adapter.adapter.database.entity.market_data_entity import MarketDataEntity
 from drl_trading_core.common.model.market_data_model import MarketDataModel
 from drl_trading_common.model.timeframe import Timeframe
@@ -13,7 +13,7 @@ def sample_market_data_entity() -> MarketDataEntity:
     entity = MarketDataEntity()
     entity.symbol = "AAPL"
     entity.timeframe = "1h"
-    entity.timestamp = datetime(2024, 1, 15, 10, 0, 0)
+    entity.timestamp = datetime(2024, 1, 15, 10, 0, 0, tzinfo=timezone.utc)
     entity.open_price = 150.25
     entity.high_price = 152.75
     entity.low_price = 149.50
@@ -28,7 +28,7 @@ def sample_market_data_model() -> MarketDataModel:
     return MarketDataModel(
         symbol="AAPL",
         timeframe=Timeframe.HOUR_1,
-        timestamp=datetime(2024, 1, 15, 10, 0, 0),
+        timestamp=datetime(2024, 1, 15, 10, 0, 0, tzinfo=timezone.utc),
         open_price=150.25,
         high_price=152.75,
         low_price=149.50,
@@ -40,7 +40,7 @@ def sample_market_data_model() -> MarketDataModel:
 # Constants for test data
 TEST_SYMBOL = "TSLA"
 TEST_TIMEFRAME = "5m"
-TEST_TIMESTAMP = datetime(2024, 1, 15, 14, 30, 0)
+TEST_TIMESTAMP = datetime(2024, 1, 15, 14, 30, 0, tzinfo=timezone.utc)
 TEST_OPEN = 200.50
 TEST_HIGH = 205.75
 TEST_LOW = 198.25

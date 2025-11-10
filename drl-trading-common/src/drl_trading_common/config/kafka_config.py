@@ -163,6 +163,66 @@ class KafkaConnectionConfig(BaseSchema):
 
         return config
 
+class ConsumerFailurePolicy(BaseSchema):
+    """Configuration for consumer-side failure handling and retry behavior.
+
+    This policy defines how the consumer should handle message processing failures,
+    including retry topic publishing and dead letter queue (DLQ) handling.
+
+    Design Philosophy:
+    - Failed messages published to retry topic (observable, durable, non-blocking)
+    - Exponential backoff implemented via retry topic consumption delay
+    - DLQ for messages exceeding max_retries
+    - Config-driven per-topic failure handling
+
+    Retry Flow:
+    1. Message fails → publish to retry_topic with metadata headers → commit offset
+    2. Retry topic consumer reads message → checks retry count in headers
+    3. If retry_attempt <= max_retries: process again
+    4. If retry_attempt > max_retries: publish to dlq_topic
+
+    Attributes:
+        max_retries: Maximum number of retry attempts before sending to DLQ.
+            0 = no retries, immediate DLQ
+            N = retry N times via retry_topic before DLQ
+        retry_topic: Retry topic name for failed messages (optional).
+            If None, no retry mechanism (straight to DLQ or lost).
+        dlq_topic: Dead letter queue topic name (optional).
+            If None and max_retries exceeded, message is lost.
+        track_retry_in_headers: Whether to add retry metadata to message headers.
+            Enables stateless retry tracking across consumer restarts.
+        retry_backoff_multiplier: Exponential backoff multiplier (e.g., 2.0 = double each retry).
+        retry_backoff_base_seconds: Base delay in seconds for first retry.
+    """
+    max_retries: int = Field(
+        default=3,
+        ge=0,
+        description="Max retry attempts before DLQ (0 = no retries)"
+    )
+    retry_topic: Optional[str] = Field(
+        default=None,
+        description="Retry topic name for failed messages (None = no retry)"
+    )
+    dlq_topic: Optional[str] = Field(
+        default=None,
+        description="Dead letter queue topic name (None = no DLQ)"
+    )
+    track_retry_in_headers: bool = Field(
+        default=True,
+        description="Add retry count/timestamp to message headers"
+    )
+    retry_backoff_multiplier: float = Field(
+        default=2.0,
+        gt=0.0,
+        description="Exponential backoff multiplier for retry delays"
+    )
+    retry_backoff_base_seconds: float = Field(
+        default=1.0,
+        gt=0.0,
+        description="Base delay in seconds for first retry attempt"
+    )
+
+
 class TopicSubscription(BaseSchema):
     """Configuration for a single Kafka topic subscription.
 
@@ -174,9 +234,16 @@ class TopicSubscription(BaseSchema):
         handler_id: Identifier for the handler function in the DI registry.
             This allows topic names to be configured in YAML while handler
             implementations remain in code.
+        failure_policy_key: Optional key to lookup failure policy from
+            infrastructure.resilience.consumer_failure_policies.
+            If None, uses default behavior (infinite retries, no DLQ).
     """
     topic: str = Field(..., description="Kafka topic name")
     handler_id: str = Field(..., description="Handler identifier for DI lookup")
+    failure_policy_key: Optional[str] = Field(
+        default=None,
+        description="Failure policy key from resilience config (optional)"
+    )
 
 
 class KafkaConsumerConfig(BaseSchema):

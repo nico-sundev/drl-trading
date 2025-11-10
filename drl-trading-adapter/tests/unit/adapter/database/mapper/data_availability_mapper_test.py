@@ -5,7 +5,7 @@ including error handling and edge cases.
 """
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from drl_trading_adapter.adapter.database.mapper.market_data_mapper import DataAvailabilityMapper
 from drl_trading_core.common.model.data_availability_summary import DataAvailabilitySummary
 
@@ -19,8 +19,8 @@ class TestDataAvailabilityMapper:
         symbol = "AAPL"
         timeframe = "1h"
         record_count = 1000
-        earliest_timestamp = datetime(2024, 1, 1, 0, 0, 0)
-        latest_timestamp = datetime(2024, 1, 31, 23, 0, 0)
+        earliest_timestamp = datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+        latest_timestamp = datetime(2024, 1, 31, 23, 0, 0, tzinfo=timezone.utc)
 
         # When
         result = DataAvailabilityMapper.query_result_to_model(
@@ -158,7 +158,7 @@ class TestDataAvailabilityMapper:
         symbol = "SINGLE"
         timeframe = "1d"
         record_count = 1
-        timestamp = datetime(2024, 6, 15, 12, 0, 0)
+        timestamp = datetime(2024, 6, 15, 12, 0, 0, tzinfo=timezone.utc)
 
         # When
         result = DataAvailabilityMapper.query_result_to_model(

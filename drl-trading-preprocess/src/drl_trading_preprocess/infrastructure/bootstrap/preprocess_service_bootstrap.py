@@ -11,14 +11,15 @@ include class/module names and service context consistently across services.
 
 import logging
 import threading
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from injector import Module
 
 from drl_trading_adapter.infrastructure.di.adapter_module import AdapterModule
-from drl_trading_common.adapter.messaging.kafka_consumer_header_adapter import (
-    KafkaConsumerHeaderAdapter,
+from drl_trading_common.adapter.messaging.kafka_consumer_topic_adapter import (
+    KafkaConsumerTopicAdapter,
 )
+from drl_trading_common.config.kafka_config import ConsumerFailurePolicy
 from drl_trading_common.infrastructure.bootstrap.flask_service_bootstrap import FlaskServiceBootstrap
 from drl_trading_common.infrastructure.health.basic_health_checks import (
     SystemResourcesHealthCheck,
@@ -51,7 +52,7 @@ class PreprocessServiceBootstrap(FlaskServiceBootstrap):
         """Initialize the preprocess service bootstrap."""
         super().__init__(service_name="drl-trading-preprocess", config_class=PreprocessConfig)
         self._startup_health_check = ServiceStartupHealthCheck("preprocess_startup")
-        self._kafka_consumer: Optional[KafkaConsumerHeaderAdapter] = None
+        self._kafka_consumer: Optional[KafkaConsumerTopicAdapter] = None
         self._kafka_consumer_thread: Optional[threading.Thread] = None
 
     def get_dependency_modules(self, app_config: PreprocessConfig) -> List[Module]:
@@ -160,49 +161,295 @@ class PreprocessServiceBootstrap(FlaskServiceBootstrap):
         """Setup messaging infrastructure."""
         logger.info("Setting up Kafka consumer...")
 
-        # Type narrow config to PreprocessConfig
         config: PreprocessConfig = self.config  # type: ignore[assignment]
 
-        # Check if Kafka is configured
+        # Validate prerequisites
+        if not self._validate_messaging_prerequisites(config):
+            return
+
+        # Get dependencies
+        handler_registry = self._get_handler_registry()
+        if not handler_registry:
+            return
+
+        # Build consumer configuration
+        if not config.kafka_consumers:
+            logger.error("Kafka consumer configuration missing while setting up messaging; skipping Kafka consumer setup")
+            return
+        consumer_group_id = config.kafka_consumers.consumer_group_id
+        consumer_config = config.infrastructure.kafka.get_consumer_config(group_id=consumer_group_id)
+        topics = [sub.topic for sub in config.kafka_consumers.topic_subscriptions]
+
+        # Build topic handlers and validate
+        topic_handlers = self._build_topic_handlers(config, handler_registry)
+
+        # Build failure policies
+        failure_policies = self._build_failure_policies(config)
+
+        # Create DLQ producer if needed
+        dlq_producer = self._create_dlq_producer_if_needed(config, failure_policies)
+
+        # Create retry producer if needed
+        retry_producer = self._create_retry_producer_if_needed(config, failure_policies)
+
+        # Create and start consumer
+        self._create_and_start_consumer(
+            consumer_config=consumer_config,
+            topics=topics,
+            topic_handlers=topic_handlers,
+            failure_policies=failure_policies,
+            dlq_producer=dlq_producer,
+            retry_producer=retry_producer,
+            consumer_group_id=consumer_group_id,
+            handler_count=len(handler_registry),
+        )
+
+    def _validate_messaging_prerequisites(self, config: PreprocessConfig) -> bool:
+        """Validate that all prerequisites for messaging setup are met.
+
+        Args:
+            config: Service configuration
+
+        Returns:
+            True if all prerequisites are met, False otherwise
+        """
         if not config.infrastructure.kafka:
             logger.warning("No Kafka configuration found, skipping Kafka consumer setup")
-            return
+            return False
 
         if not config.kafka_consumers:
             logger.warning("No Kafka consumer configuration found, skipping Kafka consumer setup")
-            return
+            return False
 
-        # Get handler registry from DI container
         if not self.injector:
             logger.error("DI injector not initialized, cannot setup Kafka consumer")
-            return
+            return False
 
+        return True
+
+    def _get_handler_registry(self) -> Optional[KafkaHandlerRegistry]:
+        """Get Kafka handler registry from DI container.
+
+        Returns:
+            Handler registry if available, None on error
+        """
         try:
-            handler_registry: KafkaHandlerRegistry = self.injector.get(KafkaHandlerRegistry)
+            return self.injector.get(KafkaHandlerRegistry)  # type: ignore[union-attr]
         except Exception as e:
             logger.error(
                 f"Failed to get Kafka handler registry from DI container: {e}",
                 exc_info=True
             )
-            return
+            return None
 
-        # Get consumer configuration
-        consumer_group_id = config.kafka_consumers.consumer_group_id
-        consumer_config = config.infrastructure.kafka.get_consumer_config(
-            group_id=consumer_group_id
+    def _build_topic_handlers(
+        self,
+        config: PreprocessConfig,
+        handler_registry: KafkaHandlerRegistry
+    ) -> dict:
+        """Build topic to handler mapping and validate all handlers exist.
+
+        Args:
+            config: Service configuration
+            handler_registry: Registry of available handlers
+
+        Returns:
+            Mapping of topic to handler function
+        """
+
+        if not config.kafka_consumers:
+            # This should not happen due to earlier validation, but guard for static typing and safety.
+            raise ValueError("Kafka consumer configuration is missing")
+        topic_handlers = {
+            sub.topic: handler
+            for sub in config.kafka_consumers.topic_subscriptions
+            if (handler := handler_registry.get_handler(sub.handler_id)) is not None
+        }
+
+        # Validate all handlers were found
+        if len(topic_handlers) != len(config.kafka_consumers.topic_subscriptions):
+            missing = [
+                sub.handler_id
+                for sub in config.kafka_consumers.topic_subscriptions
+                if handler_registry.get_handler(sub.handler_id) is None
+            ]
+            raise ValueError(f"No handlers registered for handler_ids: {missing}")
+
+        return topic_handlers
+
+    def _build_failure_policies(self, config: PreprocessConfig) -> dict:
+        """Build failure policies mapping from configuration.
+
+        Args:
+            config: Service configuration
+
+        Returns:
+            Mapping of topic to ConsumerFailurePolicy
+
+        Raises:
+            KeyError: If referenced policy key not found in configuration
+        """
+        failure_policies: Dict[str, ConsumerFailurePolicy] = {}
+
+        # Guard against missing kafka consumer configuration to avoid attribute access on None
+        if not getattr(config, "kafka_consumers", None):
+            logger.info("No Kafka consumer subscriptions configured; skipping failure policy mapping")
+            return failure_policies
+
+        # Use a local resilience reference to avoid chained attribute access on None
+        resilience = getattr(config.infrastructure, "resilience", None)
+        if not (resilience and getattr(resilience, "consumer_failure_policies", None)):
+            return failure_policies
+
+        for sub in config.kafka_consumers.topic_subscriptions:
+            if not sub.failure_policy_key:
+                continue
+
+            try:
+                policy = resilience.get_consumer_failure_policy(sub.failure_policy_key)
+                failure_policies[sub.topic] = policy
+                logger.info(
+                    f"Mapped topic '{sub.topic}' to failure policy '{sub.failure_policy_key}'",
+                    extra={
+                        "topic": sub.topic,
+                        "max_retries": policy.max_retries,
+                        "dlq_topic": policy.dlq_topic,
+                    }
+                )
+            except KeyError as e:
+                logger.error(
+                    f"Failure policy '{sub.failure_policy_key}' not found in config: {e}"
+                )
+                raise
+
+        return failure_policies
+
+    def _create_dlq_producer_if_needed(
+        self,
+        config: PreprocessConfig,
+        failure_policies: dict
+    ) -> Optional[object]:
+        """Create DLQ producer if any failure policy requires it.
+
+        Args:
+            config: Service configuration
+            failure_policies: Mapping of topic to failure policy
+
+        Returns:
+            DLQ producer if needed, None otherwise
+        """
+        dlq_topics = {p.dlq_topic for p in failure_policies.values() if p.dlq_topic}
+        if not dlq_topics:
+            return None
+
+        from drl_trading_common.adapter.messaging.kafka_producer_adapter import KafkaProducerAdapter
+        from drl_trading_preprocess.infrastructure.config.resilience_constants import RETRY_CONFIG_KAFKA_DLQ
+
+        logger.info(f"Creating DLQ producer for topics: {dlq_topics}")
+
+        # Safely obtain retry config from resilience if present, otherwise use None
+        resilience = getattr(config.infrastructure, "resilience", None)
+        dlq_retry_config = None
+        if resilience is not None:
+            try:
+                dlq_retry_config = resilience.get_retry_config(RETRY_CONFIG_KAFKA_DLQ)
+            except Exception as e:
+                logger.warning(
+                    "Unable to obtain DLQ retry config from resilience configuration, proceeding without retry_config: %s",
+                    e,
+                    exc_info=True,
+                )
+
+        producer_config = config.infrastructure.kafka.get_producer_config()
+
+        dlq_producer = KafkaProducerAdapter(
+            producer_config=producer_config,
+            retry_config=dlq_retry_config,
+            dlq_topic=None,  # DLQ producer itself has no DLQ
         )
 
-        # Extract topics from subscriptions
-        topics = [sub.topic for sub in config.kafka_consumers.topic_subscriptions]
+        logger.info("DLQ producer created successfully")
+        return dlq_producer
 
-        # Create Kafka consumer adapter
-        self._kafka_consumer = KafkaConsumerHeaderAdapter(
+    def _create_retry_producer_if_needed(
+        self,
+        config: PreprocessConfig,
+        failure_policies: dict
+    ) -> Optional[object]:
+        """Create retry topic producer if any failure policy requires it.
+
+        Args:
+            config: Service configuration
+            failure_policies: Mapping of topic to failure policy
+
+        Returns:
+            Retry producer if needed, None otherwise
+        """
+        retry_topics = {p.retry_topic for p in failure_policies.values() if p.retry_topic}
+        if not retry_topics:
+            return None
+
+        from drl_trading_common.adapter.messaging.kafka_producer_adapter import KafkaProducerAdapter
+        from drl_trading_preprocess.infrastructure.config.resilience_constants import RETRY_CONFIG_KAFKA_DLQ
+
+        logger.info(f"Creating retry producer for topics: {retry_topics}")
+
+        # Safely obtain retry config from resilience if present, otherwise use None
+        resilience = getattr(config.infrastructure, "resilience", None)
+        retry_config = None
+        if resilience is not None:
+            try:
+                retry_config = resilience.get_retry_config(RETRY_CONFIG_KAFKA_DLQ)
+            except Exception as e:
+                logger.warning(
+                    "Unable to obtain retry config from resilience configuration, proceeding without retry_config: %s",
+                    e,
+                    exc_info=True,
+                )
+
+        producer_config = config.infrastructure.kafka.get_producer_config()
+
+        retry_producer = KafkaProducerAdapter(
+            producer_config=producer_config,
+            retry_config=retry_config,
+            dlq_topic=None,  # Retry producer itself has no DLQ
+        )
+
+        logger.info("Retry producer created successfully")
+        return retry_producer
+
+    def _create_and_start_consumer(
+        self,
+        consumer_config: dict,
+        topics: list,
+        topic_handlers: dict,
+        failure_policies: dict,
+        dlq_producer: Optional[object],
+        retry_producer: Optional[object],
+        consumer_group_id: str,
+        handler_count: int,
+    ) -> None:
+        """Create Kafka consumer and start it in background thread.
+
+        Args:
+            consumer_config: Kafka consumer configuration
+            topics: List of topics to subscribe to
+            topic_handlers: Mapping of topic to handler function
+            failure_policies: Mapping of topic to failure policy
+            dlq_producer: DLQ producer instance (optional)
+            retry_producer: Retry topic producer instance (optional)
+            consumer_group_id: Consumer group ID for logging
+            handler_count: Number of registered handlers for logging
+        """
+        self._kafka_consumer = KafkaConsumerTopicAdapter(
             consumer_config=consumer_config,
             topics=topics,
-            handler_registry=handler_registry,
+            topic_handlers=topic_handlers,
+            failure_policies=failure_policies if failure_policies else None,
+            dlq_producer=dlq_producer,
+            retry_producer=retry_producer,
         )
 
-        # Start consumer in background thread (daemon=False for graceful shutdown)
         self._kafka_consumer_thread = threading.Thread(
             target=self._kafka_consumer.start,
             daemon=False,
@@ -215,7 +462,7 @@ class PreprocessServiceBootstrap(FlaskServiceBootstrap):
             extra={
                 "group_id": consumer_group_id,
                 "topics": topics,
-                "handler_count": len(handler_registry),
+                "handler_count": handler_count,
             }
         )
 

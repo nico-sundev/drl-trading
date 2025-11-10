@@ -86,12 +86,12 @@ class DaskConfigs(BaseSchema):
     )
     feature_computation: DaskConfig = Field(
         default_factory=lambda: DaskConfig(
-            scheduler="processes",  # True parallelism for CPU-bound work
+            scheduler="threads",  # Use threads due to unpicklable RLock in indicator service
             num_workers=4,  # Explicit count for predictable resource usage
             threads_per_worker=1,
             memory_limit_per_worker_mb=1024,  # More memory for feature computation
         ),
-        description="Dask config for CPU-bound feature computation (hundreds of features)"
+        description="Dask config for feature computation (uses threads due to RLock in indicator service)"
     )
 
 

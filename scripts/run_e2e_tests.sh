@@ -38,7 +38,7 @@ cd "$PROJECT_ROOT"
 docker-compose -f docker_compose/docker-compose.yml up -d
 
 # Wait for Kafka to be ready
-echo -e "${YELLOW}[2/5] Waiting for Kafka to be ready...${NC}"
+echo -e "${YELLOW}[2/6] Waiting for Kafka to be ready...${NC}"
 sleep 10
 
 # Check Kafka health
@@ -51,8 +51,18 @@ docker-compose -f docker_compose/docker-compose.yml exec -T kafka kafka-topics.s
 
 echo -e "${GREEN}✓ Kafka is ready${NC}"
 
-# Step 2: Start preprocess service
-echo -e "\n${YELLOW}[3/5] Starting preprocess service...${NC}"
+# Step 2.5: Initialize database schema
+echo -e "\n${YELLOW}[3/6] Initializing database schema...${NC}"
+cd "$SCRIPT_DIR"
+./init_e2e_database.sh || {
+    echo -e "${RED}ERROR: Database initialization failed${NC}"
+    exit 1
+}
+
+echo -e "${GREEN}✓ Database initialized${NC}"
+
+# Step 3: Start preprocess service
+echo -e "\n${YELLOW}[4/6] Starting preprocess service...${NC}"
 cd "$SERVICE_DIR"
 
 # Kill any existing service process
@@ -77,8 +87,8 @@ fi
 
 echo -e "${GREEN}✓ Service is running${NC}"
 
-# Step 3: Run E2E tests
-echo -e "\n${YELLOW}[4/5] Running E2E tests...${NC}"
+# Step 4: Run E2E tests
+echo -e "\n${YELLOW}[5/6] Running E2E tests...${NC}"
 cd "$PROJECT_ROOT"
 
 # Run pytest with E2E test markers
@@ -88,7 +98,7 @@ pytest tests/e2e/ \
     --log-cli-level=INFO \
     -m "not skip" || TEST_FAILED=true
 
-# Step 4: Cleanup (unless --keep-running)
+# Step 5: Cleanup (unless --keep-running)
 if [[ "$KEEP_RUNNING" == true ]]; then
     echo -e "\n${YELLOW}Keeping services running for debugging${NC}"
     echo "Service PID: $SERVICE_PID"
@@ -98,7 +108,7 @@ if [[ "$KEEP_RUNNING" == true ]]; then
     echo "  kill $SERVICE_PID"
     echo "  docker-compose -f docker_compose/docker-compose.yml down"
 else
-    echo -e "\n${YELLOW}[5/5] Cleaning up...${NC}"
+    echo -e "\n${YELLOW}[6/6] Cleaning up...${NC}"
 
     # Stop service
     echo "Stopping preprocess service (PID: $SERVICE_PID)..."

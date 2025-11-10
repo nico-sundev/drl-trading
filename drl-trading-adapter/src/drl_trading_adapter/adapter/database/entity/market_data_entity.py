@@ -27,7 +27,7 @@ class MarketDataEntity(Base):
     # Primary key components (composite)
     symbol = Column(String(20), primary_key=True, nullable=False)
     timeframe = Column(String(10), primary_key=True, nullable=False)
-    timestamp = Column(DateTime, primary_key=True, nullable=False)
+    timestamp = Column(DateTime(timezone=True), primary_key=True, nullable=False)
 
     # OHLCV data
     open_price = Column(Float, nullable=False)
@@ -37,7 +37,7 @@ class MarketDataEntity(Base):
     volume = Column(BigInteger, nullable=False, default=0)
 
     # Audit fields
-    created_at = Column(DateTime, nullable=True, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), nullable=True, default=datetime.utcnow)
 
     # Define indexes to match migration schema
     __table_args__ = (

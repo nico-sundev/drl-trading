@@ -547,6 +547,7 @@ class TestFullCoverageAnalysis:
         result = analyzer.analyze_feature_coverage(
             symbol=TEST_SYMBOL,
             timeframe=TEST_TIMEFRAME,
+            base_timeframe=Timeframe.MINUTE_1,
             feature_names=['rsi', 'sma'],
             requested_start_time=START_TIME,
             requested_end_time=END_TIME,
@@ -582,6 +583,7 @@ class TestFullCoverageAnalysis:
         result = analyzer.analyze_feature_coverage(
             symbol=TEST_SYMBOL,
             timeframe=TEST_TIMEFRAME,
+            base_timeframe=Timeframe.MINUTE_1,
             feature_names=['rsi', 'sma'],
             requested_start_time=START_TIME,
             requested_end_time=END_TIME,
@@ -624,6 +626,7 @@ class TestFullCoverageAnalysis:
         result = analyzer.analyze_feature_coverage(
             symbol=TEST_SYMBOL,
             timeframe=TEST_TIMEFRAME,
+            base_timeframe=Timeframe.MINUTE_1,
             feature_names=['rsi'],
             requested_start_time=START_TIME,
             requested_end_time=END_TIME,  # Request until 23:00

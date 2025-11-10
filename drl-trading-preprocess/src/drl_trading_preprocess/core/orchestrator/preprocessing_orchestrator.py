@@ -12,9 +12,10 @@ coordinating multiple specialized services to handle real-world scenarios includ
 """
 import logging
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 import dask
+import pandas as pd
 from dask import delayed
 from injector import inject
 from pandas import DataFrame
@@ -301,11 +302,20 @@ class PreprocessingOrchestrator:
             coverage_analysis = self.feature_coverage_analyzer.analyze_feature_coverage(
                 symbol=request.symbol,
                 timeframe=timeframe,
+                base_timeframe=request.base_timeframe,
                 feature_names=feature_names,
                 requested_start_time=request.start_time,
                 requested_end_time=request.end_time,
                 feature_config_version_info=request.feature_config_version_info,
             )
+
+            # Log cold start scenario
+            if coverage_analysis.requires_resampling:
+                logger.info(
+                    f"Cold start detected for {request.symbol} {timeframe.value}: "
+                    f"Target timeframe data will be resampled from {request.base_timeframe.value}"
+                )
+
             logger.info(
                 f"Feature coverage for {request.symbol} {timeframe.value}: "
                 f"{len(coverage_analysis.fully_covered_features)} fully covered, "
@@ -413,6 +423,10 @@ class PreprocessingOrchestrator:
         """
         Resample market data to all target timeframes.
 
+        On cold start (first run), this resamples from base timeframe to create
+        target timeframe data. On warm runs, this performs incremental updates
+        for new data only.
+
         Args:
             request: Feature computation request
 
@@ -440,15 +454,16 @@ class PreprocessingOrchestrator:
         for timeframe, market_data_list in resampling_response.resampled_data.items():
             if market_data_list:
                 # Convert MarketDataModel list to DataFrame
+                # Use capitalized column names for pandas_ta compatibility
                 df_data = []
                 for market_data in market_data_list:
                     df_data.append({
                         'timestamp': market_data.timestamp,
-                        'open': market_data.open_price,
-                        'high': market_data.high_price,
-                        'low': market_data.low_price,
-                        'close': market_data.close_price,
-                        'volume': market_data.volume,
+                        'Open': market_data.open_price,
+                        'High': market_data.high_price,
+                        'Low': market_data.low_price,
+                        'Close': market_data.close_price,
+                        'Volume': market_data.volume,
                     })
 
                 df = DataFrame(df_data)
@@ -498,9 +513,16 @@ class PreprocessingOrchestrator:
             )
 
             if not features_df.empty:
+                # Add required columns for feature store
+                # event_timestamp: Required by Feast for temporal operations
+                # symbol: Required as entity key for feature lookup
+                features_df = features_df.copy()
+                features_df['event_timestamp'] = pd.to_datetime(features_df.index)
+                features_df['symbol'] = request.symbol
+
                 computed_features[timeframe] = features_df
                 logger.info(
-                    f"Computed {len(features_df.columns)} feature columns "
+                    f"Computed {len(features_df.columns) - 2} feature columns "  # -2 for event_timestamp and symbol
                     f"for {len(features_df)} data points on {timeframe.value}"
                 )
             else:
@@ -628,7 +650,7 @@ class PreprocessingOrchestrator:
             from drl_trading_common.config.feature_config import FeaturesConfig
             features_config = FeaturesConfig(
                 dataset_definitions={request.symbol: [timeframe]},
-                feature_definitions=features_to_compute
+                feature_definitions=[cast(FeatureDefinition, f) for f in request.feature_config_version_info.feature_definitions]
             )
             warmup_result = self.feature_computer.compute_batch(
                 warmup_df, features_config

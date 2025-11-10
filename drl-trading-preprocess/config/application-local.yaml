@@ -6,11 +6,11 @@ infrastructure:
 
   database:
     provider: "postgresql"
-    host: "${DB_HOST:localhost}"
-    port: ${DB_PORT:5432}
-    database: "${DB_NAME:marketdata}"
-    username: "${DB_USER:postgres}"
-    password: "${DB_PASSWORD:postgres}"
+    host: "${DB_HOST}"
+    port: ${DB_PORT}
+    database: "${DB_NAME}"
+    username: "${DB_USER}"
+    password: "${DB_PASSWORD}"
 
   webapi:
     port: 8082
@@ -18,7 +18,7 @@ infrastructure:
     debug: true
 
   kafka:
-    bootstrap_servers: "${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}"
+    bootstrap_servers: "${KAFKA_BOOTSTRAP_SERVERS}"
     security_protocol: "PLAINTEXT"
     consumer_auto_offset_reset: "earliest"
     consumer_enable_auto_commit: false
@@ -49,11 +49,24 @@ infrastructure:
         wait_jitter_max: 0.0
         stop_after_delay: null
 
+    consumer_failure_policies:
+      critical_data_policy:
+        max_retries: 3
+        retry_topic: "retry.preprocess-data"
+        dlq_topic: "dlq.preprocess-data"
+        track_retry_in_headers: true
+        retry_backoff_multiplier: 2.0
+        retry_backoff_base_seconds: 1.0
+
 kafka_consumers:
   consumer_group_id: "preprocess-service-group"
   topic_subscriptions:
     - topic: "requested.preprocess-data"
       handler_id: "preprocessing_request_handler"
+      failure_policy_key: "critical_data_policy"
+    - topic: "retry.preprocess-data"
+      handler_id: "preprocessing_request_handler"
+      failure_policy_key: "critical_data_policy"
 
 kafka_topics:
   resampled_data:
@@ -66,10 +79,6 @@ kafka_topics:
     topic: "error.preprocess-data"
     retry_config_key: "kafka_dlq_retry"
 
-feature_engineering:
-  enabled_features: ["technical_indicators", "market_data", "sentiment"]
-  lookback_period: 30
-  scaling_method: "standard"
 
 feature_store_config:
   cache_enabled: true

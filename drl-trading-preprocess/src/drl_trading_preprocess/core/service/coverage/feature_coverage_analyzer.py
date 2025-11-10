@@ -62,6 +62,7 @@ class FeatureCoverageAnalyzer:
         self,
         symbol: str,
         timeframe: Timeframe,
+        base_timeframe: Timeframe,
         feature_names: List[str],
         requested_start_time: datetime,
         requested_end_time: datetime,
@@ -79,6 +80,7 @@ class FeatureCoverageAnalyzer:
         Args:
             symbol: Trading symbol
             timeframe: Target timeframe
+            base_timeframe: Base timeframe to fall back to if target doesn't exist
             feature_names: List of feature names to analyze
             requested_start_time: Requested start of time period
             requested_end_time: Requested end of time period
@@ -92,10 +94,28 @@ class FeatureCoverageAnalyzer:
             f"{len(feature_names)} features, period [{requested_start_time} - {requested_end_time}]"
         )
 
-        # Step 1: Check OHLCV data availability to constrain time period
+        # Step 1: Check OHLCV data availability in target timeframe
         ohlcv_availability = self._check_ohlcv_availability(
             symbol, timeframe, requested_start_time, requested_end_time
         )
+
+        requires_resampling = False
+
+        # Step 1b: Fallback to base timeframe if target doesn't exist (cold start scenario)
+        if not ohlcv_availability["available"]:
+            logger.info(
+                f"No data in target timeframe {timeframe.value}, "
+                f"checking base timeframe {base_timeframe.value} for cold start"
+            )
+            ohlcv_availability = self._check_ohlcv_availability(
+                symbol, base_timeframe, requested_start_time, requested_end_time
+            )
+            if ohlcv_availability["available"]:
+                requires_resampling = True
+                logger.info(
+                    f"Found {ohlcv_availability['record_count']} records in base timeframe {base_timeframe.value}. "
+                    f"Target timeframe {timeframe.value} will be resampled from base."
+                )
 
         # Step 2: Determine adjusted time period based on OHLCV constraints
         adjusted_start_time = requested_start_time
@@ -136,7 +156,7 @@ class FeatureCoverageAnalyzer:
             adjusted_end_time != requested_end_time):
             logger.warning(
                 f"Requested period adjusted by OHLCV availability: "
-                f"[{requested_start_time} - {requested_end_time}] -> "
+                f"[{requested_start_time} - {requested_end_time}] to "
                 f"[{adjusted_start_time} - {adjusted_end_time}]"
             )
 
@@ -159,7 +179,7 @@ class FeatureCoverageAnalyzer:
             timeframe=timeframe
         )
 
-        # Step 5: Create comprehensive analysis
+        # Step 5: Return comprehensive analysis
         analysis = FeatureCoverageAnalysis(
             symbol=symbol,
             timeframe=timeframe,
@@ -169,10 +189,11 @@ class FeatureCoverageAnalyzer:
             ohlcv_earliest_timestamp=ohlcv_availability["earliest_timestamp"],
             ohlcv_latest_timestamp=ohlcv_availability["latest_timestamp"],
             ohlcv_record_count=ohlcv_availability["record_count"],
+            requires_resampling=requires_resampling,
             adjusted_start_time=adjusted_start_time,
             adjusted_end_time=adjusted_end_time,
             feature_coverage=feature_coverage,
-            existing_features_df=existing_features_df if not existing_features_df.empty else None
+            existing_features_df=existing_features_df
         )
 
         logger.info(analysis.get_summary_message())
@@ -516,6 +537,7 @@ class FeatureCoverageAnalyzer:
             ohlcv_earliest_timestamp=None,
             ohlcv_latest_timestamp=None,
             ohlcv_record_count=0,
+            requires_resampling=False,  # No data available at all (not even base timeframe)
             adjusted_start_time=adjusted_start_time,
             adjusted_end_time=adjusted_end_time,
             feature_coverage=feature_coverage,
