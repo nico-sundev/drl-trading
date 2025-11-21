@@ -33,7 +33,7 @@ Prerequisites:
 
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Generator
 
@@ -72,7 +72,7 @@ def timescale_connection() -> Generator[Any, None, None]:
 def feast_offline_store_path() -> Path:
     """Provide path to Feast offline store parquet files."""
     # Read from environment or use default
-    base_path = os.getenv("FEAST_OFFLINE_STORE_PATH", "data/feature_store/offline")
+    base_path = os.getenv("FEAST_OFFLINE_STORE_PATH", "data/feature_store")
     return Path(base_path).resolve()
 
 
@@ -158,7 +158,7 @@ class TestProductionBackfillWorkflow:
     E2E test simulating complete production backfill workflow.
 
     Uses unique symbol per test run to avoid conflicts with previous test data.
-    Validates state transitions across cold start → warm start → incremental scenarios.
+    Validates state transitions across cold start → warm start → incremental → full historical scenarios.
     """
 
     def test_production_backfill_workflow(
@@ -172,7 +172,7 @@ class TestProductionBackfillWorkflow:
         feast_offline_store_path: Path,
     ) -> None:
         """
-        Test complete production backfill workflow across 3 scenarios.
+        Test complete production backfill workflow across 4 scenarios.
 
         Flow per scenario:
         1. Publish preprocessing request to Kafka
@@ -195,6 +195,11 @@ class TestProductionBackfillWorkflow:
         - New time range, new resampled data
         - Should compute features for gap
         - Still reuses feature instances from scenario 1
+
+        Scenario 4 (Full historical): [None - 2024-01-01 08:00]
+        - Backfill from earliest available data (start=None) to specific end date
+        - skip_existing=False forces recomputation
+        - Tests complete historical data processing
 
         Verifications:
         - Kafka messages (resampling + completion)
@@ -284,7 +289,7 @@ class TestProductionBackfillWorkflow:
         print(f"✓ Completion received: {completion_1['total_features_computed']} features computed")
 
         # Then - Verify parquet files created
-        print("Verifying Feast offline store...")
+        print(f"Verifying Feast offline store under {feast_offline_store_path}...")
         parquet_files = list(feast_offline_store_path.glob(f"{unique_symbol}/**/*.parquet"))
 
         assert len(parquet_files) > 0, f"Expected parquet files, found {len(parquet_files)}"
@@ -419,6 +424,78 @@ class TestProductionBackfillWorkflow:
         assert len(all_features_final) > initial_feature_count, "Should have more features after gap fill"
 
         print(f"✓ Feature record count increased: {len(all_features_final)} (was {initial_feature_count})")
+
+        # ==========================================
+        # SCENARIO 4: FULL HISTORICAL BACKFILL UP TO SPECIFIC DATE
+        # ==========================================
+        print(f"\n{'='*60}")
+        print(f"SCENARIO 4: FULL HISTORICAL BACKFILL - Symbol: {unique_symbol}")
+        print(f"{'='*60}")
+
+        # Give service a moment to settle
+        time.sleep(1)
+
+        # Given - Full backfill from earliest data to specific end date
+        request_4 = (
+            FeaturePreprocessingRequestBuilder()
+            .for_backfill()
+            .with_symbol(unique_symbol)
+            .with_target_timeframes([Timeframe.MINUTE_5])
+            .with_time_range(
+                start=None,
+                end=datetime(2024, 1, 1, 8, 0, tzinfo=timezone.utc),  # Covers more data
+            )
+            .with_features([rsi_feature])
+            .with_skip_existing(False)  # Force full recompute for historical backfill
+            .with_force_recompute(False)
+            .build()
+        )
+
+        # When - Publish full backfill request
+        print(f"Publishing request 4: {unique_symbol} [None - 2024-01-01 08:00]")
+        publish_kafka_message(
+            topic="requested.preprocess-data",
+            key=unique_symbol,
+            value=request_4.model_dump(mode="json")
+        )
+
+        # Then - Wait for resampling message and store to DB
+        print("Waiting for resampling message...")
+        resample_message_4 = wait_for_kafka_message(resample_consumer, timeout=30)
+
+        assert resample_message_4 is not None, "Should receive resampling message for full backfill"
+        assert resample_message_4["symbol"] == unique_symbol
+
+        print(f"✓ Received resampling message: {resample_message_4['total_new_candles']} new candles")
+
+        # Simulate ingest service storing new resampled data
+        print("Storing full resampled 5m data to TimescaleDB...")
+        self._store_resampled_data_to_timescale(
+            timescale_connection,
+            resample_message_4
+        )
+
+        # Then - Verify computation completed for full range
+        print("Waiting for completion message...")
+        completion_4 = wait_for_kafka_message(output_consumer, timeout=30)
+
+        assert completion_4 is not None
+        assert completion_4["symbol"] == unique_symbol
+        assert completion_4["total_features_computed"] > 0, "Should compute features for full range"
+
+        print(f"✓ Completion received: {completion_4['total_features_computed']} features computed")
+
+        # Then - Verify parquet files updated or new
+        parquet_files_final_final = list(feast_offline_store_path.glob(f"{unique_symbol}/**/*.parquet"))
+        assert len(parquet_files_final_final) >= len(parquet_files_final), "Should have same or more files"
+
+        print(f"✓ Parquet file count: {len(parquet_files_final_final)} (was {len(parquet_files_final)})")
+
+        # Verify total feature records increased
+        all_features_final_final = pd.concat([pd.read_parquet(f) for f in parquet_files_final_final])
+        assert len(all_features_final_final) > len(all_features_final), "Should have more features after full backfill"
+
+        print(f"✓ Feature record count increased: {len(all_features_final_final)} (was {len(all_features_final)})")
 
         print(f"\n{'='*60}")
         print(f"ALL SCENARIOS PASSED FOR {unique_symbol}")

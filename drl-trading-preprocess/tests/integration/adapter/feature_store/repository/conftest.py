@@ -27,7 +27,7 @@ from testcontainers.minio import MinioContainer
 
 from drl_trading_preprocess.infrastructure.config.preprocess_config import PreprocessConfig
 from drl_trading_preprocess.infrastructure.di.preprocess_module import PreprocessModule
-from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
+from drl_trading_core.common.model.feature_view_metadata import FeatureViewMetadata
 from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
 from datetime import datetime
 
@@ -530,7 +530,7 @@ def feature_version_info_fixture() -> FeatureConfigVersionInfo:
 def _create_feature_view_requests(
     feature_version_info: FeatureConfigVersionInfo,
     symbol: str
-) -> list[FeatureViewRequestContainer]:
+) -> list[FeatureViewMetadata]:
     """Internal helper to create feature view requests for a specific symbol.
 
     This is an internal helper function used only by fixtures in this conftest file.
@@ -561,7 +561,7 @@ def _create_feature_view_requests(
             if reward_key not in created_features:
                 feature = TestRewardFeature(dataset_id, indicator_service)
                 created_features[reward_key] = feature
-                result.append(FeatureViewRequestContainer(
+                result.append(FeatureViewMetadata(
                     symbol=symbol,
                     feature_role=role,
                     feature=feature,
@@ -572,7 +572,7 @@ def _create_feature_view_requests(
                 config = TestRsiConfig()
                 feature = TestRsiFeature(dataset_id, indicator_service, config)
                 created_features[feature_key] = feature
-                result.append(FeatureViewRequestContainer(
+                result.append(FeatureViewMetadata(
                     symbol=symbol,
                     feature_role=role,
                     feature=feature,
@@ -582,7 +582,7 @@ def _create_feature_view_requests(
             if feature_key not in created_features:
                 feature = TestClosePriceFeature(dataset_id, indicator_service)
                 created_features[feature_key] = feature
-                result.append(FeatureViewRequestContainer(
+                result.append(FeatureViewMetadata(
                     symbol=symbol,
                     feature_role=role,
                     feature=feature,
@@ -593,7 +593,7 @@ def _create_feature_view_requests(
             if feature_key not in created_features:
                 feature = TestClosePriceFeature(dataset_id, indicator_service)
                 created_features[feature_key] = feature
-                result.append(FeatureViewRequestContainer(
+                result.append(FeatureViewMetadata(
                     symbol=symbol,
                     feature_role=role,
                     feature=feature,
@@ -606,7 +606,7 @@ def _create_feature_view_requests(
 @pytest.fixture
 def feature_view_requests_fixture(
     feature_version_info_fixture: FeatureConfigVersionInfo,
-) -> list[FeatureViewRequestContainer]:
+) -> list[FeatureViewMetadata]:
     """Create feature view requests from feature version info for integration testing.
 
     This fixture provides a default EURUSD symbol for tests that don't need multi-symbol testing.
@@ -619,7 +619,7 @@ def feature_view_requests_fixture(
 def symbol_feature_view_requests_fixture(
     request,
     feature_version_info_fixture: FeatureConfigVersionInfo,
-) -> list[FeatureViewRequestContainer]:
+) -> list[FeatureViewMetadata]:
     """Parametrized fixture for creating feature view requests with different symbols.
 
     Use with pytest.mark.parametrize and indirect=True:

@@ -2,7 +2,7 @@
 from unittest.mock import Mock
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
+from drl_trading_core.common.model.feature_view_metadata import FeatureViewMetadata
 from feast import FeatureStore, Field
 from feast.types import Float32
 from injector import Injector
@@ -125,14 +125,14 @@ class TestFeastIntegration:
         feast_provider.feature_field_mapper = mock_mapper
 
         # Create FeatureViewRequest with synthetic features
-        request_1 = FeatureViewRequestContainer(
+        request_1 = FeatureViewMetadata(
             symbol="TESTSYM",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
             feature=mock_feature_1,
             timeframe=Timeframe.HOUR_1
         )
 
-        request_2 = FeatureViewRequestContainer(
+        request_2 = FeatureViewMetadata(
             symbol="TESTSYM",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
             feature=mock_feature_2,
@@ -181,7 +181,7 @@ class TestFeastIntegration:
         # Inject the mock mapper
         feast_provider.feature_field_mapper = mock_mapper
 
-        request = FeatureViewRequestContainer(
+        request = FeatureViewMetadata(
             symbol="MAPPERTEST",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
             feature=mock_feature,
@@ -216,7 +216,7 @@ class TestFeastDataPersistence:
         feast_provider = real_feast_container.get(FeastProvider)
 
         # Create a valid request
-        valid_request = FeatureViewRequestContainer(
+        valid_request = FeatureViewMetadata(
             symbol="TESTSYM",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
             feature=create_simple_mock_feature("test_feature"),
@@ -237,7 +237,7 @@ class TestFeastDataPersistence:
         """Test that created feature views have correct Feast metadata."""
         # Given
         feast_provider = real_feast_container.get(FeastProvider)
-        request = FeatureViewRequestContainer(
+        request = FeatureViewMetadata(
             symbol="METADATA_TEST",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
             feature=create_simple_mock_feature("meta_feature"),

@@ -18,7 +18,7 @@ from pandas import DataFrame
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
 from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model.feature_service_request_container import FeatureServiceRequestContainer
+from drl_trading_core.common.model.feature_service_metadata import FeatureServiceMetadata
 from drl_trading_core.core.port.feature_store_fetch_port import IFeatureStoreFetchPort
 from drl_trading_core.core.port.market_data_reader_port import MarketDataReaderPort
 from drl_trading_preprocess.core.model.coverage.feature_coverage_analysis import (
@@ -291,6 +291,9 @@ class FeatureCoverageAnalyzer:
         """
         Batch fetch all features from Feast for the given period.
 
+        Fetches features separately for each feature role (observation, reward)
+        and merges the resulting dataframes.
+
         Args:
             symbol: Trading symbol
             timeframe: Timeframe
@@ -302,14 +305,6 @@ class FeatureCoverageAnalyzer:
             DataFrame with fetched features (empty if none exist)
         """
         try:
-            # Create feature service request
-            request = FeatureServiceRequestContainer.create(
-                symbol=symbol,
-                feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-                feature_config_version=feature_config_version_info,
-                timeframe=timeframe,
-            )
-
             # Generate timestamps for the period
             timestamps = pd.date_range(
                 start=start_time,
@@ -329,20 +324,50 @@ class FeatureCoverageAnalyzer:
                 f"from {timestamps[0]} to {timestamps[-1]}"
             )
 
-            # Fetch features from Feast
-            features_df = self.feature_store_fetch_port.get_offline(
-                request, pd.Series(timestamps)
+            # Fetch features for each role separately
+            feature_dfs = []
+            for role in [FeatureRoleEnum.OBSERVATION_SPACE, FeatureRoleEnum.REWARD_ENGINEERING]:
+                try:
+                    # Create feature service request for this role
+                    request = FeatureServiceMetadata.create(
+                        symbol=symbol,
+                        feature_role=role,
+                        feature_config_version=feature_config_version_info,
+                        timeframe=timeframe,
+                    )
+
+                    # Fetch features from Feast for this role
+                    role_features_df = self.feature_store_fetch_port.get_offline(
+                        request, pd.Series(timestamps)
+                    )
+
+                    if not role_features_df.empty:
+                        feature_dfs.append(role_features_df)
+                        logger.info(
+                            f"Fetched {len(role_features_df)} records with {len(role_features_df.columns)} columns "
+                            f"from Feast for role {role.value}"
+                        )
+                    else:
+                        logger.info(f"No existing features found in Feast for {symbol} {timeframe.value} role {role.value}")
+
+                except Exception as e:
+                    logger.error(f"Error fetching features for role {role.value}: {e}")
+                    # Continue with other roles
+
+            # Merge all feature dataframes
+            if not feature_dfs:
+                logger.info(f"No existing features found in Feast for {symbol} {timeframe.value} across all roles")
+                return DataFrame()
+
+            # Merge dataframes on index (time), using outer join to handle different time ranges
+            merged_df = pd.concat(feature_dfs, axis=1, join='outer')
+
+            logger.info(
+                f"Merged features: {len(merged_df)} records with {len(merged_df.columns)} columns "
+                f"from {len(feature_dfs)} roles"
             )
 
-            if features_df.empty:
-                logger.info(f"No existing features found in Feast for {symbol} {timeframe.value}")
-            else:
-                logger.info(
-                    f"Fetched {len(features_df)} records with {len(features_df.columns)} columns "
-                    f"from Feast"
-                )
-
-            return features_df
+            return merged_df
 
         except Exception as e:
             logger.error(f"Error fetching features from Feast: {e}")

@@ -6,7 +6,7 @@ from drl_trading_common.model.timeframe import Timeframe
 
 
 @dataclass
-class FeatureViewRequestContainer:
+class FeatureViewMetadata:
     """
     Container for feature view creation parameters.
 
@@ -61,7 +61,7 @@ class FeatureViewRequestContainer:
     @classmethod
     def create(
         cls, symbol: str, feature_role: FeatureRoleEnum, feature: BaseFeature, timeframe: Timeframe
-    ) -> "FeatureViewRequestContainer":
+    ) -> "FeatureViewMetadata":
         """
         Factory method to create and validate a FeatureViewRequest.
 

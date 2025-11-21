@@ -203,12 +203,28 @@ class TestBatchFetchFeatures:
         """Test successful batch fetch of features."""
         # Given
         timestamps = pd.date_range(start=START_TIME, end=END_TIME, freq='1h')
-        mock_df = pd.DataFrame({
+
+        # Mock different dataframes for observation and reward roles
+        observation_df = pd.DataFrame({
             'rsi': [50.0] * len(timestamps),
-            'sma': [1.2] * len(timestamps),
-            'ema': [1.3] * len(timestamps)
+            'sma': [1.2] * len(timestamps)
         }, index=timestamps)
-        analyzer.feature_store_fetch_port.get_offline = Mock(return_value=mock_df)
+
+        reward_df = pd.DataFrame({
+            'reward_signal': [0.8] * len(timestamps),
+            'reward_value': [1.5] * len(timestamps)
+        }, index=timestamps)
+
+        # Mock get_offline to return different dataframes based on role
+        def mock_get_offline(request, ts_series):
+            if request.feature_service_role.value == "observation_space":
+                return observation_df
+            elif request.feature_service_role.value == "reward_engineering":
+                return reward_df
+            else:
+                return pd.DataFrame()
+
+        analyzer.feature_store_fetch_port.get_offline = Mock(side_effect=mock_get_offline)
 
         # When
         result = analyzer._batch_fetch_features(
@@ -222,10 +238,13 @@ class TestBatchFetchFeatures:
         # Then
         assert not result.empty
         assert len(result) == len(timestamps)
+        # Should have columns from both roles
         assert 'rsi' in result.columns
         assert 'sma' in result.columns
-        assert 'ema' in result.columns
-        analyzer.feature_store_fetch_port.get_offline.assert_called_once()
+        assert 'reward_signal' in result.columns
+        assert 'reward_value' in result.columns
+        # Should be called twice, once for each role
+        assert analyzer.feature_store_fetch_port.get_offline.call_count == 2
 
     def test_batch_fetch_features_empty_result(
         self, analyzer: FeatureCoverageAnalyzer, feature_config: FeatureConfigVersionInfo
@@ -245,6 +264,8 @@ class TestBatchFetchFeatures:
 
         # Then
         assert result.empty
+        # Should be called twice, once for each role
+        assert analyzer.feature_store_fetch_port.get_offline.call_count == 2
 
     def test_batch_fetch_features_no_timestamps(
         self, analyzer: FeatureCoverageAnalyzer, feature_config: FeatureConfigVersionInfo
@@ -267,14 +288,24 @@ class TestBatchFetchFeatures:
         # Then
         assert result.empty
 
-    def test_batch_fetch_features_exception_handling(
+    def test_batch_fetch_features_partial_success(
         self, analyzer: FeatureCoverageAnalyzer, feature_config: FeatureConfigVersionInfo
     ) -> None:
-        """Test batch fetch handles exceptions gracefully."""
+        """Test batch fetch when only one role has features."""
         # Given
-        analyzer.feature_store_fetch_port.get_offline = Mock(
-            side_effect=Exception("Feast connection error")
-        )
+        timestamps = pd.date_range(start=START_TIME, end=END_TIME, freq='1h')
+        observation_df = pd.DataFrame({
+            'rsi': [50.0] * len(timestamps)
+        }, index=timestamps)
+
+        # Mock get_offline to return data for observation but empty for reward
+        def mock_get_offline(request, ts_series):
+            if request.feature_service_role.value == "observation_space":
+                return observation_df
+            else:
+                return pd.DataFrame()
+
+        analyzer.feature_store_fetch_port.get_offline = Mock(side_effect=mock_get_offline)
 
         # When
         result = analyzer._batch_fetch_features(
@@ -286,7 +317,11 @@ class TestBatchFetchFeatures:
         )
 
         # Then
-        assert result.empty
+        assert not result.empty
+        assert len(result) == len(timestamps)
+        assert 'rsi' in result.columns
+        # Should be called twice
+        assert analyzer.feature_store_fetch_port.get_offline.call_count == 2
 
 
 class TestIndividualFeatureAnalysis:

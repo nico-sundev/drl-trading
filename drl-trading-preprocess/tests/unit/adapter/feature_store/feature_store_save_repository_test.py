@@ -12,7 +12,7 @@ import pandas as pd
 import pytest
 from drl_trading_common.enum import FeatureRoleEnum
 from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
-from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
+from drl_trading_core.common.model.feature_view_metadata import FeatureViewMetadata
 from pandas import DataFrame
 
 
@@ -50,7 +50,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         sample_features_df: DataFrame,
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
-        feature_view_requests: list[FeatureViewRequestContainer],
+        feature_view_requests: list[FeatureViewMetadata],
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test successful storage of computed features offline."""
@@ -90,7 +90,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         feature_store_save_repository: FeatureStoreSaveRepository,
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
-        feature_view_requests: list[FeatureViewRequestContainer],
+        feature_view_requests: list[FeatureViewMetadata],
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test handling of empty DataFrame during offline storage."""
@@ -113,7 +113,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         feature_store_save_repository: FeatureStoreSaveRepository,
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
-        feature_view_requests: list[FeatureViewRequestContainer],
+        feature_view_requests: list[FeatureViewMetadata],
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test error handling when event_timestamp column is missing."""
@@ -139,7 +139,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         sample_features_df: DataFrame,
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
-        feature_view_requests: list[FeatureViewRequestContainer],
+        feature_view_requests: list[FeatureViewMetadata],
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test handling when no new features are stored (duplicates)."""
@@ -167,7 +167,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
         mock_feast_provider: Mock,
-        feature_view_requests: list[FeatureViewRequestContainer],
+        feature_view_requests: list[FeatureViewMetadata],
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test that feature views are created when new features are stored."""
@@ -445,7 +445,7 @@ class TestFeatureStoreSaveRepositoryPrivateMethods:
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
         mock_feast_provider: Mock,
-        feature_view_requests: list[FeatureViewRequestContainer],
+        feature_view_requests: list[FeatureViewMetadata],
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test that _create_and_apply_feature_views is called with correct parameters."""
@@ -484,7 +484,7 @@ class TestFeatureStoreSaveRepositoryErrorHandling:
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
         mock_feast_provider: Mock,
-        feature_view_requests: list[FeatureViewRequestContainer],
+        feature_view_requests: list[FeatureViewMetadata],
         feature_version_info: FeatureConfigVersionInfo
     ) -> None:
         """Test error handling when feast provider raises exception."""

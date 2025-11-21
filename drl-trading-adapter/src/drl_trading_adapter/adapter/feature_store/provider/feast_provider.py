@@ -24,7 +24,7 @@ from drl_trading_adapter.adapter.feature_store.util.feature_store_utilities impo
 from drl_trading_common.base import BaseFeature
 from drl_trading_common.config import FeatureStoreConfig
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_core.common.model import FeatureViewRequestContainer
+from drl_trading_core.common.model import FeatureViewMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ class FeastProvider:
         return self.offline_feature_repo
 
     def _process_feature_view_creation_requests(
-        self, requests: list[FeatureViewRequestContainer]
+        self, requests: list[FeatureViewMetadata]
     ) -> list[FeatureView]:
         """
         Create feature views using request containers.
@@ -135,7 +135,7 @@ class FeastProvider:
             raise ValueError("Feature store config must have a positive ttl_days value")
 
     def _handle_feature_view_creation(
-        self, request: FeatureViewRequestContainer
+        self, request: FeatureViewMetadata
     ) -> FeatureView:
         """
         Internal method to create the feature view with validated parameters.
@@ -276,7 +276,7 @@ class FeastProvider:
             ) from e
 
     def _get_or_create_feature_views(
-        self, requests: list[FeatureViewRequestContainer]
+        self, requests: list[FeatureViewMetadata]
     ) -> list[FeatureView | OnDemandFeatureView]:
         """
         Get existing feature views or create new ones if not yet existing.
@@ -297,7 +297,7 @@ class FeastProvider:
         feature_views: list[FeatureView | OnDemandFeatureView] = []
 
         # Create a dictionary for quick feature name lookup
-        feature_requests_map: dict[str, FeatureViewRequestContainer] = {
+        feature_requests_map: dict[str, FeatureViewMetadata] = {
             self.feature_field_mapper.get_field_base_name(request.feature): request
             for request in requests
         }
@@ -369,7 +369,7 @@ class FeastProvider:
     def get_or_create_feature_service(
         self,
         service_name: str,
-        feature_view_requests: list[FeatureViewRequestContainer],
+        feature_view_requests: list[FeatureViewMetadata],
     ) -> FeatureService:
         """
         Create a symbol-specific feature service based on feature description.
@@ -397,7 +397,7 @@ class FeastProvider:
     def _create_feature_service(
         self,
         service_name: str,
-        feature_view_requests: list[FeatureViewRequestContainer],
+        feature_view_requests: list[FeatureViewMetadata],
     ) -> FeatureService:
         feature_views: list[FeatureView | OnDemandFeatureView] = (
             self._get_or_create_feature_views(requests=feature_view_requests)

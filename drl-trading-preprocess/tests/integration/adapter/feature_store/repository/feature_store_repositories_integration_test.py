@@ -13,9 +13,9 @@ from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
 from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
-from drl_trading_core.common.model.feature_service_request_container import (
-    FeatureServiceRequestContainer,
+from drl_trading_core.common.model.feature_view_metadata import FeatureViewMetadata
+from drl_trading_core.common.model.feature_service_metadata import (
+    FeatureServiceMetadata,
 )
 from injector import Injector
 from pandas import DataFrame
@@ -35,7 +35,7 @@ class TestFeatureStoreRepositoriesIntegration:
         self,
         integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_view_requests_fixture: list[FeatureViewMetadata],
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test complete workflow: save features, then fetch them back."""
@@ -56,7 +56,7 @@ class TestFeatureStoreRepositoriesIntegration:
 
         # And fetch them back (offline)
         timestamps = sample_trading_features_df["event_timestamp"]
-        feature_service_request = FeatureServiceRequestContainer(
+        feature_service_request = FeatureServiceMetadata(
             feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
@@ -86,7 +86,7 @@ class TestFeatureStoreRepositoriesIntegration:
         self,
         integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_view_requests_fixture: list[FeatureViewMetadata],
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test workflow: store offline, materialize to online, then fetch online."""
@@ -112,7 +112,7 @@ class TestFeatureStoreRepositoriesIntegration:
         )
 
         # And fetch from online store
-        feature_service_request = FeatureServiceRequestContainer(
+        feature_service_request = FeatureServiceMetadata(
             feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
@@ -133,7 +133,7 @@ class TestFeatureStoreRepositoriesIntegration:
         self,
         integration_container: Injector,
         sample_trading_features_df: DataFrame,  # Add sample data to setup feature views
-        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_view_requests_fixture: list[FeatureViewMetadata],
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test workflow: push single record directly to online, then fetch."""
@@ -171,7 +171,7 @@ class TestFeatureStoreRepositoriesIntegration:
         )
 
         # And fetch from online store
-        feature_service_request = FeatureServiceRequestContainer(
+        feature_service_request = FeatureServiceMetadata(
             feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
@@ -190,7 +190,7 @@ class TestFeatureStoreRepositoriesIntegration:
         self,
         integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_view_requests_fixture: list[FeatureViewMetadata],
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test behavior when feature store operations work correctly."""
@@ -217,7 +217,7 @@ class TestFeatureStoreRepositoriesIntegration:
         self,
         integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_view_requests_fixture: list[FeatureViewMetadata],
         feature_version_info_fixture: FeatureConfigVersionInfo,
         feature_role: FeatureRoleEnum
     ) -> None:
@@ -259,7 +259,7 @@ class TestFeatureStoreRepositoriesIntegration:
     def test_error_handling_missing_event_timestamp(
         self,
         integration_container: Injector,
-        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_view_requests_fixture: list[FeatureViewMetadata],
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test error handling when event_timestamp column is missing."""
@@ -299,7 +299,7 @@ class TestFeatureStoreRepositoriesIntegration:
     def test_empty_dataframe_handling(
         self,
         integration_container: Injector,
-        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_view_requests_fixture: list[FeatureViewMetadata],
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test handling of empty DataFrames."""
@@ -323,7 +323,7 @@ class TestFeatureStoreRepositoriesIntegration:
     def test_large_dataset_performance(
         self,
         integration_container: Injector,
-        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_view_requests_fixture: list[FeatureViewMetadata],
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test performance with larger datasets."""
@@ -362,7 +362,7 @@ class TestFeatureStoreRepositoriesIntegration:
 
         # And fetch subset back
         subset_timestamps = large_features_df["event_timestamp"].iloc[100:200]
-        feature_service_request = FeatureServiceRequestContainer(
+        feature_service_request = FeatureServiceMetadata(
             feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
@@ -402,7 +402,7 @@ class TestFeatureStoreRepositoriesErrorScenarios:
 
         # When/Then - Should raise RuntimeError when no feature service can be created
         with pytest.raises((RuntimeError, Exception)):  # Allow broader exception types
-            invalid_request = FeatureServiceRequestContainer(
+            invalid_request = FeatureServiceMetadata(
                 feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
                 symbol=symbol,
                 feature_version_info=invalid_version_info,
@@ -414,7 +414,7 @@ class TestFeatureStoreRepositoriesErrorScenarios:
 
         with pytest.raises((RuntimeError, Exception)):  # Allow broader exception types
             timestamps = pd.Series([pd.Timestamp("2024-01-01 09:00:00", tz="UTC")])
-            invalid_request = FeatureServiceRequestContainer(
+            invalid_request = FeatureServiceMetadata(
                 feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
                 symbol=symbol,
                 feature_version_info=invalid_version_info,
@@ -429,7 +429,7 @@ class TestFeatureStoreRepositoriesErrorScenarios:
         self,
         integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_view_requests_fixture: list[FeatureViewMetadata],
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test simulated concurrent access to feature store."""
@@ -448,7 +448,7 @@ class TestFeatureStoreRepositoriesErrorScenarios:
             # Create symbol-specific feature view requests
             symbol_specific_requests = []
             for request in feature_view_requests_fixture:
-                modified_request = FeatureViewRequestContainer(
+                modified_request = FeatureViewMetadata(
                     symbol=test_symbol,
                     feature_role=request.feature_role,
                     feature=request.feature,
@@ -470,7 +470,7 @@ class TestFeatureStoreRepositoriesErrorScenarios:
 
             try:
                 # Try offline fetch first
-                feature_service_request = FeatureServiceRequestContainer(
+                feature_service_request = FeatureServiceMetadata(
                     feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
                     symbol=test_symbol,
                     feature_version_info=feature_version_info_fixture,
@@ -491,7 +491,7 @@ class TestFeatureStoreRepositoriesErrorScenarios:
 
                     # Try online fetch first to see if it works without additional push
                     try:
-                        feature_service_request = FeatureServiceRequestContainer(
+                        feature_service_request = FeatureServiceMetadata(
                             feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
                             symbol=test_symbol,
                             feature_version_info=feature_version_info_fixture,
@@ -515,7 +515,7 @@ class TestFeatureStoreRepositoriesErrorScenarios:
                         )
 
                         # Now try online fetch again
-                        feature_service_request = FeatureServiceRequestContainer(
+                        feature_service_request = FeatureServiceMetadata(
                             feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
                             symbol=test_symbol,
                             feature_version_info=feature_version_info_fixture,

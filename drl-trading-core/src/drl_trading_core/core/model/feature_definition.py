@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Dict, List
 from .base_parameter_set_config import BaseParameterSetConfig
 
 
@@ -17,5 +17,4 @@ class FeatureDefinition:
     name: str  # Feature type identifier (e.g., "rsi", "macd", "close_price")
     enabled: bool
     derivatives: List[int]
-    parameter_sets: List[Dict[str, Any]] = field(default_factory=list)  # raw input from JSON, can be empty
     parsed_parameter_sets: Dict[str, BaseParameterSetConfig] = field(default_factory=dict)

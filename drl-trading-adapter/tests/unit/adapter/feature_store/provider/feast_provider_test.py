@@ -24,7 +24,7 @@ from drl_trading_common.base import BaseFeature
 from drl_trading_common.config import FeatureStoreConfig
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model import FeatureViewRequestContainer
+from drl_trading_core.common.model import FeatureViewMetadata
 
 
 # ================================================================================================
@@ -105,9 +105,9 @@ class FeatureRequestBuilder:
         self._timeframe = timeframe
         return self
 
-    def build(self) -> FeatureViewRequestContainer:
+    def build(self) -> FeatureViewMetadata:
         """Build a FeatureViewRequestContainer with configured values."""
-        return FeatureViewRequestContainer(
+        return FeatureViewMetadata(
             symbol=self._symbol,
             feature_role=self._feature_role,
             feature=self._feature,
@@ -239,12 +239,12 @@ class TestFeastProviderSetup:
         )
 
     @pytest.fixture
-    def sample_feature_request(self) -> FeatureViewRequestContainer:
+    def sample_feature_request(self) -> FeatureViewMetadata:
         """Standard feature request for testing."""
         return FeatureRequestBuilder().build()
 
     @pytest.fixture
-    def multiple_feature_requests(self) -> list[FeatureViewRequestContainer]:
+    def multiple_feature_requests(self) -> list[FeatureViewMetadata]:
         """Multiple feature requests for batch testing."""
         return [
             FeatureRequestBuilder().with_symbol(TestConstants.DEFAULT_SYMBOL).build(),
@@ -361,7 +361,7 @@ class TestFeastProviderFeatureServiceCreation(TestFeastProviderSetup):
     def test_get_or_create_feature_service_returns_existing_service(
         self,
         feast_provider: FeastProvider,
-        sample_feature_request: FeatureViewRequestContainer,
+        sample_feature_request: FeatureViewMetadata,
         mock_feature_store: Mock
     ) -> None:
         """Test that get_or_create_feature_service returns existing service when available."""
@@ -385,7 +385,7 @@ class TestFeastProviderFeatureServiceCreation(TestFeastProviderSetup):
         self,
         mock_feature_service_class: Mock,
         feast_provider: FeastProvider,
-        sample_feature_request: FeatureViewRequestContainer,
+        sample_feature_request: FeatureViewMetadata,
         mock_feature_store: Mock,
         mock_feature_field_mapper: Mock,
         mock_offline_repo: Mock
@@ -428,7 +428,7 @@ class TestFeastProviderFeatureServiceCreation(TestFeastProviderSetup):
     def test_get_or_create_feature_service_logs_creation(
         self,
         feast_provider: FeastProvider,
-        sample_feature_request: FeatureViewRequestContainer,
+        sample_feature_request: FeatureViewMetadata,
         mock_feature_store: Mock,
         caplog: pytest.LogCaptureFixture
     ) -> None:
@@ -454,7 +454,7 @@ class TestFeastProviderEdgeCases(TestFeastProviderSetup):
     def test_handles_special_characters_in_service_name(
         self,
         feast_provider: FeastProvider,
-        sample_feature_request: FeatureViewRequestContainer,
+        sample_feature_request: FeatureViewMetadata,
         mock_feature_store: Mock
     ) -> None:
         """Test handling of service names with special characters."""
@@ -562,7 +562,7 @@ class TestFeastProviderIntegrationWorkflows(TestFeastProviderSetup):
         self,
         mock_feature_service_class: Mock,
         feast_provider: FeastProvider,
-        multiple_feature_requests: list[FeatureViewRequestContainer],
+        multiple_feature_requests: list[FeatureViewMetadata],
         mock_feature_store: Mock
     ) -> None:
         """Test the complete workflow of creating a feature service with multiple requests."""

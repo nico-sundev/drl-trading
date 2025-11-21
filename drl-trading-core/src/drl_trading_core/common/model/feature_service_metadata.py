@@ -8,7 +8,7 @@ from drl_trading_common.model.timeframe import Timeframe
 
 
 @dataclass
-class FeatureServiceRequestContainer:
+class FeatureServiceMetadata:
 
     feature_service_role: FeatureRoleEnum
     symbol: str
@@ -63,7 +63,7 @@ class FeatureServiceRequestContainer:
         timeframe: Timeframe,
         feature_role: FeatureRoleEnum,
         feature_config_version: FeatureConfigVersionInfo,
-    ) -> "FeatureServiceRequestContainer":
+    ) -> "FeatureServiceMetadata":
         """
         Factory method to create and validate a FeatureServiceRequestContainer.
 

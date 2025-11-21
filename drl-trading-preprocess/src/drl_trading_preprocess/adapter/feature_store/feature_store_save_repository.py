@@ -13,9 +13,9 @@ from drl_trading_common.enum import FeatureRoleEnum
 from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
-from drl_trading_core.common.model import FeatureViewRequestContainer
-from drl_trading_core.common.model.feature_service_request_container import (
-    FeatureServiceRequestContainer,
+from drl_trading_core.common.model import FeatureViewMetadata
+from drl_trading_core.common.model.feature_service_metadata import (
+    FeatureServiceMetadata,
 )
 from drl_trading_core.core.mapper import FeatureViewNameMapper
 
@@ -51,7 +51,7 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
         features_df: DataFrame,
         symbol: str,
         feature_version_info: FeatureConfigVersionInfo,
-        feature_view_requests: list[FeatureViewRequestContainer],
+        feature_view_requests: list[FeatureViewMetadata],
         processing_context: str = "training",
         requested_start_time: pd.Timestamp | None = None,
         requested_end_time: pd.Timestamp | None = None,
@@ -129,7 +129,7 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
             # Still create feature views even if no new data was stored
             # This is needed for online operations to work properly
             if feature_view_requests:
-                feature_service_request = FeatureServiceRequestContainer(
+                feature_service_request = FeatureServiceMetadata(
                     feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
                     symbol=symbol,
                     feature_version_info=feature_version_info,
@@ -146,7 +146,7 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
             logger.warning(f"No feature view requests provided for {symbol}")
             return
 
-        feature_service_request = FeatureServiceRequestContainer(
+        feature_service_request = FeatureServiceMetadata(
             feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             symbol=symbol,
             feature_version_info=feature_version_info,
@@ -322,8 +322,8 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
 
     def _create_or_update_features(
         self,
-        feature_service_request: FeatureServiceRequestContainer,
-        feature_view_requests: list[FeatureViewRequestContainer],
+        feature_service_request: FeatureServiceMetadata,
+        feature_view_requests: list[FeatureViewMetadata],
     ) -> None:
         """
         Create and apply Feast feature views and services.

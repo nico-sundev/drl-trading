@@ -18,7 +18,7 @@ from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
 from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
+from drl_trading_core.common.model.feature_view_metadata import FeatureViewMetadata
 from feast import FeatureService, FeatureStore
 from pandas import DataFrame
 
@@ -169,7 +169,7 @@ def feature_version_info() -> FeatureConfigVersionInfo:
 @pytest.fixture
 def feature_view_requests(
     eurusd_h1_symbol: str,
-) -> list[FeatureViewRequestContainer]:
+) -> list[FeatureViewMetadata]:
     """Create sample FeatureViewRequest list for tests."""
     # Create mock BaseFeature objects for testing
     from drl_trading_common.enum import FeatureRoleEnum
@@ -180,13 +180,13 @@ def feature_view_requests(
     mock_reward_feature.name = "mock_reward_feature"
 
     return [
-        FeatureViewRequestContainer(
+        FeatureViewMetadata(
             symbol=eurusd_h1_symbol,
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
             feature=mock_obs_feature,
             timeframe=Timeframe.HOUR_1,
         ),
-        FeatureViewRequestContainer(
+        FeatureViewMetadata(
             symbol=eurusd_h1_symbol,
             feature_role=FeatureRoleEnum.REWARD_ENGINEERING,
             feature=mock_reward_feature,

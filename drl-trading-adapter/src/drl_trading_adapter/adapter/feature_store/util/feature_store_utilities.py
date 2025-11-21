@@ -1,8 +1,8 @@
-from drl_trading_core.common.model.feature_service_request_container import FeatureServiceRequestContainer
-from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
+from drl_trading_core.common.model.feature_service_metadata import FeatureServiceMetadata
+from drl_trading_core.common.model.feature_view_metadata import FeatureViewMetadata
 
 def get_feature_service_name(
-    request: FeatureServiceRequestContainer
+    request: FeatureServiceMetadata
 ) -> str:
     """
     Generate a feature service name based on the base service name, symbol, and feature version info.
@@ -22,7 +22,7 @@ def get_feature_service_name(
 
 def get_feature_view_name(
     base_feature_view_name: str,
-    request: FeatureViewRequestContainer
+    request: FeatureViewMetadata
 ) -> str:
     """Generate a feature view name based on the base feature view name, symbol, and timeframe.
 

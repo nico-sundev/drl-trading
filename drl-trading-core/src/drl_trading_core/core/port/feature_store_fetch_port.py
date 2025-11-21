@@ -9,14 +9,14 @@ from drl_trading_common.base import BaseFeature
 from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
 from drl_trading_common.model.timeframe import Timeframe
 from drl_trading_core.common.model.feature_coverage_summary import FeatureCoverageSummary
-from drl_trading_core.common.model.feature_service_request_container import FeatureServiceRequestContainer
+from drl_trading_core.common.model.feature_service_metadata import FeatureServiceMetadata
 
 
 class IFeatureStoreFetchPort(ABC):
     @abstractmethod
     def get_online(
         self,
-        feature_service_request: FeatureServiceRequestContainer,
+        feature_service_request: FeatureServiceMetadata,
     ) -> pd.DataFrame:
         """Fetch the most recent features for a given symbol and timeframe."""
         pass
@@ -24,7 +24,7 @@ class IFeatureStoreFetchPort(ABC):
     @abstractmethod
     def get_offline(
         self,
-        feature_service_request: FeatureServiceRequestContainer,
+        feature_service_request: FeatureServiceMetadata,
         timestamps: pd.Series,
     ) -> pd.DataFrame:
         """

@@ -7,9 +7,9 @@ repository strategies (local filesystem and S3).
 
 import logging
 import pytest
-from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
-from drl_trading_core.common.model.feature_service_request_container import (
-    FeatureServiceRequestContainer,
+from drl_trading_core.common.model.feature_view_metadata import FeatureViewMetadata
+from drl_trading_core.common.model.feature_service_metadata import (
+    FeatureServiceMetadata,
 )
 from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
 from drl_trading_common.model.timeframe import Timeframe
@@ -32,7 +32,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_view_requests_fixture: list[FeatureViewMetadata],
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test complete workflow with both local and S3 offline repositories."""
@@ -53,7 +53,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
 
         # And fetch them back (offline)
         timestamps = sample_trading_features_df["event_timestamp"]
-        feature_service_request = FeatureServiceRequestContainer(
+        feature_service_request = FeatureServiceMetadata(
             feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
@@ -83,7 +83,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_view_requests_fixture: list[FeatureViewMetadata],
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test workflow with both offline strategies: store offline, materialize to online, then fetch online."""
@@ -109,7 +109,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         )
 
         # And fetch from online store
-        feature_service_request = FeatureServiceRequestContainer(
+        feature_service_request = FeatureServiceMetadata(
             feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
@@ -131,7 +131,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_view_requests_fixture: list[FeatureViewMetadata],
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test that duplicate features are handled correctly with both offline strategies."""
@@ -158,7 +158,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
 
         # Then - Fetch should still return the correct number of unique features
         timestamps = sample_trading_features_df["event_timestamp"]
-        feature_service_request = FeatureServiceRequestContainer(
+        feature_service_request = FeatureServiceMetadata(
             feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
@@ -179,7 +179,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        feature_view_requests_fixture: list[FeatureViewMetadata],
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
         """Test incremental feature storage with both offline strategies."""
@@ -211,7 +211,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
 
         # Then - Fetch all features
         all_timestamps = sample_trading_features_df["event_timestamp"]
-        feature_service_request = FeatureServiceRequestContainer(
+        feature_service_request = FeatureServiceMetadata(
             feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
@@ -239,7 +239,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         self,
         parametrized_integration_container: Injector,
         sample_trading_features_df: DataFrame,
-        symbol_feature_view_requests_fixture: list[FeatureViewRequestContainer],
+        symbol_feature_view_requests_fixture: list[FeatureViewMetadata],
         feature_version_info_fixture: FeatureConfigVersionInfo,
         request
     ) -> None:
@@ -268,7 +268,7 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
 
         # Then - Fetch features and verify correctness
         timestamps = sample_trading_features_df["event_timestamp"]
-        feature_service_request = FeatureServiceRequestContainer(
+        feature_service_request = FeatureServiceMetadata(
             feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,

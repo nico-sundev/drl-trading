@@ -10,7 +10,7 @@ from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.model.timeframe import Timeframe
 
-from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
+from drl_trading_core.common.model.feature_view_metadata import FeatureViewMetadata
 
 
 class TestFeatureViewRequest:
@@ -23,7 +23,7 @@ class TestFeatureViewRequest:
         feature_role = FeatureRoleEnum.OBSERVATION_SPACE
 
         # When
-        request = FeatureViewRequestContainer.create(
+        request = FeatureViewMetadata.create(
             symbol=symbol,
             feature_role=feature_role,
             feature=mock_feature,
@@ -43,7 +43,7 @@ class TestFeatureViewRequest:
         feature_role = FeatureRoleEnum.OBSERVATION_SPACE
 
         # When
-        request = FeatureViewRequestContainer(
+        request = FeatureViewMetadata(
             symbol=symbol,
             feature_role=feature_role,
             feature=mock_feature,
@@ -63,7 +63,7 @@ class TestFeatureViewRequest:
 
         # When/Then
         with pytest.raises(ValueError, match="Symbol must be a non-empty string"):
-            FeatureViewRequestContainer.create(
+            FeatureViewMetadata.create(
                 symbol=empty_symbol,
                 feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
                 feature=mock_feature,
@@ -77,7 +77,7 @@ class TestFeatureViewRequest:
 
         # When/Then
         with pytest.raises(ValueError, match="Symbol must be a non-empty string"):
-            FeatureViewRequestContainer.create(
+            FeatureViewMetadata.create(
                 symbol=whitespace_symbol,
                 feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
                 feature=mock_feature,
@@ -88,7 +88,7 @@ class TestFeatureViewRequest:
         """Test validation fails for None symbol."""
         # Given/When/Then
         with pytest.raises(ValueError, match="Symbol must be a non-empty string"):
-            FeatureViewRequestContainer.create(
+            FeatureViewMetadata.create(
                 symbol=None,  # type: ignore[arg-type]
                 feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
                 feature=mock_feature,
@@ -109,7 +109,7 @@ class TestFeatureViewRequest:
 
         # When/Then
         with pytest.raises(ValueError, match="Feature role must be a FeatureRoleEnum"):
-            FeatureViewRequestContainer.create(
+            FeatureViewMetadata.create(
                 symbol=symbol,
                 feature_role=invalid_role,  # type: ignore[arg-type]
                 feature=mock_feature,
@@ -131,7 +131,7 @@ class TestFeatureViewRequest:
 
         # When/Then
         with pytest.raises(ValueError, match="Feature must be a BaseFeature"):
-            FeatureViewRequestContainer.create(
+            FeatureViewMetadata.create(
                 symbol=symbol,
                 feature_role=feature_role,
                 feature=invalid_feature,  # type: ignore[arg-type]
@@ -153,7 +153,7 @@ class TestFeatureViewRequest:
 
         # When/Then
         with pytest.raises(ValueError, match="Timeframe must be a Timeframe"):
-            FeatureViewRequestContainer.create(
+            FeatureViewMetadata.create(
                 symbol=symbol,
                 feature_role=feature_role,
                 feature=mock_feature,
@@ -164,7 +164,7 @@ class TestFeatureViewRequest:
         """Test sanitized symbol accessor method."""
         # Given
         symbol_with_whitespace = "  EURUSD  "
-        request = FeatureViewRequestContainer(
+        request = FeatureViewMetadata(
             symbol=symbol_with_whitespace,
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
             feature=mock_feature,
@@ -180,7 +180,7 @@ class TestFeatureViewRequest:
     def test_get_sanitized_symbol_empty_string(self, mock_feature: BaseFeature, mock_timeframe: Timeframe) -> None:
         """Test sanitized symbol returns empty string for None symbol."""
         # Given
-        request = FeatureViewRequestContainer(
+        request = FeatureViewMetadata(
             symbol=None,  # type: ignore[arg-type]
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
             feature=mock_feature,
@@ -200,7 +200,7 @@ class TestFeatureViewRequest:
         valid_role = FeatureRoleEnum.OBSERVATION_SPACE
 
         # When
-        request = FeatureViewRequestContainer.create(
+        request = FeatureViewMetadata.create(
             symbol=valid_symbol,
             feature_role=valid_role,
             feature=mock_feature,
@@ -218,7 +218,7 @@ class TestFeatureViewRequest:
     def test_manual_validation_call(self, mock_feature: BaseFeature, mock_timeframe: Timeframe) -> None:
         """Test calling validation manually on a valid request."""
         # Given
-        request = FeatureViewRequestContainer(
+        request = FeatureViewMetadata(
             symbol="EURUSD",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
             feature=mock_feature,
@@ -243,7 +243,7 @@ class TestFeatureViewRequestBenefits:
         """
         # Given
         # New approach: Self-documenting and clear
-        request = FeatureViewRequestContainer.create(
+        request = FeatureViewMetadata.create(
             symbol="EURUSD",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
             feature=mock_feature,
@@ -272,7 +272,7 @@ class TestFeatureViewRequestBenefits:
         #
         # Without breaking any existing calls!
 
-        request = FeatureViewRequestContainer.create(
+        request = FeatureViewMetadata.create(
             symbol="EURUSD",
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
             feature=mock_feature,

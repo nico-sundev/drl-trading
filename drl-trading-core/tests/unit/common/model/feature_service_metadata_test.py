@@ -11,7 +11,7 @@ from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
 from drl_trading_common.model.timeframe import Timeframe
 
-from drl_trading_core.common.model.feature_service_request_container import FeatureServiceRequestContainer
+from drl_trading_core.common.model.feature_service_metadata import FeatureServiceMetadata
 
 
 @pytest.fixture
@@ -43,7 +43,7 @@ class TestFeatureServiceRequestContainer:
         feature_role = FeatureRoleEnum.OBSERVATION_SPACE
 
         # When
-        request = FeatureServiceRequestContainer.create(
+        request = FeatureServiceMetadata.create(
             symbol=symbol,
             timeframe=mock_timeframe,
             feature_role=feature_role,
@@ -67,7 +67,7 @@ class TestFeatureServiceRequestContainer:
         feature_role = FeatureRoleEnum.OBSERVATION_SPACE
 
         # When
-        request = FeatureServiceRequestContainer(
+        request = FeatureServiceMetadata(
             symbol=symbol,
             feature_service_role=feature_role,
             feature_version_info=mock_feature_config_version_info,
@@ -91,7 +91,7 @@ class TestFeatureServiceRequestContainer:
 
         # When/Then
         with pytest.raises(ValueError, match="Symbol must be a non-empty string"):
-            FeatureServiceRequestContainer.create(
+            FeatureServiceMetadata.create(
                 symbol=empty_symbol,
                 timeframe=mock_timeframe,
                 feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
@@ -109,7 +109,7 @@ class TestFeatureServiceRequestContainer:
 
         # When/Then
         with pytest.raises(ValueError, match="Symbol must be a non-empty string"):
-            FeatureServiceRequestContainer.create(
+            FeatureServiceMetadata.create(
                 symbol=whitespace_symbol,
                 timeframe=mock_timeframe,
                 feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
@@ -124,7 +124,7 @@ class TestFeatureServiceRequestContainer:
         """Test validation fails for None symbol."""
         # Given/When/Then
         with pytest.raises(ValueError, match="Symbol must be a non-empty string"):
-            FeatureServiceRequestContainer.create(
+            FeatureServiceMetadata.create(
                 symbol=None,  # type: ignore[arg-type]
                 timeframe=mock_timeframe,
                 feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
@@ -150,7 +150,7 @@ class TestFeatureServiceRequestContainer:
 
         # When/Then
         with pytest.raises(ValueError, match="Feature role must be a FeatureRoleEnum"):
-            FeatureServiceRequestContainer.create(
+            FeatureServiceMetadata.create(
                 symbol=symbol,
                 timeframe=mock_timeframe,
                 feature_role=invalid_role,  # type: ignore[arg-type]
@@ -176,7 +176,7 @@ class TestFeatureServiceRequestContainer:
 
         # When/Then
         with pytest.raises(ValueError, match="Feature must be a FeatureConfigVersionInfo"):
-            FeatureServiceRequestContainer.create(
+            FeatureServiceMetadata.create(
                 symbol=symbol,
                 timeframe=mock_timeframe,
                 feature_role=feature_role,
@@ -202,7 +202,7 @@ class TestFeatureServiceRequestContainer:
 
         # When/Then
         with pytest.raises(ValueError, match="Timeframe must be a Timeframe"):
-            FeatureServiceRequestContainer.create(
+            FeatureServiceMetadata.create(
                 symbol=symbol,
                 timeframe=invalid_timeframe,  # type: ignore[arg-type]
                 feature_role=feature_role,
@@ -217,7 +217,7 @@ class TestFeatureServiceRequestContainer:
         """Test sanitized symbol accessor method."""
         # Given
         symbol_with_whitespace = "  EURUSD  "
-        request = FeatureServiceRequestContainer(
+        request = FeatureServiceMetadata(
             symbol=symbol_with_whitespace,
             feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             feature_version_info=mock_feature_config_version_info,
@@ -237,7 +237,7 @@ class TestFeatureServiceRequestContainer:
     ) -> None:
         """Test sanitized symbol returns empty string for None symbol."""
         # Given
-        request = FeatureServiceRequestContainer(
+        request = FeatureServiceMetadata(
             symbol=None,  # type: ignore[arg-type]
             feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             feature_version_info=mock_feature_config_version_info,
@@ -261,7 +261,7 @@ class TestFeatureServiceRequestContainer:
         valid_role = FeatureRoleEnum.OBSERVATION_SPACE
 
         # When
-        request = FeatureServiceRequestContainer.create(
+        request = FeatureServiceMetadata.create(
             symbol=valid_symbol,
             timeframe=mock_timeframe,
             feature_role=valid_role,
@@ -283,7 +283,7 @@ class TestFeatureServiceRequestContainer:
     ) -> None:
         """Test calling validation manually on a valid request."""
         # Given
-        request = FeatureServiceRequestContainer(
+        request = FeatureServiceMetadata(
             symbol="EURUSD",
             feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             feature_version_info=mock_feature_config_version_info,
@@ -312,7 +312,7 @@ class TestFeatureServiceRequestContainerBenefits:
         """
         # Given
         # New approach: Self-documenting and clear
-        request = FeatureServiceRequestContainer.create(
+        request = FeatureServiceMetadata.create(
             symbol="EURUSD",
             timeframe=mock_timeframe,
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
@@ -345,7 +345,7 @@ class TestFeatureServiceRequestContainerBenefits:
         #
         # Without breaking any existing calls!
 
-        request = FeatureServiceRequestContainer.create(
+        request = FeatureServiceMetadata.create(
             symbol="EURUSD",
             timeframe=mock_timeframe,
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
@@ -363,7 +363,7 @@ class TestFeatureServiceRequestContainerBenefits:
     ) -> None:
         """Demonstrate how the container groups related parameters logically."""
         # Given
-        request = FeatureServiceRequestContainer.create(
+        request = FeatureServiceMetadata.create(
             symbol="EURUSD",
             timeframe=mock_timeframe,
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,

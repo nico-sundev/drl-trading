@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 import pandas as pd
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
-from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
+from drl_trading_core.common.model.feature_view_metadata import FeatureViewMetadata
 from pandas import DataFrame
 
 
@@ -16,7 +16,7 @@ class IFeatureStoreSavePort(ABC):
         features_df: DataFrame,
         symbol: str,
         feature_version_info: FeatureConfigVersionInfo,
-        feature_view_requests: list[FeatureViewRequestContainer],
+        feature_view_requests: list[FeatureViewMetadata],
         processing_context: str = "training",
         requested_start_time: pd.Timestamp | None = None,
         requested_end_time: pd.Timestamp | None = None,

@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
@@ -10,6 +11,17 @@ from drl_trading_common.interface.indicator.technical_indicator_facade_interface
 from drl_trading_common.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.utils.utils import ensure_datetime_index
 from pandas import DataFrame
+
+@dataclass
+class FeatureMetadata:
+    """Metadata for a feature."""
+
+    config: BaseParameterSetConfig
+    dataset_id: DatasetIdentifier
+    feature_role: FeatureRoleEnum
+    feature_name: str
+    sub_feature_names: list[str]
+    config_to_string: Optional[str] = None
 
 
 class BaseFeature(Computable):
@@ -69,6 +81,15 @@ class BaseFeature(Computable):
     @abstractmethod
     def get_config_to_string(self) -> Optional[str]:
         ...
+
+    @abstractmethod
+    def get_metadata(self) -> FeatureMetadata:
+        """Get the metadata for the feature.
+
+        Returns:
+            FeatureMetadata: Metadata object containing feature information
+        """
+        pass
 
     def are_features_caught_up(self, reference_time: datetime) -> bool:
         """

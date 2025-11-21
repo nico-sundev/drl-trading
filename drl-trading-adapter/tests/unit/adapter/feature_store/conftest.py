@@ -19,10 +19,10 @@ from drl_trading_common.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
 from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model.feature_service_request_container import (
-    FeatureServiceRequestContainer,
+from drl_trading_core.common.model.feature_service_metadata import (
+    FeatureServiceMetadata,
 )
-from drl_trading_core.common.model.feature_view_request_container import FeatureViewRequestContainer
+from drl_trading_core.common.model.feature_view_metadata import FeatureViewMetadata
 from feast import FeatureService, FeatureStore
 from pandas import DataFrame
 
@@ -169,9 +169,9 @@ def feature_version_info() -> FeatureConfigVersionInfo:
 def feature_service_request(
     eurusd_h1_symbol: str,
     feature_version_info: FeatureConfigVersionInfo,
-) -> FeatureServiceRequestContainer:
+) -> FeatureServiceMetadata:
     """Create a test FeatureServiceRequestContainer."""
-    return FeatureServiceRequestContainer.create(
+    return FeatureServiceMetadata.create(
         symbol=eurusd_h1_symbol,
         timeframe=Timeframe.HOUR_1,
         feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
@@ -183,9 +183,9 @@ def feature_service_request(
 def gbpusd_feature_service_request(
     gbpusd_m15_symbol: str,
     feature_version_info: FeatureConfigVersionInfo,
-) -> FeatureServiceRequestContainer:
+) -> FeatureServiceMetadata:
     """Create a test FeatureServiceRequestContainer for GBPUSD."""
-    return FeatureServiceRequestContainer.create(
+    return FeatureServiceMetadata.create(
         symbol=gbpusd_m15_symbol,
         timeframe=Timeframe.MINUTE_15,
         feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
@@ -197,19 +197,19 @@ def gbpusd_feature_service_request(
 def feature_view_requests(
     eurusd_h1_symbol: str,
     feature_version_info: FeatureConfigVersionInfo,
-) -> list[FeatureViewRequestContainer]:
+) -> list[FeatureViewMetadata]:
     """Create sample FeatureViewRequest list for tests."""
     # Using simple Mock objects as BaseFeature placeholders
     features = [Mock(name="feat1"), Mock(name="feat2")]
     return [
-        FeatureViewRequestContainer(
+        FeatureViewMetadata(
             symbol=eurusd_h1_symbol,
             feature_view_name="observation_space_feature_view",
             feature_role=None,  # role is optional for integration; provider logic may infer
             feature_version_info=feature_version_info,
             features=features,
         ),
-        FeatureViewRequestContainer(
+        FeatureViewMetadata(
             symbol=eurusd_h1_symbol,
             feature_view_name="reward_engineering_feature_view",
             feature_role=None,

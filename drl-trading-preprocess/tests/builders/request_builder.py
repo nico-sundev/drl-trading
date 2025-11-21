@@ -54,8 +54,8 @@ class FeaturePreprocessingRequestBuilder:
         self._symbol = "BTCUSD"
         self._base_timeframe = Timeframe.MINUTE_1
         self._target_timeframes = [Timeframe.MINUTE_5]
-        self._start_time = datetime(2023, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
-        self._end_time = datetime(2023, 1, 2, 0, 0, 0, tzinfo=timezone.utc)
+        self._start_time: Optional[datetime] = datetime(2023, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+        self._end_time: Optional[datetime] = datetime(2023, 1, 2, 0, 0, 0, tzinfo=timezone.utc)
         self._processing_context = "training"
         self._kwargs = {}  # Additional kwargs to pass through
 
@@ -116,8 +116,8 @@ class FeaturePreprocessingRequestBuilder:
 
     def with_time_range(
         self,
-        start: datetime,
-        end: datetime
+        start: Optional[datetime],
+        end: Optional[datetime]
     ) -> 'FeaturePreprocessingRequestBuilder':
         """Set the time range."""
         self._start_time = start

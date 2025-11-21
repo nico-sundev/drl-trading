@@ -8,7 +8,7 @@ from .asset_price_dataset import AssetPriceDataSet
 from .asset_price_import_properties import AssetPriceImportProperties
 from .computed_dataset_container import ComputedDataSetContainer
 from .data_availability_summary import DataAvailabilitySummary
-from .feature_view_request_container import FeatureViewRequestContainer
+from .feature_view_metadata import FeatureViewMetadata
 from .market_data_model import MarketDataModel
 from .preprocessing_result import PreprocessingResult
 from .split_dataset_container import SplitDataSetContainer
@@ -19,7 +19,7 @@ __all__ = [
 	"AssetPriceImportProperties",
 	"ComputedDataSetContainer",
 	"DataAvailabilitySummary",
-	"FeatureViewRequestContainer",
+	"FeatureViewMetadata",
 	"MarketDataModel",
 	"PreprocessingResult",
 	"SplitDataSetContainer",

@@ -9,8 +9,8 @@ from unittest.mock import Mock
 
 import pandas as pd
 import pytest
-from drl_trading_core.common.model.feature_service_request_container import (
-    FeatureServiceRequestContainer,
+from drl_trading_core.common.model.feature_service_metadata import (
+    FeatureServiceMetadata,
 )
 from feast import FeatureService, FeatureStore
 from pandas import DataFrame
@@ -69,7 +69,7 @@ class TestFeatureStoreFetchRepositoryGetOnline:
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        feature_service_request: FeatureServiceRequestContainer
+        feature_service_request: FeatureServiceMetadata
     ) -> None:
         """Test that get_online creates feature service on first call."""
         # Given
@@ -94,7 +94,7 @@ class TestFeatureStoreFetchRepositoryGetOnline:
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        feature_service_request: FeatureServiceRequestContainer
+        feature_service_request: FeatureServiceMetadata
     ) -> None:
         """Test that get_online reuses existing feature service on subsequent calls."""
         # Given
@@ -118,7 +118,7 @@ class TestFeatureStoreFetchRepositoryGetOnline:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        feature_service_request: FeatureServiceRequestContainer
+        feature_service_request: FeatureServiceMetadata
     ) -> None:
         """Test that get_online raises error when feature service is not found."""
         # Given
@@ -135,7 +135,7 @@ class TestFeatureStoreFetchRepositoryGetOnline:
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        gbpusd_feature_service_request: FeatureServiceRequestContainer
+        gbpusd_feature_service_request: FeatureServiceMetadata
     ) -> None:
         """Test get_online with different symbol."""
         # Given
@@ -159,7 +159,7 @@ class TestFeatureStoreFetchRepositoryGetOnline:
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        feature_service_request: FeatureServiceRequestContainer
+        feature_service_request: FeatureServiceMetadata
     ) -> None:
         """Test that get_online returns the DataFrame from Feast response."""
         # Given
@@ -220,7 +220,7 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        feature_service_request: FeatureServiceRequestContainer,
+        feature_service_request: FeatureServiceMetadata,
         sample_timestamps: pd.Series
     ) -> None:
         """Test that get_offline gets feature service on first call."""
@@ -251,7 +251,7 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        feature_service_request: FeatureServiceRequestContainer,
+        feature_service_request: FeatureServiceMetadata,
         sample_timestamps: pd.Series
     ) -> None:
         """Test that get_offline reuses existing feature service on subsequent calls."""
@@ -273,7 +273,7 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        feature_service_request: FeatureServiceRequestContainer,
+        feature_service_request: FeatureServiceMetadata,
         sample_timestamps: pd.Series
     ) -> None:
         """Test that get_offline raises error when feature service creation returns None."""
@@ -292,7 +292,7 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        gbpusd_feature_service_request: FeatureServiceRequestContainer,
+        gbpusd_feature_service_request: FeatureServiceMetadata,
         sample_timestamps: pd.Series
     ) -> None:
         """Test get_offline with different symbol."""
@@ -317,7 +317,7 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        feature_service_request: FeatureServiceRequestContainer
+        feature_service_request: FeatureServiceMetadata
     ) -> None:
         """Test get_offline with empty timestamps series."""
         # Given
@@ -341,7 +341,7 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
         mock_feature_service: Mock,
-        feature_service_request: FeatureServiceRequestContainer,
+        feature_service_request: FeatureServiceMetadata,
         sample_timestamps: pd.Series
     ) -> None:
         """Test that get_offline returns the DataFrame from Feast response."""
@@ -384,7 +384,7 @@ class TestFeatureStoreFetchRepositoryErrorHandling:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        feature_service_request: FeatureServiceRequestContainer
+        feature_service_request: FeatureServiceMetadata
     ) -> None:
         """Test that get_online properly propagates FeastProvider exceptions."""
         # Given
@@ -400,7 +400,7 @@ class TestFeatureStoreFetchRepositoryErrorHandling:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        feature_service_request: FeatureServiceRequestContainer
+        feature_service_request: FeatureServiceMetadata
     ) -> None:
         """Test that get_offline properly propagates FeastProvider exceptions."""
         # Given
@@ -418,7 +418,7 @@ class TestFeatureStoreFetchRepositoryErrorHandling:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        feature_service_request: FeatureServiceRequestContainer
+        feature_service_request: FeatureServiceMetadata
     ) -> None:
         """Test that get_online properly propagates FeatureStore exceptions."""
         # Given
@@ -436,7 +436,7 @@ class TestFeatureStoreFetchRepositoryErrorHandling:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        feature_service_request: FeatureServiceRequestContainer
+        feature_service_request: FeatureServiceMetadata
     ) -> None:
         """Test that get_offline properly propagates FeatureStore exceptions."""
         # Given
@@ -477,7 +477,7 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        feature_service_request: FeatureServiceRequestContainer
+        feature_service_request: FeatureServiceMetadata
     ) -> None:
         """Test that feature service is retrieved for each online call with correct parameters."""
         # Given
@@ -498,7 +498,7 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        feature_service_request: FeatureServiceRequestContainer
+        feature_service_request: FeatureServiceMetadata
     ) -> None:
         """Test that feature service is retrieved for each offline call with correct parameters."""
         # Given
@@ -520,7 +520,7 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         self,
         repository: FeatureStoreFetchRepository,
         mock_feast_provider: Mock,
-        feature_service_request: FeatureServiceRequestContainer
+        feature_service_request: FeatureServiceMetadata
     ) -> None:
         """Test that feature service is retrieved consistently for both online and offline calls."""
         # Given
