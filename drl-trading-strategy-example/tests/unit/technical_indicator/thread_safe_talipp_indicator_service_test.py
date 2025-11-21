@@ -26,6 +26,7 @@ class MockThreadSafeIndicator(BaseIndicator):
     """Mock indicator with thread-safe operations for testing."""
 
     def __init__(self, length: int = 14) -> None:
+        super().__init__()
         self.length = length
         self._lock = threading.RLock()
         self._data = []

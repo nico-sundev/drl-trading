@@ -1,9 +1,20 @@
 """Selects offline repository implementation based on config."""
+
 import logging
+
 from injector import inject
+
+from drl_trading_adapter.adapter.feature_store.offline.offline_feature_repo_interface import (
+    IOfflineFeatureRepository,
+)
+from drl_trading_adapter.adapter.feature_store.offline.parquet.offline_local_parquet_feature_repo import (
+    OfflineLocalParquetFeatureRepo,
+)
+from drl_trading_adapter.adapter.feature_store.offline.parquet.offline_s3_parquet_feature_repo import (
+    OfflineS3ParquetFeatureRepo,
+)
 from drl_trading_common.config.feature_config import FeatureStoreConfig
 from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
-from drl_trading_adapter.adapter.feature_store.offline.offline_feature_repo_interface import IOfflineFeatureRepository
 
 # Implementations will be imported lazily inside method to avoid circular issues
 logger = logging.getLogger(__name__)
@@ -20,9 +31,7 @@ class OfflineRepoStrategy:
         """Return the concrete offline repository per configuration."""
         strat = self.config.offline_repo_strategy
         if strat == OfflineRepoStrategyEnum.LOCAL:
-            from .offline_feature_local_repo import OfflineFeatureLocalRepo  # local import
-            return OfflineFeatureLocalRepo(self.config)
+            return OfflineLocalParquetFeatureRepo(self.config)
         if strat == OfflineRepoStrategyEnum.S3:
-            from .offline_feature_s3_repo import OfflineFeatureS3Repo  # local import
-            return OfflineFeatureS3Repo(self.config)
+            return OfflineS3ParquetFeatureRepo(self.config)
         raise ValueError(f"Unsupported offline repo strategy: {strat}")

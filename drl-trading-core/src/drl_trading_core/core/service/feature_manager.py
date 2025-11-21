@@ -9,17 +9,20 @@ from injector import inject
 from pandas import DataFrame
 
 from drl_trading_common.base.base_feature import BaseFeature
-from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
-from drl_trading_common.config.feature_config import FeatureDefinition, FeaturesConfig
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.interface.computable import Computable
 from drl_trading_common.interface.feature.feature_factory_interface import (
     IFeatureFactory,
 )
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
+from drl_trading_core.core.model.dataset_identifier import DatasetIdentifier
 from drl_trading_core.core.config.feature_computation_config import (
     FeatureComputationConfig,
 )
+from drl_trading_core.core.model.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_core.core.model.feature_computation_request import (
+    FeatureComputationRequest,
+)
+from drl_trading_core.core.model.feature_definition import FeatureDefinition
 from drl_trading_core.core.service.feature_definition_parser import (
     FeatureDefinitionParser,
 )
@@ -103,7 +106,7 @@ class FeatureManager(Computable):
             "features_by_type": {},
         }
 
-    def _update_features(self, features_config: FeaturesConfig) -> None:
+    def _update_features(self, request: FeatureComputationRequest) -> None:
         """
         Initialize feature instances based on the configuration using optimized patterns.
         """
@@ -111,12 +114,12 @@ class FeatureManager(Computable):
 
         # Populate parsed feature configurations
         self.feature_definition_parser.parse_feature_definitions(
-            features_config.feature_definitions
+            request.feature_definitions
         )
 
         # Generate all valid feature configurations
-        feature_configs = self._generate_feature_configurations(features_config)
-        logger.info(f"Found {len(feature_configs)} feature configuration combinations")
+        feature_configs = self._generate_feature_configurations(request)
+        logger.debug(f"Found {len(feature_configs)} feature configuration combinations")
 
         # Create features using batch processing
         created_features = self._create_features_batch(feature_configs)
@@ -183,29 +186,29 @@ class FeatureManager(Computable):
         """
         stats = self._feature_creation_stats
 
-        logger.info("=== Feature Initialization Summary ===")
-        logger.info(f"Total features created: {stats['successfully_created']}")
-        logger.info(f"Creation failures: {stats['creation_failures']}")
+        logger.debug("=== Feature Initialization Summary ===")
+        logger.debug(f"Total features created: {stats['successfully_created']}")
+        logger.debug(f"Creation failures: {stats['creation_failures']}")
 
         if stats["features_by_symbol"]:
-            logger.info("Features by symbol:")
+            logger.debug("Features by symbol:")
             for symbol, count in stats["features_by_symbol"].items():
-                logger.info(f"  {symbol}: {count} features")
+                logger.debug(f"  {symbol}: {count} features")
 
         if stats["features_by_timeframe"]:
-            logger.info("Features by timeframe:")
+            logger.debug("Features by timeframe:")
             for timeframe, count in stats["features_by_timeframe"].items():
-                logger.info(f"  {timeframe}: {count} features")
+                logger.debug(f"  {timeframe}: {count} features")
 
         if stats["features_by_type"]:
-            logger.info("Features by type:")
+            logger.debug("Features by type:")
             for feature_type, count in stats["features_by_type"].items():
-                logger.info(f"  {feature_type}: {count} instances")
+                logger.debug(f"  {feature_type}: {count} instances")
 
-        logger.info("=======================================")
+        logger.debug("=======================================")
 
     def _generate_feature_configurations(
-        self, features_config: FeaturesConfig
+        self, request: FeatureComputationRequest
     ) -> List[Tuple[str, DatasetIdentifier, Optional[BaseParameterSetConfig]]]:
         """
         Generate all combinations of features that need to be computed.
@@ -236,7 +239,7 @@ class FeatureManager(Computable):
 
         # Get enabled feature definitions and their parameter sets
         enabled_features: List[Tuple[str, Optional[BaseParameterSetConfig]]] = []
-        for feature_def in features_config.feature_definitions:
+        for feature_def in request.feature_definitions:
             if not feature_def.enabled:
                 continue
 
@@ -249,18 +252,11 @@ class FeatureManager(Computable):
                     if param_set.enabled:
                         enabled_features.append((feature_def.name, param_set))
 
-        # Get dataset identifiers
-        dataset_ids = [
-            DatasetIdentifier(symbol, timeframe)
-            for symbol, timeframes in features_config.dataset_definitions.items()
-            for timeframe in timeframes
-        ]
-
         # Use cartesian product to generate all combinations efficiently
         configurations = [
             (feature_name, dataset_id, param_set)
             for (feature_name, param_set), dataset_id in product(
-                enabled_features, dataset_ids
+                enabled_features, [request.dataset_id]
             )
         ]
 
@@ -292,22 +288,24 @@ class FeatureManager(Computable):
 
         for feature_name, dataset_id, param_set in feature_configs:
             try:
+                # Generate hash for the parameter set (handle None case)
+                param_hash = param_set.hash_id() if param_set else NO_CONFIG_HASH
+                feature_key = FeatureKey(
+                    feature_name=feature_name,
+                    dataset_id=dataset_id,
+                    param_hash=param_hash,
+                )
+                if self._features.get(feature_key):
+                    continue
+
                 feature_instance = self._create_feature_instance(
                     feature_name, dataset_id, param_set
                 )
 
                 if feature_instance:
-                    # Generate hash for the parameter set (handle None case)
-                    param_hash = param_set.hash_id() if param_set else NO_CONFIG_HASH
-                    feature_key = FeatureKey(
-                        feature_name=feature_name,
-                        dataset_id=dataset_id,
-                        param_hash=param_hash,
-                    )
-                    if self._features.get(feature_key) is None:
-                        created_features.append((feature_key, feature_instance))
-                        # Log successful creation with full context
-                        logger.debug(f"Created feature: {feature_key}")
+                    created_features.append((feature_key, feature_instance))
+                    # Log successful creation with full context
+                    logger.debug(f"Created feature: {feature_key}")
                 else:
                     failed_count += 1
                     logger.warning(
@@ -335,29 +333,33 @@ class FeatureManager(Computable):
         """
         Store created features in the internal dictionary with observable keys.
 
-        Separated storage logic for better testability and single responsibility.
+        Reuses existing features if they already exist to preserve warmup state.
+        This allows features to be warmed up once and then reused for computation
+        without recreating them and losing their state.
 
         Args:
             created_features: List of (FeatureKey, feature_instance) tuples
         """
-        conflicts_detected = 0
+        reused_count = 0
+        stored_count = 0
 
         for feature_key, feature_instance in created_features:
             if feature_key in self._features:
-                conflicts_detected += 1
-                logger.warning(
-                    f"Feature key conflict detected: {feature_key} (overwriting existing)"
-                )
+                reused_count += 1
+                logger.debug(f"Feature already exists, reusing: {feature_key}")
+                # Skip storing - reuse existing feature to preserve warmup state
+                continue
 
             self._features[feature_key] = feature_instance
+            stored_count += 1
             logger.debug(f"Stored feature: {feature_key}")
             self._features_name_role_cache[feature_key.feature_name] = (
                 feature_instance.get_feature_role()
             )
 
-        if conflicts_detected > 0:
-            logger.error(
-                f"Detected {conflicts_detected} feature key conflicts during storage!"
+        if reused_count > 0:
+            logger.info(
+                f"Reused {reused_count} existing features (preserving warmup state)"
             )
 
     def _create_feature_instance(
@@ -414,17 +416,22 @@ class FeatureManager(Computable):
         )
         return self._features.get(feature_key)
 
-    def _update_features_data(self, new_data: DataFrame) -> None:
+    def _update_features_data(self, request: FeatureComputationRequest) -> None:
         """
         Update all feature instances with new data.
 
         Args:
             new_data: New data to update features with.
         """
-        for feature in self._features.values():
+        dataset_filtered_features = [
+            feature for feature in self._features.values()
+            if feature.dataset_id == request.dataset_id
+        ]
+
+        for feature in dataset_filtered_features:
             try:
                 computable_feature: Computable = cast(Computable, feature)
-                computable_feature.update(new_data)
+                computable_feature.update(request.market_data)
             except Exception as e:
                 logger.error(f"Error updating feature {feature}: {str(e)}")
 
@@ -604,7 +611,7 @@ class FeatureManager(Computable):
                 return dataframes[0] if dataframes else None
 
     def request_features_update(
-        self, new_data: DataFrame, features_config: FeaturesConfig
+        self, request: FeatureComputationRequest
     ) -> None:
         """
         Public method to update features with new data.
@@ -614,8 +621,8 @@ class FeatureManager(Computable):
             features_config: Configuration for the features.
         """
 
-        self._update_features(features_config)
-        self._update_features_data(new_data)
+        self._update_features(request)
+        self._update_features_data(request)
 
     def update(self, df: DataFrame) -> None:
         """

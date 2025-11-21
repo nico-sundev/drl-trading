@@ -26,3 +26,23 @@ dask_configs:
     scheduler: "threads"            # CPU-bound: Feature computation
     num_workers: 4                    # Explicit for predictable CPU usage
     threads_per_worker: 1
+
+# Feature Computation Configuration
+feature_computation_config:
+  warmup_candles: 500  # Number of candles for indicator warmup (production default)
+
+# Resampling Configuration
+resample_config:
+  historical_start_date: "1970-01-01T00:00:00"
+  max_batch_size: 100000
+  progress_log_interval: 10000
+  enable_incomplete_candle_publishing: true
+  chunk_size: 50000
+  memory_warning_threshold_mb: 1000
+  pagination_limit: 10000
+  max_memory_usage_mb: 512
+  state_persistence_enabled: true
+  state_file_path: "state/resampling_context.json"
+  state_backup_interval: 1000
+  auto_cleanup_inactive_symbols: true
+  inactive_symbol_threshold_hours: 24

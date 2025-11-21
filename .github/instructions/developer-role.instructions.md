@@ -17,6 +17,8 @@ applyTo: '**'
   - DTOs
   - Container Classes
   - Domain Objects
+- Avoid passing dicts or lists of dicts around, use proper classes instead
+- Prefer to use package-level imports and make sure any init.py files are properly exporting the needed classes/functions
 - To test **ANY** code ALWAYS use pytest and stick to the following specifications
 - Testing:
     - as a general rule, a test is located in same parent directories like the class/module it is implemented for.

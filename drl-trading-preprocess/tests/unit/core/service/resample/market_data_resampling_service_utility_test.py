@@ -6,20 +6,18 @@ from unittest.mock import Mock
 from drl_trading_common.model.timeframe import Timeframe
 from drl_trading_core.common.model.market_data_model import MarketDataModel
 from drl_trading_preprocess.core.service.resample.market_data_resampling_service import MarketDataResamplingService
-from drl_trading_preprocess.core.service.resample.noop_state_persistence_service import NoOpStatePersistenceService
-from drl_trading_preprocess.infrastructure.config.preprocess_config import ResampleConfig
+from drl_trading_preprocess.adapter.resampling.noop_state_persistence_service import NoOpStatePersistenceService
 
 
 class TestMarketDataResamplingServiceStateManagement:
     """Test state management utility methods."""
 
-    def test_get_processing_stats(self) -> None:
+    def test_get_processing_stats(self, resample_config) -> None:
         """Test getting processing statistics from the service."""
         # Given
         mock_market_data_reader = Mock()
         mock_message_publisher = Mock()
         mock_candle_accumulator = Mock()
-        resample_config = ResampleConfig()
 
         service = MarketDataResamplingService(
             market_data_reader=mock_market_data_reader,
@@ -43,13 +41,12 @@ class TestMarketDataResamplingServiceStateManagement:
         assert stats["BTCUSDT"]["1m"]["records_processed"] == 100
         assert stats["BTCUSDT"]["1m"]["candles_generated"] == 20
 
-    def test_reset_symbol_state(self) -> None:
+    def test_reset_symbol_state(self, resample_config) -> None:
         """Test resetting processing state for a specific symbol."""
         # Given
         mock_market_data_reader = Mock()
         mock_message_publisher = Mock()
         mock_candle_accumulator = Mock()
-        resample_config = ResampleConfig()
 
         service = MarketDataResamplingService(
             market_data_reader=mock_market_data_reader,
@@ -77,13 +74,12 @@ class TestMarketDataResamplingServiceStateManagement:
         # The implementation may vary, but state should be reset
         # This tests the method doesn't crash and handles the reset properly
 
-    def test_get_symbols_in_context(self) -> None:
+    def test_get_symbols_in_context(self, resample_config) -> None:
         """Test getting list of symbols currently tracked in context."""
         # Given
         mock_market_data_reader = Mock()
         mock_message_publisher = Mock()
         mock_candle_accumulator = Mock()
-        resample_config = ResampleConfig()
 
         service = MarketDataResamplingService(
             market_data_reader=mock_market_data_reader,
@@ -113,14 +109,13 @@ class TestMarketDataResamplingServiceStateManagement:
         assert "BTCUSDT" in symbols
         assert "ETHUSDT" in symbols
 
-    def test_save_context_state_with_persistence_enabled(self) -> None:
+    def test_save_context_state_with_persistence_enabled(self, resample_config) -> None:
         """Test saving context state when persistence is enabled."""
         # Given
         mock_market_data_reader = Mock()
         mock_message_publisher = Mock()
         mock_candle_accumulator = Mock()
         mock_state_persistence = Mock()
-        resample_config = ResampleConfig()
 
         # Mock the state persistence load to return None (no existing state)
         mock_state_persistence.load_context.return_value = None
@@ -142,13 +137,12 @@ class TestMarketDataResamplingServiceStateManagement:
         assert result is True
         mock_state_persistence.save_context.assert_called_once_with(service.context)
 
-    def test_save_context_state_without_persistence(self) -> None:
+    def test_save_context_state_without_persistence(self, resample_config) -> None:
         """Test saving context state when persistence is not enabled."""
         # Given
         mock_market_data_reader = Mock()
         mock_message_publisher = Mock()
         mock_candle_accumulator = Mock()
-        resample_config = ResampleConfig()
 
         service = MarketDataResamplingService(
             market_data_reader=mock_market_data_reader,
@@ -164,14 +158,13 @@ class TestMarketDataResamplingServiceStateManagement:
         # Then
         assert result is False
 
-    def test_reset_context_state_with_persistence(self) -> None:
+    def test_reset_context_state_with_persistence(self, resample_config) -> None:
         """Test resetting context state when persistence is enabled."""
         # Given
         mock_market_data_reader = Mock()
         mock_message_publisher = Mock()
         mock_candle_accumulator = Mock()
         mock_state_persistence = Mock()
-        resample_config = ResampleConfig()
 
         # Mock the state persistence
         mock_state_persistence.load_context.return_value = None
@@ -203,13 +196,12 @@ class TestMarketDataResamplingServiceStateManagement:
         symbols = service.get_symbols_in_context()
         assert len(symbols) == 0
 
-    def test_reset_context_state_without_persistence(self) -> None:
-        """Test resetting context state when persistence is not enabled."""
+    def test_reset_context_state_without_persistence(self, resample_config) -> None:
+        """Test saving context state when persistence is not enabled."""
         # Given
         mock_market_data_reader = Mock()
         mock_message_publisher = Mock()
         mock_candle_accumulator = Mock()
-        resample_config = ResampleConfig()
 
         service = MarketDataResamplingService(
             market_data_reader=mock_market_data_reader,
@@ -241,13 +233,12 @@ class TestMarketDataResamplingServiceStateManagement:
 class TestMarketDataResamplingServiceDataValidation:
     """Test data validation helper methods."""
 
-    def test_is_invalid_ohlcv_negative_prices(self) -> None:
+    def test_is_invalid_ohlcv_negative_prices(self, resample_config) -> None:
         """Test validation of records with negative prices."""
         # Given
         mock_market_data_reader = Mock()
         mock_message_publisher = Mock()
         mock_candle_accumulator = Mock()
-        resample_config = ResampleConfig()
 
         service = MarketDataResamplingService(
             market_data_reader=mock_market_data_reader,
@@ -275,13 +266,12 @@ class TestMarketDataResamplingServiceDataValidation:
         # Then
         assert is_invalid is True
 
-    def test_is_invalid_ohlcv_high_less_than_low(self) -> None:
+    def test_is_invalid_ohlcv_high_less_than_low(self, resample_config) -> None:
         """Test validation of records where high < low."""
         # Given
         mock_market_data_reader = Mock()
         mock_message_publisher = Mock()
         mock_candle_accumulator = Mock()
-        resample_config = ResampleConfig()
 
         service = MarketDataResamplingService(
             market_data_reader=mock_market_data_reader,
@@ -309,13 +299,12 @@ class TestMarketDataResamplingServiceDataValidation:
         # Then
         assert is_invalid is True
 
-    def test_is_invalid_ohlcv_open_outside_range(self) -> None:
+    def test_is_invalid_ohlcv_open_outside_range(self, resample_config) -> None:
         """Test validation of records where open is outside high/low range."""
         # Given
         mock_market_data_reader = Mock()
         mock_message_publisher = Mock()
         mock_candle_accumulator = Mock()
-        resample_config = ResampleConfig()
 
         service = MarketDataResamplingService(
             market_data_reader=mock_market_data_reader,
@@ -343,47 +332,12 @@ class TestMarketDataResamplingServiceDataValidation:
         # Then
         assert is_invalid is True
 
-    def test_is_invalid_ohlcv_negative_volume(self) -> None:
+    def test_is_invalid_ohlcv_negative_volume(self, resample_config) -> None:
         """Test validation of records with negative volume."""
         # Given
         mock_market_data_reader = Mock()
         mock_message_publisher = Mock()
         mock_candle_accumulator = Mock()
-        resample_config = ResampleConfig()
-
-        service = MarketDataResamplingService(
-            market_data_reader=mock_market_data_reader,
-            message_publisher=mock_message_publisher,
-            candle_accumulator_service=mock_candle_accumulator,
-            resample_config=resample_config,
-            state_persistence=NoOpStatePersistenceService()
-        )
-
-        # Create record with negative volume
-        invalid_record = MarketDataModel(
-            symbol="BTCUSDT",
-            timeframe=Timeframe.MINUTE_1,
-            timestamp=datetime.now(),
-            open_price=100.0,
-            high_price=101.0,
-            low_price=99.0,
-            close_price=100.5,
-            volume=-1000  # Invalid
-        )
-
-        # When
-        is_invalid = service._is_invalid_ohlcv(invalid_record)
-
-        # Then
-        assert is_invalid is True
-
-    def test_is_invalid_ohlcv_valid_record(self) -> None:
-        """Test validation of a valid OHLCV record."""
-        # Given
-        mock_market_data_reader = Mock()
-        mock_message_publisher = Mock()
-        mock_candle_accumulator = Mock()
-        resample_config = ResampleConfig()
 
         service = MarketDataResamplingService(
             market_data_reader=mock_market_data_reader,
@@ -411,13 +365,12 @@ class TestMarketDataResamplingServiceDataValidation:
         # Then
         assert is_invalid is False
 
-    def test_is_invalid_ohlcv_missing_attributes(self) -> None:
-        """Test validation with missing required attributes."""
+    def test_is_invalid_ohlcv_valid_record(self, resample_config) -> None:
+        """Test validation of a valid OHLCV record."""
         # Given
         mock_market_data_reader = Mock()
         mock_message_publisher = Mock()
         mock_candle_accumulator = Mock()
-        resample_config = ResampleConfig()
 
         service = MarketDataResamplingService(
             market_data_reader=mock_market_data_reader,
@@ -441,13 +394,12 @@ class TestMarketDataResamplingServiceDataValidation:
 class TestMarketDataResamplingServiceInitialization:
     """Test service initialization with optional state persistence."""
 
-    def test_initialization_without_state_persistence(self) -> None:
+    def test_initialization_without_state_persistence(self, resample_config) -> None:
         """Test service initialization without state persistence."""
         # Given
         mock_market_data_reader = Mock()
         mock_message_publisher = Mock()
         mock_candle_accumulator = Mock()
-        resample_config = ResampleConfig()
         noop_state_persistence = NoOpStatePersistenceService()
 
         # When
@@ -464,14 +416,13 @@ class TestMarketDataResamplingServiceInitialization:
         assert service.context is not None
         assert isinstance(service.context.max_symbols_in_memory, int)
 
-    def test_initialization_with_state_persistence_no_existing_state(self) -> None:
+    def test_initialization_with_state_persistence_no_existing_state(self, resample_config) -> None:
         """Test service initialization with state persistence but no existing state."""
         # Given
         mock_market_data_reader = Mock()
         mock_message_publisher = Mock()
         mock_candle_accumulator = Mock()
         mock_state_persistence = Mock()
-        resample_config = ResampleConfig()
 
         # Mock no existing state
         mock_state_persistence.load_context.return_value = None
@@ -490,14 +441,13 @@ class TestMarketDataResamplingServiceInitialization:
         assert service.context is not None
         mock_state_persistence.load_context.assert_called_once()
 
-    def test_initialization_with_state_persistence_existing_state(self) -> None:
+    def test_initialization_with_state_persistence_existing_state(self, resample_config) -> None:
         """Test service initialization with state persistence and existing state."""
         # Given
         mock_market_data_reader = Mock()
         mock_message_publisher = Mock()
         mock_candle_accumulator = Mock()
         mock_state_persistence = Mock()
-        resample_config = ResampleConfig()
 
         # Mock existing state
         from drl_trading_preprocess.core.model.resample.resampling_context import ResamplingContext

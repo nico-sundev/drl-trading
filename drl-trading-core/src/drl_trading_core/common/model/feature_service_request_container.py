@@ -42,6 +42,10 @@ class FeatureServiceRequestContainer:
                 f"Feature must be a FeatureConfigVersionInfo, got {type(self.feature_version_info)}"
             )
 
+        # Validate feature definitions exist
+        if not self.feature_version_info.feature_definitions:
+            raise ValueError("Feature definitions must not be empty")
+
         # Timeframe validation
         if not isinstance(self.timeframe, Timeframe):
             raise ValueError(

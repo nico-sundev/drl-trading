@@ -362,7 +362,7 @@ class FeastProvider:
                 allow_cache=self.feature_store_config.cache_enabled
             )
         except Exception as e:
-            raise ValueError(
+            raise RuntimeError(
                 f"Failed to get feature service '{service_name}': {e}"
             ) from e
 

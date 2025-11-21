@@ -1,4 +1,5 @@
 import pytest
+from datetime import datetime
 from unittest.mock import Mock
 from drl_trading_adapter.infrastructure.di.adapter_module import AdapterModule
 from injector import Injector, Binder, Module, provider, singleton
@@ -95,12 +96,26 @@ def test_preprocess_config(feature_store_config: FeatureStoreConfig) -> Preproce
     Returns:
         PreprocessConfig: Test configuration with optimized settings
     """
-    from drl_trading_preprocess.infrastructure.config.preprocess_config import DaskConfigs
+    from drl_trading_preprocess.infrastructure.config.preprocess_config import DaskConfigs, FeatureComputationConfig
     from drl_trading_common.config.dask_config import DaskConfig
     from drl_trading_common.config.kafka_config import KafkaConsumerConfig
 
     # Create ResampleConfig with state persistence disabled for testing
-    resample_config = ResampleConfig(state_persistence_enabled=False)
+    resample_config = ResampleConfig(
+        state_persistence_enabled=False,
+        historical_start_date=datetime(2020, 1, 1),
+        max_batch_size=1000,
+        progress_log_interval=10,
+        enable_incomplete_candle_publishing=False,
+        chunk_size=100,
+        memory_warning_threshold_mb=100,
+        pagination_limit=1000,
+        max_memory_usage_mb=500,
+        state_file_path="/tmp/test_state.json",
+        state_backup_interval=60,
+        auto_cleanup_inactive_symbols=False,
+        inactive_symbol_threshold_hours=24,
+    )
 
     # Create DaskConfigs for tests (synchronous scheduler for deterministic behavior)
     dask_configs = DaskConfigs(
@@ -126,6 +141,7 @@ def test_preprocess_config(feature_store_config: FeatureStoreConfig) -> Preproce
 
     return PreprocessConfig(
         feature_store_config=feature_store_config,
+        feature_computation_config=FeatureComputationConfig(warmup_candles=10),
         resample_config=resample_config,
         dask_configs=dask_configs,
         kafka_consumers=kafka_consumers,

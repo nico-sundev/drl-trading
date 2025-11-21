@@ -66,7 +66,6 @@ class MarketDataResamplingService:
         self.message_publisher = message_publisher
         self.candle_accumulator_service = candle_accumulator_service
         self.resample_config = resample_config
-        # Use NoOpStatePersistenceService directly to leverage the Null Object pattern
         self.state_persistence = state_persistence
 
         self.logger = logging.getLogger(__name__)
@@ -108,7 +107,8 @@ class MarketDataResamplingService:
         self,
         symbol: str,
         base_timeframe: Timeframe,
-        target_timeframes: List[Timeframe]
+        target_timeframes: List[Timeframe],
+        processing_context: str = "inference"
     ) -> ResamplingResponse:
         """
         Perform incremental resampling for a symbol using persistent state.
@@ -117,10 +117,15 @@ class MarketDataResamplingService:
         Uses last processed timestamps to fetch only new data, enabling
         efficient processing and service restart recovery.
 
+        Behavior depends on processing_context:
+        - "backfill": Stateless mode - uses configured time range, ignores state
+        - "training"/"inference": Stateful mode - uses incremental processing with state
+
         Args:
             symbol: Trading symbol to resample
             base_timeframe: Source timeframe for resampling
             target_timeframes: List of target timeframes to generate
+            processing_context: Context indicating deployment mode (training, inference, backfill)
 
         Returns:
             ResamplingResponse: Complete resampling results
@@ -130,12 +135,32 @@ class MarketDataResamplingService:
         try:
             self.logger.info(
                 f"Starting incremental resampling for {symbol}: "
-                f"{base_timeframe.value} to {[tf.value for tf in target_timeframes]}"
+                f"{base_timeframe.value} to {[tf.value for tf in target_timeframes]} "
+                f"(context: {processing_context})"
             )
 
-            # Get last processed timestamp for incremental fetch
-            last_timestamp = self.context.get_last_processed_timestamp(symbol, base_timeframe)
-            start_time = last_timestamp or self.resample_config.historical_start_date
+            # Determine time range based on processing context
+            last_timestamp = None  # Initialize for use in logging
+            if processing_context == "backfill":
+                # Stateless: Use configured time range (ignore state for reproducibility)
+                start_time = self.resample_config.historical_start_date
+
+                # Reset accumulators to ensure reproducible results
+                self.context.reset_accumulators(symbol, target_timeframes)
+
+                self.logger.info(
+                    f"Backfill mode: Using configured time range from {start_time} "
+                    f"(ignoring state, accumulators reset)"
+                )
+            else:
+                # Stateful: Use incremental processing with state tracking
+                last_timestamp = self.context.get_last_processed_timestamp(symbol, base_timeframe)
+                start_time = last_timestamp or self.resample_config.historical_start_date
+                self.logger.info(
+                    f"Incremental mode: Starting from {start_time} "
+                    f"(last_timestamp={last_timestamp})"
+                )
+
             end_time = datetime.now()
 
             # Fetch data incrementally using pagination
@@ -144,7 +169,9 @@ class MarketDataResamplingService:
             )
 
             if not base_data:
-                self.logger.info(f"No new data for {symbol} since {last_timestamp}")
+                self.logger.info(
+                    f"No new data for {symbol} since {last_timestamp or start_time}"
+                )
                 return self._create_empty_response(symbol, base_timeframe, processing_start)
 
             # Process data with stateful accumulators
@@ -182,8 +209,9 @@ class MarketDataResamplingService:
                 f"{len(base_data)} source records to {response.total_new_candles} new candles"
             )
 
-            # Save context state if persistence is enabled
-            self._save_context_if_enabled()
+            # Save context state if persistence is enabled (skip in backfill mode for stateless operation)
+            if processing_context != "backfill":
+                self._save_context_if_enabled()
 
             return response
 
@@ -194,7 +222,9 @@ class MarketDataResamplingService:
             self.logger.error(error_message, exc_info=True)
 
             # Save context state even on error (to preserve partial progress)
-            self._save_context_if_enabled()
+            # Skip in backfill mode as it should remain stateless
+            if processing_context != "backfill":
+                self._save_context_if_enabled()
 
             # Publish error
             self.message_publisher.publish_resampling_error(

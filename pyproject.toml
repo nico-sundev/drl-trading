@@ -106,7 +106,8 @@ markers = [
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
     "load: Load and performance tests (disabled by default)",
-    "benchmark: Benchmark tests using pytest-benchmark"
+    "benchmark: Benchmark tests using pytest-benchmark",
+    "e2e: End-to-end tests with real infrastructure"
 ]
 addopts = [
     "-ra",

@@ -1272,6 +1272,7 @@ name = "drl-trading-preprocess"
 version = "0.1.0"
 source = { editable = "drl-trading-preprocess" }
 dependencies = [
+    { name = "confluent-kafka" },
     { name = "dask", extra = ["dataframe"] },
     { name = "drl-trading-adapter" },
     { name = "drl-trading-common" },
@@ -1294,11 +1295,11 @@ dev = [
     { name = "ruff" },
 ]
 dev-full = [
+    { name = "confluent-kafka" },
     { name = "ipython" },
     { name = "minio" },
     { name = "mypy" },
     { name = "numpy" },
-    { name = "pandas" },
     { name = "pytest" },
     { name = "pytest-benchmark" },
     { name = "pytest-cov" },
@@ -1307,6 +1308,7 @@ dev-full = [
     { name = "testcontainers" },
 ]
 test = [
+    { name = "confluent-kafka" },
     { name = "minio" },
     { name = "pytest" },
     { name = "pytest-benchmark" },
@@ -1317,6 +1319,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
+    { name = "confluent-kafka", specifier = ">=2.3.0" },
     { name = "dask", extras = ["dataframe"], specifier = ">=2024.1.0" },
     { name = "drl-trading-adapter", editable = "drl-trading-adapter" },
     { name = "drl-trading-common", editable = "drl-trading-common" },
@@ -1339,11 +1342,11 @@ dev = [
     { name = "ruff", specifier = ">=0.1.0" },
 ]
 dev-full = [
+    { name = "confluent-kafka", specifier = ">=2.3.0" },
     { name = "ipython", specifier = ">=8.0.0" },
     { name = "minio", specifier = ">=7.2.10" },
     { name = "mypy", specifier = ">=1.8.0" },
     { name = "numpy", specifier = ">=1.24.0" },
-    { name = "pandas", specifier = ">=2.0.0" },
     { name = "pytest", specifier = ">=8.0.0" },
     { name = "pytest-benchmark", specifier = ">=4.0.0" },
     { name = "pytest-cov", specifier = ">=4.0.0" },
@@ -1352,6 +1355,7 @@ dev-full = [
     { name = "testcontainers", specifier = ">=4.0.0" },
 ]
 test = [
+    { name = "confluent-kafka", specifier = ">=2.3.0" },
     { name = "minio", specifier = ">=7.2.10" },
     { name = "pytest", specifier = ">=8.0.0" },
     { name = "pytest-benchmark", specifier = ">=4.0.0" },

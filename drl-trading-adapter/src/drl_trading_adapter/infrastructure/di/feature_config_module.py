@@ -4,7 +4,7 @@ import logging
 from injector import Module, provider, singleton, Binder
 
 from drl_trading_adapter.adapter.database.session_factory import SQLAlchemySessionFactory
-from drl_trading_adapter.adapter.feature_config.feature_config_repository import FeatureConfigRepository
+from drl_trading_adapter.adapter.database.repository.feature_config_repository import FeatureConfigRepository
 from drl_trading_core.core.port.feature_config_reader_port import FeatureConfigReaderPort
 
 logger = logging.getLogger(__name__)

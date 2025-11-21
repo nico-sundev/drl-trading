@@ -100,3 +100,15 @@ logging:
   console_enabled: true
   max_file_size: 10485760
   backup_count: 5
+
+feature_computation_config:
+  warmup_candles: 50  # Reduced for local testing with limited data
+
+resample_config:
+  max_batch_size: 50000
+  progress_log_interval: 5000
+  chunk_size: 25000
+  memory_warning_threshold_mb: 500
+  pagination_limit: 5000
+  max_memory_usage_mb: 256
+  state_backup_interval: 500

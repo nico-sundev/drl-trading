@@ -37,7 +37,7 @@ class FeatureValidator:
 
         # Log validation summary
         supported_count = sum(validation_results.values())
-        logger.info(
+        logger.debug(
             f"Feature validation completed: {supported_count}/{len(feature_definitions)} features supported"
         )
 

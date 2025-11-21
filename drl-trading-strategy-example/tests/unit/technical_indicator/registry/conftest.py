@@ -20,6 +20,7 @@ class MockRsiIndicator(BaseIndicator):
     """Mock RSI indicator for testing purposes."""
 
     def __init__(self, length: int = 14) -> None:
+        super().__init__()
         self.length = length
 
     def add(self, value: DataFrame) -> None:
@@ -39,6 +40,7 @@ class MockAlternativeRsiIndicator(BaseIndicator):
     """Alternative mock RSI indicator for testing race conditions."""
 
     def __init__(self, length: int = 21) -> None:
+        super().__init__()
         self.length = length
 
     def add(self, value: DataFrame) -> None:
@@ -58,6 +60,7 @@ class MockMacdIndicator(BaseIndicator):
     """Mock MACD indicator for testing purposes."""
 
     def __init__(self, fast: int = 12, slow: int = 26, signal: int = 9) -> None:
+        super().__init__()
         self.fast = fast
         self.slow = slow
         self.signal = signal

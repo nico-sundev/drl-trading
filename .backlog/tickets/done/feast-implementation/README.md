@@ -27,7 +27,7 @@ This epic implements Feast feature storage integration with separated fetch- and
 
 ### Offline Storage Backends
 - **OfflineFeatureLocalRepo** - Local filesystem storage with Parquet format
-- **OfflineFeatureS3Repo** - S3 cloud storage with same Parquet format
+- **OfflineS3ParquetFeatureRepo** - S3 cloud storage with same Parquet format
 - **IOfflineFeatureRepository** - Interface for pluggable backends
 
 ### Testing Coverage

@@ -93,6 +93,25 @@ def mock_feature_coverage_analyzer() -> Mock:
 
 
 @pytest.fixture
+def mock_feature_coverage_evaluator() -> Mock:
+    """Mock FeatureCoverageEvaluator."""
+    from drl_trading_preprocess.core.service.coverage.feature_coverage_evaluator import FeatureCoverageEvaluator
+    mock = Mock(spec=FeatureCoverageEvaluator)
+    # Default behaviors - return features that match the test request builder's default feature
+    mock.get_fully_covered_features.return_value = []
+    mock.get_partially_covered_features.return_value = []
+    mock.get_missing_features.return_value = ["test_feature"]  # Match the default feature from request builder
+    mock.get_features_needing_computation.return_value = ["test_feature"]  # Match the default feature
+    mock.get_features_needing_warmup.return_value = []
+    mock.get_overall_coverage_percentage.return_value = 0.0
+    mock.is_ohlcv_constrained.return_value = False
+    mock.get_computation_period.return_value = None
+    mock.get_warmup_period.return_value = None
+    mock.get_summary_message.return_value = "Mock summary"
+    return mock
+
+
+@pytest.fixture
 def mock_message_publisher() -> Mock:
     """
     Mock PreprocessingMessagePublisherPort.
@@ -115,6 +134,7 @@ def mock_dependencies(
     mock_feature_validator: Mock,
     mock_feature_store_port: Mock,
     mock_feature_coverage_analyzer: Mock,
+    mock_feature_coverage_evaluator: Mock,
     mock_message_publisher: Mock,
 ) -> dict:
     """
@@ -129,6 +149,7 @@ def mock_dependencies(
         'feature_validator': mock_feature_validator,
         'feature_store_port': mock_feature_store_port,
         'feature_coverage_analyzer': mock_feature_coverage_analyzer,
+        'feature_coverage_evaluator': mock_feature_coverage_evaluator,
         'message_publisher': mock_message_publisher,
     }
 
@@ -142,7 +163,7 @@ def preprocessing_orchestrator(mock_dependencies: dict) -> PreprocessingOrchestr
     go through mocks. This allows us to test the orchestration
     logic without hitting real databases or message queues.
     """
-    from drl_trading_preprocess.infrastructure.config.preprocess_config import DaskConfigs
+    from drl_trading_preprocess.infrastructure.config.preprocess_config import DaskConfigs, FeatureComputationConfig
     from drl_trading_common.config.dask_config import DaskConfig
 
     # Create default DaskConfigs for tests (synchronous scheduler for deterministic behavior)
@@ -161,14 +182,21 @@ def preprocessing_orchestrator(mock_dependencies: dict) -> PreprocessingOrchestr
         ),
     )
 
+    # Create default FeatureComputationConfig for tests
+    feature_computation_config = FeatureComputationConfig(
+        warmup_candles=500  # Standard warmup period for indicators
+    )
+
     return PreprocessingOrchestrator(
         market_data_resampler=mock_dependencies['market_data_resampler'],
         feature_computer=mock_dependencies['feature_computer'],
         feature_validator=mock_dependencies['feature_validator'],
         feature_store_port=mock_dependencies['feature_store_port'],
         feature_coverage_analyzer=mock_dependencies['feature_coverage_analyzer'],
+        feature_coverage_evaluator=mock_dependencies['feature_coverage_evaluator'],
         message_publisher=mock_dependencies['message_publisher'],
         dask_configs=dask_configs,
+        feature_computation_config=feature_computation_config
     )
 
 

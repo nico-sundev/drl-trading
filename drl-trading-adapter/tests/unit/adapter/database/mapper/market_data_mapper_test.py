@@ -5,15 +5,10 @@ including error handling and edge cases.
 """
 
 import pytest
+from datetime import datetime, timezone
 from drl_trading_adapter.adapter.database.mapper.market_data_mapper import MarketDataMapper
 from drl_trading_adapter.adapter.database.entity.market_data_entity import MarketDataEntity
 from drl_trading_core.common.model.market_data_model import MarketDataModel
-from drl_trading_common.model.timeframe import Timeframe
-from conftest import (
-    TEST_SYMBOL, TEST_TIMEFRAME, TEST_TIMESTAMP, TEST_OPEN, TEST_HIGH,
-    TEST_LOW, TEST_CLOSE, TEST_VOLUME, ZERO_VOLUME, NEGATIVE_PRICE, VERY_LARGE_VOLUME
-)
-
 
 class TestMarketDataMapperEntityToModel:
     """Test suite for MarketDataMapper.entity_to_model() method."""
@@ -46,22 +41,21 @@ class TestMarketDataMapperEntityToModel:
         with pytest.raises(ValueError, match="Entity cannot be None"):
             MarketDataMapper.entity_to_model(entity)
 
-    def test_entity_to_model_with_missing_required_fields(self) -> None:
+    def test_entity_to_model_with_missing_required_fields(self, test_market_data_entity: MarketDataEntity) -> None:
         """Test entity_to_model with missing required fields raises ValueError."""
         # Given
-        entity = MarketDataEntity()
-        entity.symbol = TEST_SYMBOL
-        # Intentionally leaving other required fields as None
+        entity = test_market_data_entity
+        entity.open_price = None  # Intentionally set a required field to None
 
         # When & Then
         with pytest.raises(ValueError, match="Entity has None values in required fields"):
             MarketDataMapper.entity_to_model(entity)
 
     @pytest.mark.parametrize("symbol,timeframe,volume", [
-        (TEST_SYMBOL, TEST_TIMEFRAME, ZERO_VOLUME),
-        ("ABC", TEST_TIMEFRAME, TEST_VOLUME),  # Different but valid symbol
-        (TEST_SYMBOL, "1h", TEST_VOLUME),  # Different but valid timeframe
-        (TEST_SYMBOL, TEST_TIMEFRAME, VERY_LARGE_VOLUME)
+        ("TSLA", "5m", 0),
+        ("ABC", "5m", 2500000),  # Different but valid symbol
+        ("TSLA", "1h", 2500000),  # Different but valid timeframe
+        ("TSLA", "5m", 999999999999)
     ])
     def test_entity_to_model_edge_cases(self, symbol: str, timeframe: str, volume: int) -> None:
         """Test entity_to_model with edge case values."""
@@ -69,11 +63,11 @@ class TestMarketDataMapperEntityToModel:
         entity = MarketDataEntity()
         entity.symbol = symbol
         entity.timeframe = timeframe
-        entity.timestamp = TEST_TIMESTAMP
-        entity.open_price = TEST_OPEN
-        entity.high_price = TEST_HIGH
-        entity.low_price = TEST_LOW
-        entity.close_price = TEST_CLOSE
+        entity.timestamp = datetime(2024, 1, 15, 14, 30, 0, tzinfo=timezone.utc)
+        entity.open_price = 200.50
+        entity.high_price = 205.75
+        entity.low_price = 198.25
+        entity.close_price = 203.40
         entity.volume = volume
 
         # When
@@ -84,38 +78,23 @@ class TestMarketDataMapperEntityToModel:
         assert result.timeframe.value == timeframe  # Compare with the enum value
         assert result.volume == volume
 
-    def test_entity_to_model_with_empty_symbol_succeeds(self) -> None:
+    def test_entity_to_model_with_empty_symbol_succeeds(self, test_market_data_entity: MarketDataEntity) -> None:
         """Test entity_to_model with empty symbol succeeds (empty string is valid)."""
         # Given
-        entity = MarketDataEntity()
-        entity.symbol = ""
-        entity.timeframe = TEST_TIMEFRAME
-        entity.timestamp = TEST_TIMESTAMP
-        entity.open_price = TEST_OPEN
-        entity.high_price = TEST_HIGH
-        entity.low_price = TEST_LOW
-        entity.close_price = TEST_CLOSE
-        entity.volume = TEST_VOLUME
+        entity = test_market_data_entity
+        entity.symbol = ""  # Empty symbol
 
         # When
         result = MarketDataMapper.entity_to_model(entity)
 
         # Then
         assert result.symbol == ""
-        assert result.timeframe.value == TEST_TIMEFRAME
 
-    def test_entity_to_model_with_invalid_timeframe_raises_error(self) -> None:
+    def test_entity_to_model_with_invalid_timeframe_raises_error(self, test_market_data_entity: MarketDataEntity) -> None:
         """Test entity_to_model with invalid timeframe raises appropriate error."""
         # Given
-        entity = MarketDataEntity()
-        entity.symbol = TEST_SYMBOL
+        entity = test_market_data_entity
         entity.timeframe = ""  # Invalid timeframe
-        entity.timestamp = TEST_TIMESTAMP
-        entity.open_price = TEST_OPEN
-        entity.high_price = TEST_HIGH
-        entity.low_price = TEST_LOW
-        entity.close_price = TEST_CLOSE
-        entity.volume = TEST_VOLUME
 
         # When & Then
         with pytest.raises(ValueError, match="Failed to convert entity to model"):
@@ -163,26 +142,21 @@ class TestMarketDataMapperModelToEntity:
             MarketDataMapper.model_to_entity(invalid_model)
 
     @pytest.mark.parametrize("open_price,high_price,low_price,close_price", [
-        (NEGATIVE_PRICE, TEST_HIGH, TEST_LOW, TEST_CLOSE),
-        (TEST_OPEN, NEGATIVE_PRICE, TEST_LOW, TEST_CLOSE),
-        (TEST_OPEN, TEST_HIGH, NEGATIVE_PRICE, TEST_CLOSE),
-        (TEST_OPEN, TEST_HIGH, TEST_LOW, NEGATIVE_PRICE)
+        (-1.0, 205.75, 198.25, 203.40),
+        (200.50, -1.0, 198.25, 203.40),
+        (200.50, 205.75, -1.0, 203.40),
+        (200.50, 205.75, 198.25, -1.0)
     ])
     def test_model_to_entity_with_negative_prices(
-        self, open_price: float, high_price: float, low_price: float, close_price: float
+        self, open_price: float, high_price: float, low_price: float, close_price: float, test_market_data_model: MarketDataModel
     ) -> None:
         """Test model_to_entity accepts negative prices (for some markets)."""
         # Given
-        model = MarketDataModel(
-            symbol=TEST_SYMBOL,
-            timeframe=Timeframe.MINUTE_5,
-            timestamp=TEST_TIMESTAMP,
-            open_price=open_price,
-            high_price=high_price,
-            low_price=low_price,
-            close_price=close_price,
-            volume=TEST_VOLUME
-        )
+        model = test_market_data_model
+        model.open_price = open_price
+        model.high_price = high_price
+        model.low_price = low_price
+        model.close_price = close_price
 
         # When
         result = MarketDataMapper.model_to_entity(model)

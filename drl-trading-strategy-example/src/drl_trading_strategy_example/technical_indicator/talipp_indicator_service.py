@@ -1,3 +1,4 @@
+import logging
 import threading
 from typing import Dict, Optional
 
@@ -11,6 +12,8 @@ from drl_trading_strategy_example.technical_indicator.registry.indicator_class_r
 )
 from injector import inject
 from pandas import DataFrame
+
+logger = logging.getLogger(__name__)
 
 
 @inject
@@ -43,12 +46,17 @@ class TaLippIndicatorService(ITechnicalIndicatorFacade):
             **params: Parameters to pass to indicator constructor
 
         Raises:
-            ValueError: If name already exists or indicator type not found
+            ValueError: If indicator type not found
+
+        Note:
+            If an indicator with the same name already exists, this method is idempotent
+            and will skip registration to allow feature reuse across warmup and computation phases.
         """
         with self._lock:
-            # Atomic check for existing instance
+            # Idempotent: skip if indicator already exists (allows feature reuse)
             if name in self.instances:
-                raise ValueError(f"Indicator with name '{name}' already exists")
+                logger.debug(f"Indicator '{name}' already registered, skipping duplicate registration")
+                return
 
             # Convert string to enum for internal processing
             try:

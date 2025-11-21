@@ -42,14 +42,9 @@ class FeatureStoreFetchRepository(IFeatureStoreFetchPort):
 
         service_name = get_feature_service_name(request=feature_service_request)
 
-        try:
-            feature_service = self._feast_provider.get_feature_service(
-                service_name=service_name
-            )
-        except ValueError as e:
-            # Feature service doesn't exist yet (cold start scenario)
-            logger.info(f"Feature service '{service_name}' not found (cold start): {e}")
-            return pd.DataFrame()
+        feature_service = self._feast_provider.get_feature_service(
+            service_name=service_name
+        )
 
         return self._fs.get_online_features(
             features=feature_service, entity_rows=entity_rows
@@ -60,17 +55,11 @@ class FeatureStoreFetchRepository(IFeatureStoreFetchPort):
         feature_service_request: FeatureServiceRequestContainer,
         timestamps: pd.Series,
     ) -> pd.DataFrame:
-
         service_name = get_feature_service_name(request=feature_service_request)
 
-        try:
-            feature_service = self._feast_provider.get_feature_service(
-                service_name=service_name
-            )
-        except ValueError as e:
-            # Feature service doesn't exist yet (cold start scenario)
-            logger.info(f"Feature service '{service_name}' not found (cold start): {e}")
-            return pd.DataFrame()
+        feature_service = self._feast_provider.get_feature_service(
+            service_name=service_name
+        )
 
         symbol = feature_service_request.symbol
 

@@ -41,6 +41,44 @@ class TestPreprocessingOrchestratorSuccessFlow:
         # Configure feature computer to return features
         mock_dependencies['feature_computer'].compute_batch.return_value = sample_features_df
 
+        # Configure coverage analyzer to indicate resampling is needed
+        from drl_trading_preprocess.core.model.coverage.feature_coverage_analysis import (
+            FeatureCoverageAnalysis,
+            FeatureCoverageInfo,
+        )
+        from datetime import datetime, timezone
+
+        coverage_analysis = FeatureCoverageAnalysis(
+            symbol="BTCUSD",
+            timeframe=Timeframe.MINUTE_5,
+            requested_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            requested_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            ohlcv_available=False,  # Forces resampling
+            ohlcv_earliest_timestamp=None,
+            ohlcv_latest_timestamp=None,
+            ohlcv_record_count=0,
+            adjusted_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            adjusted_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            requires_resampling=True,  # Since OHLCV not available
+            feature_coverage={
+                'test_feature': FeatureCoverageInfo(
+                    feature_name='test_feature',
+                    is_fully_covered=False,  # Needs computation
+                    earliest_timestamp=None,
+                    latest_timestamp=None,
+                    record_count=0,
+                    coverage_percentage=0.0,
+                    missing_periods=[],
+                )
+            },
+            existing_features_df=None,
+        )
+        mock_dependencies['feature_coverage_analyzer'].analyze_feature_coverage.return_value = coverage_analysis
+
+        # Configure coverage evaluator to return features needing computation
+        mock_dependencies['feature_coverage_evaluator'].get_features_needing_computation.return_value = ['test_feature']
+        mock_dependencies['feature_coverage_evaluator'].get_features_needing_warmup.return_value = []
+
         # When
         result = preprocessing_orchestrator.process_feature_computation_request(request)
 
@@ -92,6 +130,52 @@ class TestPreprocessingOrchestratorSuccessFlow:
         # Configure feature computer to return features
         mock_dependencies['feature_computer'].compute_batch.return_value = sample_features_df
 
+        # Configure coverage analyzer for both timeframes
+        from drl_trading_preprocess.core.model.coverage.feature_coverage_analysis import (
+            FeatureCoverageAnalysis,
+            FeatureCoverageInfo,
+        )
+        from datetime import datetime, timezone
+
+        coverage_analyses = {}
+        for tf in [Timeframe.MINUTE_5, Timeframe.MINUTE_15]:
+            coverage_analysis = FeatureCoverageAnalysis(
+                symbol="BTCUSD",
+                timeframe=tf,
+                requested_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+                requested_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+                ohlcv_available=False,  # Forces resampling
+                ohlcv_earliest_timestamp=None,
+                ohlcv_latest_timestamp=None,
+                ohlcv_record_count=0,
+                adjusted_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+                adjusted_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+                requires_resampling=True,  # Since OHLCV not available
+                feature_coverage={
+                    'test_feature': FeatureCoverageInfo(
+                        feature_name='test_feature',
+                        is_fully_covered=False,  # Needs computation
+                        earliest_timestamp=None,
+                        latest_timestamp=None,
+                        record_count=0,
+                        coverage_percentage=0.0,
+                        missing_periods=[],
+                    )
+                },
+                existing_features_df=None,
+            )
+            coverage_analyses[tf] = coverage_analysis
+
+        # Mock the analyze_feature_coverage to return different results for different timeframes
+        def mock_analyze_coverage(symbol, timeframe, **kwargs):
+            return coverage_analyses[timeframe]
+
+        mock_dependencies['feature_coverage_analyzer'].analyze_feature_coverage.side_effect = mock_analyze_coverage
+
+        # Configure coverage evaluator
+        mock_dependencies['feature_coverage_evaluator'].get_features_needing_computation.return_value = ['test_feature']
+        mock_dependencies['feature_coverage_evaluator'].get_features_needing_warmup.return_value = []
+
         # When
         result = preprocessing_orchestrator.process_feature_computation_request(request)
 
@@ -101,15 +185,14 @@ class TestPreprocessingOrchestratorSuccessFlow:
         # Verify message publisher was called
         mock_dependencies['message_publisher'].publish_preprocessing_completed.assert_called_once()
 
-        # Verify both timeframes were processed
+        # Verify call arguments
         call_args = mock_dependencies['message_publisher'].publish_preprocessing_completed.call_args
+        assert call_args.kwargs['request'] == request
+        assert call_args.kwargs['processing_context'] == "training"
+        assert call_args.kwargs['total_features_computed'] == 4  # 2 features × 2 timeframes
         timeframes_processed = call_args.kwargs['timeframes_processed']
         assert Timeframe.MINUTE_5 in timeframes_processed
         assert Timeframe.MINUTE_15 in timeframes_processed
-        assert len(timeframes_processed) == 2
-
-        # Verify total feature count (2 features per timeframe = 4 total)
-        assert call_args.kwargs['total_features_computed'] == 4
 
 
 class TestPreprocessingOrchestratorErrorHandling:
@@ -165,6 +248,44 @@ class TestPreprocessingOrchestratorErrorHandling:
         }
 
         mock_dependencies['feature_computer'].compute_batch.return_value = sample_features_df
+
+        # Configure coverage analyzer to indicate resampling is needed
+        from drl_trading_preprocess.core.model.coverage.feature_coverage_analysis import (
+            FeatureCoverageAnalysis,
+            FeatureCoverageInfo,
+        )
+        from datetime import datetime, timezone
+
+        coverage_analysis = FeatureCoverageAnalysis(
+            symbol="BTCUSD",
+            timeframe=Timeframe.MINUTE_5,
+            requested_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            requested_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            ohlcv_available=False,  # Forces resampling
+            ohlcv_earliest_timestamp=None,
+            ohlcv_latest_timestamp=None,
+            ohlcv_record_count=0,
+            adjusted_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            adjusted_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            requires_resampling=True,  # Since OHLCV not available
+            feature_coverage={
+                'test_feature': FeatureCoverageInfo(
+                    feature_name='test_feature',
+                    is_fully_covered=False,  # Needs computation
+                    earliest_timestamp=None,
+                    latest_timestamp=None,
+                    record_count=0,
+                    coverage_percentage=0.0,
+                    missing_periods=[],
+                )
+            },
+            existing_features_df=None,
+        )
+        mock_dependencies['feature_coverage_analyzer'].analyze_feature_coverage.return_value = coverage_analysis
+
+        # Configure coverage evaluator to return features needing computation
+        mock_dependencies['feature_coverage_evaluator'].get_features_needing_computation.return_value = ['test_feature']
+        mock_dependencies['feature_coverage_evaluator'].get_features_needing_warmup.return_value = []
 
         # Configure feature store to raise an exception
         mock_dependencies['feature_store_port'].store_computed_features_offline.side_effect = RuntimeError("Database connection failed")
@@ -313,6 +434,9 @@ class TestPreprocessingOrchestratorSkipExisting:
         mock_dependencies['feature_coverage_analyzer'].analyze_feature_coverage.return_value = full_coverage
         mock_dependencies['feature_validator'].validate_definitions.return_value = {'test_feature': True}
 
+        # Override the default mock to return no features needing computation (all are covered)
+        mock_dependencies['feature_coverage_evaluator'].get_features_needing_computation.return_value = []
+
         # When
         result = preprocessing_orchestrator.process_feature_computation_request(request)
 
@@ -364,6 +488,7 @@ class TestPreprocessingOrchestratorSkipExisting:
             ohlcv_record_count=0,
             adjusted_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
             adjusted_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            requires_resampling=True,  # Since OHLCV not available, must resample
             feature_coverage={
                 'test_feature': FeatureCoverageInfo(
                     feature_name='test_feature',
@@ -463,6 +588,68 @@ class TestPreprocessingOrchestratorEdgeCases:
                    .with_target_timeframes([Timeframe.MINUTE_5, Timeframe.MINUTE_15])
                    .build())
 
+        # Mock coverage analysis to require resampling for both timeframes
+        from drl_trading_preprocess.core.model.coverage.feature_coverage_analysis import (
+            FeatureCoverageAnalysis,
+            FeatureCoverageInfo,
+        )
+        from datetime import datetime, timezone
+
+        coverage_5m = FeatureCoverageAnalysis(
+            symbol="BTCUSD",
+            timeframe=Timeframe.MINUTE_5,
+            requested_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            requested_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            ohlcv_available=True,
+            ohlcv_earliest_timestamp=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            ohlcv_latest_timestamp=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            ohlcv_record_count=288,
+            adjusted_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            adjusted_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            requires_resampling=True,  # Force resampling
+            feature_coverage={
+                'test_feature': FeatureCoverageInfo(
+                    feature_name='test_feature',
+                    is_fully_covered=False,
+                    earliest_timestamp=None,
+                    latest_timestamp=None,
+                    record_count=0,
+                    coverage_percentage=0.0,
+                    missing_periods=[(datetime(2023, 1, 1, tzinfo=timezone.utc), datetime(2023, 1, 2, tzinfo=timezone.utc))],
+                )
+            },
+            existing_features_df=None,
+        )
+
+        coverage_15m = FeatureCoverageAnalysis(
+            symbol="BTCUSD",
+            timeframe=Timeframe.MINUTE_15,
+            requested_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            requested_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            ohlcv_available=True,
+            ohlcv_earliest_timestamp=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            ohlcv_latest_timestamp=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            ohlcv_record_count=96,
+            adjusted_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            adjusted_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            requires_resampling=True,  # Force resampling
+            feature_coverage={
+                'test_feature': FeatureCoverageInfo(
+                    feature_name='test_feature',
+                    is_fully_covered=False,
+                    earliest_timestamp=None,
+                    latest_timestamp=None,
+                    record_count=0,
+                    coverage_percentage=0.0,
+                    missing_periods=[(datetime(2023, 1, 1, tzinfo=timezone.utc), datetime(2023, 1, 2, tzinfo=timezone.utc))],
+                )
+            },
+            existing_features_df=None,
+        )
+
+        # Mock analyzer to return different coverage for different timeframes
+        mock_dependencies['feature_coverage_analyzer'].analyze_feature_coverage.side_effect = [coverage_5m, coverage_15m]
+
         # Configure resampler to return data for both timeframes
         resampling_response = resampling_response_factory(
             timeframes=[Timeframe.MINUTE_5, Timeframe.MINUTE_15]
@@ -521,6 +708,42 @@ class TestPreprocessingOrchestratorEdgeCases:
                    .with_features(large_feature_set)
                    .build())
 
+        # Mock coverage analysis to require resampling
+        from drl_trading_preprocess.core.model.coverage.feature_coverage_analysis import (
+            FeatureCoverageAnalysis,
+            FeatureCoverageInfo,
+        )
+        from datetime import datetime, timezone
+
+        coverage_analysis = FeatureCoverageAnalysis(
+            symbol="BTCUSD",
+            timeframe=Timeframe.MINUTE_5,
+            requested_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            requested_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            ohlcv_available=True,
+            ohlcv_earliest_timestamp=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            ohlcv_latest_timestamp=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            ohlcv_record_count=288,
+            adjusted_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            adjusted_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            requires_resampling=True,  # Force resampling
+            feature_coverage={
+                f"feature_{i}": FeatureCoverageInfo(
+                    feature_name=f"feature_{i}",
+                    is_fully_covered=False,
+                    earliest_timestamp=None,
+                    latest_timestamp=None,
+                    record_count=0,
+                    coverage_percentage=0.0,
+                    missing_periods=[(datetime(2023, 1, 1, tzinfo=timezone.utc), datetime(2023, 1, 2, tzinfo=timezone.utc))],
+                )
+                for i in range(100)
+            },
+            existing_features_df=None,
+        )
+
+        mock_dependencies['feature_coverage_analyzer'].analyze_feature_coverage.return_value = coverage_analysis
+
         # Configure successful processing
         resampling_response = resampling_response_factory()
         mock_dependencies['market_data_resampler'].resample_symbol_data_incremental.return_value = resampling_response
@@ -567,6 +790,94 @@ class TestPreprocessingOrchestratorEdgeCases:
                    .with_parallel_processing(True)
                    .with_target_timeframes([Timeframe.MINUTE_5, Timeframe.MINUTE_15, Timeframe.MINUTE_30])
                    .build())
+
+        # Mock coverage analysis to require resampling for all timeframes
+        from drl_trading_preprocess.core.model.coverage.feature_coverage_analysis import (
+            FeatureCoverageAnalysis,
+            FeatureCoverageInfo,
+        )
+        from datetime import datetime, timezone
+
+        coverage_5m = FeatureCoverageAnalysis(
+            symbol="BTCUSD",
+            timeframe=Timeframe.MINUTE_5,
+            requested_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            requested_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            ohlcv_available=True,
+            ohlcv_earliest_timestamp=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            ohlcv_latest_timestamp=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            ohlcv_record_count=288,
+            adjusted_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            adjusted_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            requires_resampling=True,  # Force resampling
+            feature_coverage={
+                'test_feature': FeatureCoverageInfo(
+                    feature_name='test_feature',
+                    is_fully_covered=False,
+                    earliest_timestamp=None,
+                    latest_timestamp=None,
+                    record_count=0,
+                    coverage_percentage=0.0,
+                    missing_periods=[(datetime(2023, 1, 1, tzinfo=timezone.utc), datetime(2023, 1, 2, tzinfo=timezone.utc))],
+                )
+            },
+            existing_features_df=None,
+        )
+
+        coverage_15m = FeatureCoverageAnalysis(
+            symbol="BTCUSD",
+            timeframe=Timeframe.MINUTE_15,
+            requested_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            requested_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            ohlcv_available=True,
+            ohlcv_earliest_timestamp=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            ohlcv_latest_timestamp=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            ohlcv_record_count=96,
+            adjusted_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            adjusted_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            requires_resampling=True,  # Force resampling
+            feature_coverage={
+                'test_feature': FeatureCoverageInfo(
+                    feature_name='test_feature',
+                    is_fully_covered=False,
+                    earliest_timestamp=None,
+                    latest_timestamp=None,
+                    record_count=0,
+                    coverage_percentage=0.0,
+                    missing_periods=[(datetime(2023, 1, 1, tzinfo=timezone.utc), datetime(2023, 1, 2, tzinfo=timezone.utc))],
+                )
+            },
+            existing_features_df=None,
+        )
+
+        coverage_30m = FeatureCoverageAnalysis(
+            symbol="BTCUSD",
+            timeframe=Timeframe.MINUTE_30,
+            requested_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            requested_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            ohlcv_available=True,
+            ohlcv_earliest_timestamp=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            ohlcv_latest_timestamp=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            ohlcv_record_count=48,
+            adjusted_start_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            adjusted_end_time=datetime(2023, 1, 2, tzinfo=timezone.utc),
+            requires_resampling=True,  # Force resampling
+            feature_coverage={
+                'test_feature': FeatureCoverageInfo(
+                    feature_name='test_feature',
+                    is_fully_covered=False,
+                    earliest_timestamp=None,
+                    latest_timestamp=None,
+                    record_count=0,
+                    coverage_percentage=0.0,
+                    missing_periods=[(datetime(2023, 1, 1, tzinfo=timezone.utc), datetime(2023, 1, 2, tzinfo=timezone.utc))],
+                )
+            },
+            existing_features_df=None,
+        )
+
+        # Mock analyzer to return coverage for each timeframe
+        mock_dependencies['feature_coverage_analyzer'].analyze_feature_coverage.side_effect = [coverage_5m, coverage_15m, coverage_30m]
 
         # Configure resampler to return data for all timeframes
         resampling_response = resampling_response_factory(

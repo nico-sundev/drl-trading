@@ -93,14 +93,17 @@ class ServiceConfigLoader:
                 stage,
             )
 
-        # Load base configuration
-        config = ServiceConfigLoader._load_single_file(config_class, base_file)
+        # Load base configuration as raw YAML (no validation yet)
+        import yaml
+        with open(base_file, 'r') as f:
+            base_data = yaml.safe_load(f)
+
+        # Apply secret substitution to base data
+        base_data = ServiceConfigLoader._substitute_secrets(base_data)
 
         # Apply stage override if exists
         if stage_file:
             bootstrap_logger.info("Applying stage override: %s", stage_file)
-            # Load stage override as raw YAML data (not as config object)
-            import yaml
             with open(stage_file, 'r') as f:
                 stage_data = yaml.safe_load(f)
 
@@ -108,16 +111,12 @@ class ServiceConfigLoader:
             if stage_data:
                 stage_data = ServiceConfigLoader._substitute_secrets(stage_data)
 
-                # Merge stage data into base config
-                config_dict = config.model_dump()
-                ServiceConfigLoader._deep_update(config_dict, stage_data)
-                before_keys = set(config.model_dump().keys())
-                config = config_class.model_validate(config_dict)
-                after_keys = set(config.model_dump().keys())
-                changed = after_keys.union(before_keys)
-                bootstrap_logger.info(
-                    "Stage override applied (file=%s, keys=%d)", stage_file, len(changed)
-                )
+                # Merge stage data into base config (both are dicts)
+                ServiceConfigLoader._deep_update(base_data, stage_data)
+                bootstrap_logger.info("Stage override applied (file=%s)", stage_file)
+
+        # Now validate the merged config once
+        config = config_class.model_validate(base_data)
 
         # Provide warning if logging section missing for observability
         if not hasattr(config, "logging"):

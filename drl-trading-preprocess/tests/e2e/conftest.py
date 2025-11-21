@@ -13,12 +13,15 @@ This tests the complete integration without mocking.
 """
 
 import json
+import logging
 import time
 from collections.abc import Generator
 from typing import Any
 
 import pytest
 from confluent_kafka import Consumer, KafkaError, Producer
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
@@ -106,7 +109,7 @@ def kafka_consumer_factory(kafka_bootstrap_servers: str) -> Generator[Any, None,
         consumer = Consumer({
             'bootstrap.servers': kafka_bootstrap_servers,
             'group.id': f'e2e-test-{uuid.uuid4().hex[:8]}',
-            'auto.offset.reset': 'latest',  # Only read new messages
+            'auto.offset.reset': 'earliest',  # Read all messages from beginning for E2E tests
             'enable.auto.commit': False
         })
         consumer.subscribe(topics)
@@ -175,6 +178,7 @@ def wait_for_kafka_message() -> Any:
             if expected_key is not None:
                 msg_key = msg.key().decode('utf-8') if msg.key() else None
                 if msg_key != expected_key:
+                    logger.debug(f"Skipping message with key {msg_key}, waiting for {expected_key}")
                     continue
 
             # Deserialize message
@@ -315,18 +319,18 @@ def seed_market_data() -> Generator[None, None, None]:
     try:
         # Define test symbols and time range
         symbols = ["BTCUSD", "ETHUSD", "SOLUSD"]
-        # Start earlier to provide warmup data for indicators (RSI needs ~70 min for period=14 on 5m)
-        start_time = datetime(2023, 12, 31, 22, 0, 0, tzinfo=UTC)  # 2 hours before test period
+        # Start earlier to provide warmup data for indicators
+        # 1000 minutes of 1m data allows ~200 candles warmup for 5m timeframe (1000/5 = 200 candles)
+        start_time = datetime(2023, 12, 31, 7, 20, 0, tzinfo=UTC)  # ~16.5 hours before test period
         base_timeframe = "1m"
-        target_timeframe = "5m"
+        # target_timeframe = "5m"
 
-        # Generate 180 minutes of 1-minute data (2 hours warmup + 1 hour test period)
-        # Also pre-generate corresponding 5m candles so warmup can find them
+        # Generate 1000 minutes of 1-minute data for proper warmup testing
         for symbol in symbols:
             print(f"Seeding market data for {symbol}...")
 
             # Seed 1m data
-            for minute in range(180):
+            for minute in range(1000):  # 1000 minutes = ~16.5 hours
                 timestamp = start_time + timedelta(minutes=minute)
 
                 # Generate sample OHLCV data (realistic-looking values)
@@ -355,36 +359,36 @@ def seed_market_data() -> Generator[None, None, None]:
 
             # Seed 5m data (36 candles from 180 minutes)
             # This ensures warmup can find data in the target timeframe
-            for candle_index in range(36):
-                # 5m candles start at 22:00, 22:05, 22:10, etc.
-                timestamp = start_time + timedelta(minutes=candle_index * 5)
+            # for candle_index in range(36):
+            #     # 5m candles start at 22:00, 22:05, 22:10, etc.
+            #     timestamp = start_time + timedelta(minutes=candle_index * 5)
 
-                # Aggregate 5 minutes of 1m data into one 5m candle
-                minute_offset = candle_index * 5
-                if symbol == "BTCUSD":
-                    base_price = 42000.0 + (minute_offset * 10)
-                elif symbol == "ETHUSD":
-                    base_price = 2200.0 + (minute_offset * 2)
-                else:  # SOLUSD
-                    base_price = 100.0 + (minute_offset * 0.5)
+            #     # Aggregate 5 minutes of 1m data into one 5m candle
+            #     minute_offset = candle_index * 5
+            #     if symbol == "BTCUSD":
+            #         base_price = 42000.0 + (minute_offset * 10)
+            #     elif symbol == "ETHUSD":
+            #         base_price = 2200.0 + (minute_offset * 2)
+            #     else:  # SOLUSD
+            #         base_price = 100.0 + (minute_offset * 0.5)
 
-                open_price = base_price
-                high_price = base_price * 1.005  # 0.5% higher over 5min
-                low_price = base_price * 0.995   # 0.5% lower over 5min
-                close_price = base_price + 25  # Price movement over 5min
-                volume = 5000 + (candle_index * 500)  # Aggregate of 5 minutes
+            #     open_price = base_price
+            #     high_price = base_price * 1.005  # 0.5% higher over 5min
+            #     low_price = base_price * 0.995   # 0.5% lower over 5min
+            #     close_price = base_price + 25  # Price movement over 5min
+            #     volume = 5000 + (candle_index * 500)  # Aggregate of 5 minutes
 
                 # Insert into market_data table (5m)
-                cursor.execute(
-                    """
-                    INSERT INTO market_data (timestamp, symbol, timeframe, open_price, high_price, low_price, close_price, volume)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (timestamp, symbol, timeframe) DO NOTHING
-                    """,
-                    (timestamp, symbol, target_timeframe, open_price, high_price, low_price, close_price, volume),
-                )
+                # cursor.execute(
+                #     """
+                #     INSERT INTO market_data (timestamp, symbol, timeframe, open_price, high_price, low_price, close_price, volume)
+                #     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                #     ON CONFLICT (timestamp, symbol, timeframe) DO NOTHING
+                #     """,
+                #     (timestamp, symbol, target_timeframe, open_price, high_price, low_price, close_price, volume),
+                # )
 
-            print(f"Seeded 180 rows (1m) + 36 rows (5m) for {symbol}")
+            # print(f"Seeded 180 rows (1m) + 36 rows (5m) for {symbol}")
 
         print("Market data seeding completed successfully")
 

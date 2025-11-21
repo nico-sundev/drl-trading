@@ -250,3 +250,30 @@ class ResamplingContext:
         state.records_processed += records_processed
         state.candles_generated += candles_generated
         state.last_updated = datetime.now()
+
+    def reset_accumulators(
+        self,
+        symbol: str,
+        target_timeframes: List[Timeframe]
+    ) -> None:
+        """
+        Reset accumulators for specific symbol and timeframes.
+
+        Used in backfill mode to ensure reproducible results by clearing
+        any accumulated state from previous processing runs.
+
+        Args:
+            symbol: Trading symbol to reset
+            target_timeframes: List of timeframes to reset accumulators for
+        """
+        if symbol in self._active_accumulators:
+            for timeframe in target_timeframes:
+                if timeframe in self._active_accumulators[symbol]:
+                    # Remove active accumulator
+                    del self._active_accumulators[symbol][timeframe]
+
+        if symbol in self._accumulator_states:
+            for timeframe in target_timeframes:
+                if timeframe in self._accumulator_states[symbol]:
+                    # Remove persisted accumulator state
+                    del self._accumulator_states[symbol][timeframe]

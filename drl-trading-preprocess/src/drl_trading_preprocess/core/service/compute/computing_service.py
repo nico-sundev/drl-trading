@@ -4,7 +4,7 @@ from datetime import datetime
 from injector import inject
 from pandas import DataFrame, Series
 
-from drl_trading_common.config.feature_config import FeaturesConfig
+from drl_trading_core.core.model.feature_computation_request import FeatureComputationRequest
 from drl_trading_core.core.service.feature_manager import FeatureManager
 from drl_trading_preprocess.core.model.computation.feature_catchup_status import FeatureCatchupStatus
 
@@ -23,7 +23,7 @@ class FeatureComputingService:
         """
         self.feature_manager = feature_manager
 
-    def compute_batch(self, data: DataFrame, features_config: FeaturesConfig) -> DataFrame:
+    def compute_batch(self, request: FeatureComputationRequest) -> DataFrame:
         """Compute results on a batch of data.
 
         Args:
@@ -34,7 +34,7 @@ class FeatureComputingService:
             DataFrame with computed features.
         """
         # Update features with new data
-        self.feature_manager.request_features_update(data, features_config)
+        self.feature_manager.request_features_update(request)
 
         # Compute all features
         result = self.feature_manager.compute_all()
@@ -44,7 +44,7 @@ class FeatureComputingService:
 
         return result
 
-    def compute_incremental(self, data_point: Series, features_config: FeaturesConfig) -> Series:
+    def compute_incremental(self, request: FeatureComputationRequest) -> Series:
         """Compute results incrementally for a single data point.
 
         Args:
@@ -54,11 +54,9 @@ class FeatureComputingService:
         Returns:
             Series with computed features for the data point.
         """
-        # Convert Series to DataFrame with a single row
-        data_df = DataFrame([data_point])
 
         # Update features with new data point
-        self.feature_manager.request_features_update(data_df, features_config)
+        self.feature_manager.request_features_update(request)
 
         # Compute latest features
         result_df = self.feature_manager.compute_latest()

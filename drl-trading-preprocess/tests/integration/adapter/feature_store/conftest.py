@@ -36,7 +36,26 @@ def real_feast_container(
 
     # Create injector with the real Feast configuration
     app_module = AdapterModule()
-    preprocess_module = PreprocessModule(PreprocessConfig(feature_store_config=feature_store_config))
+    from drl_trading_preprocess.infrastructure.config.preprocess_config import FeatureComputationConfig, ResampleConfig
+    preprocess_module = PreprocessModule(PreprocessConfig(
+        feature_store_config=feature_store_config,
+        feature_computation_config=FeatureComputationConfig(warmup_candles=10),
+        resample_config=ResampleConfig(
+            state_persistence_enabled=False,
+            historical_start_date=datetime(2020, 1, 1),
+            max_batch_size=1000,
+            progress_log_interval=10,
+            enable_incomplete_candle_publishing=False,
+            chunk_size=100,
+            memory_warning_threshold_mb=100,
+            pagination_limit=1000,
+            max_memory_usage_mb=500,
+            state_file_path="/tmp/test_state.json",
+            state_backup_interval=60,
+            auto_cleanup_inactive_symbols=False,
+            inactive_symbol_threshold_hours=24,
+        )
+    ))
     injector = Injector([app_module, preprocess_module])
 
     return injector

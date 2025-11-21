@@ -11,8 +11,7 @@ coordinating multiple specialized services to handle real-world scenarios includ
 - Parallel coverage analysis using Dask
 """
 import logging
-from datetime import datetime
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List
 
 import dask
 import pandas as pd
@@ -20,20 +19,44 @@ from dask import delayed
 from injector import inject
 from pandas import DataFrame
 
-from drl_trading_common.config.feature_config import FeatureDefinition
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
-from drl_trading_common.model.feature_preprocessing_request import FeaturePreprocessingRequest
+from drl_trading_common.model.feature_preprocessing_request import (
+    FeaturePreprocessingRequest,
+)
 from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_core.core.model.dataset_identifier import DatasetIdentifier
+from drl_trading_core.core.model.feature_computation_request import (
+    FeatureComputationRequest,
+)
+from drl_trading_core.core.model.feature_definition import FeatureDefinition
 from drl_trading_preprocess.core.model.coverage.feature_coverage_analysis import (
     FeatureCoverageAnalysis,
+    WarmupPeriod,
 )
-from drl_trading_preprocess.core.port.feature_store_save_port import IFeatureStoreSavePort
-from drl_trading_preprocess.core.port.preprocessing_message_publisher_port import PreprocessingMessagePublisherPort
-from drl_trading_preprocess.core.service.compute.computing_service import FeatureComputingService
-from drl_trading_preprocess.core.service.validate.feature_validator import FeatureValidator
-from drl_trading_preprocess.core.service.resample.market_data_resampling_service import MarketDataResamplingService
-from drl_trading_preprocess.core.service.coverage.feature_coverage_analyzer import FeatureCoverageAnalyzer
-from drl_trading_preprocess.infrastructure.config.preprocess_config import DaskConfigs
+from drl_trading_preprocess.core.port.feature_store_save_port import (
+    IFeatureStoreSavePort,
+)
+from drl_trading_preprocess.core.port.preprocessing_message_publisher_port import (
+    PreprocessingMessagePublisherPort,
+)
+from drl_trading_preprocess.core.service.compute.computing_service import (
+    FeatureComputingService,
+)
+from drl_trading_preprocess.core.service.coverage.feature_coverage_analyzer import (
+    FeatureCoverageAnalyzer,
+)
+from drl_trading_preprocess.core.service.coverage.feature_coverage_evaluator import (
+    FeatureCoverageEvaluator,
+)
+from drl_trading_preprocess.core.service.resample.market_data_resampling_service import (
+    MarketDataResamplingService,
+)
+from drl_trading_preprocess.core.service.validate.feature_validator import (
+    FeatureValidator,
+)
+from drl_trading_preprocess.infrastructure.config.preprocess_config import (
+    DaskConfigs,
+    FeatureComputationConfig,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -77,8 +100,10 @@ class PreprocessingOrchestrator:
         feature_validator: FeatureValidator,
         feature_store_port: IFeatureStoreSavePort,
         feature_coverage_analyzer: FeatureCoverageAnalyzer,
+        feature_coverage_evaluator: FeatureCoverageEvaluator,
         message_publisher: PreprocessingMessagePublisherPort,
         dask_configs: DaskConfigs,
+        feature_computation_config: FeatureComputationConfig,
     ) -> None:
         """
         Initialize the preprocessing orchestrator with all required dependencies.
@@ -89,16 +114,20 @@ class PreprocessingOrchestrator:
             feature_validator: Service for validating feature definitions
             feature_store_port: Port for saving features to Feast
             feature_coverage_analyzer: Service for analyzing feature coverage
+            feature_coverage_evaluator: Service for evaluating coverage analysis results
             message_publisher: Port for publishing preprocessing notifications
             dask_configs: Collection of Dask configurations for different workloads
+            feature_computation_config: Configuration for feature computation (warmup settings)
         """
         self.market_data_resampler = market_data_resampler
         self.feature_computer = feature_computer
         self.feature_validator = feature_validator
         self.feature_store_port = feature_store_port
         self.feature_coverage_analyzer = feature_coverage_analyzer
+        self.feature_coverage_evaluator = feature_coverage_evaluator
         self.message_publisher = message_publisher
         self.dask_configs = dask_configs
+        self.feature_computation_config = feature_computation_config
 
         # Performance tracking
         self._total_requests_processed = 0
@@ -170,7 +199,7 @@ class PreprocessingOrchestrator:
                 return
 
             # Step 4: Resample market data to target timeframes (ONCE for all timeframes)
-            resampled_data = self._resample_market_data(request)
+            resampled_data = self._resample_market_data(request, coverage_analyses)
 
             # Step 5: Handle feature warmup if needed (reuses coverage_analyses and resampled_data)
             warmup_successful = self._handle_feature_warmup(
@@ -198,7 +227,8 @@ class PreprocessingOrchestrator:
             self._store_computed_features(request, computed_features)
 
             # Step 8: Publish successful completion notification
-            total_features = sum(len(features_df.columns) for features_df in computed_features.values())
+            # Subtract 2 for event_timestamp and symbol columns (metadata, not features)
+            total_features = sum(len(features_df.columns) - 2 for features_df in computed_features.values())
 
             # Update performance tracking
             self._total_requests_processed += 1
@@ -207,7 +237,8 @@ class PreprocessingOrchestrator:
             # Create success details
             success_details = {}
             for timeframe, features_df in computed_features.items():
-                success_details[f"features_{timeframe.value}"] = len(features_df.columns)
+                # Subtract 2 for event_timestamp and symbol columns (metadata, not features)
+                success_details[f"features_{timeframe.value}"] = len(features_df.columns) - 2
                 success_details[f"records_{timeframe.value}"] = len(features_df)
 
             # Publish async notification (topic routing based on processing_context)
@@ -318,9 +349,9 @@ class PreprocessingOrchestrator:
 
             logger.info(
                 f"Feature coverage for {request.symbol} {timeframe.value}: "
-                f"{len(coverage_analysis.fully_covered_features)} fully covered, "
-                f"{len(coverage_analysis.partially_covered_features)} partial, "
-                f"{len(coverage_analysis.missing_features)} missing"
+                f"{len(self.feature_coverage_evaluator.get_fully_covered_features(coverage_analysis))} fully covered, "
+                f"{len(self.feature_coverage_evaluator.get_partially_covered_features(coverage_analysis))} partial, "
+                f"{len(self.feature_coverage_evaluator.get_missing_features(coverage_analysis))} missing"
             )
             return timeframe, coverage_analysis
 
@@ -391,7 +422,7 @@ class PreprocessingOrchestrator:
                     f"Will resample from base timeframe and compute all features."
                 )
                 # Add all requested features for this timeframe
-                needing_comp = analysis.features_needing_computation
+                needing_comp = self.feature_coverage_evaluator.get_features_needing_computation(analysis)
                 if needing_comp:
                     features_needing_computation.update(needing_comp)
                     logger.debug(
@@ -399,7 +430,7 @@ class PreprocessingOrchestrator:
                     )
             else:
                 # OHLCV data exists, check which features are missing
-                needing_comp = analysis.features_needing_computation
+                needing_comp = self.feature_coverage_evaluator.get_features_needing_computation(analysis)
                 if needing_comp:
                     features_needing_computation.update(needing_comp)
                     logger.info(
@@ -418,7 +449,7 @@ class PreprocessingOrchestrator:
         ]
 
     def _resample_market_data(
-        self, request: FeaturePreprocessingRequest
+        self, request: FeaturePreprocessingRequest, coverage_analyses: Dict[Timeframe, FeatureCoverageAnalysis]
     ) -> Dict[Timeframe, DataFrame]:
         """
         Resample market data to all target timeframes.
@@ -427,22 +458,39 @@ class PreprocessingOrchestrator:
         target timeframe data. On warm runs, this performs incremental updates
         for new data only.
 
+        Behavior depends on request.processing_context:
+        - "backfill": Stateless mode - uses full time range for reproducibility
+        - "training"/"inference": Stateful mode - uses incremental processing
+
         Args:
             request: Feature computation request
 
         Returns:
             Dictionary mapping timeframes to resampled data
         """
+        # Determine which timeframes actually need resampling
+        target_timeframes = [
+            analysis.timeframe
+            for analysis in coverage_analyses.values()
+            if analysis.requires_resampling
+        ]
+
+        if not target_timeframes:
+            logger.info("No target timeframes require resampling. Skipping resampling step.")
+            return {}
+
         logger.info(
             f"Resampling {request.symbol} from {request.base_timeframe.value} "
-            f"to {[tf.value for tf in request.target_timeframes]}"
+            f"to {[tf.value for tf in target_timeframes]} "
+            f"(context: {request.processing_context})"
         )
 
-        # Use the market data resampling service
+        # Use the market data resampling service with processing context
         resampling_response = self.market_data_resampler.resample_symbol_data_incremental(
             symbol=request.symbol,
             base_timeframe=request.base_timeframe,
-            target_timeframes=request.target_timeframes,
+            target_timeframes=target_timeframes,
+            processing_context=request.processing_context,
         )
 
         # Check if we got valid resampled data
@@ -503,13 +551,16 @@ class PreprocessingOrchestrator:
             )
 
             # Compute features for this timeframe using batch computation
-            from drl_trading_common.config.feature_config import FeaturesConfig
-            features_config = FeaturesConfig(
-                dataset_definitions={request.symbol: [timeframe]},
-                feature_definitions=features_to_compute
+            computation_request = FeatureComputationRequest(
+                dataset_id=DatasetIdentifier(
+                    symbol=request.symbol,
+                    timeframe=timeframe,
+                ),
+                feature_definitions=features_to_compute,
+                market_data=market_data,
             )
             features_df = self.feature_computer.compute_batch(
-                market_data, features_config
+                computation_request
             )
 
             if not features_df.empty:
@@ -535,7 +586,7 @@ class PreprocessingOrchestrator:
         request: FeaturePreprocessingRequest,
         features_to_compute: List[FeatureDefinition],
         resampled_data: Dict[Timeframe, DataFrame],
-        coverage_analyses: Dict[Timeframe, FeatureCoverageAnalysis]
+        coverage_analyses: Dict[Timeframe, FeatureCoverageAnalysis],
     ) -> bool:
         """
         Handle feature warmup using pre-computed coverage analysis and already-resampled data.
@@ -568,12 +619,14 @@ class PreprocessingOrchestrator:
             # REUSE the coverage analysis instead of calling feature_coverage_analyzer again
             for timeframe, coverage_analysis in coverage_analyses.items():
                 # Check if warmup is needed for this timeframe
-                if not coverage_analysis.features_needing_warmup:
+                if not self.feature_coverage_evaluator.get_features_needing_warmup(coverage_analysis):
                     logger.info(f"No warmup needed for {request.symbol} {timeframe.value}")
                     continue
 
                 # Get warmup period from coverage analysis
-                warmup_period = coverage_analysis.get_warmup_period(warmup_candles=500)
+                warmup_period = self.feature_coverage_evaluator.get_warmup_period(
+                    coverage_analysis, warmup_candles=self.feature_computation_config.warmup_candles  # type: ignore[arg-type]
+                )
                 if not warmup_period:
                     logger.info(f"No warmup period calculated for {request.symbol} {timeframe.value}")
                     continue
@@ -599,7 +652,7 @@ class PreprocessingOrchestrator:
         request: FeaturePreprocessingRequest,
         features_to_compute: List[FeatureDefinition],
         timeframe: Timeframe,
-        warmup_period: tuple[datetime, datetime],
+        warmup_period: WarmupPeriod,
         resampled_data: Dict[Timeframe, DataFrame]
     ) -> bool:
         """
@@ -619,7 +672,7 @@ class PreprocessingOrchestrator:
         Returns:
             True if warmup successful, False otherwise
         """
-        warmup_start, warmup_end = warmup_period
+        warmup_start, warmup_end = warmup_period.start_time, warmup_period.end_time
 
         logger.info(
             f"Performing feature warmup for {request.symbol} {timeframe.value}: "
@@ -647,13 +700,16 @@ class PreprocessingOrchestrator:
                 return False
 
             # Perform warmup using compute_batch method
-            from drl_trading_common.config.feature_config import FeaturesConfig
-            features_config = FeaturesConfig(
-                dataset_definitions={request.symbol: [timeframe]},
-                feature_definitions=[cast(FeatureDefinition, f) for f in request.feature_config_version_info.feature_definitions]
+            warmup_computation_request = FeatureComputationRequest(
+                dataset_id=DatasetIdentifier(
+                    symbol=request.symbol,
+                    timeframe=timeframe,
+                ),
+                feature_definitions=features_to_compute,
+                market_data=warmup_df,
             )
             warmup_result = self.feature_computer.compute_batch(
-                warmup_df, features_config
+                warmup_computation_request
             )
 
             success = not warmup_result.empty
@@ -697,7 +753,10 @@ class PreprocessingOrchestrator:
                     features_df=features_df,
                     symbol=request.symbol,
                     feature_version_info=request.feature_config_version_info,
-                    feature_view_requests=[],   # Would be created from features
+                    feature_view_requests=[],
+                    processing_context=request.processing_context,
+                    requested_start_time=pd.to_datetime(request.start_time),
+                    requested_end_time=pd.to_datetime(request.end_time),
                 )
 
                 # Store online if requested
@@ -720,10 +779,8 @@ class PreprocessingOrchestrator:
         """Create a dataset identifier for the given symbol and timeframe."""
         # This would typically come from your common models
         # For now, create a simple implementation
-        from drl_trading_common.model.dataset_identifier import DatasetIdentifier
+        from drl_trading_core.core.model.dataset_identifier import DatasetIdentifier
         return DatasetIdentifier(symbol=symbol, timeframe=timeframe)
-
-
 
     def get_performance_summary(self) -> Dict[str, Any]:
         """Get performance summary for monitoring."""

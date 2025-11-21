@@ -9,11 +9,10 @@ import pytest
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-from drl_trading_common.config.feature_config import FeatureDefinition, FeaturesConfig
 from drl_trading_common.config.dask_config import DaskConfig
 from drl_trading_common.interface.feature.feature_factory_interface import IFeatureFactory
 from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
+from drl_trading_core.core.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.base.base_feature import BaseFeature
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
@@ -23,6 +22,10 @@ from pandas import DataFrame
 from drl_trading_core.core.service.feature_manager import FeatureManager, FeatureKey
 from drl_trading_core.core.service.feature_definition_parser import FeatureDefinitionParser
 from drl_trading_core.core.config.feature_computation_config import FeatureComputationConfig
+from drl_trading_core.core.model.feature_computation_request import (
+    FeatureComputationRequest,
+)
+from drl_trading_core.core.model.feature_definition import FeatureDefinition
 
 
 @feature_role(FeatureRoleEnum.OBSERVATION_SPACE)
@@ -37,7 +40,7 @@ class MockFeature(BaseFeature):
         }, index=pd.date_range("2024-01-01 10:00:00", periods=3, freq="1min"))
 
         # Mock dataset_id for is_caught_up functionality
-        from drl_trading_common.model.dataset_identifier import DatasetIdentifier
+        from drl_trading_core.core.model.dataset_identifier import DatasetIdentifier
         from drl_trading_common.model.timeframe import Timeframe
         self.dataset_id = DatasetIdentifier("MOCK", Timeframe.MINUTE_1)
 
@@ -99,8 +102,8 @@ class TestFeatureManager:
         )
 
     @pytest.fixture
-    def sample_features_config(self):
-        """Create a sample features configuration."""
+    def sample_computation_request(self):
+        """Create a sample FeatureComputationRequest for testing."""
         # Create a mock parameter set
         param_set = MagicMock(spec=BaseParameterSetConfig)
         param_set.enabled = True
@@ -113,15 +116,24 @@ class TestFeatureManager:
         feature_def.parameter_sets = [{"period": 14}]
         feature_def.parsed_parameter_sets = {"test_hash_123": param_set}
 
-        # Create features config
-        config = MagicMock(spec=FeaturesConfig)
-        config.feature_definitions = [feature_def]
-        config.dataset_definitions = {
-            "BTCUSD": [Timeframe.MINUTE_1],
-            "ETHUSD": [Timeframe.MINUTE_5]
-        }
+        # Create dataset identifier (single, not list)
+        dataset_id = DatasetIdentifier("BTCUSD", Timeframe.MINUTE_1)
 
-        return config
+        # Create sample market data
+        market_data = pd.DataFrame({
+            "open": [100.0, 101.0, 102.0],
+            "high": [105.0, 106.0, 107.0],
+            "low": [99.0, 100.0, 101.0],
+            "close": [104.0, 105.0, 106.0],
+            "volume": [1000, 1100, 1200],
+            "timestamp": pd.date_range("2023-01-01", periods=3)
+        })
+
+        return FeatureComputationRequest(
+            dataset_id=dataset_id,
+            feature_definitions=[feature_def],
+            market_data=market_data
+        )
 
     @pytest.fixture
     def sample_dataframe(self):
@@ -153,7 +165,7 @@ class TestFeatureManager:
 
     def test_feature_manager_update_creates_features(
         self, mock_feature_factory, mock_feature_definition_parser,
-        feature_computation_config, sample_features_config, sample_dataframe
+        feature_computation_config, sample_computation_request, sample_dataframe
     ):
         """Test that calling request_features_update creates and stores features correctly."""
         # Given
@@ -164,14 +176,14 @@ class TestFeatureManager:
         )
 
         # When
-        manager.request_features_update(sample_dataframe, sample_features_config)
+        manager.request_features_update(sample_computation_request)
 
         # Then
         assert len(manager._features) > 0
-        # Should create features for each dataset (BTCUSD, ETHUSD)
-        assert mock_feature_factory.create_feature.call_count >= 2
+        # Should create features for the dataset
+        assert mock_feature_factory.create_feature.call_count >= 1
 
-    def test_feature_manager_compute_all(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_features_config, sample_dataframe):
+    def test_feature_manager_compute_all(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_computation_request, sample_dataframe):
         """Test that compute_all returns combined feature data."""
         # Given
         manager = FeatureManager(
@@ -179,7 +191,7 @@ class TestFeatureManager:
             feature_definition_parser=mock_feature_definition_parser,
             feature_computation_config=feature_computation_config,
         )
-        manager.request_features_update(sample_dataframe, sample_features_config)
+        manager.request_features_update(sample_computation_request)
 
         # When
         result = manager.compute_all()
@@ -189,7 +201,7 @@ class TestFeatureManager:
         assert isinstance(result, DataFrame)
         assert not result.empty
 
-    def test_feature_manager_compute_latest(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_features_config, sample_dataframe):
+    def test_feature_manager_compute_latest(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_computation_request, sample_dataframe):
         """Test that compute_latest returns latest feature values."""
         # Given
         manager = FeatureManager(
@@ -197,7 +209,7 @@ class TestFeatureManager:
             feature_definition_parser=mock_feature_definition_parser,
             feature_computation_config=feature_computation_config,
         )
-        manager.request_features_update(sample_dataframe, sample_features_config)
+        manager.request_features_update(sample_computation_request)
 
         # When
         result = manager.compute_latest()
@@ -257,7 +269,7 @@ class TestFeatureManager:
         # Then
         assert result is None
 
-    def test_update_multiple_times_accumulates_data(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_features_config, sample_dataframe):
+    def test_update_multiple_times_accumulates_data(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_computation_request, sample_dataframe):
         """Test that calling request_features_update multiple times properly accumulates data in features."""
         # Given
         manager = FeatureManager(
@@ -267,8 +279,14 @@ class TestFeatureManager:
         )
 
         # When
-        manager.request_features_update(sample_dataframe, sample_features_config)
-        manager.update(sample_dataframe)  # Update again with just data (features already initialized)
+        manager.request_features_update(sample_computation_request)
+        # Create a new request with updated data for the same datasets
+        updated_request = FeatureComputationRequest(
+            dataset_id=sample_computation_request.dataset_id,
+            feature_definitions=sample_computation_request.feature_definitions,
+            market_data=pd.DataFrame({"close": [110.0, 111.0]})
+        )
+        manager.update(updated_request.market_data)  # Update again with just data (features already initialized)
 
         # Then
         assert len(manager._features) > 0
@@ -290,9 +308,13 @@ class TestFeatureManager:
         feature_def.parameter_sets = [{"period": 14}]
         feature_def.parsed_parameter_sets = {"test_hash_123": param_set}
 
-        config = MagicMock(spec=FeaturesConfig)
-        config.feature_definitions = [feature_def]
-        config.dataset_definitions = {"BTCUSD": [Timeframe.MINUTE_1]}
+        dataset_id = DatasetIdentifier("BTCUSD", Timeframe.MINUTE_1)
+
+        request = FeatureComputationRequest(
+            dataset_id=dataset_id,
+            feature_definitions=[feature_def],
+            market_data=sample_dataframe
+        )
 
         manager = FeatureManager(
             feature_factory=mock_feature_factory,
@@ -301,12 +323,12 @@ class TestFeatureManager:
         )
 
         # When
-        manager.request_features_update(sample_dataframe, config)
+        manager.request_features_update(request)
 
         # Then
         assert len(manager._features) == 0  # No features should be created
 
-    def test_update_only_updates_existing_features(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_features_config, sample_dataframe):
+    def test_update_only_updates_existing_features(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_computation_request, sample_dataframe):
         """Test that update() method only updates data in existing features."""
         # Given
         manager = FeatureManager(
@@ -314,7 +336,7 @@ class TestFeatureManager:
             feature_definition_parser=mock_feature_definition_parser,
             feature_computation_config=feature_computation_config,
         )
-        manager.request_features_update(sample_dataframe, sample_features_config)  # Initialize features
+        manager.request_features_update(sample_computation_request)  # Initialize features
         initial_feature_count = len(manager._features)
 
         # When
@@ -345,7 +367,7 @@ class TestFeatureManager:
         assert "timeframe='1m'" in repr_str
         assert "param_hash='test_hash'" in repr_str
 
-    def test_feature_creation_with_factory_exception(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_features_config, sample_dataframe):
+    def test_feature_creation_with_factory_exception(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_computation_request, sample_dataframe):
         """Test handling of factory exceptions during feature creation."""
         # Given
         mock_feature_factory.create_feature.side_effect = Exception("Factory error")
@@ -356,13 +378,13 @@ class TestFeatureManager:
         )
 
         # When
-        manager.request_features_update(sample_dataframe, sample_features_config)
+        manager.request_features_update(sample_computation_request)
 
         # Then
         assert len(manager._features) == 0  # No features created due to exception
         assert manager._feature_creation_stats["creation_failures"] > 0
 
-    def test_compute_all_with_empty_dataframe_results(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_features_config, sample_dataframe):
+    def test_compute_all_with_empty_dataframe_results(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_computation_request, sample_dataframe):
         """Test compute_all when features return empty DataFrames."""
         # Given
         def create_feature_with_empty_data(feature_name, dataset_id, config=None, postfix=""):
@@ -376,18 +398,16 @@ class TestFeatureManager:
             feature_definition_parser=mock_feature_definition_parser,
             feature_computation_config=feature_computation_config,
         )
-        manager.request_features_update(sample_dataframe, sample_features_config)
+        manager.request_features_update(sample_computation_request)
 
         # When
         result = manager.compute_all()
 
         # Then
-        # The system actually combines empty DataFrames, so result exists but may be empty
-        assert result is not None
-        # Check that it handled empty DataFrames without crashing
-        assert isinstance(result, pd.DataFrame)
+        # When all features return empty DataFrames, compute_all returns None
+        assert result is None
 
-    def test_feature_storage_with_duplicate_keys(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_features_config, sample_dataframe):
+    def test_feature_storage_with_duplicate_keys(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_computation_request, sample_dataframe):
         """Test handling of duplicate feature keys during storage."""
         # Given
         manager = FeatureManager(
@@ -407,7 +427,7 @@ class TestFeatureManager:
         manager._features[feature_key] = existing_feature
 
         # When - try to create features that would conflict
-        manager.request_features_update(sample_dataframe, sample_features_config)
+        manager.request_features_update(sample_computation_request)
 
         # Then - should handle conflicts gracefully (overwrites)
         assert len(manager._features) > 0
@@ -424,9 +444,13 @@ class TestFeatureManager:
         feature_def.parameter_sets = []
         feature_def.parsed_parameter_sets = {}
 
-        config = MagicMock(spec=FeaturesConfig)
-        config.feature_definitions = [feature_def]
-        config.dataset_definitions = {"BTCUSD": [Timeframe.MINUTE_1]}
+        dataset_id = DatasetIdentifier("BTCUSD", Timeframe.MINUTE_1)
+
+        request = FeatureComputationRequest(
+            dataset_id=dataset_id,
+            feature_definitions=[feature_def],
+            market_data=sample_dataframe
+        )
 
         manager = FeatureManager(
             feature_factory=mock_factory,
@@ -435,14 +459,14 @@ class TestFeatureManager:
         )
 
         # When
-        manager.request_features_update(sample_dataframe, config)
+        manager.request_features_update(request)
 
         # Then
         assert len(manager._features) == 0
         assert manager._feature_creation_stats["creation_failures"] > 0
         assert manager._feature_creation_stats["successfully_created"] == 0
 
-    def test_update_features_data_with_exception(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_features_config, sample_dataframe):
+    def test_update_features_data_with_exception(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_computation_request, sample_dataframe):
         """Test update_features_data when feature.update() raises exception."""
         # Given
         def create_bad_feature(feature_name, dataset_id, config=None, postfix=""):
@@ -459,7 +483,7 @@ class TestFeatureManager:
             feature_definition_parser=mock_feature_definition_parser,
             feature_computation_config=feature_computation_config,
         )
-        manager.request_features_update(sample_dataframe, sample_features_config)
+        manager.request_features_update(sample_computation_request)
 
         # When - update with new data should handle exceptions
         new_data = pd.DataFrame({"close": [110.0, 111.0]})
@@ -468,7 +492,7 @@ class TestFeatureManager:
         # Then - manager should still be operational
         assert len(manager._features) > 0
 
-    def test_compute_latest_with_feature_exceptions(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_features_config, sample_dataframe):
+    def test_compute_latest_with_feature_exceptions(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_computation_request, sample_dataframe):
         """Test compute_latest when features raise exceptions during computation."""
         # Given
         def create_feature_with_bad_compute_latest(feature_name, dataset_id, config=None, postfix=""):
@@ -485,7 +509,7 @@ class TestFeatureManager:
             feature_definition_parser=mock_feature_definition_parser,
             feature_computation_config=feature_computation_config,
         )
-        manager.request_features_update(sample_dataframe, sample_features_config)
+        manager.request_features_update(sample_computation_request)
 
         # When
         result = manager.compute_latest()
@@ -493,7 +517,7 @@ class TestFeatureManager:
         # Then - should handle exceptions gracefully
         assert result is None  # No valid results due to exceptions
 
-    def test_combine_dataframes_with_different_lengths(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_features_config, sample_dataframe):
+    def test_combine_dataframes_with_different_lengths(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_computation_request, sample_dataframe):
         """Test DataFrame combination with features returning different length DataFrames."""
         # Given
         call_count = [0]
@@ -513,7 +537,7 @@ class TestFeatureManager:
             feature_definition_parser=mock_feature_definition_parser,
             feature_computation_config=feature_computation_config,
         )
-        manager.request_features_update(sample_dataframe, sample_features_config)
+        manager.request_features_update(sample_computation_request)
 
         # When
         result = manager.compute_all()
@@ -531,9 +555,13 @@ class TestFeatureManager:
         feature_def.parameter_sets = []  # No parameter sets
         feature_def.parsed_parameter_sets = {}  # Empty dict
 
-        config = MagicMock(spec=FeaturesConfig)
-        config.feature_definitions = [feature_def]
-        config.dataset_definitions = {"BTCUSD": [Timeframe.MINUTE_1]}
+        dataset_id = DatasetIdentifier("BTCUSD", Timeframe.MINUTE_1)
+
+        request = FeatureComputationRequest(
+            dataset_id=dataset_id,
+            feature_definitions=[feature_def],
+            market_data=sample_dataframe
+        )
 
         manager = FeatureManager(
             feature_factory=mock_feature_factory,
@@ -542,7 +570,7 @@ class TestFeatureManager:
         )
 
         # When
-        manager.request_features_update(sample_dataframe, config)
+        manager.request_features_update(request)
 
         # Then
         assert len(manager._features) > 0  # Should create feature with no_config hash
@@ -550,7 +578,7 @@ class TestFeatureManager:
         feature_keys = list(manager._features.keys())
         assert any(key.param_hash == "no_config" for key in feature_keys)
 
-    def test_dask_compute_exception_handling(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_features_config, sample_dataframe):
+    def test_dask_compute_exception_handling(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_computation_request, sample_dataframe):
         """Test handling of Dask computation exceptions."""
         # Given
         manager = FeatureManager(
@@ -558,7 +586,7 @@ class TestFeatureManager:
             feature_definition_parser=mock_feature_definition_parser,
             feature_computation_config=feature_computation_config,
         )
-        manager.request_features_update(sample_dataframe, sample_features_config)
+        manager.request_features_update(sample_computation_request)
 
         # Mock dask.compute to raise an exception
         with patch('drl_trading_core.core.service.feature_manager.compute') as mock_compute:
@@ -610,21 +638,23 @@ class TestFeatureManager:
         feature_def.parameter_sets = []
         feature_def.parsed_parameter_sets = {}
 
-        config = MagicMock(spec=FeaturesConfig)
-        config.feature_definitions = [feature_def]
-        config.dataset_definitions = {"BTCUSD": [Timeframe.MINUTE_1]}
+        dataset_id = DatasetIdentifier("BTCUSD", Timeframe.MINUTE_1)
 
-        sample_df = pd.DataFrame({
-            "open": [100.0], "high": [105.0], "low": [99.0],
-            "close": [104.0], "volume": [1000]
-        }, index=pd.date_range("2024-01-01 10:03:00", periods=1, freq="1min"))
+        request = FeatureComputationRequest(
+            dataset_id=dataset_id,
+            feature_definitions=[feature_def],
+            market_data=pd.DataFrame({
+                "open": [100.0], "high": [105.0], "low": [99.0],
+                "close": [104.0], "volume": [1000]
+            }, index=pd.date_range("2024-01-01 10:03:00", periods=1, freq="1min"))
+        )
 
         manager = FeatureManager(
             feature_factory=factory,
             feature_definition_parser=mock_feature_definition_parser,
             feature_computation_config=feature_computation_config,
         )
-        manager.request_features_update(sample_df, config)
+        manager.request_features_update(request)
 
         # Reference time is within 1 minute of last data point (10:02:00)
         reference_time = datetime(2024, 1, 1, 10, 2, 30)
@@ -635,7 +665,7 @@ class TestFeatureManager:
         # Then
         assert result is True
 
-    def test_is_caught_up_some_features_not_caught_up(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_features_config, sample_dataframe):
+    def test_is_caught_up_some_features_not_caught_up(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_computation_request, sample_dataframe):
         """Test is_caught_up when some features are not caught up."""
         # Given
         def create_mixed_caught_up_features(feature_name, dataset_id, config=None, postfix=""):
@@ -654,7 +684,7 @@ class TestFeatureManager:
             feature_definition_parser=mock_feature_definition_parser,
             feature_computation_config=feature_computation_config,
         )
-        manager.request_features_update(sample_dataframe, sample_features_config)
+        manager.request_features_update(sample_computation_request)
 
         # Reference time is much later - some features won't be caught up
         reference_time = datetime(2024, 1, 1, 10, 5, 0)
@@ -665,7 +695,7 @@ class TestFeatureManager:
         # Then
         assert result is False
 
-    def test_is_caught_up_feature_exception_handling(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_features_config, sample_dataframe):
+    def test_is_caught_up_feature_exception_handling(self, mock_feature_factory, mock_feature_definition_parser, feature_computation_config, sample_computation_request, sample_dataframe):
         """Test is_caught_up when feature.is_caught_up raises exception."""
         # Given
         def create_feature_with_bad_is_caught_up(feature_name, dataset_id, config=None, postfix=""):
@@ -682,7 +712,7 @@ class TestFeatureManager:
             feature_definition_parser=mock_feature_definition_parser,
             feature_computation_config=feature_computation_config,
         )
-        manager.request_features_update(sample_dataframe, sample_features_config)
+        manager.request_features_update(sample_computation_request)
 
         reference_time = datetime(2024, 1, 1, 10, 5, 0)
 
@@ -814,19 +844,22 @@ class TestFeatureManagerEventTimestampDeduplication:
         feature_def_3.parameter_sets = []
         feature_def_3.parsed_parameter_sets = {}
 
-        config = MagicMock(spec=FeaturesConfig)
-        config.feature_definitions = [feature_def_1, feature_def_2, feature_def_3]
-        config.dataset_definitions = {"EURUSD": [Timeframe.MINUTE_5]}
+        dataset_id = DatasetIdentifier("EURUSD", Timeframe.MINUTE_5)
+
+        request = FeatureComputationRequest(
+            dataset_id=dataset_id,
+            feature_definitions=[feature_def_1, feature_def_2, feature_def_3],
+            market_data=pd.DataFrame({"close": [1.1, 1.2, 1.3]})
+        )
 
         manager = FeatureManager(
             feature_factory=mock_feature_factory,
             feature_definition_parser=mock_feature_definition_parser,
             feature_computation_config=feature_computation_config,
         )
-        sample_data = pd.DataFrame({"close": [1.1, 1.2, 1.3]})
 
         # When: Request features update and compute all
-        manager.request_features_update(sample_data, config)
+        manager.request_features_update(request)
         result = manager.compute_all()
 
         # Then: Should have exactly ONE event_timestamp column
@@ -844,8 +877,8 @@ class TestFeatureManagerEventTimestampDeduplication:
         assert "sma_value" in result.columns
         assert "bb_upper_value" in result.columns
 
-        # Then: Verify total column count (1 event_timestamp + 3 feature columns + 1 close from sample_data)
-        assert len(result.columns) == 5, f"Expected 5 columns, got {len(result.columns)}: {list(result.columns)}"
+        # Then: Verify total column count (1 event_timestamp + 3 feature columns)
+        assert len(result.columns) == 4, f"Expected 4 columns, got {len(result.columns)}: {list(result.columns)}"
 
     def test_combine_dataframes_handles_mixed_columns(
         self,
@@ -884,19 +917,22 @@ class TestFeatureManagerEventTimestampDeduplication:
         feature_def_2.parameter_sets = []
         feature_def_2.parsed_parameter_sets = {}
 
-        config = MagicMock(spec=FeaturesConfig)
-        config.feature_definitions = [feature_def_1, feature_def_2]
-        config.dataset_definitions = {"EURUSD": [Timeframe.HOUR_1]}
+        dataset_id = DatasetIdentifier("EURUSD", Timeframe.HOUR_1)
+
+        request = FeatureComputationRequest(
+            dataset_id=dataset_id,
+            feature_definitions=[feature_def_1, feature_def_2],
+            market_data=pd.DataFrame({"close": [1.1, 1.2, 1.3, 1.4, 1.5]})
+        )
 
         manager = FeatureManager(
             feature_factory=mock_feature_factory,
             feature_definition_parser=mock_feature_definition_parser,
             feature_computation_config=feature_computation_config,
         )
-        sample_data = pd.DataFrame({"close": [1.1, 1.2, 1.3, 1.4, 1.5]})
 
         # When: Compute features
-        manager.request_features_update(sample_data, config)
+        manager.request_features_update(request)
         result = manager.compute_all()
 
         # Then: Should deduplicate common columns
@@ -910,5 +946,5 @@ class TestFeatureManagerEventTimestampDeduplication:
         assert "macd_col1" in result.columns
         assert "macd_col2" in result.columns
 
-        # Then: Total columns = 2 common (event_timestamp, symbol) + 4 feature columns + 1 close from sample_data = 7
-        assert len(result.columns) == 7, f"Expected 7 columns, got {len(result.columns)}: {list(result.columns)}"
+        # Then: Total columns = 2 common (event_timestamp, symbol) + 4 feature columns = 6
+        assert len(result.columns) == 6, f"Expected 6 columns, got {len(result.columns)}: {list(result.columns)}"

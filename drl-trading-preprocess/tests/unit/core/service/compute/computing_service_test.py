@@ -9,6 +9,9 @@ import pytest
 from drl_trading_common.config.feature_config import FeaturesConfig
 from drl_trading_common.model.timeframe import Timeframe
 
+from drl_trading_core.core.model.dataset_identifier import DatasetIdentifier
+from drl_trading_core.core.model.feature_computation_request import FeatureComputationRequest
+from drl_trading_core.core.model.feature_definition import FeatureDefinition
 from drl_trading_core.core.service.feature_manager import FeatureManager
 from drl_trading_preprocess.core.service.compute.computing_service import FeatureComputingService
 
@@ -47,11 +50,20 @@ class TestComputingService:
         })
         feature_manager_service_mock.compute_all.return_value = expected_result
 
+        # Create proper FeatureComputationRequest
+        dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe=Timeframe.MINUTE_5)
+        feature_defs = [FeatureDefinition(name="test_feature", enabled=True, derivatives=[0])]
+        request = FeatureComputationRequest(
+            dataset_id=dataset_id,
+            feature_definitions=feature_defs,
+            market_data=sample_df
+        )
+
         # When
-        result = computing_service.compute_batch(sample_df, features_config_mock)
+        result = computing_service.compute_batch(request)
 
         # Then
-        feature_manager_service_mock.request_features_update.assert_called_once_with(sample_df, features_config_mock)
+        feature_manager_service_mock.request_features_update.assert_called_once_with(request)
         feature_manager_service_mock.compute_all.assert_called_once()
         pd.testing.assert_frame_equal(result, expected_result)
         # Verify only ONE event_timestamp column exists
@@ -63,11 +75,20 @@ class TestComputingService:
         sample_df = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
         feature_manager_service_mock.compute_all.return_value = None
 
+        # Create proper FeatureComputationRequest
+        dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe=Timeframe.MINUTE_5)
+        feature_defs = [FeatureDefinition(name="test_feature", enabled=True, derivatives=[0])]
+        request = FeatureComputationRequest(
+            dataset_id=dataset_id,
+            feature_definitions=feature_defs,
+            market_data=sample_df
+        )
+
         # When
-        result = computing_service.compute_batch(sample_df, features_config_mock)
+        result = computing_service.compute_batch(request)
 
         # Then
-        feature_manager_service_mock.request_features_update.assert_called_once_with(sample_df, features_config_mock)
+        feature_manager_service_mock.request_features_update.assert_called_once_with(request)
         feature_manager_service_mock.compute_all.assert_called_once()
         assert result.empty
 
@@ -78,17 +99,20 @@ class TestComputingService:
         expected_df = pd.DataFrame({"Feature1": [10], "Feature2": [40]})
         feature_manager_service_mock.compute_latest.return_value = expected_df
 
+        # Create proper FeatureComputationRequest
+        dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe=Timeframe.MINUTE_5)
+        feature_defs = [FeatureDefinition(name="test_feature", enabled=True, derivatives=[0])]
+        request = FeatureComputationRequest(
+            dataset_id=dataset_id,
+            feature_definitions=feature_defs,
+            market_data=pd.DataFrame([sample_series])
+        )
+
         # When
-        result = computing_service.compute_incremental(sample_series, features_config_mock)
+        result = computing_service.compute_incremental(request)
 
         # Then
-        # Should convert series to dataframe for features update
-        expected_df_call = pd.DataFrame([sample_series])
-        feature_manager_service_mock.request_features_update.assert_called_once()
-        call_args = feature_manager_service_mock.request_features_update.call_args
-        pd.testing.assert_frame_equal(call_args[0][0], expected_df_call)
-        assert call_args[0][1] == features_config_mock
-
+        feature_manager_service_mock.request_features_update.assert_called_once_with(request)
         feature_manager_service_mock.compute_latest.assert_called_once()
         assert isinstance(result, pd.Series)
         pd.testing.assert_series_equal(result, expected_df.iloc[-1])
@@ -99,8 +123,17 @@ class TestComputingService:
         sample_series = pd.Series({"A": 1, "B": 4})
         feature_manager_service_mock.compute_latest.return_value = None
 
+        # Create proper FeatureComputationRequest
+        dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe=Timeframe.MINUTE_5)
+        feature_defs = [FeatureDefinition(name="test_feature", enabled=True, derivatives=[0])]
+        request = FeatureComputationRequest(
+            dataset_id=dataset_id,
+            feature_definitions=feature_defs,
+            market_data=pd.DataFrame([sample_series])
+        )
+
         # When
-        result = computing_service.compute_incremental(sample_series, features_config_mock)
+        result = computing_service.compute_incremental(request)
 
         # Then
         assert isinstance(result, pd.Series)
@@ -112,8 +145,17 @@ class TestComputingService:
         sample_series = pd.Series({"A": 1, "B": 4})
         feature_manager_service_mock.compute_latest.return_value = pd.DataFrame()
 
+        # Create proper FeatureComputationRequest
+        dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe=Timeframe.MINUTE_5)
+        feature_defs = [FeatureDefinition(name="test_feature", enabled=True, derivatives=[0])]
+        request = FeatureComputationRequest(
+            dataset_id=dataset_id,
+            feature_definitions=feature_defs,
+            market_data=pd.DataFrame([sample_series])
+        )
+
         # When
-        result = computing_service.compute_incremental(sample_series, features_config_mock)
+        result = computing_service.compute_incremental(request)
 
         # Then
         assert isinstance(result, pd.Series)
@@ -290,8 +332,17 @@ class TestComputingServiceFeatureDeduplication:
         })
         feature_manager_service_mock.compute_all.return_value = result_from_feature_manager
 
+        # Create proper FeatureComputationRequest
+        dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe=Timeframe.MINUTE_5)
+        feature_defs = [FeatureDefinition(name="test_feature", enabled=True, derivatives=[0])]
+        request = FeatureComputationRequest(
+            dataset_id=dataset_id,
+            feature_definitions=feature_defs,
+            market_data=sample_df
+        )
+
         # When: Computing features
-        result = computing_service.compute_batch(sample_df, features_config_mock)
+        result = computing_service.compute_batch(request)
 
         # Then: Should have exactly ONE event_timestamp column
         assert "event_timestamp" in result.columns, "Result must contain event_timestamp"
@@ -328,8 +379,17 @@ class TestComputingServiceFeatureDeduplication:
         })
         feature_manager_service_mock.compute_latest.return_value = expected_df
 
+        # Create proper FeatureComputationRequest
+        dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe=Timeframe.MINUTE_5)
+        feature_defs = [FeatureDefinition(name="test_feature", enabled=True, derivatives=[0])]
+        request = FeatureComputationRequest(
+            dataset_id=dataset_id,
+            feature_definitions=feature_defs,
+            market_data=pd.DataFrame([sample_series])
+        )
+
         # When: Computing incremental
-        result = computing_service.compute_incremental(sample_series, features_config_mock)
+        result = computing_service.compute_incremental(request)
 
         # Then: Should return Series with all columns including event_timestamp
         assert isinstance(result, pd.Series)

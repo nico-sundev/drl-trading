@@ -6,7 +6,7 @@ against a real PostgreSQL database using testcontainers for isolation.
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from testcontainers.postgres import PostgresContainer
 
 from drl_trading_adapter.adapter.database.entity.market_data_entity import MarketDataEntity, Base
@@ -97,8 +97,8 @@ class TestMarketDataRepositoryIntegration:
         # Given
         symbol = "EURUSD"
         timeframe = Timeframe.MINUTE_1
-        start_time = datetime(2024, 1, 1, 10, 0, 0)
-        end_time = datetime(2024, 1, 1, 10, 10, 0)
+        start_time = datetime(2024, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+        end_time = datetime(2024, 1, 1, 10, 10, 0, tzinfo=timezone.utc)
 
         # When
         result = repository.get_symbol_data_range(symbol, timeframe, start_time, end_time)
@@ -118,8 +118,8 @@ class TestMarketDataRepositoryIntegration:
         # Given
         symbol = "EURUSD"
         timeframe = Timeframe.MINUTE_1
-        start_time = datetime(2025, 1, 1, 10, 0, 0)  # Future date
-        end_time = datetime(2025, 1, 1, 10, 10, 0)
+        start_time = datetime(2025, 1, 1, 10, 0, 0, tzinfo=timezone.utc)  # Future date
+        end_time = datetime(2025, 1, 1, 10, 10, 0, tzinfo=timezone.utc)
 
         # When
         result = repository.get_symbol_data_range(symbol, timeframe, start_time, end_time)
@@ -132,8 +132,8 @@ class TestMarketDataRepositoryIntegration:
         # Given
         symbols = ["EURUSD", "GBPUSD"]
         timeframe = Timeframe.MINUTE_1
-        start_time = datetime(2024, 1, 1, 10, 0, 0)
-        end_time = datetime(2024, 1, 1, 10, 10, 0)
+        start_time = datetime(2024, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+        end_time = datetime(2024, 1, 1, 10, 10, 0, tzinfo=timezone.utc)
 
         # When
         result = repository.get_multiple_symbols_data_range(symbols, timeframe, start_time, end_time)
@@ -153,8 +153,8 @@ class TestMarketDataRepositoryIntegration:
         # Given
         symbols = []
         timeframe = Timeframe.MINUTE_1
-        start_time = datetime(2024, 1, 1, 10, 0, 0)
-        end_time = datetime(2024, 1, 1, 10, 10, 0)
+        start_time = datetime(2024, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+        end_time = datetime(2024, 1, 1, 10, 10, 0, tzinfo=timezone.utc)
 
         # When
         result = repository.get_multiple_symbols_data_range(symbols, timeframe, start_time, end_time)

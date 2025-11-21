@@ -23,7 +23,11 @@ from drl_trading_core.core.port.feature_store_fetch_port import IFeatureStoreFet
 from drl_trading_core.core.port.market_data_reader_port import MarketDataReaderPort
 from drl_trading_preprocess.core.model.coverage.feature_coverage_analysis import (
     FeatureCoverageAnalysis,
-    FeatureCoverageInfo
+    FeatureCoverageInfo,
+    OhlcvAvailability,
+)
+from drl_trading_preprocess.core.service.coverage.feature_coverage_evaluator import (
+    FeatureCoverageEvaluator,
 )
 
 logger = logging.getLogger(__name__)
@@ -45,7 +49,8 @@ class FeatureCoverageAnalyzer:
     def __init__(
         self,
         feature_store_fetch_port: IFeatureStoreFetchPort,
-        market_data_reader: MarketDataReaderPort
+        market_data_reader: MarketDataReaderPort,
+        feature_coverage_evaluator: FeatureCoverageEvaluator,
     ) -> None:
         """
         Initialize the feature coverage analyzer.
@@ -53,9 +58,11 @@ class FeatureCoverageAnalyzer:
         Args:
             feature_store_fetch_port: Port for fetching features from Feast
             market_data_reader: Port for checking OHLCV data availability
+            feature_coverage_evaluator: Evaluator for coverage analysis operations
         """
         self.feature_store_fetch_port = feature_store_fetch_port
         self.market_data_reader = market_data_reader
+        self.feature_coverage_evaluator = feature_coverage_evaluator
         logger.info("FeatureCoverageAnalyzer initialized")
 
     def analyze_feature_coverage(
@@ -102,7 +109,7 @@ class FeatureCoverageAnalyzer:
         requires_resampling = False
 
         # Step 1b: Fallback to base timeframe if target doesn't exist (cold start scenario)
-        if not ohlcv_availability["available"]:
+        if not ohlcv_availability.available:
             logger.info(
                 f"No data in target timeframe {timeframe.value}, "
                 f"checking base timeframe {base_timeframe.value} for cold start"
@@ -110,10 +117,10 @@ class FeatureCoverageAnalyzer:
             ohlcv_availability = self._check_ohlcv_availability(
                 symbol, base_timeframe, requested_start_time, requested_end_time
             )
-            if ohlcv_availability["available"]:
+            if ohlcv_availability.available:
                 requires_resampling = True
                 logger.info(
-                    f"Found {ohlcv_availability['record_count']} records in base timeframe {base_timeframe.value}. "
+                    f"Found {ohlcv_availability.record_count} records in base timeframe {base_timeframe.value}. "
                     f"Target timeframe {timeframe.value} will be resampled from base."
                 )
 
@@ -122,7 +129,7 @@ class FeatureCoverageAnalyzer:
         adjusted_end_time = requested_end_time
 
         # If no OHLCV data is available, return analysis indicating no data immediately
-        if not ohlcv_availability["available"]:
+        if not ohlcv_availability.available:
             logger.error(
                 f"No OHLCV data available for {symbol} {timeframe.value} "
                 f"in period [{requested_start_time} - {requested_end_time}]"
@@ -135,21 +142,21 @@ class FeatureCoverageAnalyzer:
             )
 
         # Constrain to actual OHLCV data bounds
-        if ohlcv_availability["earliest_timestamp"]:
+        if ohlcv_availability.earliest_timestamp:
             adjusted_start_time = max(
                 requested_start_time,
-                ohlcv_availability["earliest_timestamp"]
+                ohlcv_availability.earliest_timestamp
             )
-        if ohlcv_availability["latest_timestamp"]:
+        if ohlcv_availability.latest_timestamp:
             adjusted_end_time = min(
                 requested_end_time,
-                ohlcv_availability["latest_timestamp"]
+                ohlcv_availability.latest_timestamp
             )
 
         logger.info(
             f"OHLCV availability for {symbol} {timeframe.value}: "
-            f"{ohlcv_availability['record_count']} records "
-            f"[{ohlcv_availability['earliest_timestamp']} - {ohlcv_availability['latest_timestamp']}]"
+            f"{ohlcv_availability.record_count} records "
+            f"[{ohlcv_availability.earliest_timestamp} - {ohlcv_availability.latest_timestamp}]"
         )
 
         if (adjusted_start_time != requested_start_time or
@@ -185,10 +192,10 @@ class FeatureCoverageAnalyzer:
             timeframe=timeframe,
             requested_start_time=requested_start_time,
             requested_end_time=requested_end_time,
-            ohlcv_available=ohlcv_availability["available"],
-            ohlcv_earliest_timestamp=ohlcv_availability["earliest_timestamp"],
-            ohlcv_latest_timestamp=ohlcv_availability["latest_timestamp"],
-            ohlcv_record_count=ohlcv_availability["record_count"],
+            ohlcv_available=ohlcv_availability.available,
+            ohlcv_earliest_timestamp=ohlcv_availability.earliest_timestamp,
+            ohlcv_latest_timestamp=ohlcv_availability.latest_timestamp,
+            ohlcv_record_count=ohlcv_availability.record_count,
             requires_resampling=requires_resampling,
             adjusted_start_time=adjusted_start_time,
             adjusted_end_time=adjusted_end_time,
@@ -196,7 +203,7 @@ class FeatureCoverageAnalyzer:
             existing_features_df=existing_features_df
         )
 
-        logger.info(analysis.get_summary_message())
+        logger.info(self.feature_coverage_evaluator.get_summary_message(analysis))
 
         return analysis
 
@@ -206,7 +213,7 @@ class FeatureCoverageAnalyzer:
         timeframe: Timeframe,
         start_time: datetime,
         end_time: datetime
-    ) -> Dict:
+    ) -> OhlcvAvailability:
         """
         Check OHLCV data availability in TimescaleDB.
 
@@ -217,12 +224,7 @@ class FeatureCoverageAnalyzer:
             end_time: End of period
 
         Returns:
-            Dict with availability info: {
-                "available": bool,
-                "record_count": int,
-                "earliest_timestamp": datetime | None,
-                "latest_timestamp": datetime | None
-            }
+            OhlcvAvailability: Availability information
         """
         try:
             # Use database-side aggregation for efficient availability checking
@@ -235,12 +237,12 @@ class FeatureCoverageAnalyzer:
                 logger.warning(
                     f"No OHLCV data found for {symbol} {timeframe.value}"
                 )
-                return {
-                    "available": False,
-                    "record_count": 0,
-                    "earliest_timestamp": None,
-                    "latest_timestamp": None
-                }
+                return OhlcvAvailability(
+                    available=False,
+                    record_count=0,
+                    earliest_timestamp=None,
+                    latest_timestamp=None
+                )
 
             # Check if requested period overlaps with available data
             has_overlap = (
@@ -255,28 +257,28 @@ class FeatureCoverageAnalyzer:
                     f"Requested period [{start_time} - {end_time}] does not overlap "
                     f"with available OHLCV data [{availability.earliest_timestamp} - {availability.latest_timestamp}]"
                 )
-                return {
-                    "available": False,
-                    "record_count": 0,
-                    "earliest_timestamp": availability.earliest_timestamp,
-                    "latest_timestamp": availability.latest_timestamp
-                }
+                return OhlcvAvailability(
+                    available=False,
+                    record_count=0,
+                    earliest_timestamp=availability.earliest_timestamp,
+                    latest_timestamp=availability.latest_timestamp
+                )
 
-            return {
-                "available": True,
-                "record_count": availability.record_count,
-                "earliest_timestamp": availability.earliest_timestamp,
-                "latest_timestamp": availability.latest_timestamp
-            }
+            return OhlcvAvailability(
+                available=True,
+                record_count=availability.record_count,
+                earliest_timestamp=availability.earliest_timestamp,
+                latest_timestamp=availability.latest_timestamp
+            )
 
         except Exception as e:
             logger.error(f"Error checking OHLCV availability: {e}")
-            return {
-                "available": False,
-                "record_count": 0,
-                "earliest_timestamp": None,
-                "latest_timestamp": None
-            }
+            return OhlcvAvailability(
+                available=False,
+                record_count=0,
+                earliest_timestamp=None,
+                latest_timestamp=None
+            )
 
     def _batch_fetch_features(
         self,

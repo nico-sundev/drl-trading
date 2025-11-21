@@ -72,10 +72,10 @@ class TestPreprocessServiceE2E:
             .with_target_timeframes([Timeframe.MINUTE_5])
             .with_time_range(
                 start=datetime(2024, 1, 1, 0, 0, 0),
-                end=datetime(2024, 1, 1, 1, 0, 0),
+                end=datetime(2024, 1, 1, 4, 0, 0),
             )
             .with_features([rsi_feature])
-            .with_skip_existing(False)
+            .with_skip_existing(True)
             .with_force_recompute(False)
             .with_materialize_online(False)
             .build()
@@ -85,11 +85,12 @@ class TestPreprocessServiceE2E:
         test_request = request.model_dump(mode="json")
 
         # When - Publish preprocessing request (NO handler_id header needed - topic-based routing)
-        publish_kafka_message(topic=input_topic, key="BTCUSD_5m", value=test_request)
+        publish_kafka_message(topic=input_topic, key=request.symbol, value=test_request)
 
         # Then - Wait for service to process and publish completion
+        # Note: Response uses request_id as key, not the input key
         result_message = wait_for_kafka_message(
-            consumer, timeout=30, expected_key="BTCUSD_5m"
+            consumer, timeout=30
         )
 
         # Verify output message structure

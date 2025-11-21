@@ -52,6 +52,9 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
         symbol: str,
         feature_version_info: FeatureConfigVersionInfo,
         feature_view_requests: list[FeatureViewRequestContainer],
+        processing_context: str = "training",
+        requested_start_time: pd.Timestamp | None = None,
+        requested_end_time: pd.Timestamp | None = None,
     ) -> None:
         """
         Store computed features using the configured offline repository and
@@ -59,8 +62,12 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
 
         Args:
             features_df: DataFrame containing the computed features
-            dataset_id: Identifier for the dataset
+            symbol: Symbol identifier
             feature_version_info: Version information for feature tracking
+            feature_view_requests: List of feature view requests
+            processing_context: Context (backfill/training/inference) determines storage strategy
+            requested_start_time: Original requested start time (for filtering backfill results)
+            requested_end_time: Original requested end time (for filtering backfill results)
         """
         # Validate input
         if features_df.empty:
@@ -86,33 +93,64 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
                 "event_timestamp"
             ].dt.tz_localize("UTC")
 
-        # Store features using the configured offline repository
-        stored_count = self.offline_repo.store_features_incrementally(
-            features_df, symbol
-        )
+        # For backfill mode: filter to only requested period before storing
+        # This removes warmup candles that were needed for computation but shouldn't be stored
+        if processing_context == "backfill" and requested_start_time is not None and requested_end_time is not None:
+            original_count = len(features_df)
+            features_df = features_df[
+                (features_df["event_timestamp"] >= requested_start_time) &
+                (features_df["event_timestamp"] <= requested_end_time)
+            ].copy()
+            logger.info(
+                f"Backfill mode: filtered features from {original_count} to {len(features_df)} records "
+                f"for requested period [{requested_start_time} - {requested_end_time}]"
+            )
+
+        if features_df.empty:
+            logger.warning(f"No features in requested period for {symbol}")
+            return
+
+        # Store features using appropriate strategy based on context
+        if processing_context == "backfill":
+            # Backfill: use batch mode (replace existing data for the period)
+            logger.info(f"Storing {len(features_df)} features in BATCH mode (backfill)")
+            stored_count = self.offline_repo.store_features_batch([
+                {"symbol": symbol, "features_df": features_df}
+            ]).get(symbol, 0)
+        else:
+            # Training/Inference: use incremental mode (deduplicate)
+            logger.info(f"Storing {len(features_df)} features in INCREMENTAL mode ({processing_context})")
+            stored_count = self.offline_repo.store_features_incrementally(
+                features_df, symbol
+            )
 
         if stored_count == 0:
             logger.warning(f"No new features stored for {symbol}")
             # Still create feature views even if no new data was stored
             # This is needed for online operations to work properly
-            feature_service_request = FeatureServiceRequestContainer(
-                feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
-                symbol=symbol,
-                feature_version_info=feature_version_info,
-                timeframe=feature_view_requests[0].timeframe if feature_view_requests else None,
-            )
-            self._create_or_update_features(
-                feature_service_request, feature_view_requests
-            )
+            if feature_view_requests:
+                feature_service_request = FeatureServiceRequestContainer(
+                    feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
+                    symbol=symbol,
+                    feature_version_info=feature_version_info,
+                    timeframe=feature_view_requests[0].timeframe,
+                )
+                self._create_or_update_features(
+                    feature_service_request, feature_view_requests
+                )
             return
 
         logger.info(f"Stored {stored_count} feature records for {symbol}")
         # Create and apply Feast feature views
+        if not feature_view_requests:
+            logger.warning(f"No feature view requests provided for {symbol}")
+            return
+
         feature_service_request = FeatureServiceRequestContainer(
             feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             symbol=symbol,
             feature_version_info=feature_version_info,
-            timeframe=feature_view_requests[0].timeframe if feature_view_requests else None,
+            timeframe=feature_view_requests[0].timeframe,
         )
         self._create_or_update_features(
             feature_service_request, feature_view_requests

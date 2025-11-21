@@ -1,5 +1,5 @@
 
-from typing import Optional
+from typing import Callable, Optional
 
 from drl_trading_common import BaseParameterSetConfig
 from drl_trading_common.base.base_feature import BaseFeature
@@ -44,15 +44,42 @@ class RsiFeature(BaseFeature):
         self.indicator_service.add(self.feature_name, index_corrected_dataframe)
 
     def compute_latest(self) -> Optional[DataFrame]:
-        return self.indicator_service.get_latest(self.feature_name)
+        """
+        Get latest RSI value with timestamp.
+
+        Returns:
+            DataFrame with DatetimeIndex and latest RSI value
+        """
+        return self._call_indicator_backend(self.indicator_service.get_latest)
 
     def compute_all(self) -> Optional[DataFrame]:
-        # Create a DataFrame with the same index as the source
-        rsi_values = self.indicator_service.get_all(self.feature_name)
-        # Create result DataFrame with both Time column and feature values
-        df = DataFrame()
-        df[f"rsi_{self.config.length}{self.postfix}"] = rsi_values
-        return df
+        """
+        Get all RSI values with timestamps.
+
+        Returns:
+            DataFrame with DatetimeIndex containing all RSI values.
+            The index preserves the original timestamps from the OHLCV data,
+            enabling proper time-based partitioning in the feature store.
+        """
+        return self._call_indicator_backend(self.indicator_service.get_all)
+
+    def _call_indicator_backend(self, method_call: Callable[[str], Optional[DataFrame]]) -> Optional[DataFrame]:
+        """
+        Generic method to call indicator backend methods in a thread-safe manner.
+
+        Args:
+            method_call: A callable that takes the feature name and returns a DataFrame.
+
+        Returns:
+            DataFrame with DatetimeIndex containing the result of the method call.
+        """
+        result = method_call(self.feature_name)
+        if result is None:
+            return None
+
+        # Rename column to match feature name (indicator returns "rsi", we want "rsi_14" etc.)
+        result.columns = [f"rsi_{self.config.length}{self.postfix}"]
+        return result
 
     def get_sub_features_names(self) -> list[str]:
         return ["value"]

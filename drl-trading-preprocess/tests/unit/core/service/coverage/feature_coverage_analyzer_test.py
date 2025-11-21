@@ -39,16 +39,19 @@ class TestFeatureCoverageAnalyzerInitialization:
         # Given
         mock_feature_store = Mock()
         mock_market_data_reader = Mock()
+        mock_evaluator = Mock()
 
         # When
         analyzer = FeatureCoverageAnalyzer(
             feature_store_fetch_port=mock_feature_store,
-            market_data_reader=mock_market_data_reader
+            market_data_reader=mock_market_data_reader,
+            feature_coverage_evaluator=mock_evaluator
         )
 
         # Then
         assert analyzer.feature_store_fetch_port == mock_feature_store
         assert analyzer.market_data_reader == mock_market_data_reader
+        assert analyzer.feature_coverage_evaluator == mock_evaluator
 
 
 class TestOHLCVAvailabilityChecking:
@@ -59,7 +62,8 @@ class TestOHLCVAvailabilityChecking:
         """Create analyzer with mocked dependencies."""
         return FeatureCoverageAnalyzer(
             feature_store_fetch_port=Mock(),
-            market_data_reader=Mock()
+            market_data_reader=Mock(),
+            feature_coverage_evaluator=Mock()
         )
 
     def test_check_ohlcv_availability_with_data(self, analyzer: FeatureCoverageAnalyzer) -> None:
@@ -83,10 +87,10 @@ class TestOHLCVAvailabilityChecking:
         )
 
         # Then
-        assert result["available"] is True
-        assert result["record_count"] == 100
-        assert result["earliest_timestamp"] == START_TIME
-        assert result["latest_timestamp"] == END_TIME
+        assert result.available is True
+        assert result.record_count == 100
+        assert result.earliest_timestamp == START_TIME
+        assert result.latest_timestamp == END_TIME
         analyzer.market_data_reader.get_data_availability.assert_called_once_with(
             symbol=TEST_SYMBOL,
             timeframe=TEST_TIMEFRAME
@@ -113,10 +117,10 @@ class TestOHLCVAvailabilityChecking:
         )
 
         # Then
-        assert result["available"] is False
-        assert result["record_count"] == 0
-        assert result["earliest_timestamp"] is None
-        assert result["latest_timestamp"] is None
+        assert result.available is False
+        assert result.record_count == 0
+        assert result.earliest_timestamp is None
+        assert result.latest_timestamp is None
 
     def test_check_ohlcv_availability_no_overlap(self, analyzer: FeatureCoverageAnalyzer) -> None:
         """Test OHLCV availability check when requested period doesn't overlap with available data."""
@@ -143,11 +147,11 @@ class TestOHLCVAvailabilityChecking:
         )
 
         # Then
-        assert result["available"] is False
-        assert result["record_count"] == 0
+        assert result.available is False
+        assert result.record_count == 0
         # Should still return the actual data bounds
-        assert result["earliest_timestamp"] == datetime(2024, 1, 1)
-        assert result["latest_timestamp"] == datetime(2024, 1, 10)
+        assert result.earliest_timestamp == datetime(2024, 1, 1)
+        assert result.latest_timestamp == datetime(2024, 1, 10)
 
     def test_check_ohlcv_availability_exception_handling(self, analyzer: FeatureCoverageAnalyzer) -> None:
         """Test OHLCV availability check handles exceptions gracefully."""
@@ -165,10 +169,10 @@ class TestOHLCVAvailabilityChecking:
         )
 
         # Then
-        assert result["available"] is False
-        assert result["record_count"] == 0
-        assert result["earliest_timestamp"] is None
-        assert result["latest_timestamp"] is None
+        assert result.available is False
+        assert result.record_count == 0
+        assert result.earliest_timestamp is None
+        assert result.latest_timestamp is None
 
 
 class TestBatchFetchFeatures:
@@ -179,7 +183,8 @@ class TestBatchFetchFeatures:
         """Create analyzer with mocked dependencies."""
         return FeatureCoverageAnalyzer(
             feature_store_fetch_port=Mock(),
-            market_data_reader=Mock()
+            market_data_reader=Mock(),
+            feature_coverage_evaluator=Mock()
         )
 
     @pytest.fixture
@@ -189,7 +194,7 @@ class TestBatchFetchFeatures:
             semver="1.0.0",
             hash="abc123",
             created_at=datetime(2024, 1, 1),
-            feature_definitions=[]
+            feature_definitions=[{"name": "rsi"}, {"name": "sma"}]  # Add dummy feature definitions
         )
 
     def test_batch_fetch_features_success(
@@ -292,7 +297,8 @@ class TestIndividualFeatureAnalysis:
         """Create analyzer with mocked dependencies."""
         return FeatureCoverageAnalyzer(
             feature_store_fetch_port=Mock(),
-            market_data_reader=Mock()
+            market_data_reader=Mock(),
+            feature_coverage_evaluator=Mock()
         )
 
     def test_analyze_fully_covered_features(self, analyzer: FeatureCoverageAnalyzer) -> None:
@@ -410,7 +416,8 @@ class TestMissingPeriodsIdentification:
         """Create analyzer with mocked dependencies."""
         return FeatureCoverageAnalyzer(
             feature_store_fetch_port=Mock(),
-            market_data_reader=Mock()
+            market_data_reader=Mock(),
+            feature_coverage_evaluator=Mock()
         )
 
     def test_identify_no_missing_periods(self, analyzer: FeatureCoverageAnalyzer) -> None:
@@ -434,10 +441,10 @@ class TestMissingPeriodsIdentification:
         timestamps = pd.date_range(start=START_TIME, end=END_TIME, freq='1h')
         values = [50.0] * len(timestamps)
         # Create a gap from index 5 to 8
-        values[5] = None
-        values[6] = None
-        values[7] = None
-        values[8] = None
+        values[5] = None  # type: ignore[assignment]
+        values[6] = None  # type: ignore[assignment]
+        values[7] = None  # type: ignore[assignment]
+        values[8] = None  # type: ignore[assignment]
         feature_series = pd.Series(values, index=timestamps)
 
         # When
@@ -459,10 +466,10 @@ class TestMissingPeriodsIdentification:
         timestamps = pd.date_range(start=START_TIME, end=END_TIME, freq='1h')
         values = [50.0] * len(timestamps)
         # Create two separate gaps
-        values[5] = None
-        values[6] = None
-        values[15] = None
-        values[16] = None
+        values[5] = None  # type: ignore[assignment]
+        values[6] = None  # type: ignore[assignment]
+        values[15] = None  # type: ignore[assignment]
+        values[16] = None  # type: ignore[assignment]
         feature_series = pd.Series(values, index=timestamps)
 
         # When
@@ -480,11 +487,11 @@ class TestMissingPeriodsIdentification:
         timestamps = pd.date_range(start=START_TIME, end=END_TIME, freq='1h')
         values = [50.0] * len(timestamps)
         # Missing at start
-        values[0] = None
-        values[1] = None
+        values[0] = None  # type: ignore[assignment]
+        values[1] = None  # type: ignore[assignment]
         # Missing at end
-        values[-2] = None
-        values[-1] = None
+        values[-2] = None  # type: ignore[assignment]
+        values[-1] = None  # type: ignore[assignment]
         feature_series = pd.Series(values, index=timestamps)
 
         # When
@@ -507,7 +514,8 @@ class TestFullCoverageAnalysis:
         mock_market_data_reader = Mock()
         return FeatureCoverageAnalyzer(
             feature_store_fetch_port=mock_feature_store,
-            market_data_reader=mock_market_data_reader
+            market_data_reader=mock_market_data_reader,
+            feature_coverage_evaluator=Mock()
         )
 
     @pytest.fixture
@@ -517,7 +525,7 @@ class TestFullCoverageAnalysis:
             semver="1.0.0",
             hash="abc123",
             created_at=datetime(2024, 1, 1),
-            feature_definitions=[]
+            feature_definitions=[{"name": "rsi"}, {"name": "sma"}]  # Add dummy feature definitions
         )
 
     def test_analyze_coverage_success_with_data(
@@ -649,7 +657,8 @@ class TestNoDataAnalysisCreation:
         """Create analyzer with mocked dependencies."""
         return FeatureCoverageAnalyzer(
             feature_store_fetch_port=Mock(),
-            market_data_reader=Mock()
+            market_data_reader=Mock(),
+            feature_coverage_evaluator=Mock()
         )
 
     def test_create_no_data_analysis(self, analyzer: FeatureCoverageAnalyzer) -> None:

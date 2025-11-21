@@ -7,7 +7,7 @@ against a real PostgreSQL database using testcontainers for isolation.
 
 import pytest
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 from testcontainers.postgres import PostgresContainer
 
 from drl_trading_adapter.adapter.database.entity.market_data_entity import MarketDataEntity, Base
@@ -68,9 +68,9 @@ class TestMarketDataRepoIntegration:
         """Sample market data DataFrame for testing."""
         return pd.DataFrame({
             'timestamp': [
-                datetime(2024, 1, 1, 10, 0),
-                datetime(2024, 1, 1, 11, 0),
-                datetime(2024, 1, 1, 12, 0)
+                datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
+                datetime(2024, 1, 1, 11, 0, tzinfo=timezone.utc),
+                datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)
             ],
             'open_price': [100.0, 101.5, 102.0],
             'high_price': [101.0, 102.5, 103.0],
@@ -101,7 +101,7 @@ class TestMarketDataRepoIntegration:
             first_entity = saved_entities[0]
             assert first_entity.symbol == symbol
             assert first_entity.timeframe == timeframe
-            assert first_entity.timestamp == datetime(2024, 1, 1, 10, 0)
+            assert first_entity.timestamp == datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc)
             assert first_entity.open_price == 100.0
             assert first_entity.high_price == 101.0
             assert first_entity.low_price == 99.5
@@ -154,7 +154,7 @@ class TestMarketDataRepoIntegration:
 
         # Then
         assert latest_timestamp is not None
-        assert latest_timestamp == datetime(2024, 1, 1, 12, 0).isoformat()
+        assert latest_timestamp == datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc).isoformat()
 
     def test_get_latest_timestamp_no_data(self, repository):
         """Test latest timestamp for non-existent symbol."""
@@ -188,7 +188,7 @@ class TestMarketDataRepoIntegration:
         symbol = "NOVOL"
         timeframe = "1h"
         data_without_volume = pd.DataFrame({
-            'timestamp': [datetime(2024, 1, 1, 10, 0)],
+            'timestamp': [datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc)],
             'open_price': [100.0],
             'high_price': [101.0],
             'low_price': [99.0],
@@ -217,7 +217,7 @@ class TestMarketDataRepoIntegration:
         symbol = "NULLVOL"
         timeframe = "1h"
         data_with_null_volumes = pd.DataFrame({
-            'timestamp': [datetime(2024, 1, 1, 10, 0), datetime(2024, 1, 1, 11, 0)],
+            'timestamp': [datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc), datetime(2024, 1, 1, 11, 0, tzinfo=timezone.utc)],
             'open_price': [100.0, 101.0],
             'high_price': [101.0, 102.0],
             'low_price': [99.0, 100.0],
@@ -243,10 +243,10 @@ class TestMarketDataRepoIntegration:
         """Test storing data for multiple symbols and timeframes."""
         # Given
         test_data = [
-            ("AAPL", "1h", datetime(2024, 1, 1, 10, 0)),
-            ("AAPL", "5m", datetime(2024, 1, 1, 10, 0)),
-            ("GOOGL", "1h", datetime(2024, 1, 1, 10, 0)),
-            ("GOOGL", "1d", datetime(2024, 1, 1, 0, 0)),
+            ("AAPL", "1h", datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc)),
+            ("AAPL", "5m", datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc)),
+            ("GOOGL", "1h", datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc)),
+            ("GOOGL", "1d", datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc)),
         ]
 
         # When - Save data for each combination
@@ -282,7 +282,7 @@ class TestMarketDataRepoIntegration:
 
         # Create data with the same timestamp (should trigger upsert)
         df1 = pd.DataFrame({
-            'timestamp': [datetime(2024, 1, 1, 10, 0)],
+            'timestamp': [datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc)],
             'open_price': [100.0],
             'high_price': [101.0],
             'low_price': [99.0],
@@ -291,7 +291,7 @@ class TestMarketDataRepoIntegration:
         })
 
         df2 = pd.DataFrame({
-            'timestamp': [datetime(2024, 1, 1, 10, 0)],  # Same timestamp
+            'timestamp': [datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc)],  # Same timestamp
             'open_price': [110.0],  # Different values
             'high_price': [111.0],
             'low_price': [109.0],

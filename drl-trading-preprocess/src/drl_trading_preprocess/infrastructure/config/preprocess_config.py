@@ -10,54 +10,47 @@ from drl_trading_common.config.feature_config import FeatureStoreConfig
 from drl_trading_common.config.infrastructure_config import InfrastructureConfig
 from drl_trading_common.config.kafka_config import KafkaConsumerConfig, KafkaTopicConfig
 from drl_trading_common.config.service_logging_config import ServiceLoggingConfig
+from drl_trading_common.config.validators import StrictAfterMergeSchema
 
 
-class DataSourceConfig(BaseSchema):
-    """Data source configuration for preprocessing."""
-    input_path: str = "data/raw/"
-    supported_formats: list[str] = ["csv", "parquet", "json"]
-    batch_size: int = 1000
+class FeatureComputationConfig(StrictAfterMergeSchema):
+    """Configuration for feature computation operations.
+
+    Fields are optional to allow YAML merging (base + stage-specific),
+    but validation ensures all are present after merge.
+    """
+    # Indicator warmup settings
+    warmup_candles: int | None = None  # Number of candles to use for indicator warmup
 
 
-class FeatureEngineeringConfig(BaseSchema):
-    """Feature engineering configuration."""
-    enabled_features: list[str] = ["technical_indicators", "market_data", "sentiment"]
-    lookback_period: int = 30
-    scaling_method: str = "standard"  # standard | minmax | robust
+class ResampleConfig(StrictAfterMergeSchema):
+    """Configuration for market data resampling operations.
 
-
-class OutputConfig(BaseSchema):
-    """Output configuration for processed data."""
-    output_path: str = "data/processed/"
-    format: str = "parquet"
-    compression: str = "snappy"
-    validation_enabled: bool = True
-
-
-class ResampleConfig(BaseSchema):
-    """Configuration for market data resampling operations."""
+    Fields are optional to allow YAML merging (base + stage-specific),
+    but validation ensures all are present after merge.
+    """
     # Historical data limits to prevent memory issues
-    historical_start_date: datetime = datetime(2020, 1, 1)
-    max_batch_size: int = 100000  # Maximum records to process in memory
+    historical_start_date: datetime | None = None
+    max_batch_size: int | None = None
 
     # Performance settings
-    progress_log_interval: int = 10000  # Log progress every N records
-    enable_incomplete_candle_publishing: bool = True  # Emit incomplete final candles (useful for real-time scenarios)
+    progress_log_interval: int | None = None
+    enable_incomplete_candle_publishing: bool | None = None
 
     # Memory management
-    chunk_size: int = 50000  # Process data in chunks of this size
-    memory_warning_threshold_mb: int = 1000  # Warn if memory usage exceeds this
+    chunk_size: int | None = None
+    memory_warning_threshold_mb: int | None = None
 
     # Pagination settings for stateful processing
-    pagination_limit: int = 10000  # Number of records to fetch per page
-    max_memory_usage_mb: int = 512  # Maximum memory usage before triggering cleanup
+    pagination_limit: int | None = None
+    max_memory_usage_mb: int | None = None
 
     # State persistence configuration
-    state_persistence_enabled: bool = True
-    state_file_path: str = "state/resampling_context.json"  # Path to store ResamplingContext state
-    state_backup_interval: int = 1000  # Save state every N processed records
-    auto_cleanup_inactive_symbols: bool = True  # Automatically clean up inactive symbols
-    inactive_symbol_threshold_hours: int = 24  # Hours after which symbols are considered inactive
+    state_persistence_enabled: bool | None = None
+    state_file_path: str | None = None
+    state_backup_interval: int | None = None
+    auto_cleanup_inactive_symbols: bool | None = None
+    inactive_symbol_threshold_hours: int | None = None
 
 
 class DaskConfigs(BaseSchema):
@@ -127,7 +120,8 @@ class PreprocessConfig(BaseApplicationConfig):
     # T005 logging configuration for ServiceLogger
     logging: ServiceLoggingConfig = Field(default_factory=ServiceLoggingConfig)
     feature_store_config: FeatureStoreConfig | None = None  # Stage-specific override
-    resample_config: ResampleConfig = Field(default_factory=ResampleConfig)
+    feature_computation_config: FeatureComputationConfig  # Required - must be in YAML
+    resample_config: ResampleConfig  # Required - must be in YAML
     dask_configs: DaskConfigs = Field(default_factory=DaskConfigs)
     kafka_consumers: KafkaConsumerConfig | None = None  # Stage-specific override
     kafka_topics: KafkaTopicsConfig | None = Field(

@@ -77,4 +77,7 @@ logs/*
 !example.env
 
 # feast
-*.db
+*/data/feature_store/*/*.db
+*/data/feature_store/*.parquet
+*/data/feature_store/*.json
+**/data/feature_store/**

@@ -36,15 +36,17 @@ from drl_trading_preprocess.core.port.preprocessing_message_publisher_port impor
 from drl_trading_preprocess.core.port.state_persistence_port import (
     IStatePersistencePort,
 )
-from drl_trading_preprocess.core.service.resample.noop_state_persistence_service import (
+from drl_trading_preprocess.adapter.resampling.noop_state_persistence_service import (
     NoOpStatePersistenceService,
 )
-from drl_trading_preprocess.core.service.resample.state_persistence_service import (
+from drl_trading_preprocess.adapter.resampling.state_persistence_service import (
     StatePersistenceService,
 )
 from drl_trading_preprocess.infrastructure.config.preprocess_config import (
     PreprocessConfig,
     DaskConfigs,
+    ResampleConfig,
+    FeatureComputationConfig as PreprocessFeatureComputationConfig,
 )
 from drl_trading_core.core.config.feature_computation_config import (
     FeatureComputationConfig,
@@ -95,6 +97,18 @@ class PreprocessModule(Module):
     def provide_dask_configs(self) -> DaskConfigs:
         """Provide Dask configurations collection for parallel processing."""
         return self._config.dask_configs
+
+    @provider
+    @singleton
+    def provide_resample_config(self) -> ResampleConfig:
+        """Provide resample configuration."""
+        return self._config.resample_config
+
+    @provider
+    @singleton
+    def provide_preprocess_feature_computation_config(self) -> PreprocessFeatureComputationConfig:
+        """Provide preprocess feature computation configuration."""
+        return self._config.feature_computation_config
 
     @provider
     @singleton

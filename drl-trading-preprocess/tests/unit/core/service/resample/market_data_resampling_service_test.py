@@ -19,7 +19,7 @@ from drl_trading_preprocess.core.service.resample.candle_accumulator_service imp
     CandleAccumulatorService,
 )
 from drl_trading_preprocess.core.model.resample.resampling_response import ResamplingResponse
-from drl_trading_preprocess.core.service.resample.noop_state_persistence_service import NoOpStatePersistenceService
+from drl_trading_preprocess.adapter.resampling.noop_state_persistence_service import NoOpStatePersistenceService
 from drl_trading_preprocess.infrastructure.config.preprocess_config import (
     ResampleConfig,
 )
@@ -61,11 +61,6 @@ class TestMarketDataResamplingService:
     def candle_accumulator_service(self):
         """Create candle accumulator service."""
         return CandleAccumulatorService()
-
-    @pytest.fixture
-    def resample_config(self):
-        """Create resample configuration for testing."""
-        return ResampleConfig()
 
     @pytest.fixture
     def resampling_service(
@@ -179,14 +174,16 @@ class TestMarketDataResamplingService:
         mock_market_data_reader,
         mock_message_publisher,
         candle_accumulator_service,
+        resample_config,
     ):
         """Test resampling service uses custom configuration values."""
         # Given
         from datetime import datetime
 
-        custom_config = ResampleConfig(
-            historical_start_date=datetime(2018, 6, 1), progress_log_interval=5000
-        )
+        # Create custom config based on the test config
+        custom_config = resample_config.model_copy()
+        custom_config.historical_start_date = datetime(2018, 6, 1)
+        custom_config.progress_log_interval = 5000
 
         service = MarketDataResamplingService(
             market_data_reader=mock_market_data_reader,
@@ -381,6 +378,7 @@ class TestMarketDataResamplingService:
         mock_market_data_reader,
         mock_message_publisher,
         candle_accumulator_service,
+        resample_config,
     ):
         """Test that incomplete candle publishing configuration works correctly."""
         # Given - Create 6 minutes of data (one complete 5m period + one incomplete)
@@ -404,7 +402,8 @@ class TestMarketDataResamplingService:
         mock_market_data_reader.get_symbol_data_range.return_value = incomplete_data
 
         # Test 1: With incomplete candle publishing ENABLED
-        config_enabled = ResampleConfig(enable_incomplete_candle_publishing=True)
+        config_enabled = resample_config.model_copy()
+        config_enabled.enable_incomplete_candle_publishing = True
         service_enabled = MarketDataResamplingService(
             market_data_reader=mock_market_data_reader,
             message_publisher=mock_message_publisher,
@@ -425,7 +424,8 @@ class TestMarketDataResamplingService:
         assert response_enabled.total_new_candles == 2
 
         # Test 2: With incomplete candle publishing DISABLED
-        config_disabled = ResampleConfig(enable_incomplete_candle_publishing=False)
+        config_disabled = resample_config.model_copy()
+        config_disabled.enable_incomplete_candle_publishing = False
         service_disabled = MarketDataResamplingService(
             market_data_reader=mock_market_data_reader,
             message_publisher=mock_message_publisher,

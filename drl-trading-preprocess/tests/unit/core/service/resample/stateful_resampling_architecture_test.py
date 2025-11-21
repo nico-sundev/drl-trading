@@ -7,8 +7,28 @@ from unittest.mock import Mock
 from drl_trading_common.model.timeframe import Timeframe
 from drl_trading_core.common.model.market_data_model import MarketDataModel
 from drl_trading_preprocess.core.service.resample.market_data_resampling_service import MarketDataResamplingService
-from drl_trading_preprocess.core.service.resample.noop_state_persistence_service import NoOpStatePersistenceService
+from drl_trading_preprocess.adapter.resampling.noop_state_persistence_service import NoOpStatePersistenceService
 from drl_trading_preprocess.infrastructure.config.preprocess_config import ResampleConfig
+
+
+@pytest.fixture
+def resample_config() -> ResampleConfig:
+    """Create a complete ResampleConfig for testing."""
+    return ResampleConfig(
+        historical_start_date=datetime(2020, 1, 1),
+        max_batch_size=1000,
+        progress_log_interval=1,
+        enable_incomplete_candle_publishing=True,
+        chunk_size=100,
+        memory_warning_threshold_mb=500,
+        pagination_limit=1000,
+        max_memory_usage_mb=1000,
+        state_persistence_enabled=False,
+        state_file_path="test_state.json",
+        state_backup_interval=3600,
+        auto_cleanup_inactive_symbols=True,
+        inactive_symbol_threshold_hours=24
+    )
 
 
 class TestStatefulResamplingArchitecture:
@@ -33,13 +53,12 @@ class TestStatefulResamplingArchitecture:
         ]
 
     @pytest.fixture
-    def mock_dependencies(self) -> dict:
+    def mock_dependencies(self, resample_config: ResampleConfig) -> dict:
         """Create mock dependencies for the resampling service."""
         # Given
         market_data_reader = Mock()
         message_publisher = Mock()
         candle_accumulator_service = Mock()
-        resample_config = ResampleConfig()
         state_persistence = NoOpStatePersistenceService()
 
         return {
@@ -65,10 +84,10 @@ class TestStatefulResamplingArchitecture:
         assert service.candle_accumulator_service is not None
         assert service.resample_config is not None
 
-    def test_configuration_can_be_extended_for_stateful_processing(self) -> None:
+    def test_configuration_can_be_extended_for_stateful_processing(self, resample_config: ResampleConfig) -> None:
         """Test that configuration can be extended for future stateful processing."""
         # Given
-        config = ResampleConfig()
+        config = resample_config
 
         # When & Then
         # Current config should work
