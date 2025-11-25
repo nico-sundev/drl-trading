@@ -9,7 +9,7 @@ from drl_trading_common.interface.feature.feature_factory_interface import (
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     ITechnicalIndicatorFacade,
 )
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.adapter.model.dataset_identifier import DatasetIdentifier
 from drl_trading_strategy_example.feature.registry.feature_class_registry_interface import (
     IFeatureClassRegistry,
 )

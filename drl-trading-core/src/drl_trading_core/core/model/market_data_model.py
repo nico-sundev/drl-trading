@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Optional
 
 from drl_trading_common.base.base_schema import BaseSchema
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.core.model.timeframe import Timeframe
 
 
 class MarketDataModel(BaseSchema):

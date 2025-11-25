@@ -11,8 +11,8 @@ from typing import Dict, List
 from drl_trading_common.adapter.messaging.kafka_producer_adapter import (
     KafkaProducerAdapter,
 )
-from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model.market_data_model import MarketDataModel
+from drl_trading_common.adapter.model.timeframe import Timeframe
+from drl_trading_adapter.adapter.database.entity.market_data_entity import MarketDataEntity
 from drl_trading_preprocess.core.port.message_publisher_port import StoreResampledDataMessagePublisherPort
 
 
@@ -62,7 +62,7 @@ class KafkaMessagePublisher(StoreResampledDataMessagePublisherPort):
         self,
         symbol: str,
         base_timeframe: Timeframe,
-        resampled_data: Dict[Timeframe, List[MarketDataModel]],
+        resampled_data: Dict[Timeframe, List[MarketDataEntity]],
         new_candles_count: Dict[Timeframe, int],
     ) -> None:
         """

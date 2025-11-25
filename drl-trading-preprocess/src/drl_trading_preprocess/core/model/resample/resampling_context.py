@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Dict, Optional, List
 from dataclasses import dataclass
 
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_preprocess.core.model.resample.timeframe_candle_accumulator import TimeframeCandleAccumulator
 
 

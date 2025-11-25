@@ -15,7 +15,7 @@ from drl_trading_common.config.feature_config import (
     S3RepoConfig,
 )
 from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
-from drl_trading_common.model.feature_config_version_info import (
+from drl_trading_common.adapter.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
 

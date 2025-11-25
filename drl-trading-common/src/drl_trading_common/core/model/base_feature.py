@@ -1,30 +1,19 @@
 from abc import abstractmethod
-from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
+from .base_parameter_set_config import BaseParameterSetConfig
+from .feature_metadata import FeatureMetadata
+from ..port.feature_interface import IFeature
 from drl_trading_common.decorator.feature_role_decorator import get_feature_role_from_class
-from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.interface.computable import Computable
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import ITechnicalIndicatorFacade
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.adapter.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.utils.utils import ensure_datetime_index
 from pandas import DataFrame
 
-@dataclass
-class FeatureMetadata:
-    """Metadata for a feature."""
 
-    config: BaseParameterSetConfig
-    dataset_id: DatasetIdentifier
-    feature_role: FeatureRoleEnum
-    feature_name: str
-    sub_feature_names: list[str]
-    config_to_string: Optional[str] = None
-
-
-class BaseFeature(Computable):
+class BaseFeature(Computable, IFeature):
 
     def __init__(
         self,
@@ -50,46 +39,41 @@ class BaseFeature(Computable):
         Returns:
             DataFrame: Source DataFrame with DatetimeIndex
         """
-        feature_name = description or self.get_feature_name()
+        feature_name = description or self._get_feature_name()
         return ensure_datetime_index(source, f"{feature_name} source data")
 
-    def get_config(self) -> Optional[BaseParameterSetConfig]:
-        """Get the configuration for the feature."""
-        return self.config
-
-    def get_dataset_id(self) -> DatasetIdentifier:
-        """Get the dataset identifier for the feature."""
-        return self.dataset_id
-
-    def get_feature_role(self) -> FeatureRoleEnum:
-        return get_feature_role_from_class(self.__class__)
-
     @abstractmethod
-    def get_sub_features_names(self) -> list[str]:
+    def _get_sub_features_names(self) -> list[str]:
         """Get the names of the sub-features.
         This method should be implemented by subclasses to return the names of the sub-features.
 
         Returns:
             list[str]: A list of sub-feature names.
         """
-        pass
-
-    @abstractmethod
-    def get_feature_name(self) -> str:
-        pass
-
-    @abstractmethod
-    def get_config_to_string(self) -> Optional[str]:
         ...
 
     @abstractmethod
+    def _get_feature_name(self) -> str:
+        ...
+
+    @abstractmethod
+    def _get_config_to_string(self) -> Optional[str]:
+        ...
+
     def get_metadata(self) -> FeatureMetadata:
         """Get the metadata for the feature.
 
         Returns:
             FeatureMetadata: Metadata object containing feature information
         """
-        pass
+        return FeatureMetadata(
+            config=self.config,
+            dataset_id=self.dataset_id,
+            feature_role=get_feature_role_from_class(self.__class__),
+            feature_name=self._get_feature_name(),
+            sub_feature_names=self._get_sub_features_names(),
+            config_to_string=self._get_config_to_string()
+        )
 
     def are_features_caught_up(self, reference_time: datetime) -> bool:
         """

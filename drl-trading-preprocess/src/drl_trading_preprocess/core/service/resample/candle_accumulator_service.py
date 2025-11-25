@@ -8,8 +8,8 @@ with proper period boundary detection and OHLCV aggregation logic.
 import logging
 from datetime import datetime, timedelta
 
-from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model.market_data_model import MarketDataModel
+from drl_trading_common.core.model.timeframe import Timeframe
+from drl_trading_core.core.model.market_data_model import MarketDataModel
 from drl_trading_preprocess.core.model.resample.timeframe_candle_accumulator import TimeframeCandleAccumulator
 
 

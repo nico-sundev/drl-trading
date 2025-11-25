@@ -15,10 +15,9 @@ import pandas as pd
 from injector import inject
 from pandas import DataFrame
 
-from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
-from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model.feature_service_metadata import FeatureServiceMetadata
+from drl_trading_core.core.model.feature_config_version_info import FeatureConfigVersionInfo
+from drl_trading_common.core.model.timeframe import Timeframe
+from drl_trading_core.core.dto.feature_service_metadata import FeatureServiceMetadata
 from drl_trading_core.core.port.feature_store_fetch_port import IFeatureStoreFetchPort
 from drl_trading_core.core.port.market_data_reader_port import MarketDataReaderPort
 from drl_trading_preprocess.core.model.coverage.feature_coverage_analysis import (
@@ -74,6 +73,7 @@ class FeatureCoverageAnalyzer:
         requested_start_time: datetime,
         requested_end_time: datetime,
         feature_config_version_info: FeatureConfigVersionInfo,
+        feature_service_metadata_list: List[FeatureServiceMetadata],
     ) -> FeatureCoverageAnalysis:
         """
         Analyze feature coverage for the given parameters.
@@ -174,7 +174,7 @@ class FeatureCoverageAnalyzer:
             timeframe=timeframe,
             start_time=adjusted_start_time,
             end_time=adjusted_end_time,
-            feature_config_version_info=feature_config_version_info
+            feature_service_metadata_list=feature_service_metadata_list
         )
 
         # Step 4: Analyze coverage for each feature
@@ -286,7 +286,7 @@ class FeatureCoverageAnalyzer:
         timeframe: Timeframe,
         start_time: datetime,
         end_time: datetime,
-        feature_config_version_info: FeatureConfigVersionInfo,
+        feature_service_metadata_list: List[FeatureServiceMetadata],
     ) -> DataFrame:
         """
         Batch fetch all features from Feast for the given period.
@@ -326,32 +326,24 @@ class FeatureCoverageAnalyzer:
 
             # Fetch features for each role separately
             feature_dfs = []
-            for role in [FeatureRoleEnum.OBSERVATION_SPACE, FeatureRoleEnum.REWARD_ENGINEERING]:
+            for feature_service_metadata in feature_service_metadata_list:
                 try:
-                    # Create feature service request for this role
-                    request = FeatureServiceMetadata.create(
-                        symbol=symbol,
-                        feature_role=role,
-                        feature_config_version=feature_config_version_info,
-                        timeframe=timeframe,
-                    )
-
                     # Fetch features from Feast for this role
                     role_features_df = self.feature_store_fetch_port.get_offline(
-                        request, pd.Series(timestamps)
+                        feature_service_metadata, pd.Series(timestamps)
                     )
 
                     if not role_features_df.empty:
                         feature_dfs.append(role_features_df)
                         logger.info(
                             f"Fetched {len(role_features_df)} records with {len(role_features_df.columns)} columns "
-                            f"from Feast for role {role.value}"
+                            f"from Feast for role {feature_service_metadata.feature_service_role.value}"
                         )
                     else:
-                        logger.info(f"No existing features found in Feast for {symbol} {timeframe.value} role {role.value}")
+                        logger.info(f"No existing features found in Feast for {symbol} {timeframe.value} role {feature_service_metadata.feature_service_role.value}")
 
                 except Exception as e:
-                    logger.error(f"Error fetching features for role {role.value}: {e}")
+                    logger.error(f"Error fetching features for role {feature_service_metadata.feature_service_role.value}: {e}")
                     # Continue with other roles
 
             # Merge all feature dataframes

@@ -6,7 +6,7 @@ from unittest.mock import Mock
 import pytest
 from confluent_kafka import Message
 
-from drl_trading_common.model.feature_preprocessing_request import FeaturePreprocessingRequest
+from drl_trading_common.adapter.model.feature_preprocessing_request import FeaturePreprocessingRequest
 from drl_trading_preprocess.adapter.messaging.kafka_message_handler_factory import KafkaMessageHandlerFactory
 from drl_trading_preprocess.core.orchestrator.preprocessing_orchestrator import PreprocessingOrchestrator
 
@@ -57,10 +57,10 @@ class TestKafkaMessageHandlerFactory:
         # Given
         mock_orchestrator = Mock(spec=PreprocessingOrchestrator)
         factory = KafkaMessageHandlerFactory()
-        
+
         # When
         handler = factory.create_preprocessing_request_handler(mock_orchestrator)
-        
+
         # Then
         assert callable(handler), "Handler should be callable"
 
@@ -70,16 +70,16 @@ class TestKafkaMessageHandlerFactory:
         mock_orchestrator = Mock(spec=PreprocessingOrchestrator)
         factory = KafkaMessageHandlerFactory()
         handler = factory.create_preprocessing_request_handler(mock_orchestrator)
-        
+
         mock_message = Mock(spec=Message)
         mock_message.value.return_value = json.dumps(valid_request_data).encode('utf-8')
         mock_message.topic.return_value = "requested.preprocess-data"
         mock_message.partition.return_value = 0
         mock_message.offset.return_value = 100
-        
+
         # When
         handler(mock_message)
-        
+
         # Then
         mock_orchestrator.process_feature_computation_request.assert_called_once()
         call_args = mock_orchestrator.process_feature_computation_request.call_args[0]
@@ -93,17 +93,17 @@ class TestKafkaMessageHandlerFactory:
         mock_orchestrator = Mock(spec=PreprocessingOrchestrator)
         factory = KafkaMessageHandlerFactory()
         handler = factory.create_preprocessing_request_handler(mock_orchestrator)
-        
+
         mock_message = Mock(spec=Message)
         mock_message.value.return_value = b"invalid json {{"
         mock_message.topic.return_value = "requested.preprocess-data"
         mock_message.partition.return_value = 0
         mock_message.offset.return_value = 100
-        
+
         # When / Then
         with pytest.raises(json.JSONDecodeError):
             handler(mock_message)
-        
+
         mock_orchestrator.process_feature_computation_request.assert_not_called()
 
     def test_handler_raises_on_validation_error(self) -> None:
@@ -112,7 +112,7 @@ class TestKafkaMessageHandlerFactory:
         mock_orchestrator = Mock(spec=PreprocessingOrchestrator)
         factory = KafkaMessageHandlerFactory()
         handler = factory.create_preprocessing_request_handler(mock_orchestrator)
-        
+
         mock_message = Mock(spec=Message)
         invalid_data = {
             "request_id": "req-123"
@@ -122,11 +122,11 @@ class TestKafkaMessageHandlerFactory:
         mock_message.topic.return_value = "requested.preprocess-data"
         mock_message.partition.return_value = 0
         mock_message.offset.return_value = 100
-        
+
         # When / Then
         with pytest.raises(Exception):  # Pydantic ValidationError
             handler(mock_message)
-        
+
         mock_orchestrator.process_feature_computation_request.assert_not_called()
 
     def test_handler_propagates_orchestrator_exceptions(self, valid_request_data: dict) -> None:
@@ -134,16 +134,16 @@ class TestKafkaMessageHandlerFactory:
         # Given
         mock_orchestrator = Mock(spec=PreprocessingOrchestrator)
         mock_orchestrator.process_feature_computation_request.side_effect = RuntimeError("Orchestrator error")
-        
+
         factory = KafkaMessageHandlerFactory()
         handler = factory.create_preprocessing_request_handler(mock_orchestrator)
-        
+
         mock_message = Mock(spec=Message)
         mock_message.value.return_value = json.dumps(valid_request_data).encode('utf-8')
         mock_message.topic.return_value = "requested.preprocess-data"
         mock_message.partition.return_value = 0
         mock_message.offset.return_value = 100
-        
+
         # When / Then
         with pytest.raises(RuntimeError, match="Orchestrator error"):
             handler(mock_message)
@@ -154,20 +154,20 @@ class TestKafkaMessageHandlerFactory:
         mock_orchestrator_1 = Mock(spec=PreprocessingOrchestrator)
         mock_orchestrator_2 = Mock(spec=PreprocessingOrchestrator)
         factory = KafkaMessageHandlerFactory()
-        
+
         # When
         handler_1 = factory.create_preprocessing_request_handler(mock_orchestrator_1)
         handler_2 = factory.create_preprocessing_request_handler(mock_orchestrator_2)
-        
+
         mock_message = Mock(spec=Message)
         mock_message.value.return_value = json.dumps(valid_request_data).encode('utf-8')
         mock_message.topic.return_value = "requested.preprocess-data"
         mock_message.partition.return_value = 0
         mock_message.offset.return_value = 100
-        
+
         handler_1(mock_message)
         handler_2(mock_message)
-        
+
         # Then
         mock_orchestrator_1.process_feature_computation_request.assert_called_once()
         mock_orchestrator_2.process_feature_computation_request.assert_called_once()

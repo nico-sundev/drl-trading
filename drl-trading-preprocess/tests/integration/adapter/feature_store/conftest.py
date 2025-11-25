@@ -7,7 +7,7 @@ from drl_trading_adapter.infrastructure.di.adapter_module import AdapterModule
 from drl_trading_common.config.feature_config import (
     FeatureStoreConfig,
 )
-from drl_trading_common.model.feature_config_version_info import (
+from drl_trading_common.adapter.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
 from drl_trading_preprocess.infrastructure.config.preprocess_config import PreprocessConfig

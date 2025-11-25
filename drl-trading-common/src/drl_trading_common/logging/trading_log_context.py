@@ -10,7 +10,7 @@ import uuid
 from typing import Optional, Dict, Any
 from threading import local
 
-from drl_trading_common.model.trading_context import TradingContext
+from drl_trading_common.adapter.model.trading_context import TradingContext
 
 
 class TradingLogContext:

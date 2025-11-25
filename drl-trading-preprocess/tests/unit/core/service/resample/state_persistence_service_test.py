@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_preprocess.core.model.resample.resampling_context import ResamplingContext
 from drl_trading_preprocess.adapter.resampling.state_persistence_service import StatePersistenceService
 

@@ -8,7 +8,7 @@ to ensure proper feature type registration and extraction.
 from unittest.mock import Mock
 
 import pytest
-from drl_trading_common.base.base_feature import BaseFeature
+from drl_trading_common.core.model.base_feature import BaseFeature
 from drl_trading_strategy_example.decorator.feature_type_decorator import (
     feature_type,
     get_feature_type_from_class,
@@ -36,13 +36,13 @@ class TestFeatureTypeDecorator:
             def compute(self) -> DataFrame:
                 return DataFrame()
 
-            def get_sub_features_names(self) -> list[str]:
+            def _get_sub_features_names(self) -> list[str]:
                 return ["test"]
 
-            def get_feature_name(self) -> str:
+            def _get_feature_name(self) -> str:
                 return "test"
 
-            def get_config_to_string(self) -> str:
+            def _get_config_to_string(self) -> str:
                 return "A1b2c3"
 
         # Then
@@ -61,13 +61,13 @@ class TestFeatureTypeDecorator:
             def compute(self) -> DataFrame:
                 return DataFrame()
 
-            def get_sub_features_names(self) -> list[str]:
+            def _get_sub_features_names(self) -> list[str]:
                 return ["test"]
 
-            def get_feature_name(self) -> str:
+            def _get_feature_name(self) -> str:
                 return "test"
 
-            def get_config_to_string(self) -> str:
+            def _get_config_to_string(self) -> str:
                 return "A1b2c3"
 
         # Then
@@ -98,24 +98,24 @@ class TestFeatureTypeDecorator:
             def compute_latest(self) -> DataFrame:
                 return self.compute()
 
-            def get_sub_features_names(self) -> list[str]:
+            def _get_sub_features_names(self) -> list[str]:
                 return ["test_feature"]
 
-            def get_feature_name(self) -> str:
+            def _get_feature_name(self) -> str:
                 return "test_feature"
 
             def custom_method(self) -> str:
                 return "custom_result"
 
-            def get_config_to_string(self) -> str:
+            def _get_config_to_string(self) -> str:
                 return "A1b2c3"
 
         # Then
         instance = TestFeature(Mock(), Mock(), Mock())
         assert instance.custom_attribute == "test_value"
         assert instance.custom_method() == "custom_result"
-        assert instance.get_feature_name() == "test_feature"
-        assert instance.get_sub_features_names() == ["test_feature"]
+        assert instance._get_feature_name() == "test_feature"
+        assert instance._get_sub_features_names() == ["test_feature"]
         result_df = instance.compute()
         assert not result_df.empty
         assert "test" in result_df.columns
@@ -140,13 +140,13 @@ class TestFeatureTypeDecorator:
             def compute_latest(self) -> DataFrame:
                 return self.compute()
 
-            def get_sub_features_names(self) -> list[str]:
+            def _get_sub_features_names(self) -> list[str]:
                 return ["rsi"]
 
-            def get_feature_name(self) -> str:
+            def _get_feature_name(self) -> str:
                 return "rsi"
 
-            def get_config_to_string(self) -> str:
+            def _get_config_to_string(self) -> str:
                 return "A1b2c3"
 
         # Then
@@ -163,18 +163,18 @@ class TestFeatureTypeDecorator:
             def compute(self) -> DataFrame:
                 return DataFrame()
 
-            def get_sub_features_names(self) -> list[str]:
+            def _get_sub_features_names(self) -> list[str]:
                 return ["base"]
 
-            def get_feature_name(self) -> str:
+            def _get_feature_name(self) -> str:
                 return "base"
 
-            def get_config_to_string(self) -> str:
+            def _get_config_to_string(self) -> str:
                 return "A1b2c3"
 
         @feature_type(FeatureTypeEnum.RSI)
         class DerivedTestFeature(BaseTestFeature):
-            def get_feature_name(self) -> str:
+            def _get_feature_name(self) -> str:
                 return "derived"
 
         # Then
@@ -213,13 +213,13 @@ class TestGetFeatureTypeFromClass:
             def compute(self) -> DataFrame:
                 return DataFrame()
 
-            def get_sub_features_names(self) -> list[str]:
+            def _get_sub_features_names(self) -> list[str]:
                 return ["decorated"]
 
-            def get_feature_name(self) -> str:
+            def _get_feature_name(self) -> str:
                 return "decorated"
 
-            def get_config_to_string(self) -> str:
+            def _get_config_to_string(self) -> str:
                 return "A1b2c3"
 
         # When
@@ -236,13 +236,13 @@ class TestGetFeatureTypeFromClass:
             def compute(self) -> DataFrame:
                 return DataFrame()
 
-            def get_sub_features_names(self) -> list[str]:
+            def _get_sub_features_names(self) -> list[str]:
                 return ["undecorated"]
 
-            def get_feature_name(self) -> str:
+            def _get_feature_name(self) -> str:
                 return "undecorated"
 
-            def get_config_to_string(self) -> str:
+            def _get_config_to_string(self) -> str:
                 return "A1b2c3"
 
         # When & Then
@@ -289,13 +289,13 @@ class TestGetFeatureTypeFromClass:
             def compute(self) -> DataFrame:
                 return DataFrame()
 
-            def get_sub_features_names(self) -> list[str]:
+            def _get_sub_features_names(self) -> list[str]:
                 return ["test"]
 
-            def get_feature_name(self) -> str:
+            def _get_feature_name(self) -> str:
                 return "test"
 
-            def get_config_to_string(self) -> str:
+            def _get_config_to_string(self) -> str:
                 return "A1b2c3"
 
         result = get_feature_type_from_class(TestFeature)
@@ -339,13 +339,13 @@ class TestFeatureTypeDecoratorEdgeCases:
             def compute(self) -> DataFrame:
                 return DataFrame()
 
-            def get_sub_features_names(self) -> list[str]:
+            def _get_sub_features_names(self) -> list[str]:
                 return ["original"]
 
-            def get_feature_name(self) -> str:
+            def _get_feature_name(self) -> str:
                 return "original"
 
-            def get_config_to_string(self) -> str:
+            def _get_config_to_string(self) -> str:
                 return "A1b2c3"
 
         # When
@@ -362,13 +362,13 @@ class TestFeatureTypeDecoratorEdgeCases:
             def compute(self) -> DataFrame:
                 return DataFrame()
 
-            def get_sub_features_names(self) -> list[str]:
+            def _get_sub_features_names(self) -> list[str]:
                 return ["first"]
 
-            def get_feature_name(self) -> str:
+            def _get_feature_name(self) -> str:
                 return "first"
 
-            def get_config_to_string(self) -> str:
+            def _get_config_to_string(self) -> str:
                 return "A1b2c3"
 
         @feature_type(FeatureTypeEnum.RSI)
@@ -376,13 +376,13 @@ class TestFeatureTypeDecoratorEdgeCases:
             def compute(self) -> DataFrame:
                 return DataFrame()
 
-            def get_sub_features_names(self) -> list[str]:
+            def _get_sub_features_names(self) -> list[str]:
                 return ["second"]
 
-            def get_feature_name(self) -> str:
+            def _get_feature_name(self) -> str:
                 return "second"
 
-            def get_config_to_string(self) -> str:
+            def _get_config_to_string(self) -> str:
                 return "A1b2c3"
 
         # Then

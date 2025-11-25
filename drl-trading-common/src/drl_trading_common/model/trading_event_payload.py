@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
 
-from drl_trading_common.model.trading_context import TradingContext
+from drl_trading_common.adapter.model.trading_context import TradingContext
 
 
 class TradingEventPayload(BaseModel):

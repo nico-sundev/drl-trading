@@ -8,10 +8,12 @@ from typing import Any
 
 import pytest
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.adapter.model.feature_config_version_info import FeatureConfigVersionInfo
+from drl_trading_common.core.model.timeframe import Timeframe
 
-from drl_trading_core.common.model.feature_service_metadata import FeatureServiceMetadata
+from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+
+from drl_trading_core.core.dto.feature_service_metadata import FeatureServiceMetadata
 
 
 @pytest.fixture
@@ -39,22 +41,23 @@ class TestFeatureServiceRequestContainer:
     ) -> None:
         """Test creating a valid feature service request."""
         # Given
-        symbol = "EURUSD"
+        dataset_identifier = DatasetIdentifier("EURUSD", mock_timeframe)
         feature_role = FeatureRoleEnum.OBSERVATION_SPACE
+        feature_view_metadata_list = []  # Empty for this test
 
         # When
         request = FeatureServiceMetadata.create(
-            symbol=symbol,
-            timeframe=mock_timeframe,
+            dataset_identifier=dataset_identifier,
             feature_role=feature_role,
-            feature_config_version=mock_feature_config_version_info
+            feature_config_version=mock_feature_config_version_info,
+            feature_view_metadata_list=feature_view_metadata_list
         )
 
         # Then
-        assert request.symbol == "EURUSD"
+        assert request.dataset_identifier.symbol == "EURUSD"
         assert request.feature_service_role == FeatureRoleEnum.OBSERVATION_SPACE
         assert request.feature_version_info == mock_feature_config_version_info
-        assert request.timeframe == mock_timeframe
+        assert request.dataset_identifier.timeframe == mock_timeframe
 
     def test_direct_instantiation(
         self,
@@ -63,22 +66,23 @@ class TestFeatureServiceRequestContainer:
     ) -> None:
         """Test direct instantiation of FeatureServiceRequestContainer."""
         # Given
-        symbol = "EURUSD"
+        dataset_identifier = DatasetIdentifier("EURUSD", mock_timeframe)
         feature_role = FeatureRoleEnum.OBSERVATION_SPACE
+        feature_view_metadata_list = []
 
         # When
         request = FeatureServiceMetadata(
-            symbol=symbol,
+            dataset_identifier=dataset_identifier,
             feature_service_role=feature_role,
             feature_version_info=mock_feature_config_version_info,
-            timeframe=mock_timeframe
+            feature_view_metadata_list=feature_view_metadata_list
         )
 
         # Then
-        assert request.symbol == "EURUSD"
+        assert request.dataset_identifier.symbol == "EURUSD"
         assert request.feature_service_role == FeatureRoleEnum.OBSERVATION_SPACE
         assert request.feature_version_info == mock_feature_config_version_info
-        assert request.timeframe == mock_timeframe
+        assert request.dataset_identifier.timeframe == mock_timeframe
 
     def test_validation_empty_symbol(
         self,
@@ -87,15 +91,15 @@ class TestFeatureServiceRequestContainer:
     ) -> None:
         """Test validation fails for empty symbol."""
         # Given
-        empty_symbol = ""
+        empty_dataset_identifier = DatasetIdentifier("", mock_timeframe)
 
         # When/Then
         with pytest.raises(ValueError, match="Symbol must be a non-empty string"):
             FeatureServiceMetadata.create(
-                symbol=empty_symbol,
-                timeframe=mock_timeframe,
+                dataset_identifier=empty_dataset_identifier,
                 feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-                feature_config_version=mock_feature_config_version_info
+                feature_config_version=mock_feature_config_version_info,
+                feature_view_metadata_list=[]
             )
 
     def test_validation_whitespace_only_symbol(
@@ -105,15 +109,15 @@ class TestFeatureServiceRequestContainer:
     ) -> None:
         """Test validation fails for whitespace-only symbol."""
         # Given
-        whitespace_symbol = "   "
+        whitespace_dataset_identifier = DatasetIdentifier("   ", mock_timeframe)
 
         # When/Then
         with pytest.raises(ValueError, match="Symbol must be a non-empty string"):
             FeatureServiceMetadata.create(
-                symbol=whitespace_symbol,
-                timeframe=mock_timeframe,
+                dataset_identifier=whitespace_dataset_identifier,
                 feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-                feature_config_version=mock_feature_config_version_info
+                feature_config_version=mock_feature_config_version_info,
+                feature_view_metadata_list=[]
             )
 
     def test_validation_none_symbol(
@@ -125,10 +129,10 @@ class TestFeatureServiceRequestContainer:
         # Given/When/Then
         with pytest.raises(ValueError, match="Symbol must be a non-empty string"):
             FeatureServiceMetadata.create(
-                symbol=None,  # type: ignore[arg-type]
-                timeframe=mock_timeframe,
+                dataset_identifier=DatasetIdentifier(None, mock_timeframe),  # type: ignore[arg-type]
                 feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-                feature_config_version=mock_feature_config_version_info
+                feature_config_version=mock_feature_config_version_info,
+                feature_view_metadata_list=[]
             )
 
     @pytest.mark.parametrize("invalid_role", [
@@ -146,15 +150,15 @@ class TestFeatureServiceRequestContainer:
     ) -> None:
         """Test validation fails for invalid feature role types."""
         # Given
-        symbol = "EURUSD"
+        dataset_identifier = DatasetIdentifier("EURUSD", mock_timeframe)
 
         # When/Then
         with pytest.raises(ValueError, match="Feature role must be a FeatureRoleEnum"):
             FeatureServiceMetadata.create(
-                symbol=symbol,
-                timeframe=mock_timeframe,
+                dataset_identifier=dataset_identifier,
                 feature_role=invalid_role,  # type: ignore[arg-type]
-                feature_config_version=mock_feature_config_version_info
+                feature_config_version=mock_feature_config_version_info,
+                feature_view_metadata_list=[]
             )
 
     @pytest.mark.parametrize("invalid_feature_version", [
@@ -171,16 +175,16 @@ class TestFeatureServiceRequestContainer:
     ) -> None:
         """Test validation fails for invalid feature version info types."""
         # Given
-        symbol = "EURUSD"
+        dataset_identifier = DatasetIdentifier("EURUSD", mock_timeframe)
         feature_role = FeatureRoleEnum.OBSERVATION_SPACE
 
         # When/Then
         with pytest.raises(ValueError, match="Feature must be a FeatureConfigVersionInfo"):
             FeatureServiceMetadata.create(
-                symbol=symbol,
-                timeframe=mock_timeframe,
+                dataset_identifier=dataset_identifier,
                 feature_role=feature_role,
-                feature_config_version=invalid_feature_version  # type: ignore[arg-type]
+                feature_config_version=invalid_feature_version,  # type: ignore[arg-type]
+                feature_view_metadata_list=[]
             )
 
     @pytest.mark.parametrize("invalid_timeframe", [
@@ -197,16 +201,15 @@ class TestFeatureServiceRequestContainer:
     ) -> None:
         """Test validation fails for invalid timeframe types."""
         # Given
-        symbol = "EURUSD"
-        feature_role = FeatureRoleEnum.OBSERVATION_SPACE
+        dataset_identifier = DatasetIdentifier("EURUSD", invalid_timeframe)  # type: ignore[arg-type]
 
         # When/Then
         with pytest.raises(ValueError, match="Timeframe must be a Timeframe"):
             FeatureServiceMetadata.create(
-                symbol=symbol,
-                timeframe=invalid_timeframe,  # type: ignore[arg-type]
-                feature_role=feature_role,
-                feature_config_version=mock_feature_config_version_info
+                dataset_identifier=dataset_identifier,
+                feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+                feature_config_version=mock_feature_config_version_info,
+                feature_view_metadata_list=[]
             )
 
     def test_get_sanitized_symbol(
@@ -218,10 +221,10 @@ class TestFeatureServiceRequestContainer:
         # Given
         symbol_with_whitespace = "  EURUSD  "
         request = FeatureServiceMetadata(
-            symbol=symbol_with_whitespace,
+            dataset_identifier=DatasetIdentifier(symbol_with_whitespace, mock_timeframe),
             feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             feature_version_info=mock_feature_config_version_info,
-            timeframe=mock_timeframe
+            feature_view_metadata_list=[]
         )
 
         # When
@@ -238,10 +241,10 @@ class TestFeatureServiceRequestContainer:
         """Test sanitized symbol returns empty string for None symbol."""
         # Given
         request = FeatureServiceMetadata(
-            symbol=None,  # type: ignore[arg-type]
+            dataset_identifier=DatasetIdentifier(None, mock_timeframe),  # type: ignore[arg-type]
             feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             feature_version_info=mock_feature_config_version_info,
-            timeframe=mock_timeframe
+            feature_view_metadata_list=[]
         )
 
         # When
@@ -257,24 +260,24 @@ class TestFeatureServiceRequestContainer:
     ) -> None:
         """Test that validation is called when using create factory method."""
         # Given
-        valid_symbol = "EURUSD"
+        valid_dataset_identifier = DatasetIdentifier("EURUSD", mock_timeframe)
         valid_role = FeatureRoleEnum.OBSERVATION_SPACE
 
         # When
         request = FeatureServiceMetadata.create(
-            symbol=valid_symbol,
-            timeframe=mock_timeframe,
+            dataset_identifier=valid_dataset_identifier,
             feature_role=valid_role,
-            feature_config_version=mock_feature_config_version_info
+            feature_config_version=mock_feature_config_version_info,
+            feature_view_metadata_list=[]
         )
 
         # Then
         # Should not raise any exception
         assert request is not None
-        assert request.symbol == valid_symbol
+        assert request.dataset_identifier.symbol == "EURUSD"
         assert request.feature_service_role == valid_role
         assert request.feature_version_info == mock_feature_config_version_info
-        assert request.timeframe == mock_timeframe
+        assert request.dataset_identifier.timeframe == mock_timeframe
 
     def test_manual_validation_call(
         self,
@@ -284,10 +287,10 @@ class TestFeatureServiceRequestContainer:
         """Test calling validation manually on a valid request."""
         # Given
         request = FeatureServiceMetadata(
-            symbol="EURUSD",
+            dataset_identifier=DatasetIdentifier("EURUSD", mock_timeframe),
             feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
             feature_version_info=mock_feature_config_version_info,
-            timeframe=mock_timeframe
+            feature_view_metadata_list=[]
         )
 
         # When/Then
@@ -313,18 +316,18 @@ class TestFeatureServiceRequestContainerBenefits:
         # Given
         # New approach: Self-documenting and clear
         request = FeatureServiceMetadata.create(
-            symbol="EURUSD",
-            timeframe=mock_timeframe,
+            dataset_identifier=DatasetIdentifier("EURUSD", mock_timeframe),
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature_config_version=mock_feature_config_version_info
+            feature_config_version=mock_feature_config_version_info,
+            feature_view_metadata_list=[]
         )
 
         # Then
         # The container makes the intent clear and groups related parameters
-        assert request.symbol == "EURUSD"
+        assert request.dataset_identifier.symbol == "EURUSD"
         assert request.feature_service_role == FeatureRoleEnum.OBSERVATION_SPACE
         assert request.feature_version_info == mock_feature_config_version_info
-        assert request.timeframe == mock_timeframe
+        assert request.dataset_identifier.timeframe == mock_timeframe
         # Parameters are validated as a unit
         # Better testability - can create test fixtures easily
 
@@ -346,10 +349,10 @@ class TestFeatureServiceRequestContainerBenefits:
         # Without breaking any existing calls!
 
         request = FeatureServiceMetadata.create(
-            symbol="EURUSD",
-            timeframe=mock_timeframe,
+            dataset_identifier=DatasetIdentifier("EURUSD", mock_timeframe),
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature_config_version=mock_feature_config_version_info
+            feature_config_version=mock_feature_config_version_info,
+            feature_view_metadata_list=[]
         )
 
         # When/Then
@@ -364,10 +367,10 @@ class TestFeatureServiceRequestContainerBenefits:
         """Demonstrate how the container groups related parameters logically."""
         # Given
         request = FeatureServiceMetadata.create(
-            symbol="EURUSD",
-            timeframe=mock_timeframe,
+            dataset_identifier=DatasetIdentifier("EURUSD", mock_timeframe),
             feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature_config_version=mock_feature_config_version_info
+            feature_config_version=mock_feature_config_version_info,
+            feature_view_metadata_list=[]
         )
 
         # When/Then
@@ -377,7 +380,7 @@ class TestFeatureServiceRequestContainerBenefits:
         # 2. Validate as a cohesive set
         # 3. Test with consistent fixtures
         # 4. Extend without breaking existing interfaces
-        assert request.symbol == "EURUSD"
-        assert request.timeframe == mock_timeframe
+        assert request.dataset_identifier.symbol == "EURUSD"
+        assert request.dataset_identifier.timeframe == mock_timeframe
         assert request.feature_service_role == FeatureRoleEnum.OBSERVATION_SPACE
         assert request.feature_version_info == mock_feature_config_version_info

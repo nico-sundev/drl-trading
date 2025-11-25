@@ -10,13 +10,10 @@ from drl_trading_adapter.adapter.feature_store.util.feature_store_utilities impo
     get_feature_service_name,
 )
 from drl_trading_common.enum import FeatureRoleEnum
-from drl_trading_common.model.feature_config_version_info import (
-    FeatureConfigVersionInfo,
-)
-from drl_trading_core.common.model import FeatureViewMetadata
-from drl_trading_core.common.model.feature_service_metadata import (
+from drl_trading_core.core.dto.feature_service_metadata import (
     FeatureServiceMetadata,
 )
+from drl_trading_core.core.dto.offline_storage_request import OfflineStorageRequest
 from drl_trading_core.core.mapper import FeatureViewNameMapper
 
 from ...core.port import IFeatureStoreSavePort
@@ -48,27 +45,22 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
 
     def store_computed_features_offline(
         self,
-        features_df: DataFrame,
-        symbol: str,
-        feature_version_info: FeatureConfigVersionInfo,
-        feature_view_requests: list[FeatureViewMetadata],
-        processing_context: str = "training",
-        requested_start_time: pd.Timestamp | None = None,
-        requested_end_time: pd.Timestamp | None = None,
+        request: OfflineStorageRequest,
     ) -> None:
         """
         Store computed features using the configured offline repository and
         create Feast feature views and services.
 
         Args:
-            features_df: DataFrame containing the computed features
-            symbol: Symbol identifier
-            feature_version_info: Version information for feature tracking
-            feature_view_requests: List of feature view requests
-            processing_context: Context (backfill/training/inference) determines storage strategy
-            requested_start_time: Original requested start time (for filtering backfill results)
-            requested_end_time: Original requested end time (for filtering backfill results)
+            request: Offline storage request containing all necessary parameters
         """
+        features_df = request.features_df
+        feature_service_metadata = request.feature_service_metadata
+        processing_context = request.processing_context
+        requested_start_time = request.requested_start_time
+        requested_end_time = request.requested_end_time
+        symbol = request.symbol
+
         # Validate input
         if features_df.empty:
             logger.info(f"No features to store for {symbol}")
@@ -93,13 +85,27 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
                 "event_timestamp"
             ].dt.tz_localize("UTC")
 
+        # Still create feature views even if no new data was stored
+        # This is needed for online operations to work properly
+        if not feature_service_metadata.feature_view_metadata_list:
+            logger.warning(
+                f"No feature view metadata provided for {symbol}, skipping Feast object creation"
+            )
+            return
+
+        self._initialize_feast_objects(feature_service_metadata)
+
         # For backfill mode: filter to only requested period before storing
         # This removes warmup candles that were needed for computation but shouldn't be stored
-        if processing_context == "backfill" and requested_start_time is not None and requested_end_time is not None:
+        if (
+            processing_context == "backfill"
+            and requested_start_time is not None
+            and requested_end_time is not None
+        ):
             original_count = len(features_df)
             features_df = features_df[
-                (features_df["event_timestamp"] >= requested_start_time) &
-                (features_df["event_timestamp"] <= requested_end_time)
+                (features_df["event_timestamp"] >= requested_start_time)
+                & (features_df["event_timestamp"] <= requested_end_time)
             ].copy()
             logger.info(
                 f"Backfill mode: filtered features from {original_count} to {len(features_df)} records "
@@ -114,47 +120,23 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
         if processing_context == "backfill":
             # Backfill: use batch mode (replace existing data for the period)
             logger.info(f"Storing {len(features_df)} features in BATCH mode (backfill)")
-            stored_count = self.offline_repo.store_features_batch([
-                {"symbol": symbol, "features_df": features_df}
-            ]).get(symbol, 0)
+            stored_count = self.offline_repo.store_features_batch(
+                [{"symbol": symbol, "features_df": features_df}]
+            ).get(symbol, 0)
         else:
             # Training/Inference: use incremental mode (deduplicate)
-            logger.info(f"Storing {len(features_df)} features in INCREMENTAL mode ({processing_context})")
+            logger.info(
+                f"Storing {len(features_df)} features in INCREMENTAL mode ({processing_context})"
+            )
             stored_count = self.offline_repo.store_features_incrementally(
                 features_df, symbol
             )
 
         if stored_count == 0:
             logger.warning(f"No new features stored for {symbol}")
-            # Still create feature views even if no new data was stored
-            # This is needed for online operations to work properly
-            if feature_view_requests:
-                feature_service_request = FeatureServiceMetadata(
-                    feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
-                    symbol=symbol,
-                    feature_version_info=feature_version_info,
-                    timeframe=feature_view_requests[0].timeframe,
-                )
-                self._create_or_update_features(
-                    feature_service_request, feature_view_requests
-                )
             return
 
         logger.info(f"Stored {stored_count} feature records for {symbol}")
-        # Create and apply Feast feature views
-        if not feature_view_requests:
-            logger.warning(f"No feature view requests provided for {symbol}")
-            return
-
-        feature_service_request = FeatureServiceMetadata(
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            symbol=symbol,
-            feature_version_info=feature_version_info,
-            timeframe=feature_view_requests[0].timeframe,
-        )
-        self._create_or_update_features(
-            feature_service_request, feature_view_requests
-        )
 
     def batch_materialize_features(
         self,
@@ -320,30 +302,28 @@ class FeatureStoreSaveRepository(IFeatureStoreSavePort):
             f"for role '{feature_role.value}' and symbol '{symbol}'. Total records: {total_pushed}"
         )
 
-    def _create_or_update_features(
-        self,
-        feature_service_request: FeatureServiceMetadata,
-        feature_view_requests: list[FeatureViewMetadata],
+    def _initialize_feast_objects(
+        self, feature_service_metadata: FeatureServiceMetadata
     ) -> None:
         """
         Create and apply Feast feature views and services.
 
         Args:
-            symbol: Symbol for which to create feature views
-            feature_version_info: Version info for feature tracking
-            feature_view_requests: List of feature view requests to create
+            feature_service_metadata: Feature service metadata containing all necessary information
         """
-
-        if feature_view_requests is None or len(feature_view_requests) == 0:
+        if (
+            feature_service_metadata.feature_view_metadata_list is None
+            or len(feature_service_metadata.feature_view_metadata_list) == 0
+        ):
             logger.warning(
-                f"No feature view requests provided for {feature_service_request.symbol}, skipping creation"
+                f"No feature view requests provided for {feature_service_metadata.dataset_identifier.symbol}, skipping creation"
             )
             return
 
-        service_name = get_feature_service_name(request=feature_service_request)
+        service_name = get_feature_service_name(request=feature_service_metadata)
 
         # Create feature service combining both views
         self.feast_provider.get_or_create_feature_service(
             service_name=service_name,
-            feature_view_requests=feature_view_requests,
+            feature_view_requests=feature_service_metadata.feature_view_metadata_list,
         )

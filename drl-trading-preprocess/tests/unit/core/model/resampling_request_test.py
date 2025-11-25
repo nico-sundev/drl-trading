@@ -7,7 +7,7 @@ including symbol validation, timeframe hierarchy validation, and request structu
 
 import pytest
 
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_preprocess.core.model.resample.resampling_request import ResamplingRequest
 
 

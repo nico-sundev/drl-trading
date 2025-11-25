@@ -20,11 +20,13 @@ from drl_trading_adapter.adapter.feature_store.offline import IOfflineFeatureRep
 from drl_trading_adapter.adapter.feature_store.provider.feast_provider import FeastProvider
 from drl_trading_adapter.adapter.feature_store.provider.feature_store_wrapper import FeatureStoreWrapper
 from drl_trading_adapter.adapter.feature_store.provider.mapper.feature_field_mapper import IFeatureFieldMapper
-from drl_trading_common.base import BaseFeature
+from drl_trading_common.core.port.feature_interface import IFeature
 from drl_trading_common.config import FeatureStoreConfig
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model import FeatureViewMetadata
+from drl_trading_common.core.model.timeframe import Timeframe
+from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
+from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.core.model.feature_metadata import FeatureMetadata
 
 
 # ================================================================================================
@@ -80,17 +82,15 @@ class FeatureRequestBuilder:
 
     def __init__(self) -> None:
         self._symbol = "EURUSD"
-        self._feature_role = FeatureRoleEnum.OBSERVATION_SPACE
-        self._feature = Mock(spec=BaseFeature)
-        self._feature.get_sub_features_names.return_value = ["sub1", "sub2"]
+        self._feature = Mock(spec=IFeature)
+        self._feature_metadata = Mock(spec=FeatureMetadata)
+        self._feature.get_metadata.return_value = self._feature_metadata
+        self._feature_metadata.sub_feature_names = ["sub1", "sub2"]
+        self._feature_metadata.feature_role = FeatureRoleEnum.OBSERVATION_SPACE
         self._timeframe = Timeframe.HOUR_1
 
     def with_symbol(self, symbol: str) -> "FeatureRequestBuilder":
         self._symbol = symbol
-        return self
-
-    def with_role(self, role: FeatureRoleEnum) -> "FeatureRequestBuilder":
-        self._feature_role = role
         return self
 
     def with_feature(self, feature: Mock) -> "FeatureRequestBuilder":
@@ -98,7 +98,7 @@ class FeatureRequestBuilder:
         return self
 
     def with_sub_features(self, sub_features: list[str]) -> "FeatureRequestBuilder":
-        self._feature.get_sub_features_names.return_value = sub_features
+        self._feature_metadata.sub_feature_names = sub_features
         return self
 
     def with_timeframe(self, timeframe: Timeframe) -> "FeatureRequestBuilder":
@@ -107,11 +107,10 @@ class FeatureRequestBuilder:
 
     def build(self) -> FeatureViewMetadata:
         """Build a FeatureViewRequestContainer with configured values."""
+        dataset_identifier = DatasetIdentifier(symbol=self._symbol, timeframe=self._timeframe)
         return FeatureViewMetadata(
-            symbol=self._symbol,
-            feature_role=self._feature_role,
-            feature=self._feature,
-            timeframe=self._timeframe
+            dataset_identifier=dataset_identifier,
+            feature_metadata=self._feature.get_metadata()
         )
 
 

@@ -2,7 +2,7 @@ import copy
 
 import pytest
 from drl_trading_common.config.application_config import ApplicationConfig
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.core.model.timeframe import Timeframe
 from injector import Injector
 
 from drl_trading_core.common.data_import.local.csv_data_import_service import (

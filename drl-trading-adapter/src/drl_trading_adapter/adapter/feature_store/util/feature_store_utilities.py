@@ -1,5 +1,5 @@
-from drl_trading_core.common.model.feature_service_metadata import FeatureServiceMetadata
-from drl_trading_core.common.model.feature_view_metadata import FeatureViewMetadata
+from drl_trading_core.core.dto.feature_service_metadata import FeatureServiceMetadata
+from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
 
 def get_feature_service_name(
     request: FeatureServiceMetadata
@@ -17,8 +17,8 @@ def get_feature_service_name(
         str: The generated feature service name.
     """
     # Sanitize timeframe value to be SQL-safe (replace hyphens with underscores)
-    sanitized_timeframe = request.timeframe.value.replace("-", "_")
-    return f"{request.feature_service_role.value}_{request.symbol}_{sanitized_timeframe}_{request.feature_version_info.semver}_{request.feature_version_info.hash}"
+    sanitized_timeframe = request.dataset_identifier.timeframe.value.replace("-", "_")
+    return f"{request.feature_service_role.value}_{request.dataset_identifier.symbol}_{sanitized_timeframe}_{request.feature_version_info.semver}_{request.feature_version_info.hash}"
 
 def get_feature_view_name(
     base_feature_view_name: str,
@@ -35,5 +35,5 @@ def get_feature_view_name(
         str: The generated feature view name.
     """
     # Sanitize timeframe value to be SQL-safe (replace hyphens with underscores)
-    sanitized_timeframe = request.timeframe.value.replace("-", "_")
-    return f"{base_feature_view_name}_{request.symbol}_{sanitized_timeframe}"
+    sanitized_timeframe = request.dataset_identifier.timeframe.value.replace("-", "_")
+    return f"{base_feature_view_name}_{request.dataset_identifier.symbol}_{sanitized_timeframe}"

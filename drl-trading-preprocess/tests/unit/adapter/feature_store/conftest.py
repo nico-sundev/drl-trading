@@ -12,15 +12,17 @@ from unittest.mock import Mock
 import pandas as pd
 import pytest
 from drl_trading_common.config.feature_config import FeatureStoreConfig, LocalRepoConfig
+from pandas import DataFrame
 from types import SimpleNamespace
 from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
-from drl_trading_common.model.feature_config_version_info import (
+from drl_trading_common.adapter.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
-from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model.feature_view_metadata import FeatureViewMetadata
-from feast import FeatureService, FeatureStore
-from pandas import DataFrame
+from drl_trading_common.adapter.model.timeframe import Timeframe
+from drl_trading_core.core.dto.feature_service_metadata import FeatureServiceMetadata
+from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
+from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+from feast import FeatureStore, FeatureService
 
 from drl_trading_preprocess.adapter.feature_store import FeatureStoreSaveRepository
 
@@ -172,27 +174,53 @@ def feature_view_requests(
 ) -> list[FeatureViewMetadata]:
     """Create sample FeatureViewRequest list for tests."""
     # Create mock BaseFeature objects for testing
+    from drl_trading_common.core.model.feature_metadata import FeatureMetadata
     from drl_trading_common.enum import FeatureRoleEnum
-    mock_obs_feature = Mock()
-    mock_obs_feature.name = "mock_obs_feature"
 
-    mock_reward_feature = Mock()
-    mock_reward_feature.name = "mock_reward_feature"
+    mock_obs_feature = FeatureMetadata(
+        config=None,
+        dataset_id=DatasetIdentifier(symbol=eurusd_h1_symbol, timeframe=Timeframe.HOUR_1),
+        feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+        feature_name="mock_obs_feature",
+        sub_feature_names=["feature_1", "feature_2"]
+    )
+    mock_reward_feature = FeatureMetadata(
+        config=None,
+        dataset_id=DatasetIdentifier(symbol=eurusd_h1_symbol, timeframe=Timeframe.HOUR_1),
+        feature_role=FeatureRoleEnum.REWARD_ENGINEERING,
+        feature_name="mock_reward_feature",
+        sub_feature_names=["reward_1"]
+    )
+
+    dataset_identifier = DatasetIdentifier(symbol=eurusd_h1_symbol, timeframe=Timeframe.HOUR_1)
 
     return [
         FeatureViewMetadata(
-            symbol=eurusd_h1_symbol,
-            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature=mock_obs_feature,
-            timeframe=Timeframe.HOUR_1,
+            dataset_identifier=dataset_identifier,
+            feature_metadata=mock_obs_feature,
         ),
         FeatureViewMetadata(
-            symbol=eurusd_h1_symbol,
-            feature_role=FeatureRoleEnum.REWARD_ENGINEERING,
-            feature=mock_reward_feature,
-            timeframe=Timeframe.HOUR_1,
+            dataset_identifier=dataset_identifier,
+            feature_metadata=mock_reward_feature,
         ),
     ]
+
+
+@pytest.fixture
+def feature_service_metadata(
+    eurusd_h1_symbol: str,
+    feature_version_info: FeatureConfigVersionInfo,
+    feature_view_requests: list[FeatureViewMetadata],
+) -> FeatureServiceMetadata:
+    """Create a test FeatureServiceMetadata."""
+    from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+
+    return FeatureServiceMetadata.create(
+        dataset_identifier=DatasetIdentifier(symbol=eurusd_h1_symbol, timeframe=Timeframe.HOUR_1),
+        feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+        feature_config_version=feature_version_info,
+        feature_view_metadata_list=feature_view_requests,
+    )
 
 
 @pytest.fixture

@@ -3,11 +3,12 @@ from typing import Optional
 from unittest.mock import MagicMock
 
 import pytest
-from drl_trading_common.base.base_feature import BaseFeature
-from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_common.core.model.base_feature import BaseFeature
+from drl_trading_common.core.model.feature_metadata import FeatureMetadata
+from drl_trading_common.core.model.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import ITechnicalIndicatorFacade
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.core.model.timeframe import Timeframe
 from pandas import DataFrame
 
 
@@ -37,15 +38,15 @@ class MockFeature(BaseFeature):
         """Mock implementation of compute_all method."""
         return DataFrame()
 
-    def get_sub_features_names(self) -> list[str]:
+    def _get_sub_features_names(self) -> list[str]:
         """Mock implementation of get_sub_features_names method."""
         return [f"{self._feature_name}{self.postfix}"]
 
-    def get_feature_name(self) -> str:
+    def _get_feature_name(self) -> str:
         """Mock implementation of get_feature_name method."""
         return self._feature_name
 
-    def get_config_to_string(self) -> Optional[str]:
+    def _get_config_to_string(self) -> Optional[str]:
         """Mock implementation of get_config_to_string method."""
         return "mock_config" if self.config else None
 
@@ -64,6 +65,18 @@ def mock_feature() -> MockFeature:
 
 
 @pytest.fixture
+def mock_feature_metadata() -> FeatureMetadata:
+    """Create a mock feature metadata for testing."""
+    return FeatureMetadata(
+        config="mock_config",
+        dataset_id=DatasetIdentifier("EURUSD", Timeframe.HOUR_1),
+        feature_role="observation_space",
+        feature_name="test_feature",
+        sub_feature_names=["test_feature"]
+    )
+
+
+@pytest.fixture
 def mock_features_list(mock_feature: MockFeature) -> list[BaseFeature]:
     """Create a list of mock features for testing."""
     return [mock_feature]
@@ -73,3 +86,9 @@ def mock_features_list(mock_feature: MockFeature) -> list[BaseFeature]:
 def mock_timeframe() -> Timeframe:
     """Create a mock timeframe for testing."""
     return Timeframe.HOUR_1
+
+
+@pytest.fixture
+def mock_dataset_identifier() -> DatasetIdentifier:
+    """Create a mock dataset identifier for testing."""
+    return DatasetIdentifier(symbol="EURUSD", timeframe=Timeframe.HOUR_1)

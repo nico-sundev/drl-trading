@@ -3,11 +3,11 @@ from unittest.mock import MagicMock
 
 import pytest
 from drl_trading_common import BaseParameterSetConfig
-from drl_trading_common.base.base_feature import BaseFeature
+from drl_trading_common.core.model.base_feature import BaseFeature
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     ITechnicalIndicatorFacade,
 )
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.adapter.model.dataset_identifier import DatasetIdentifier
 from drl_trading_strategy_example.feature.feature_factory import FeatureFactory
 from drl_trading_strategy_example.feature.registry.feature_class_registry_interface import (
     IFeatureClassRegistry,
@@ -143,13 +143,13 @@ def test_create_feature_without_config() -> None:
         def __init__(self, dataset_id, indicator_service, config=None, postfix=""):
             super().__init__(dataset_id, indicator_service, config, postfix)
 
-        def get_sub_features_names(self):
+        def _get_sub_features_names(self):
             return []
 
-        def get_feature_name(self):
+        def _get_feature_name(self):
             return "close"
 
-        def get_config_to_string(self):
+        def _get_config_to_string(self):
             return ""
 
         def compute_all(self):

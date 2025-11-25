@@ -10,8 +10,9 @@ coordinating multiple specialized services to handle real-world scenarios includ
 - Performance optimization for production deployment
 - Parallel coverage analysis using Dask
 """
+
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 import dask
 import pandas as pd
@@ -19,11 +20,17 @@ from dask import delayed
 from injector import inject
 from pandas import DataFrame
 
-from drl_trading_common.model.feature_preprocessing_request import (
-    FeaturePreprocessingRequest,
+from drl_trading_core.core.dto.feature_preprocessing_request import (
+    FeaturePreprocessingRequest
 )
-from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.core.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+from drl_trading_common.core.model.timeframe import Timeframe
+from drl_trading_core.core.dto.offline_storage_request import OfflineStorageRequest
+from drl_trading_core.core.dto.feature_service_metadata import (
+    FeatureServiceMetadata,
+)
+from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
+from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 from drl_trading_core.core.model.feature_computation_request import (
     FeatureComputationRequest,
 )
@@ -50,6 +57,7 @@ from drl_trading_preprocess.core.service.coverage.feature_coverage_evaluator imp
 from drl_trading_preprocess.core.service.resample.market_data_resampling_service import (
     MarketDataResamplingService,
 )
+from drl_trading_core.core.service.feature_manager import FeatureManager
 from drl_trading_preprocess.core.service.validate.feature_validator import (
     FeatureValidator,
 )
@@ -98,6 +106,7 @@ class PreprocessingOrchestrator:
         market_data_resampler: MarketDataResamplingService,
         feature_computer: FeatureComputingService,
         feature_validator: FeatureValidator,
+        feature_manager: FeatureManager,
         feature_store_port: IFeatureStoreSavePort,
         feature_coverage_analyzer: FeatureCoverageAnalyzer,
         feature_coverage_evaluator: FeatureCoverageEvaluator,
@@ -112,6 +121,7 @@ class PreprocessingOrchestrator:
             market_data_resampler: Service for resampling market data to higher timeframes
             feature_computer: Service for dynamic feature computation
             feature_validator: Service for validating feature definitions
+            feature_manager: FeatureManager,
             feature_store_port: Port for saving features to Feast
             feature_coverage_analyzer: Service for analyzing feature coverage
             feature_coverage_evaluator: Service for evaluating coverage analysis results
@@ -122,6 +132,7 @@ class PreprocessingOrchestrator:
         self.market_data_resampler = market_data_resampler
         self.feature_computer = feature_computer
         self.feature_validator = feature_validator
+        self.feature_manager = feature_manager
         self.feature_store_port = feature_store_port
         self.feature_coverage_analyzer = feature_coverage_analyzer
         self.feature_coverage_evaluator = feature_coverage_evaluator
@@ -172,12 +183,20 @@ class PreprocessingOrchestrator:
             # Step 1: Validate request
             self._validate_request(request)
 
+            # Compose feature service metadata once per request
+            enabled_features = request.get_enabled_features()
+            feature_service_metadata_per_timeframe = (
+                self._compose_feature_service_metadata(request, enabled_features)
+            )
+
             # Step 2: Analyze feature coverage (ONCE for entire pipeline)
             # This single analysis provides:
             # - features_needing_computation (for skip_existing logic)
             # - features_needing_warmup (for warmup phase)
             # - OHLCV availability constraints
-            coverage_analyses = self._analyze_feature_coverage(request)
+            coverage_analyses = self._analyze_feature_coverage(
+                request, feature_service_metadata_per_timeframe
+            )
 
             # Step 3: Determine features to compute based on coverage
             features_to_compute = self._filter_features_to_compute(
@@ -186,7 +205,9 @@ class PreprocessingOrchestrator:
 
             # Step 4: Early exit if no computation needed
             if not features_to_compute:
-                logger.info(f"No features to compute for {request.symbol} - all exist or none enabled")
+                logger.info(
+                    f"No features to compute for {request.symbol} - all exist or none enabled"
+                )
 
                 # Publish notification that processing was skipped (all features already exist)
                 self.message_publisher.publish_preprocessing_completed(
@@ -194,7 +215,7 @@ class PreprocessingOrchestrator:
                     processing_context=request.processing_context,
                     total_features_computed=0,
                     timeframes_processed=[],
-                    success_details={"reason": "all_features_exist", "skipped": True}
+                    success_details={"reason": "all_features_exist", "skipped": True},
                 )
                 return
 
@@ -214,7 +235,7 @@ class PreprocessingOrchestrator:
                     processing_context=request.processing_context,
                     error_message="Feature warmup failed",
                     error_details={"failed_step": "feature_warmup"},
-                    failed_step="feature_warmup"
+                    failed_step="feature_warmup",
                 )
                 return
 
@@ -224,11 +245,18 @@ class PreprocessingOrchestrator:
             )
 
             # Step 7: Store features in feature store
-            self._store_computed_features(request, computed_features)
+            self._store_computed_features(
+                request,
+                computed_features,
+                feature_service_metadata_per_timeframe,
+            )
 
             # Step 8: Publish successful completion notification
             # Subtract 2 for event_timestamp and symbol columns (metadata, not features)
-            total_features = sum(len(features_df.columns) - 2 for features_df in computed_features.values())
+            total_features = sum(
+                len(features_df.columns) - 2
+                for features_df in computed_features.values()
+            )
 
             # Update performance tracking
             self._total_requests_processed += 1
@@ -238,7 +266,9 @@ class PreprocessingOrchestrator:
             success_details = {}
             for timeframe, features_df in computed_features.items():
                 # Subtract 2 for event_timestamp and symbol columns (metadata, not features)
-                success_details[f"features_{timeframe.value}"] = len(features_df.columns) - 2
+                success_details[f"features_{timeframe.value}"] = (
+                    len(features_df.columns) - 2
+                )
                 success_details[f"records_{timeframe.value}"] = len(features_df)
 
             # Publish async notification (topic routing based on processing_context)
@@ -247,7 +277,7 @@ class PreprocessingOrchestrator:
                 processing_context=request.processing_context,
                 total_features_computed=total_features,
                 timeframes_processed=list(computed_features.keys()),
-                success_details=success_details
+                success_details=success_details,
             )
 
             logger.info(
@@ -263,7 +293,7 @@ class PreprocessingOrchestrator:
                 processing_context=request.processing_context,
                 error_message=str(e),
                 error_details={"exception_type": type(e).__name__, "traceback": str(e)},
-                failed_step="processing_pipeline"
+                failed_step="processing_pipeline",
             )
 
             logger.error(f"Failed to process request {request.request_id}: {str(e)}")
@@ -286,23 +316,86 @@ class PreprocessingOrchestrator:
             raise ValueError("No enabled features found in request")
 
         # Validate feature definitions against what we can actually compute
-        validation_results = self.feature_validator.validate_definitions(enabled_features)
+        validation_results = self.feature_validator.validate_definitions(
+            enabled_features
+        )
 
-        invalid_features = [name for name, valid in validation_results.items() if not valid]
+        invalid_features = [
+            name for name, valid in validation_results.items() if not valid
+        ]
         if invalid_features:
-            validation_errors = {name: "Feature definition validation failed" for name in invalid_features}
+            validation_errors = {
+                name: "Feature definition validation failed"
+                for name in invalid_features
+            }
 
             # Publish validation error notification
             self.message_publisher.publish_feature_validation_error(
                 request=request,
                 invalid_features=invalid_features,
-                validation_errors=validation_errors
+                validation_errors=validation_errors,
             )
 
             raise ValueError(f"Invalid feature definitions: {invalid_features}")
 
+    def _compose_feature_service_metadata(
+        self,
+        request: FeaturePreprocessingRequest,
+        enabled_features: List[FeatureDefinition],
+    ) -> Dict[Timeframe, List[FeatureServiceMetadata]]:
+        """
+        Compose feature service metadata once per request for all enabled features, grouped by role.
+
+        This creates FeatureServiceMetadata for each role per timeframe, which is used
+        for both coverage analysis and feature storage.
+
+        Args:
+            request: Feature computation request
+            enabled_features: List of enabled feature definitions
+
+        Returns:
+            Dictionary mapping timeframes to lists of FeatureServiceMetadata (one per role)
+        """
+
+        feature_service_metadata_per_timeframe = {}
+        for timeframe in request.target_timeframes:
+            dataset_identifier = self._create_dataset_identifier(
+                request.symbol, timeframe
+            )
+            self.feature_manager.initialize_features(dataset_identifier, enabled_features)
+            metadata_by_role = self.feature_manager.get_feature_metadata_list(
+                enabled_features, dataset_identifier
+            )
+
+            feature_service_metadata_list = []
+            for role, metadata_list in metadata_by_role.items():
+                feature_view_metadata_list = [
+                    FeatureViewMetadata.create(
+                        dataset_identifier=dataset_identifier,
+                        feature_metadata=metadata,
+                    )
+                    for metadata in metadata_list
+                ]
+                feature_service_metadata = FeatureServiceMetadata.create(
+                    dataset_identifier=dataset_identifier,
+                    feature_role=role,
+                    feature_config_version=request.feature_config_version_info,
+                    feature_view_metadata_list=feature_view_metadata_list,
+                )
+                feature_service_metadata_list.append(feature_service_metadata)
+
+            feature_service_metadata_per_timeframe[timeframe] = (
+                feature_service_metadata_list
+            )
+
+        return feature_service_metadata_per_timeframe
+
     def _analyze_feature_coverage(
-        self, request: FeaturePreprocessingRequest
+        self,
+        request: FeaturePreprocessingRequest,
+        feature_service_metadata_per_timeframe: Dict[
+            Timeframe, List[FeatureServiceMetadata]
+        ],
     ) -> Dict[Timeframe, FeatureCoverageAnalysis]:
         """
         Analyze feature coverage for each target timeframe using Dask parallelization.
@@ -324,20 +417,24 @@ class PreprocessingOrchestrator:
         Returns:
             Dictionary mapping timeframes to coverage analysis results
         """
-        feature_names = [f.name for f in request.get_enabled_features()]
 
         # Parallelize coverage analysis using Dask
         # Dask internally handles task queuing based on num_workers
         @delayed
-        def analyze_timeframe(timeframe: Timeframe) -> tuple[Timeframe, FeatureCoverageAnalysis]:
+        def analyze_timeframe(
+            timeframe: Timeframe,
+        ) -> tuple[Timeframe, FeatureCoverageAnalysis]:
             coverage_analysis = self.feature_coverage_analyzer.analyze_feature_coverage(
                 symbol=request.symbol,
                 timeframe=timeframe,
                 base_timeframe=request.base_timeframe,
-                feature_names=feature_names,
+                feature_names=[f.name for f in request.get_enabled_features()],
                 requested_start_time=request.start_time,
                 requested_end_time=request.end_time,
                 feature_config_version_info=request.feature_config_version_info,
+                feature_service_metadata_list=feature_service_metadata_per_timeframe[
+                    timeframe
+                ],
             )
 
             # Log cold start scenario
@@ -402,12 +499,14 @@ class PreprocessingOrchestrator:
         """
         # If force_recompute or not skipping existing, compute all enabled features
         if request.force_recompute or not request.skip_existing_features:
-            logger.info("Computing all enabled features (skip_existing=False or force_recompute=True)")
-            return request.get_enabled_features()
+            logger.info(
+                "Computing all enabled features (skip_existing=False or force_recompute=True)"
+            )
+            return cast(List[FeatureDefinition], request.get_enabled_features())
 
         # Otherwise, use coverage analysis to filter features
         if not coverage_analyses:
-            return request.get_enabled_features()
+            return cast(List[FeatureDefinition], request.get_enabled_features())
 
         # Collect all features needing computation across all timeframes
         features_needing_computation = set()
@@ -422,7 +521,11 @@ class PreprocessingOrchestrator:
                     f"Will resample from base timeframe and compute all features."
                 )
                 # Add all requested features for this timeframe
-                needing_comp = self.feature_coverage_evaluator.get_features_needing_computation(analysis)
+                needing_comp = (
+                    self.feature_coverage_evaluator.get_features_needing_computation(
+                        analysis
+                    )
+                )
                 if needing_comp:
                     features_needing_computation.update(needing_comp)
                     logger.debug(
@@ -430,7 +533,11 @@ class PreprocessingOrchestrator:
                     )
             else:
                 # OHLCV data exists, check which features are missing
-                needing_comp = self.feature_coverage_evaluator.get_features_needing_computation(analysis)
+                needing_comp = (
+                    self.feature_coverage_evaluator.get_features_needing_computation(
+                        analysis
+                    )
+                )
                 if needing_comp:
                     features_needing_computation.update(needing_comp)
                     logger.info(
@@ -438,18 +545,23 @@ class PreprocessingOrchestrator:
                     )
 
         if not features_needing_computation:
-            logger.info("All requested features are fully covered. No computation needed.")
+            logger.info(
+                "All requested features are fully covered. No computation needed."
+            )
             return []
 
         # Return feature definitions for features needing computation
         all_features = request.get_enabled_features()
         return [
-            feature for feature in all_features
+            feature
+            for feature in all_features
             if feature.name in features_needing_computation
         ]
 
     def _resample_market_data(
-        self, request: FeaturePreprocessingRequest, coverage_analyses: Dict[Timeframe, FeatureCoverageAnalysis]
+        self,
+        request: FeaturePreprocessingRequest,
+        coverage_analyses: Dict[Timeframe, FeatureCoverageAnalysis],
     ) -> Dict[Timeframe, DataFrame]:
         """
         Resample market data to all target timeframes.
@@ -476,7 +588,9 @@ class PreprocessingOrchestrator:
         ]
 
         if not target_timeframes:
-            logger.info("No target timeframes require resampling. Skipping resampling step.")
+            logger.info(
+                "No target timeframes require resampling. Skipping resampling step."
+            )
             return {}
 
         logger.info(
@@ -486,16 +600,20 @@ class PreprocessingOrchestrator:
         )
 
         # Use the market data resampling service with processing context
-        resampling_response = self.market_data_resampler.resample_symbol_data_incremental(
-            symbol=request.symbol,
-            base_timeframe=request.base_timeframe,
-            target_timeframes=target_timeframes,
-            processing_context=request.processing_context,
+        resampling_response = (
+            self.market_data_resampler.resample_symbol_data_incremental(
+                symbol=request.symbol,
+                base_timeframe=request.base_timeframe,
+                target_timeframes=target_timeframes,
+                processing_context=request.processing_context,
+            )
         )
 
         # Check if we got valid resampled data
         if not resampling_response.resampled_data:
-            raise RuntimeError(f"Market data resampling failed: No data returned for {request.symbol}")
+            raise RuntimeError(
+                f"Market data resampling failed: No data returned for {request.symbol}"
+            )
 
         # Convert resampled data to DataFrames for feature computation
         resampled_dataframes = {}
@@ -505,17 +623,19 @@ class PreprocessingOrchestrator:
                 # Use capitalized column names for pandas_ta compatibility
                 df_data = []
                 for market_data in market_data_list:
-                    df_data.append({
-                        'timestamp': market_data.timestamp,
-                        'Open': market_data.open_price,
-                        'High': market_data.high_price,
-                        'Low': market_data.low_price,
-                        'Close': market_data.close_price,
-                        'Volume': market_data.volume,
-                    })
+                    df_data.append(
+                        {
+                            "timestamp": market_data.timestamp,
+                            "Open": market_data.open_price,
+                            "High": market_data.high_price,
+                            "Low": market_data.low_price,
+                            "Close": market_data.close_price,
+                            "Volume": market_data.volume,
+                        }
+                    )
 
                 df = DataFrame(df_data)
-                df.set_index('timestamp', inplace=True)
+                df.set_index("timestamp", inplace=True)
                 resampled_dataframes[timeframe] = df
 
                 logger.debug(
@@ -559,17 +679,15 @@ class PreprocessingOrchestrator:
                 feature_definitions=features_to_compute,
                 market_data=market_data,
             )
-            features_df = self.feature_computer.compute_batch(
-                computation_request
-            )
+            features_df = self.feature_computer.compute_batch(computation_request)
 
             if not features_df.empty:
                 # Add required columns for feature store
                 # event_timestamp: Required by Feast for temporal operations
                 # symbol: Required as entity key for feature lookup
                 features_df = features_df.copy()
-                features_df['event_timestamp'] = pd.to_datetime(features_df.index)
-                features_df['symbol'] = request.symbol
+                features_df["event_timestamp"] = pd.to_datetime(features_df.index)
+                features_df["symbol"] = request.symbol
 
                 computed_features[timeframe] = features_df
                 logger.info(
@@ -619,8 +737,12 @@ class PreprocessingOrchestrator:
             # REUSE the coverage analysis instead of calling feature_coverage_analyzer again
             for timeframe, coverage_analysis in coverage_analyses.items():
                 # Check if warmup is needed for this timeframe
-                if not self.feature_coverage_evaluator.get_features_needing_warmup(coverage_analysis):
-                    logger.info(f"No warmup needed for {request.symbol} {timeframe.value}")
+                if not self.feature_coverage_evaluator.get_features_needing_warmup(
+                    coverage_analysis
+                ):
+                    logger.info(
+                        f"No warmup needed for {request.symbol} {timeframe.value}"
+                    )
                     continue
 
                 # Get warmup period from coverage analysis
@@ -628,12 +750,18 @@ class PreprocessingOrchestrator:
                     coverage_analysis, warmup_candles=self.feature_computation_config.warmup_candles  # type: ignore[arg-type]
                 )
                 if not warmup_period:
-                    logger.info(f"No warmup period calculated for {request.symbol} {timeframe.value}")
+                    logger.info(
+                        f"No warmup period calculated for {request.symbol} {timeframe.value}"
+                    )
                     continue
 
                 # Perform warmup using ALREADY RESAMPLED DATA
                 success = self._perform_feature_warmup(
-                    request, features_to_compute, timeframe, warmup_period, resampled_data
+                    request,
+                    features_to_compute,
+                    timeframe,
+                    warmup_period,
+                    resampled_data,
                 )
 
                 if not success:
@@ -653,7 +781,7 @@ class PreprocessingOrchestrator:
         features_to_compute: List[FeatureDefinition],
         timeframe: Timeframe,
         warmup_period: WarmupPeriod,
-        resampled_data: Dict[Timeframe, DataFrame]
+        resampled_data: Dict[Timeframe, DataFrame],
     ) -> bool:
         """
         Perform actual feature warmup using already-resampled data.
@@ -682,15 +810,16 @@ class PreprocessingOrchestrator:
         try:
             # Use already resampled data instead of calling resample_symbol_data_incremental again
             if timeframe not in resampled_data:
-                logger.warning(f"No resampled data available for {request.symbol} {timeframe.value}")
+                logger.warning(
+                    f"No resampled data available for {request.symbol} {timeframe.value}"
+                )
                 return False
 
             warmup_df = resampled_data[timeframe]
 
             # Filter to warmup period
             warmup_df = warmup_df[
-                (warmup_df.index >= warmup_start) &
-                (warmup_df.index < warmup_end)
+                (warmup_df.index >= warmup_start) & (warmup_df.index < warmup_end)
             ]
 
             if warmup_df.empty:
@@ -719,7 +848,9 @@ class PreprocessingOrchestrator:
                     f"with {len(warmup_df)} data points, computed {len(warmup_result.columns)} features"
                 )
             else:
-                logger.error(f"Feature warmup failed for {request.symbol} {timeframe.value}")
+                logger.error(
+                    f"Feature warmup failed for {request.symbol} {timeframe.value}"
+                )
 
             return success
 
@@ -731,6 +862,9 @@ class PreprocessingOrchestrator:
         self,
         request: FeaturePreprocessingRequest,
         computed_features: Dict[Timeframe, DataFrame],
+        feature_service_metadata_per_timeframe: Dict[
+            Timeframe, List[FeatureServiceMetadata]
+        ],
     ) -> None:
         """
         Store computed features in the feature store.
@@ -747,17 +881,38 @@ class PreprocessingOrchestrator:
                     f"for {request.symbol} {timeframe.value} to feature store"
                 )
 
-                # Store features offline
-                # Use the feature version info from the request
-                self.feature_store_port.store_computed_features_offline(
+                # Get feature metadata for the computed features
+                # Flatten feature view metadata from all roles
+                feature_view_metadata_list = []
+                for feature_service_metadata in feature_service_metadata_per_timeframe[
+                    timeframe
+                ]:
+                    feature_view_metadata_list.extend(
+                        feature_service_metadata.feature_view_metadata_list
+                    )
+
+                # Create FeatureServiceMetadata for storage
+                dataset_identifier = self._create_dataset_identifier(
+                    request.symbol, timeframe
+                )
+                feature_service_metadata = FeatureServiceMetadata.create(
+                    dataset_identifier=dataset_identifier,
+                    feature_role=FeatureRoleEnum.OBSERVATION_SPACE,  # Use observation space for storage
+                    feature_config_version=request.feature_config_version_info,
+                    feature_view_metadata_list=feature_view_metadata_list,
+                )
+
+                # Create offline storage request
+                storage_request = OfflineStorageRequest.create(
+                    feature_service_metadata=feature_service_metadata,
                     features_df=features_df,
-                    symbol=request.symbol,
-                    feature_version_info=request.feature_config_version_info,
-                    feature_view_requests=[],
                     processing_context=request.processing_context,
                     requested_start_time=pd.to_datetime(request.start_time),
                     requested_end_time=pd.to_datetime(request.end_time),
                 )
+
+                # Store features offline
+                self.feature_store_port.store_computed_features_offline(storage_request)
 
                 # Store online if requested
                 if request.materialize_online:
@@ -765,9 +920,13 @@ class PreprocessingOrchestrator:
                         features_df=features_df,
                         symbol=request.symbol,
                     )
-                    logger.info(f"Features materialized to online store for {request.symbol} {timeframe.value}")
+                    logger.info(
+                        f"Features materialized to online store for {request.symbol} {timeframe.value}"
+                    )
 
-                logger.info(f"Features stored successfully for {request.symbol} {timeframe.value}")
+                logger.info(
+                    f"Features stored successfully for {request.symbol} {timeframe.value}"
+                )
 
             except Exception as e:
                 logger.error(
@@ -775,17 +934,18 @@ class PreprocessingOrchestrator:
                 )
                 raise
 
-    def _create_dataset_identifier(self, symbol: str, timeframe: Timeframe) -> DatasetIdentifier:
+    def _create_dataset_identifier(
+        self, symbol: str, timeframe: Timeframe
+    ) -> DatasetIdentifier:
         """Create a dataset identifier for the given symbol and timeframe."""
-        # This would typically come from your common models
-        # For now, create a simple implementation
-        from drl_trading_core.core.model.dataset_identifier import DatasetIdentifier
+        from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+
         return DatasetIdentifier(symbol=symbol, timeframe=timeframe)
 
     def get_performance_summary(self) -> Dict[str, Any]:
         """Get performance summary for monitoring."""
-        avg_processing_time = (
-            self._total_processing_time_ms / max(1, self._total_requests_processed)
+        avg_processing_time = self._total_processing_time_ms / max(
+            1, self._total_requests_processed
         )
 
         return {

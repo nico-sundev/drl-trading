@@ -14,9 +14,10 @@ from unittest.mock import Mock
 from datetime import datetime
 import pandas as pd
 
-from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
-from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model.data_availability_summary import DataAvailabilitySummary
+from drl_trading_core.core.model import FeatureConfigVersionInfo
+from drl_trading_core.core.model import Timeframe
+from drl_trading_core.core.model.data_availability_summary import DataAvailabilitySummary
+from drl_trading_core.core.dto.feature_service_metadata import FeatureServiceMetadata
 from drl_trading_preprocess.core.service.coverage.feature_coverage_analyzer import FeatureCoverageAnalyzer
 from drl_trading_preprocess.core.model.coverage.feature_coverage_analysis import (
     FeatureCoverageAnalysis
@@ -216,15 +217,29 @@ class TestBatchFetchFeatures:
         }, index=timestamps)
 
         # Mock get_offline to return different dataframes based on role
-        def mock_get_offline(request, ts_series):
-            if request.feature_service_role.value == "observation_space":
+        def mock_get_offline(feature_service_metadata, ts_series):
+            if feature_service_metadata.feature_service_role.value == "observation_space":
                 return observation_df
-            elif request.feature_service_role.value == "reward_engineering":
+            elif feature_service_metadata.feature_service_role.value == "reward_engineering":
                 return reward_df
             else:
                 return pd.DataFrame()
 
         analyzer.feature_store_fetch_port.get_offline = Mock(side_effect=mock_get_offline)
+
+        # Create mock FeatureServiceMetadata objects
+        from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+        from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+
+        observation_metadata = Mock(spec=FeatureServiceMetadata)
+        observation_metadata.feature_service_role = FeatureRoleEnum.OBSERVATION_SPACE
+        observation_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=TEST_TIMEFRAME)
+
+        reward_metadata = Mock(spec=FeatureServiceMetadata)
+        reward_metadata.feature_service_role = FeatureRoleEnum.REWARD_ENGINEERING
+        reward_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=TEST_TIMEFRAME)
+
+        feature_service_metadata_list = [observation_metadata, reward_metadata]
 
         # When
         result = analyzer._batch_fetch_features(
@@ -232,7 +247,7 @@ class TestBatchFetchFeatures:
             timeframe=TEST_TIMEFRAME,
             start_time=START_TIME,
             end_time=END_TIME,
-            feature_config_version_info=feature_config
+            feature_service_metadata_list=feature_service_metadata_list,
         )
 
         # Then
@@ -251,7 +266,24 @@ class TestBatchFetchFeatures:
     ) -> None:
         """Test batch fetch when no features exist."""
         # Given
-        analyzer.feature_store_fetch_port.get_offline = Mock(return_value=pd.DataFrame())
+        def mock_get_offline(feature_service_metadata, ts_series):
+            return pd.DataFrame()
+
+        analyzer.feature_store_fetch_port.get_offline = Mock(side_effect=mock_get_offline)
+
+        # Create mock FeatureServiceMetadata objects
+        from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+        from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+
+        observation_metadata = Mock(spec=FeatureServiceMetadata)
+        observation_metadata.feature_service_role = FeatureRoleEnum.OBSERVATION_SPACE
+        observation_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=TEST_TIMEFRAME)
+
+        reward_metadata = Mock(spec=FeatureServiceMetadata)
+        reward_metadata.feature_service_role = FeatureRoleEnum.REWARD_ENGINEERING
+        reward_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=TEST_TIMEFRAME)
+
+        feature_service_metadata_list = [observation_metadata, reward_metadata]
 
         # When
         result = analyzer._batch_fetch_features(
@@ -259,7 +291,7 @@ class TestBatchFetchFeatures:
             timeframe=TEST_TIMEFRAME,
             start_time=START_TIME,
             end_time=END_TIME,
-            feature_config_version_info=feature_config
+            feature_service_metadata_list=feature_service_metadata_list,
         )
 
         # Then
@@ -276,13 +308,23 @@ class TestBatchFetchFeatures:
         invalid_start = datetime(2024, 1, 1, 0, 0, 0)
         invalid_end = datetime(2024, 1, 1, 0, 0, 0)  # Same time
 
+        # Create mock FeatureServiceMetadata objects
+        from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+        from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+
+        observation_metadata = Mock(spec=FeatureServiceMetadata)
+        observation_metadata.feature_service_role = FeatureRoleEnum.OBSERVATION_SPACE
+        observation_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=TEST_TIMEFRAME)
+
+        feature_service_metadata_list = [observation_metadata]
+
         # When
         result = analyzer._batch_fetch_features(
             symbol=TEST_SYMBOL,
             timeframe=TEST_TIMEFRAME,
             start_time=invalid_start,
             end_time=invalid_end,
-            feature_config_version_info=feature_config
+            feature_service_metadata_list=feature_service_metadata_list,
         )
 
         # Then
@@ -299,13 +341,27 @@ class TestBatchFetchFeatures:
         }, index=timestamps)
 
         # Mock get_offline to return data for observation but empty for reward
-        def mock_get_offline(request, ts_series):
-            if request.feature_service_role.value == "observation_space":
+        def mock_get_offline(feature_service_metadata, ts_series):
+            if feature_service_metadata.feature_service_role.value == "observation_space":
                 return observation_df
             else:
                 return pd.DataFrame()
 
         analyzer.feature_store_fetch_port.get_offline = Mock(side_effect=mock_get_offline)
+
+        # Create mock FeatureServiceMetadata objects
+        from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+        from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+
+        observation_metadata = Mock(spec=FeatureServiceMetadata)
+        observation_metadata.feature_service_role = FeatureRoleEnum.OBSERVATION_SPACE
+        observation_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=TEST_TIMEFRAME)
+
+        reward_metadata = Mock(spec=FeatureServiceMetadata)
+        reward_metadata.feature_service_role = FeatureRoleEnum.REWARD_ENGINEERING
+        reward_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=TEST_TIMEFRAME)
+
+        feature_service_metadata_list = [observation_metadata, reward_metadata]
 
         # When
         result = analyzer._batch_fetch_features(
@@ -313,7 +369,7 @@ class TestBatchFetchFeatures:
             timeframe=TEST_TIMEFRAME,
             start_time=START_TIME,
             end_time=END_TIME,
-            feature_config_version_info=feature_config
+            feature_service_metadata_list=feature_service_metadata_list,
         )
 
         # Then
@@ -584,7 +640,21 @@ class TestFullCoverageAnalysis:
             'rsi': [50.0] * len(timestamps),
             'sma': [1.2] * len(timestamps)
         }, index=timestamps)
-        analyzer.feature_store_fetch_port.get_offline = Mock(return_value=mock_df)
+
+        def mock_get_offline(feature_service_metadata, ts_series):
+            return mock_df
+
+        analyzer.feature_store_fetch_port.get_offline = Mock(side_effect=mock_get_offline)
+
+        # Create mock FeatureServiceMetadata objects
+        from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+        from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+
+        observation_metadata = Mock(spec=FeatureServiceMetadata)
+        observation_metadata.feature_service_role = FeatureRoleEnum.OBSERVATION_SPACE
+        observation_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=TEST_TIMEFRAME)
+
+        feature_service_metadata_list = [observation_metadata]
 
         # When
         result = analyzer.analyze_feature_coverage(
@@ -594,7 +664,8 @@ class TestFullCoverageAnalysis:
             feature_names=['rsi', 'sma'],
             requested_start_time=START_TIME,
             requested_end_time=END_TIME,
-            feature_config_version_info=feature_config
+            feature_config_version_info=feature_config,
+            feature_service_metadata_list=feature_service_metadata_list
         )
 
         # Then
@@ -622,6 +693,16 @@ class TestFullCoverageAnalysis:
         )
         analyzer.market_data_reader.get_data_availability = Mock(return_value=mock_availability)
 
+        # Create mock FeatureServiceMetadata objects
+        from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+        from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+
+        observation_metadata = Mock(spec=FeatureServiceMetadata)
+        observation_metadata.feature_service_role = FeatureRoleEnum.OBSERVATION_SPACE
+        observation_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=TEST_TIMEFRAME)
+
+        feature_service_metadata_list = [observation_metadata]
+
         # When
         result = analyzer.analyze_feature_coverage(
             symbol=TEST_SYMBOL,
@@ -630,7 +711,8 @@ class TestFullCoverageAnalysis:
             feature_names=['rsi', 'sma'],
             requested_start_time=START_TIME,
             requested_end_time=END_TIME,
-            feature_config_version_info=feature_config
+            feature_config_version_info=feature_config,
+            feature_service_metadata_list=feature_service_metadata_list
         )
 
         # Then
@@ -665,6 +747,16 @@ class TestFullCoverageAnalysis:
         }, index=timestamps)
         analyzer.feature_store_fetch_port.get_offline = Mock(return_value=mock_df)
 
+        # Create mock FeatureServiceMetadata objects
+        from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+        from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+
+        observation_metadata = Mock(spec=FeatureServiceMetadata)
+        observation_metadata.feature_service_role = FeatureRoleEnum.OBSERVATION_SPACE
+        observation_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=TEST_TIMEFRAME)
+
+        feature_service_metadata_list = [observation_metadata]
+
         # When
         result = analyzer.analyze_feature_coverage(
             symbol=TEST_SYMBOL,
@@ -673,7 +765,8 @@ class TestFullCoverageAnalysis:
             feature_names=['rsi'],
             requested_start_time=START_TIME,
             requested_end_time=END_TIME,  # Request until 23:00
-            feature_config_version_info=feature_config
+            feature_config_version_info=feature_config,
+            feature_service_metadata_list=feature_service_metadata_list
         )
 
         # Then

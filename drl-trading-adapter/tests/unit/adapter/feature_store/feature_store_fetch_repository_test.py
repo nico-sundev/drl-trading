@@ -9,7 +9,7 @@ from unittest.mock import Mock
 
 import pandas as pd
 import pytest
-from drl_trading_core.common.model.feature_service_metadata import (
+from drl_trading_core.core.dto.feature_service_metadata import (
     FeatureServiceMetadata,
 )
 from feast import FeatureService, FeatureStore
@@ -74,7 +74,7 @@ class TestFeatureStoreFetchRepositoryGetOnline:
         """Test that get_online creates feature service on first call."""
         # Given
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
-        expected_entity_rows = [{"symbol": feature_service_request.symbol}]
+        expected_entity_rows = [{"symbol": feature_service_request.dataset_identifier.symbol}]
 
         # When
         result = repository.get_online(
@@ -99,7 +99,7 @@ class TestFeatureStoreFetchRepositoryGetOnline:
         """Test that get_online reuses existing feature service on subsequent calls."""
         # Given
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
-        expected_entity_rows = [{"symbol": feature_service_request.symbol}]
+        expected_entity_rows = [{"symbol": feature_service_request.dataset_identifier.symbol}]
 
         # When
         result = repository.get_online(
@@ -140,7 +140,7 @@ class TestFeatureStoreFetchRepositoryGetOnline:
         """Test get_online with different symbol."""
         # Given
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
-        expected_entity_rows = [{"symbol": gbpusd_feature_service_request.symbol}]
+        expected_entity_rows = [{"symbol": gbpusd_feature_service_request.dataset_identifier.symbol}]
 
         # When
         result = repository.get_online(
@@ -165,7 +165,7 @@ class TestFeatureStoreFetchRepositoryGetOnline:
         # Given
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
         expected_df = DataFrame({
-            "symbol": [feature_service_request.symbol],
+            "symbol": [feature_service_request.dataset_identifier.symbol],
             "rsi_14": [45.2],
             "sma_20": [1.0855],
             "event_timestamp": [pd.Timestamp("2024-01-01 10:00:00")]
@@ -242,7 +242,7 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         entity_df = call_args[1]["entity_df"]
 
         pd.testing.assert_series_equal(entity_df["event_timestamp"], sample_timestamps, check_names=False)
-        assert all(entity_df["symbol"] == feature_service_request.symbol)
+        assert all(entity_df["symbol"] == feature_service_request.dataset_identifier.symbol)
 
         assert isinstance(result, DataFrame)
 
@@ -309,7 +309,7 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         call_args = repository._fs.get_historical_features.call_args
         entity_df = call_args[1]["entity_df"]
 
-        assert all(entity_df["symbol"] == gbpusd_feature_service_request.symbol)
+        assert all(entity_df["symbol"] == gbpusd_feature_service_request.dataset_identifier.symbol)
         assert isinstance(result, DataFrame)
 
     def test_get_offline_with_empty_timestamps(
@@ -349,7 +349,7 @@ class TestFeatureStoreFetchRepositoryGetOffline:
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
         expected_df = DataFrame({
             "event_timestamp": sample_timestamps,
-            "symbol": [feature_service_request.symbol] * 3,
+            "symbol": [feature_service_request.dataset_identifier.symbol] * 3,
             "rsi_14": [30.5, 45.2, 67.8],
             "sma_20": [1.0850, 1.0855, 1.0860]
         })
@@ -483,7 +483,7 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         # Given
         mock_feature_service = Mock(spec=FeatureService)
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
-        expected_service_name = f"observation_space_{feature_service_request.symbol}_{feature_service_request.timeframe.value}_{feature_service_request.feature_version_info.semver}_{feature_service_request.feature_version_info.hash}"
+        expected_service_name = f"observation_space_{feature_service_request.dataset_identifier.symbol}_{feature_service_request.dataset_identifier.timeframe.value}_{feature_service_request.feature_version_info.semver}_{feature_service_request.feature_version_info.hash}"
 
         # When
         repository.get_online(feature_service_request=feature_service_request)
@@ -505,7 +505,7 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         mock_feature_service = Mock(spec=FeatureService)
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
         sample_timestamps = pd.Series([pd.Timestamp("2024-01-01 09:00:00")])
-        expected_service_name = f"observation_space_{feature_service_request.symbol}_{feature_service_request.timeframe.value}_{feature_service_request.feature_version_info.semver}_{feature_service_request.feature_version_info.hash}"
+        expected_service_name = f"observation_space_{feature_service_request.dataset_identifier.symbol}_{feature_service_request.dataset_identifier.timeframe.value}_{feature_service_request.feature_version_info.semver}_{feature_service_request.feature_version_info.hash}"
 
         # When
         repository.get_offline(feature_service_request=feature_service_request, timestamps=sample_timestamps)
@@ -527,7 +527,7 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         mock_feature_service = Mock(spec=FeatureService)
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
         sample_timestamps = pd.Series([pd.Timestamp("2024-01-01 09:00:00")])
-        expected_service_name = f"observation_space_{feature_service_request.symbol}_{feature_service_request.timeframe.value}_{feature_service_request.feature_version_info.semver}_{feature_service_request.feature_version_info.hash}"
+        expected_service_name = f"observation_space_{feature_service_request.dataset_identifier.symbol}_{feature_service_request.dataset_identifier.timeframe.value}_{feature_service_request.feature_version_info.semver}_{feature_service_request.feature_version_info.hash}"
 
         # When
         repository.get_online(feature_service_request=feature_service_request)

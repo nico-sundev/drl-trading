@@ -10,13 +10,13 @@ from unittest.mock import Mock
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.config.feature_config import FeatureDefinition
 from drl_trading_common.interface.feature.feature_factory_interface import IFeatureFactory
-from drl_trading_core.core.service.feature_definition_parser import map_and_create_feature_definitions, parse_parameters
+from drl_trading_core.core.service.feature_definition_parser import FeatureDefinitionParser
 
 
 class TestParseParameters:
     """Test cases for parse_parameters function."""
 
-    def test_parse_parameters_success(self):
+    def test_parse_parameters_success(self) -> None:
         """Test successful parameter parsing."""
         # Given
         mock_feature_factory = Mock(spec=IFeatureFactory)
@@ -24,6 +24,7 @@ class TestParseParameters:
         mock_config_instance.hash_id.return_value = "test_hash_123"
         mock_feature_factory.create_config_instance.return_value = mock_config_instance
 
+        parser = FeatureDefinitionParser(mock_feature_factory)
         feature_def = FeatureDefinition(
             name="rsi",
             enabled=True,
@@ -33,17 +34,18 @@ class TestParseParameters:
         )
 
         # When
-        parse_parameters(feature_def, mock_feature_factory)
+        parser.parse_feature_definition(feature_def)
 
         # Then
         mock_feature_factory.create_config_instance.assert_called_once_with("rsi", {"period": 14})
         assert "test_hash_123" in feature_def.parsed_parameter_sets
         assert feature_def.parsed_parameter_sets["test_hash_123"] == mock_config_instance
 
-    def test_parse_parameters_empty_feature_name(self):
+    def test_parse_parameters_empty_feature_name(self) -> None:
         """Test parsing with empty feature name raises ValueError."""
         # Given
         mock_feature_factory = Mock(spec=IFeatureFactory)
+        parser = FeatureDefinitionParser(mock_feature_factory)
         feature_def = FeatureDefinition(
             name="",  # Empty name
             enabled=True,
@@ -54,12 +56,13 @@ class TestParseParameters:
 
         # When & Then
         with pytest.raises(ValueError, match="Feature name is required"):
-            parse_parameters(feature_def, mock_feature_factory)
+            parser.parse_feature_definition(feature_def)
 
-    def test_parse_parameters_no_parameter_sets(self):
+    def test_parse_parameters_no_parameter_sets(self) -> None:
         """Test parsing with no parameter sets."""
         # Given
         mock_feature_factory = Mock(spec=IFeatureFactory)
+        parser = FeatureDefinitionParser(mock_feature_factory)
         feature_def = FeatureDefinition(
             name="close_price",
             enabled=True,
@@ -69,17 +72,18 @@ class TestParseParameters:
         )
 
         # When
-        parse_parameters(feature_def, mock_feature_factory)
+        parser.parse_feature_definition(feature_def)
 
         # Then
         mock_feature_factory.create_config_instance.assert_not_called()
         assert len(feature_def.parsed_parameter_sets) == 0
 
-    def test_parse_parameters_factory_returns_none(self):
+    def test_parse_parameters_factory_returns_none(self) -> None:
         """Test parsing when factory returns None for config instance."""
         # Given
         mock_feature_factory = Mock(spec=IFeatureFactory)
         mock_feature_factory.create_config_instance.return_value = None
+        parser = FeatureDefinitionParser(mock_feature_factory)
 
         feature_def = FeatureDefinition(
             name="rsi",
@@ -91,9 +95,9 @@ class TestParseParameters:
 
         # When & Then
         with pytest.raises(ValueError, match="Failed to parse any parameter sets for feature 'rsi'"):
-            parse_parameters(feature_def, mock_feature_factory)
+            parser.parse_feature_definition(feature_def)
 
-    def test_parse_parameters_multiple_parameter_sets(self):
+    def test_parse_parameters_multiple_parameter_sets(self) -> None:
         """Test parsing multiple parameter sets."""
         # Given
         mock_feature_factory = Mock(spec=IFeatureFactory)
@@ -104,6 +108,7 @@ class TestParseParameters:
         config2.hash_id.return_value = "hash_2"
 
         mock_feature_factory.create_config_instance.side_effect = [config1, config2]
+        parser = FeatureDefinitionParser(mock_feature_factory)
 
         feature_def = FeatureDefinition(
             name="rsi",
@@ -114,14 +119,14 @@ class TestParseParameters:
         )
 
         # When
-        parse_parameters(feature_def, mock_feature_factory)
+        parser.parse_feature_definition(feature_def)
 
         # Then
         assert len(feature_def.parsed_parameter_sets) == 2
         assert feature_def.parsed_parameter_sets["hash_1"] == config1
         assert feature_def.parsed_parameter_sets["hash_2"] == config2
 
-    def test_parse_parameters_duplicate_hash_ids(self):
+    def test_parse_parameters_duplicate_hash_ids(self) -> None:
         """Test parsing with duplicate hash IDs (should not add duplicates)."""
         # Given
         mock_feature_factory = Mock(spec=IFeatureFactory)
@@ -132,6 +137,7 @@ class TestParseParameters:
         config2.hash_id.return_value = "same_hash"  # Same hash as config1
 
         mock_feature_factory.create_config_instance.side_effect = [config1, config2]
+        parser = FeatureDefinitionParser(mock_feature_factory)
 
         feature_def = FeatureDefinition(
             name="rsi",
@@ -142,7 +148,7 @@ class TestParseParameters:
         )
 
         # When
-        parse_parameters(feature_def, mock_feature_factory)
+        parser.parse_feature_definition(feature_def)
 
         # Then
         assert len(feature_def.parsed_parameter_sets) == 1
@@ -152,7 +158,7 @@ class TestParseParameters:
 class TestParseAllParameters:
     """Test cases for parse_all_parameters function."""
 
-    def test_parse_all_parameters_success(self):
+    def test_parse_all_parameters_success(self) -> None:
         """Test successful parsing of multiple feature definitions."""
         # Given
         mock_feature_factory = Mock(spec=IFeatureFactory)
@@ -160,6 +166,7 @@ class TestParseAllParameters:
         mock_config_instance.hash_id.return_value = "test_hash"
         mock_feature_factory.create_config_instance.return_value = mock_config_instance
 
+        parser = FeatureDefinitionParser(mock_feature_factory)
         feature_defs = [
             FeatureDefinition(
                 name="rsi",
@@ -178,7 +185,7 @@ class TestParseAllParameters:
         ]
 
         # When
-        map_and_create_feature_definitions(feature_defs, mock_feature_factory)
+        parser.parse_feature_definitions(feature_defs)
 
         # Then
         assert mock_feature_factory.create_config_instance.call_count == 2
@@ -188,19 +195,20 @@ class TestParseAllParameters:
             assert len(feature_def.parsed_parameter_sets) == 1
             assert "test_hash" in feature_def.parsed_parameter_sets
 
-    def test_parse_all_parameters_empty_list(self):
+    def test_parse_all_parameters_empty_list(self) -> None:
         """Test parsing empty list of feature definitions."""
         # Given
         mock_feature_factory = Mock(spec=IFeatureFactory)
+        parser = FeatureDefinitionParser(mock_feature_factory)
         feature_defs: list[FeatureDefinition] = []
 
         # When
-        map_and_create_feature_definitions(feature_defs, mock_feature_factory)
+        parser.parse_feature_definitions(feature_defs)
 
         # Then
         mock_feature_factory.create_config_instance.assert_not_called()
 
-    def test_parse_all_parameters_mixed_scenarios(self):
+    def test_parse_all_parameters_mixed_scenarios(self) -> None:
         """Test parsing with mixed scenarios - some with params, some without."""
         # Given
         mock_feature_factory = Mock(spec=IFeatureFactory)
@@ -208,6 +216,7 @@ class TestParseAllParameters:
         config_with_params.hash_id.return_value = "rsi_hash"
         mock_feature_factory.create_config_instance.return_value = config_with_params
 
+        parser = FeatureDefinitionParser(mock_feature_factory)
         feature_defs = [
             FeatureDefinition(
                 name="rsi",
@@ -226,7 +235,7 @@ class TestParseAllParameters:
         ]
 
         # When
-        map_and_create_feature_definitions(feature_defs, mock_feature_factory)
+        parser.parse_feature_definitions(feature_defs)
 
         # Then
         mock_feature_factory.create_config_instance.assert_called_once_with("rsi", {"period": 14})
@@ -242,7 +251,7 @@ class TestParseAllParameters:
 class TestEdgeCases:
     """Test edge cases and error conditions."""
 
-    def test_invalid_parameter_set_type_raises_error(self):
+    def test_invalid_parameter_set_type_raises_error(self) -> None:
         """Test that invalid parameter set types are caught by Pydantic validation."""
         # Given & When & Then
         # Pydantic validates input types at FeatureDefinition creation time
@@ -255,11 +264,12 @@ class TestEdgeCases:
                 parsed_parameter_sets={}
             )
 
-    def test_factory_exception_propagates(self):
+    def test_factory_exception_propagates(self) -> None:
         """Test that factory exceptions are properly propagated."""
         # Given
         mock_feature_factory = Mock(spec=IFeatureFactory)
         mock_feature_factory.create_config_instance.side_effect = RuntimeError("Factory error")
+        parser = FeatureDefinitionParser(mock_feature_factory)
 
         feature_def = FeatureDefinition(
             name="test_feature",
@@ -271,4 +281,4 @@ class TestEdgeCases:
 
         # When & Then
         with pytest.raises(RuntimeError, match="Factory error"):
-            parse_parameters(feature_def, mock_feature_factory)
+            parser.parse_feature_definition(feature_def)

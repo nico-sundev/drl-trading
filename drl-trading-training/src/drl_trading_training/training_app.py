@@ -6,7 +6,7 @@ from warnings import deprecated
 from drl_trading_common.config.feature_config import FeaturesConfig
 # Legacy import - this class is deprecated, use FeatureConfigReader/Writer adapters instead
 from drl_trading_training.adapter.feature_config.feature_config_writer import FeatureConfigWriter
-from drl_trading_common.model.feature_config_version_info import (
+from drl_trading_common.adapter.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
 from drl_trading_training.core.agents.base_agent import BaseAgent

@@ -12,8 +12,8 @@ from typing import Dict, List, Optional
 
 from injector import inject
 
-from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model.market_data_model import MarketDataModel
+from drl_trading_common.core.model.timeframe import Timeframe
+from drl_trading_core.core.model.market_data_model import MarketDataModel
 from drl_trading_core.core.port.market_data_reader_port import MarketDataReaderPort
 from drl_trading_preprocess.core.model.resample.resampling_context import (
     ResamplingContext,

@@ -14,7 +14,7 @@ from drl_trading_adapter.adapter.database.entity.feature_config_entity import Fe
 from drl_trading_adapter.adapter.database.session_factory import SQLAlchemySessionFactory
 from drl_trading_adapter.adapter.database.repository.feature_config_repository import FeatureConfigRepository
 from drl_trading_common.config.infrastructure_config import DatabaseConfig
-from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
+from drl_trading_common.adapter.model.feature_config_version_info import FeatureConfigVersionInfo
 
 
 class TestFeatureConfigRepositoryIntegration:

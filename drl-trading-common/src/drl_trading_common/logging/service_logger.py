@@ -18,7 +18,7 @@ from drl_trading_common.logging.trading_formatters import (
     TradingHumanReadableFormatter
 )
 from drl_trading_common.logging.trading_log_context import TradingLogContext
-from drl_trading_common.model.trading_context import TradingContext
+from drl_trading_common.adapter.model.trading_context import TradingContext
 from drl_trading_common.config.service_logging_config import ServiceLoggingConfig
 
 

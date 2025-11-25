@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_preprocess.core.model.resample.resampling_context import (
     AccumulatorState,
     ResamplingContext

@@ -17,7 +17,7 @@ class TestConsumerFailurePolicy:
         policy = ConsumerFailurePolicy()
 
         # Then
-        assert policy.max_retries == 0  # Infinite retries by default
+        assert policy.max_retries == 3  # Default retries
         assert policy.dlq_topic is None
         assert policy.track_retry_in_headers is True
 

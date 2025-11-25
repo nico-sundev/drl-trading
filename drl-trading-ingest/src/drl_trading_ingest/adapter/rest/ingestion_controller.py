@@ -1,11 +1,9 @@
 from abc import ABC, abstractmethod
 
+from drl_trading_ingest.core.service.ingestion_service import IngestionServiceInterface
 from flask import jsonify, request
 from flask.views import MethodView
 from injector import inject
-
-from drl_trading_ingest.core.service.ingestion_service import IngestionService
-
 
 class IngestionControllerInterface(ABC):
     """
@@ -26,7 +24,7 @@ class IngestionController(MethodView, IngestionControllerInterface):
     Controller for handling data ingestion requests.
     """
 
-    def __init__(self, ingestion_service: IngestionService):
+    def __init__(self, ingestion_service: IngestionServiceInterface):
         self.ingestion_service = ingestion_service
 
     def ingest_batch(self):

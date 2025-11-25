@@ -2,13 +2,13 @@
 from typing import Callable, Optional
 
 from drl_trading_common import BaseParameterSetConfig
-from drl_trading_common.base.base_feature import BaseFeature
+from drl_trading_common.core.model.base_feature import BaseFeature
 from drl_trading_common.decorator.feature_role_decorator import feature_role
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     ITechnicalIndicatorFacade,
 )
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.adapter.model.dataset_identifier import DatasetIdentifier
 from drl_trading_strategy_example.decorator import feature_type
 from drl_trading_strategy_example.decorator.feature_type_decorator import (
     get_feature_type_from_class,
@@ -81,7 +81,7 @@ class RsiFeature(BaseFeature):
         result.columns = [f"rsi_{self.config.length}{self.postfix}"]
         return result
 
-    def get_sub_features_names(self) -> list[str]:
+    def _get_sub_features_names(self) -> list[str]:
         return ["value"]
 
     def _get_feature_type(self) -> FeatureTypeEnum:
@@ -92,8 +92,8 @@ class RsiFeature(BaseFeature):
         enum_type = TypeMapper.map_feature_to_indicator(self._get_feature_type())
         return enum_type.value
 
-    def get_feature_name(self) -> str:
+    def _get_feature_name(self) -> str:
         return self._get_feature_type().value
 
-    def get_config_to_string(self) -> str:
+    def _get_config_to_string(self) -> str:
         return f"{self.config.length}"

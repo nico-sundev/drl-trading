@@ -1,12 +1,14 @@
 
 from unittest.mock import Mock
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model.feature_view_metadata import FeatureViewMetadata
+from drl_trading_common.core.model.timeframe import Timeframe
+from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.core.model.feature_metadata import FeatureMetadata
+from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
 from feast import FeatureStore, Field
 from feast.types import Float32
 from injector import Injector
-from drl_trading_common.base import BaseFeature
+from drl_trading_common.core.port.feature_interface import IFeature
 
 from drl_trading_adapter.adapter.feature_store.provider import (
     FeastProvider,
@@ -19,58 +21,50 @@ from drl_trading_adapter.adapter.feature_store.provider.mapper import (
 )
 
 
-class _TestFeature(BaseFeature):
-    """Minimal test implementation of BaseFeature for integration tests."""
+class _TestFeature(IFeature):
+    """Minimal test implementation of IFeature for integration tests."""
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, symbol: str = "TEST", timeframe: Timeframe = Timeframe.HOUR_1, feature_role: FeatureRoleEnum = FeatureRoleEnum.OBSERVATION_SPACE):
         # Skip parent constructor to avoid complex dependencies
         self.name = name
-        self.config = None
+        self.symbol = symbol
+        self.timeframe = timeframe
+        self.feature_role = feature_role
 
-    def get_feature_name(self) -> str:
-        return self.name
-
-    def get_sub_features_names(self) -> list[str]:
+    def _get_sub_features_names(self) -> list[str]:
         return []
 
-    def get_config_to_string(self) -> str | None:
-        return None
-
-    def get_config(self):
-        return None
-
-    def compute_all(self):
-        # Not used in integration tests
-        return None
-
-    def update(self, df):
-        # Not used in integration tests
-        pass
-
-    def compute_latest(self):
-        # Not used in integration tests
-        return None
+    def get_metadata(self) -> FeatureMetadata:
+        # Return proper metadata for testing
+        dataset_id = DatasetIdentifier(symbol=self.symbol, timeframe=self.timeframe)
+        return FeatureMetadata(
+            config=None,
+            dataset_id=dataset_id,
+            feature_role=self.feature_role,
+            feature_name=self.name,
+            sub_feature_names=self._get_sub_features_names()
+        )
 
 
 def create_mock_mapper(field_responses: dict[str, list[Field]]) -> Mock:
     """Create a mock feature field mapper that returns predefined fields."""
     mock_mapper = Mock(spec=IFeatureFieldMapper)
 
-    def side_effect_create_fields(feature):
-        feature_name = feature.get_feature_name()
+    def side_effect_create_fields(feature_metadata):
+        feature_name = feature_metadata.feature_name
         return field_responses.get(feature_name, [Field(name=feature_name, dtype=Float32)])
 
-    def side_effect_get_field_base_name(feature):
-        return feature.get_feature_name()
+    def side_effect_get_field_base_name(feature_metadata):
+        return feature_metadata.feature_name
 
     mock_mapper.create_fields.side_effect = side_effect_create_fields
     mock_mapper.get_field_base_name.side_effect = side_effect_get_field_base_name
     return mock_mapper
 
 
-def create_simple_mock_feature(name: str) -> _TestFeature:
+def create_simple_mock_feature(name: str, symbol: str = "TEST", timeframe: Timeframe = Timeframe.HOUR_1, feature_role: FeatureRoleEnum = FeatureRoleEnum.OBSERVATION_SPACE) -> _TestFeature:
     """Create a TestFeature instance for integration tests."""
-    return _TestFeature(name)
+    return _TestFeature(name, symbol, timeframe, feature_role)
 
 
 class TestFeastIntegration:
@@ -111,8 +105,8 @@ class TestFeastIntegration:
         assert isinstance(feast_provider.get_feature_store(), FeatureStore)
 
         # Create synthetic features for the request (no complex business logic needed)
-        mock_feature_1 = create_simple_mock_feature("test_feature_1")
-        mock_feature_2 = create_simple_mock_feature("test_feature_2")
+        mock_feature_1 = create_simple_mock_feature("test_feature_1", symbol="TESTSYM", timeframe=Timeframe.HOUR_1, feature_role=FeatureRoleEnum.OBSERVATION_SPACE)
+        mock_feature_2 = create_simple_mock_feature("test_feature_2", symbol="TESTSYM", timeframe=Timeframe.HOUR_1, feature_role=FeatureRoleEnum.OBSERVATION_SPACE)
 
         # Create a mock mapper that returns specific fields for these features
         expected_fields = {
@@ -126,17 +120,13 @@ class TestFeastIntegration:
 
         # Create FeatureViewRequest with synthetic features
         request_1 = FeatureViewMetadata(
-            symbol="TESTSYM",
-            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature=mock_feature_1,
-            timeframe=Timeframe.HOUR_1
+            dataset_identifier=DatasetIdentifier(symbol="TESTSYM", timeframe=Timeframe.HOUR_1),
+            feature_metadata=mock_feature_1.get_metadata()
         )
 
         request_2 = FeatureViewMetadata(
-            symbol="TESTSYM",
-            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature=mock_feature_2,
-            timeframe=Timeframe.HOUR_1
+            dataset_identifier=DatasetIdentifier(symbol="TESTSYM", timeframe=Timeframe.HOUR_1),
+            feature_metadata=mock_feature_2.get_metadata()
         )
 
         # When
@@ -169,7 +159,7 @@ class TestFeastIntegration:
         feast_provider = real_feast_container.get(FeastProvider)
 
         # Create simple mock features
-        mock_feature = create_simple_mock_feature("mapper_test_feature")
+        mock_feature = create_simple_mock_feature("mapper_test_feature", symbol="MAPPERTEST", timeframe=Timeframe.HOUR_1, feature_role=FeatureRoleEnum.OBSERVATION_SPACE)
 
         # Create a mock mapper with custom behavior
         mock_mapper = Mock(spec=IFeatureFieldMapper)
@@ -182,10 +172,8 @@ class TestFeastIntegration:
         feast_provider.feature_field_mapper = mock_mapper
 
         request = FeatureViewMetadata(
-            symbol="MAPPERTEST",
-            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature=mock_feature,
-            timeframe=Timeframe.HOUR_1
+            dataset_identifier=DatasetIdentifier(symbol="MAPPERTEST", timeframe=Timeframe.HOUR_1),
+            feature_metadata=mock_feature.get_metadata()
         )
 
         # When
@@ -198,8 +186,8 @@ class TestFeastIntegration:
         field_names = [field.name for field in feature_view.schema]
         assert "custom_mapped_field" in field_names
 
-        # Verify the mapper was called with our feature
-        mock_mapper.create_fields.assert_called_once_with(mock_feature)
+        # Verify the mapper was called with our feature metadata
+        mock_mapper.create_fields.assert_called_once_with(mock_feature.get_metadata())
 
 
 class TestFeastDataPersistence:
@@ -217,10 +205,8 @@ class TestFeastDataPersistence:
 
         # Create a valid request
         valid_request = FeatureViewMetadata(
-            symbol="TESTSYM",
-            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature=create_simple_mock_feature("test_feature"),
-            timeframe=Timeframe.HOUR_1
+            dataset_identifier=DatasetIdentifier(symbol="TESTSYM", timeframe=Timeframe.HOUR_1),
+            feature_metadata=create_simple_mock_feature("test_feature", symbol="TESTSYM", timeframe=Timeframe.HOUR_1, feature_role=FeatureRoleEnum.OBSERVATION_SPACE).get_metadata()
         )
 
         # When & Then - should not raise any validation errors
@@ -238,10 +224,8 @@ class TestFeastDataPersistence:
         # Given
         feast_provider = real_feast_container.get(FeastProvider)
         request = FeatureViewMetadata(
-            symbol="METADATA_TEST",
-            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            feature=create_simple_mock_feature("meta_feature"),
-            timeframe=Timeframe.HOUR_1
+            dataset_identifier=DatasetIdentifier(symbol="METADATA_TEST", timeframe=Timeframe.HOUR_1),
+            feature_metadata=create_simple_mock_feature("meta_feature", symbol="METADATA_TEST", timeframe=Timeframe.HOUR_1, feature_role=FeatureRoleEnum.OBSERVATION_SPACE).get_metadata()
         )
 
         # When

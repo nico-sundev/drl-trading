@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from drl_trading_training.adapter.feature_config.feature_config_writer import FeatureConfigWriter
 from drl_trading_adapter.adapter.database.session_factory import SQLAlchemySessionFactory, SessionFactoryError
 from drl_trading_adapter.adapter.database.entity.feature_config_entity import FeatureConfigEntity
-from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
+from drl_trading_common.adapter.model.feature_config_version_info import FeatureConfigVersionInfo
 
 
 class TestFeatureConfigWriter:

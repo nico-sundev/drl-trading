@@ -7,8 +7,8 @@ from injector import inject
 from confluent_kafka import Producer
 
 from drl_trading_common.logging.trading_log_context import TradingLogContext
-from drl_trading_common.model.trading_context import TradingContext
-from drl_trading_common.model.trading_event_payload import TradingEventPayload
+from drl_trading_common.adapter.model.trading_context import TradingContext
+from drl_trading_common.adapter.model.trading_event_payload import TradingEventPayload
 from drl_trading_ingest.core.port.market_data_repo_interface import (
     MarketDataRepoPort,
 )

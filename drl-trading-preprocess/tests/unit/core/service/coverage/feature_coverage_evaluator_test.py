@@ -7,7 +7,7 @@ ensuring proper separation of concerns from the data models.
 import pytest
 from datetime import datetime, timezone, timedelta
 
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_preprocess.core.model.coverage.feature_coverage_analysis import (
     FeatureCoverageAnalysis,
     FeatureCoverageInfo,

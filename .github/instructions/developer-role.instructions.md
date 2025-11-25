@@ -73,7 +73,10 @@ applyTo: '**'
 ## Verification checklist for software development tasks:
 Before generating any code, verify that:
 - [ ] SOLID principles are followed
-- [ ] Type hints are used for all arguments and return types
+- [ ] Type hints are used for arguments and return types
 - [ ] All tests follow the Given/When/Then structure with explicit comments
 - [ ] Docstrings generated and explanatory comments for complex logic
 - [ ] The code can be validated with mypy and ruff
+
+## Bulk operations:
+For bulk operations like fixing imports after class moves, use terminal commands: `find . -type f -name "*.py" -not -path "*/.venv/*" -exec sed -i 's/old_import/new_import/g' {} +`

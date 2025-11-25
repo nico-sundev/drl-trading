@@ -7,9 +7,9 @@ from unittest.mock import Mock
 import pandas as pd
 import pytest
 from drl_trading_common.config.feature_config import FeaturesConfig
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.core.model.timeframe import Timeframe
 
-from drl_trading_core.core.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 from drl_trading_core.core.model.feature_computation_request import FeatureComputationRequest
 from drl_trading_core.core.model.feature_definition import FeatureDefinition
 from drl_trading_core.core.service.feature_manager import FeatureManager

@@ -6,23 +6,13 @@ data models, and utilities.
 
 __version__ = "0.1.0"
 
-# Export main messaging components for easy imports
-from .messaging import (
-    Message,
-    TradingMessageBus,
-    TradingMessageBusFactory,
-    TransportInterface,
-)
-from .base import BaseFeature, BaseParameterSetConfig, BaseTradingEnv
+from .base import BaseTradingEnv
+from .base.base_parameter_set_config import BaseParameterSetConfig
+from .core.model.base_feature import BaseFeature
 
 __all__ = [
-    # Messaging
-    "TradingMessageBus",
-    "TradingMessageBusFactory",
-    "TransportInterface",
-    "Message",
     # Base components
     "BaseFeature",
-    "BaseParameterSetConfig",
     "BaseTradingEnv",
+    "BaseParameterSetConfig",
 ]

@@ -10,9 +10,9 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import List
 
-from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model.market_data_model import MarketDataModel
-from drl_trading_core.common.model.data_availability_summary import DataAvailabilitySummary
+from drl_trading_common.core.model.timeframe import Timeframe
+from drl_trading_core.core.model.market_data_model import MarketDataModel
+from drl_trading_core.core.model.data_availability_summary import DataAvailabilitySummary
 
 
 class MarketDataReaderPort(ABC):

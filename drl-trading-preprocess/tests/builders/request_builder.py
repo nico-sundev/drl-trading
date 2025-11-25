@@ -8,10 +8,10 @@ with additional test-specific flexibility.
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from drl_trading_common.config.feature_config import FeatureDefinition
-from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
-from drl_trading_common.model.feature_preprocessing_request import FeaturePreprocessingRequest
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_core.core.model.feature_definition import FeatureDefinition
+from drl_trading_common.adapter.model.feature_config_version_info import FeatureConfigVersionInfo
+from drl_trading_common.adapter.model.feature_preprocessing_request import FeaturePreprocessingRequest
+from drl_trading_common.adapter.model.timeframe import Timeframe
 
 
 class FeaturePreprocessingRequestBuilder:
@@ -37,7 +37,7 @@ class FeaturePreprocessingRequestBuilder:
                 name="test_feature",
                 enabled=True,
                 derivatives=[0],
-                parameter_sets=[]
+                parsed_parameter_sets={}
             )
         ]
 
@@ -46,7 +46,7 @@ class FeaturePreprocessingRequestBuilder:
             semver="1.0.0",
             hash="test_hash",
             created_at=datetime(2023, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
-            feature_definitions=[fd.model_dump() for fd in self._feature_definitions],
+            feature_definitions=self._feature_definitions,
             description="Test features"
         )
 
@@ -143,7 +143,7 @@ class FeaturePreprocessingRequestBuilder:
             semver=self._feature_config.semver,
             hash=self._feature_config.hash,
             created_at=self._feature_config.created_at,
-            feature_definitions=[fd.model_dump() for fd in feature_definitions],
+            feature_definitions=feature_definitions,
             description=self._feature_config.description
         )
         return self
@@ -155,7 +155,7 @@ class FeaturePreprocessingRequestBuilder:
                 name=name,
                 enabled=True,
                 derivatives=[0],
-                parameter_sets=[]
+                parsed_parameter_sets={}
             )
             for name in feature_names
         ]

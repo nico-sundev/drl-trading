@@ -11,10 +11,10 @@ from typing import List
 from sqlalchemy import func, and_
 from injector import inject
 
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_core.core.port.market_data_reader_port import MarketDataReaderPort
-from drl_trading_core.common.model.market_data_model import MarketDataModel
-from drl_trading_core.common.model.data_availability_summary import DataAvailabilitySummary
+from drl_trading_core.core.model.market_data_model import MarketDataModel
+from drl_trading_core.core.model.data_availability_summary import DataAvailabilitySummary
 from drl_trading_adapter.adapter.database.session_factory import SQLAlchemySessionFactory
 from drl_trading_adapter.adapter.database.entity.market_data_entity import MarketDataEntity
 from drl_trading_adapter.adapter.database.mapper import MarketDataMapper, DataAvailabilityMapper

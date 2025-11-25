@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pytest
 from feast.types import Float32
 from drl_trading_adapter.adapter.feature_store.provider.mapper.feature_field_mapper import FeatureFieldMapper
-from drl_trading_common.base import BaseFeature
+from drl_trading_common.core.model.feature_metadata import FeatureMetadata
 
 
 class TestFeatureFieldMapper:
@@ -15,12 +15,12 @@ class TestFeatureFieldMapper:
         """Test field name generation for feature without config."""
         # Given
         mapper = FeatureFieldMapper()
-        mock_feature = Mock(spec=BaseFeature)
-        mock_feature.get_feature_name.return_value = "simple_feature"
-        mock_feature.get_config.return_value = None
+        mock_metadata = Mock(spec=FeatureMetadata)
+        mock_metadata.feature_name = "simple_feature"
+        mock_metadata.config = None
 
         # When
-        field_name = mapper.get_field_base_name(mock_feature)
+        field_name = mapper.get_field_base_name(mock_metadata)
 
         # Then
         assert field_name == "simple_feature"
@@ -29,16 +29,15 @@ class TestFeatureFieldMapper:
         """Test field name generation for feature with config."""
         # Given
         mapper = FeatureFieldMapper()
-        mock_feature = Mock(spec=BaseFeature)
-        mock_feature.get_feature_name.return_value = "rsi"
-        mock_feature.get_config_to_string.return_value = "14"
-
+        mock_metadata = Mock(spec=FeatureMetadata)
+        mock_metadata.feature_name = "rsi"
+        mock_metadata.config_to_string = "14"
         mock_config = Mock()
         mock_config.hash_id.return_value = "abc123"
-        mock_feature.get_config.return_value = mock_config
+        mock_metadata.config = mock_config
 
         # When
-        field_name = mapper.get_field_base_name(mock_feature)
+        field_name = mapper.get_field_base_name(mock_metadata)
 
         # Then
         assert field_name == "rsi_14_abc123"
@@ -47,13 +46,13 @@ class TestFeatureFieldMapper:
         """Test field creation for feature without sub-features."""
         # Given
         mapper = FeatureFieldMapper()
-        mock_feature = Mock(spec=BaseFeature)
-        mock_feature.get_feature_name.return_value = "close_price"
-        mock_feature.get_config.return_value = None
-        mock_feature.get_sub_features_names.return_value = []
+        mock_metadata = Mock(spec=FeatureMetadata)
+        mock_metadata.feature_name = "close_price"
+        mock_metadata.config = None
+        mock_metadata.sub_feature_names = []
 
         # When
-        fields = mapper.create_fields(mock_feature)
+        fields = mapper.create_fields(mock_metadata)
 
         # Then
         assert len(fields) == 1
@@ -64,16 +63,16 @@ class TestFeatureFieldMapper:
         """Test field creation for feature with sub-features."""
         # Given
         mapper = FeatureFieldMapper()
-        mock_feature = Mock(spec=BaseFeature)
-        mock_feature.get_feature_name.return_value = "reward"
-        mock_feature.get_config.return_value = None
-        mock_feature.get_sub_features_names.return_value = [
+        mock_metadata = Mock(spec=FeatureMetadata)
+        mock_metadata.feature_name = "reward"
+        mock_metadata.config = None
+        mock_metadata.sub_feature_names = [
             "reward",
             "cumulative_return",
         ]
 
         # When
-        fields = mapper.create_fields(mock_feature)
+        fields = mapper.create_fields(mock_metadata)
 
         # Then
         assert len(fields) == 2
@@ -87,17 +86,17 @@ class TestFeatureFieldMapper:
         """Test field creation for feature with both config and sub-features."""
         # Given
         mapper = FeatureFieldMapper()
-        mock_feature = Mock(spec=BaseFeature)
-        mock_feature.get_feature_name.return_value = "complex_indicator"
-        mock_feature.get_config_to_string.return_value = "param1"
-        mock_feature.get_sub_features_names.return_value = ["upper", "lower"]
+        mock_metadata = Mock(spec=FeatureMetadata)
+        mock_metadata.feature_name = "complex_indicator"
+        mock_metadata.config_to_string = "param1"
+        mock_metadata.sub_feature_names = ["upper", "lower"]
 
         mock_config = Mock()
         mock_config.hash_id.return_value = "hash123"
-        mock_feature.get_config.return_value = mock_config
+        mock_metadata.config = mock_config
 
         # When
-        fields = mapper.create_fields(mock_feature)
+        fields = mapper.create_fields(mock_metadata)
 
         # Then
         assert len(fields) == 2
@@ -119,19 +118,19 @@ class TestFeatureFieldMapper:
         """Test parameterized field name generation."""
         # Given
         mapper = FeatureFieldMapper()
-        mock_feature = Mock(spec=BaseFeature)
-        mock_feature.get_feature_name.return_value = feature_name
-        mock_feature.get_config_to_string.return_value = config_string
+        mock_metadata = Mock(spec=FeatureMetadata)
+        mock_metadata.feature_name = feature_name
+        mock_metadata.config_to_string = config_string
 
         if config_string:
             mock_config = Mock()
             mock_config.hash_id.return_value = hash_value
-            mock_feature.get_config.return_value = mock_config
+            mock_metadata.config = mock_config
         else:
-            mock_feature.get_config.return_value = None
+            mock_metadata.config = None
 
         # When
-        field_name = mapper.get_field_base_name(mock_feature)
+        field_name = mapper.get_field_base_name(mock_metadata)
 
         # Then
         assert field_name == expected

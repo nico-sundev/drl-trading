@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from drl_trading_adapter.adapter.database.repository.feature_config_repository import FeatureConfigRepository
 from drl_trading_adapter.adapter.database.session_factory import SQLAlchemySessionFactory, SessionFactoryError
 from drl_trading_adapter.adapter.database.entity.feature_config_entity import FeatureConfigEntity
-from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
+from drl_trading_common.adapter.model.feature_config_version_info import FeatureConfigVersionInfo
 
 
 class TestFeatureConfigRepository:

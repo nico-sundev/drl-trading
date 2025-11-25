@@ -9,12 +9,13 @@ import logging
 import pandas as pd
 import pytest
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_common.model.feature_config_version_info import (
+from drl_trading_common.adapter.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
-from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model.feature_view_metadata import FeatureViewMetadata
-from drl_trading_core.common.model.feature_service_metadata import (
+from drl_trading_common.adapter.model.timeframe import Timeframe
+from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
+from drl_trading_core.core.dto.offline_storage_request import OfflineStorageRequest
+from drl_trading_core.core.dto.feature_service_metadata import (
     FeatureServiceMetadata,
 )
 from injector import Injector
@@ -47,12 +48,13 @@ class TestFeatureStoreRepositoriesIntegration:
         fetch_repo = integration_container.get(IFeatureStoreFetchPort)
 
         # When - Store features offline
-        save_repo.store_computed_features_offline(
+        request = OfflineStorageRequest.create(
             features_df=sample_trading_features_df,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
-            feature_view_requests=feature_view_requests_fixture
+            feature_view_metadata_list=feature_view_requests_fixture
         )
+        save_repo.store_computed_features_offline(request)
 
         # And fetch them back (offline)
         timestamps = sample_trading_features_df["event_timestamp"]
@@ -98,12 +100,13 @@ class TestFeatureStoreRepositoriesIntegration:
         fetch_repo = integration_container.get(IFeatureStoreFetchPort)
 
         # Store features offline first
-        save_repo.store_computed_features_offline(
+        request = OfflineStorageRequest.create(
             features_df=sample_trading_features_df,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
-            feature_view_requests=feature_view_requests_fixture
+            feature_view_metadata_list=feature_view_requests_fixture
         )
+        save_repo.store_computed_features_offline(request)
 
         # When - Materialize to online store
         save_repo.batch_materialize_features(
@@ -146,12 +149,13 @@ class TestFeatureStoreRepositoriesIntegration:
 
         # IMPORTANT: First create feature views by doing an offline save
         # This is required before any online operations can work
-        save_repo.store_computed_features_offline(
+        request = OfflineStorageRequest.create(
             features_df=sample_trading_features_df,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
-            feature_view_requests=feature_view_requests_fixture
+            feature_view_metadata_list=feature_view_requests_fixture
         )
+        save_repo.store_computed_features_offline(request)
 
         # Create single record for real-time scenario
         single_record_df = DataFrame({
@@ -199,12 +203,13 @@ class TestFeatureStoreRepositoriesIntegration:
         save_repo = integration_container.get(IFeatureStoreSavePort)
 
         # When - Store should work when feature store is properly configured
-        save_repo.store_computed_features_offline(
+        request = OfflineStorageRequest.create(
             features_df=sample_trading_features_df,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
-            feature_view_requests=feature_view_requests_fixture
+            feature_view_metadata_list=feature_view_requests_fixture
         )
+        save_repo.store_computed_features_offline(request)
 
         # Then - Operation should complete successfully without exceptions
         # We verify this by the fact that no exception was raised above
@@ -227,12 +232,13 @@ class TestFeatureStoreRepositoriesIntegration:
         save_repo = integration_container.get(IFeatureStoreSavePort)
 
         # IMPORTANT: First create feature views by doing an offline save
-        save_repo.store_computed_features_offline(
+        request = OfflineStorageRequest.create(
             features_df=sample_trading_features_df,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
-            feature_view_requests=feature_view_requests_fixture
+            feature_view_metadata_list=feature_view_requests_fixture
         )
+        save_repo.store_computed_features_offline(request)
 
         # Filter features based on role
         if feature_role == FeatureRoleEnum.OBSERVATION_SPACE:
@@ -276,12 +282,13 @@ class TestFeatureStoreRepositoriesIntegration:
 
         # When/Then - Should raise ValueError for all operations
         with pytest.raises(ValueError, match="event_timestamp"):
-            save_repo.store_computed_features_offline(
+            request = OfflineStorageRequest.create(
                 features_df=invalid_df,
                 symbol=symbol,
                 feature_version_info=feature_version_info_fixture,
-                feature_view_requests=feature_view_requests_fixture
+                feature_view_metadata_list=feature_view_requests_fixture
             )
+            save_repo.store_computed_features_offline(request)
 
         with pytest.raises(ValueError, match="event_timestamp"):
             save_repo.batch_materialize_features(
@@ -302,23 +309,20 @@ class TestFeatureStoreRepositoriesIntegration:
         feature_view_requests_fixture: list[FeatureViewMetadata],
         feature_version_info_fixture: FeatureConfigVersionInfo
     ) -> None:
-        """Test handling of empty DataFrames."""
+        """Test that empty DataFrames are rejected with appropriate error."""
         # Given
         symbol = "EURUSD"
-        save_repo = integration_container.get(IFeatureStoreSavePort)
 
         empty_df = DataFrame()
 
-        # When - Store empty DataFrame
-        save_repo.store_computed_features_offline(
-            features_df=empty_df,
-            symbol=symbol,
-            feature_version_info=feature_version_info_fixture,
-            feature_view_requests=feature_view_requests_fixture
-        )
-
-        # Then - Should handle gracefully without errors
-        assert True  # Placeholder for successful completion
+        # When/Then - Should raise ValueError for empty DataFrame
+        with pytest.raises(ValueError, match="features_df must be a non-empty DataFrame"):
+            OfflineStorageRequest.create(
+                features_df=empty_df,
+                symbol=symbol,
+                feature_version_info=feature_version_info_fixture,
+                feature_view_metadata_list=feature_view_requests_fixture
+            )
 
     def test_large_dataset_performance(
         self,
@@ -353,12 +357,13 @@ class TestFeatureStoreRepositoriesIntegration:
         fetch_repo = integration_container.get(IFeatureStoreFetchPort)
 
         # When - Store large dataset
-        save_repo.store_computed_features_offline(
+        request = OfflineStorageRequest.create(
             features_df=large_features_df,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
-            feature_view_requests=feature_view_requests_fixture
+            feature_view_metadata_list=feature_view_requests_fixture
         )
+        save_repo.store_computed_features_offline(request)
 
         # And fetch subset back
         subset_timestamps = large_features_df["event_timestamp"].iloc[100:200]
@@ -450,19 +455,19 @@ class TestFeatureStoreRepositoriesErrorScenarios:
             for request in feature_view_requests_fixture:
                 modified_request = FeatureViewMetadata(
                     symbol=test_symbol,
-                    feature_role=request.feature_role,
-                    feature=request.feature,
+                    feature_metadata=request.feature_metadata,
                     timeframe=Timeframe.HOUR_1
                 )
                 symbol_specific_requests.append(modified_request)
 
             # When - Save for each symbol
-            save_repo.store_computed_features_offline(
+            request = OfflineStorageRequest.create(
                 features_df=modified_df,
                 symbol=test_symbol,
                 feature_version_info=feature_version_info_fixture,
-                feature_view_requests=symbol_specific_requests
+                feature_view_metadata_list=symbol_specific_requests
             )
+            save_repo.store_computed_features_offline(request)
 
         # Then - Test both online and offline fetch with graceful error handling
         for test_symbol in symbols:

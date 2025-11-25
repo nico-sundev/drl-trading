@@ -5,8 +5,8 @@ import boto3
 import pandas as pd
 import pytest
 from drl_trading_adapter.infrastructure.di.adapter_module import AdapterModule
-from drl_trading_common.base.base_feature import BaseFeature
-from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_common.core.model.base_feature import BaseFeature
+from drl_trading_common.adapter.model.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.config.feature_config import (
     FeatureStoreConfig,
     LocalRepoConfig,
@@ -18,8 +18,8 @@ from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrate
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     ITechnicalIndicatorFacade,
 )
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.adapter.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.adapter.model.timeframe import Timeframe
 from injector import Injector
 from pandas import DataFrame
 from testcontainers.minio import MinioContainer
@@ -27,8 +27,8 @@ from testcontainers.minio import MinioContainer
 
 from drl_trading_preprocess.infrastructure.config.preprocess_config import PreprocessConfig
 from drl_trading_preprocess.infrastructure.di.preprocess_module import PreprocessModule
-from drl_trading_core.common.model.feature_view_metadata import FeatureViewMetadata
-from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
+from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
+from drl_trading_common.adapter.model.feature_config_version_info import FeatureConfigVersionInfo
 from datetime import datetime
 
 
@@ -118,10 +118,10 @@ class TestRsiFeature(BaseFeature):
             f"rsi_{config.period}", "rsi", period=config.period
         )
 
-    def get_feature_name(self) -> str:
+    def _get_feature_name(self) -> str:
         return self._feature_name
 
-    def get_sub_features_names(self) -> list[str]:
+    def _get_sub_features_names(self) -> list[str]:
         return []
 
     def compute_all(self) -> Optional[DataFrame]:
@@ -153,7 +153,7 @@ class TestRsiFeature(BaseFeature):
         result[self.dataset_id.symbol] = self.dataset_id.symbol
         return result
 
-    def get_config_to_string(self) -> str:
+    def _get_config_to_string(self) -> str:
         return f"{self.config.period}"
 
 
@@ -171,10 +171,10 @@ class TestClosePriceFeature(BaseFeature):
         super().__init__(dataset_id, indicator_service, config, postfix)
         self._feature_name = "close_price"
 
-    def get_feature_name(self) -> str:
+    def _get_feature_name(self) -> str:
         return self._feature_name
 
-    def get_sub_features_names(self) -> list[str]:
+    def _get_sub_features_names(self) -> list[str]:
         return []
 
     def compute_all(self) -> Optional[DataFrame]:
@@ -206,7 +206,7 @@ class TestClosePriceFeature(BaseFeature):
         result[self.dataset_id.symbol] = self.dataset_id.symbol
         return result
 
-    def get_config_to_string(self) -> Optional[str]:
+    def _get_config_to_string(self) -> Optional[str]:
         return None
 
 
@@ -231,10 +231,10 @@ class TestRewardFeature(BaseFeature):
             "cumulative_return", "cumulative_return"
         )
 
-    def get_feature_name(self) -> str:
+    def _get_feature_name(self) -> str:
         return self._feature_name
 
-    def get_sub_features_names(self) -> list[str]:
+    def _get_sub_features_names(self) -> list[str]:
         return ["reward", "cumulative_return"]
 
     def compute_all(self) -> Optional[DataFrame]:
@@ -271,7 +271,7 @@ class TestRewardFeature(BaseFeature):
         result[self.dataset_id.symbol] = self.dataset_id.symbol
         return result
 
-    def get_config_to_string(self) -> Optional[str]:
+    def _get_config_to_string(self) -> Optional[str]:
         return None
 
 def _initialize_feast_repository(repo_path: str) -> None:
@@ -537,7 +537,7 @@ def _create_feature_view_requests(
     Do not import or use directly from tests.
     """
     # Create dataset identifier and mock indicator service
-    dataset_id = DatasetIdentifier(symbol=symbol, timeframe="H1")
+    dataset_identifier = DatasetIdentifier(symbol=symbol, timeframe=Timeframe.HOUR_1)
     indicator_service = MockTechnicalIndicatorFacade()
 
     # Create list of Feature ViewRequestContainers, one per feature
@@ -559,45 +559,37 @@ def _create_feature_view_requests(
         if feature_name in ["reward", "cumulative_return"]:
             reward_key = f"{role}_reward_feature"
             if reward_key not in created_features:
-                feature = TestRewardFeature(dataset_id, indicator_service)
+                feature = TestRewardFeature(dataset_identifier, indicator_service)
                 created_features[reward_key] = feature
                 result.append(FeatureViewMetadata(
-                    symbol=symbol,
-                    feature_role=role,
-                    feature=feature,
-                    timeframe=Timeframe.HOUR_1
+                    dataset_identifier=dataset_identifier,
+                    feature_metadata=feature.get_metadata(),
                 ))
         elif feature_name == "rsi_14":
             if feature_key not in created_features:
                 config = TestRsiConfig()
-                feature = TestRsiFeature(dataset_id, indicator_service, config)
+                feature = TestRsiFeature(dataset_identifier, indicator_service, config)
                 created_features[feature_key] = feature
                 result.append(FeatureViewMetadata(
-                    symbol=symbol,
-                    feature_role=role,
-                    feature=feature,
-                    timeframe=Timeframe.HOUR_1
+                    dataset_identifier=dataset_identifier,
+                    feature_metadata=feature.get_metadata(),
                 ))
         elif feature_name == "close_1":
             if feature_key not in created_features:
-                feature = TestClosePriceFeature(dataset_id, indicator_service)
+                feature = TestClosePriceFeature(dataset_identifier, indicator_service)
                 created_features[feature_key] = feature
                 result.append(FeatureViewMetadata(
-                    symbol=symbol,
-                    feature_role=role,
-                    feature=feature,
-                    timeframe=Timeframe.HOUR_1
+                    dataset_identifier=dataset_identifier,
+                    feature_metadata=feature.get_metadata(),
                 ))
         else:
             # Default to close price feature for unknown features
             if feature_key not in created_features:
-                feature = TestClosePriceFeature(dataset_id, indicator_service)
+                feature = TestClosePriceFeature(dataset_identifier, indicator_service)
                 created_features[feature_key] = feature
                 result.append(FeatureViewMetadata(
-                    symbol=symbol,
-                    feature_role=role,
-                    feature=feature,
-                    timeframe=Timeframe.HOUR_1
+                    dataset_identifier=dataset_identifier,
+                    feature_metadata=feature.get_metadata(),
                 ))
 
     return result

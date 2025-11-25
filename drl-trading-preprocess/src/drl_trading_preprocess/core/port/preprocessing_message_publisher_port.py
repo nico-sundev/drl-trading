@@ -9,8 +9,8 @@ architecture by providing async notifications about preprocessing results.
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
-from drl_trading_common.model.feature_preprocessing_request import FeaturePreprocessingRequest
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_core.core.dto.feature_preprocessing_request import FeaturePreprocessingRequest
+from drl_trading_common.core.model.timeframe import Timeframe
 
 
 class PreprocessingMessagePublisherPort(ABC):

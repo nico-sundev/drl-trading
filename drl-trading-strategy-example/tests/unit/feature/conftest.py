@@ -3,12 +3,11 @@ from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
-from drl_trading_common import BaseParameterSetConfig
-from drl_trading_common.base.base_feature import BaseFeature
+from drl_trading_common import BaseParameterSetConfig, BaseFeature
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     ITechnicalIndicatorFacade,
 )
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.adapter.model.dataset_identifier import DatasetIdentifier
 
 
 class MockMacdFeature(BaseFeature):
@@ -54,7 +53,7 @@ class MockMacdFeature(BaseFeature):
         result_df[f"macd_histogram{self.postfix}"] = 0.05
         return result_df
 
-    def get_sub_features_names(self) -> list[str]:
+    def _get_sub_features_names(self) -> list[str]:
         """Get the names of the sub-features."""
         return [
             f"macd{self.postfix}",
@@ -62,11 +61,11 @@ class MockMacdFeature(BaseFeature):
             f"macd_histogram{self.postfix}"
         ]
 
-    def get_feature_name(self) -> str:
+    def _get_feature_name(self) -> str:
         """Get the feature name."""
         return "macd"
 
-    def get_config_to_string(self) -> str:
+    def _get_config_to_string(self) -> str:
         return "A1b2c3"
 
 
@@ -109,15 +108,15 @@ class MockRsiFeature(BaseFeature):
         result_df[f"rsi{self.postfix}"] = 50.0
         return result_df
 
-    def get_sub_features_names(self) -> list[str]:
+    def _get_sub_features_names(self) -> list[str]:
         """Get the names of the sub-features."""
         return [f"rsi{self.postfix}"]
 
-    def get_feature_name(self) -> str:
+    def _get_feature_name(self) -> str:
         """Get the feature name."""
         return "rsi"
 
-    def get_config_to_string(self) -> str:
+    def _get_config_to_string(self) -> str:
         return "A1b2c3"
 
 

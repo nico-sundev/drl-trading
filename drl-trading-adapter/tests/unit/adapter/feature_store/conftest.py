@@ -15,14 +15,15 @@ from drl_trading_common.config.feature_config import FeatureStoreConfig, LocalRe
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
 from types import SimpleNamespace
-from drl_trading_common.model.feature_config_version_info import (
+from drl_trading_common.adapter.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
-from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model.feature_service_metadata import (
+from drl_trading_common.core.model.timeframe import Timeframe
+from drl_trading_core.core.dto.feature_service_metadata import (
     FeatureServiceMetadata,
 )
-from drl_trading_core.common.model.feature_view_metadata import FeatureViewMetadata
+from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
+from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 from feast import FeatureService, FeatureStore
 from pandas import DataFrame
 
@@ -171,11 +172,12 @@ def feature_service_request(
     feature_version_info: FeatureConfigVersionInfo,
 ) -> FeatureServiceMetadata:
     """Create a test FeatureServiceRequestContainer."""
+    dataset_identifier = DatasetIdentifier(symbol=eurusd_h1_symbol, timeframe=Timeframe.HOUR_1)
     return FeatureServiceMetadata.create(
-        symbol=eurusd_h1_symbol,
-        timeframe=Timeframe.HOUR_1,
+        dataset_identifier=dataset_identifier,
         feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
         feature_config_version=feature_version_info,
+        feature_view_metadata_list=[]
     )
 
 
@@ -185,36 +187,30 @@ def gbpusd_feature_service_request(
     feature_version_info: FeatureConfigVersionInfo,
 ) -> FeatureServiceMetadata:
     """Create a test FeatureServiceRequestContainer for GBPUSD."""
+    dataset_identifier = DatasetIdentifier(symbol=gbpusd_m15_symbol, timeframe=Timeframe.MINUTE_15)
     return FeatureServiceMetadata.create(
-        symbol=gbpusd_m15_symbol,
-        timeframe=Timeframe.MINUTE_15,
+        dataset_identifier=dataset_identifier,
         feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
         feature_config_version=feature_version_info,
+        feature_view_metadata_list=[]
     )
 
 
 @pytest.fixture
 def feature_view_requests(
     eurusd_h1_symbol: str,
-    feature_version_info: FeatureConfigVersionInfo,
 ) -> list[FeatureViewMetadata]:
     """Create sample FeatureViewRequest list for tests."""
-    # Using simple Mock objects as BaseFeature placeholders
-    features = [Mock(name="feat1"), Mock(name="feat2")]
+    from drl_trading_common.adapter.model.dataset_identifier import DatasetIdentifier
+    dataset_identifier = DatasetIdentifier(symbol=eurusd_h1_symbol, timeframe=Timeframe.HOUR_1)
     return [
         FeatureViewMetadata(
-            symbol=eurusd_h1_symbol,
-            feature_view_name="observation_space_feature_view",
-            feature_role=None,  # role is optional for integration; provider logic may infer
-            feature_version_info=feature_version_info,
-            features=features,
+            dataset_identifier=dataset_identifier,
+            feature_metadata=Mock(),  # Mock feature metadata
         ),
         FeatureViewMetadata(
-            symbol=eurusd_h1_symbol,
-            feature_view_name="reward_engineering_feature_view",
-            feature_role=None,
-            feature_version_info=feature_version_info,
-            features=features,
+            dataset_identifier=dataset_identifier,
+            feature_metadata=Mock(),
         ),
     ]
 

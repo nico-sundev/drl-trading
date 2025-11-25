@@ -9,9 +9,9 @@ business concerns.
 from datetime import datetime, timezone
 from typing import Any
 
-from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model.market_data_model import MarketDataModel
-from drl_trading_core.common.model.data_availability_summary import DataAvailabilitySummary
+from drl_trading_common.core.model.timeframe import Timeframe
+from drl_trading_core.core.model.market_data_model import MarketDataModel
+from drl_trading_core.core.model.data_availability_summary import DataAvailabilitySummary
 from drl_trading_adapter.adapter.database.entity.market_data_entity import MarketDataEntity
 
 

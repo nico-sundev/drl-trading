@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Type
 
-from drl_trading_common.base import BaseFeature
+from drl_trading_common import BaseFeature
 
 
 class IFeatureClassRegistry(ABC):

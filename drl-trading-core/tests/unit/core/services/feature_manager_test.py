@@ -11,10 +11,11 @@ from unittest.mock import MagicMock, patch
 
 from drl_trading_common.config.dask_config import DaskConfig
 from drl_trading_common.interface.feature.feature_factory_interface import IFeatureFactory
-from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.core.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.core.model.timeframe import Timeframe
+from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
-from drl_trading_common.base.base_feature import BaseFeature
+from drl_trading_common.core.model.base_feature import BaseFeature
+from drl_trading_common.core.model.feature_metadata import FeatureMetadata
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.decorator.feature_role_decorator import feature_role
 from pandas import DataFrame
@@ -40,8 +41,8 @@ class MockFeature(BaseFeature):
         }, index=pd.date_range("2024-01-01 10:00:00", periods=3, freq="1min"))
 
         # Mock dataset_id for is_caught_up functionality
-        from drl_trading_core.core.model.dataset_identifier import DatasetIdentifier
-        from drl_trading_common.model.timeframe import Timeframe
+        from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+        from drl_trading_common.core.model.timeframe import Timeframe
         self.dataset_id = DatasetIdentifier("MOCK", Timeframe.MINUTE_1)
 
     def compute_all(self) -> DataFrame:
@@ -51,20 +52,40 @@ class MockFeature(BaseFeature):
         return self.data.tail(1).copy()
 
     def update(self, df: DataFrame) -> None:
+        # For mock features, only update if we don't already have result data
+        # (indicated by presence of event_timestamp or feature-specific columns)
+        if self.data is not None and not self.data.empty:
+            # If data already has event_timestamp or feature columns, don't overwrite with market data
+            has_result_columns = any(col not in ['open', 'high', 'low', 'close', 'volume', 'timestamp'] for col in self.data.columns)
+            if has_result_columns or 'event_timestamp' in self.data.columns:
+                return  # Don't update with market data if we already have result data
+
         # Preserve the datetime index when updating
         if self.data is not None:
             self.data = pd.concat([self.data, df], ignore_index=False)
         else:
             self.data = df.copy()
 
-    def get_feature_name(self) -> str:
+    def _get_feature_name(self) -> str:
         return self.feature_name
 
-    def get_sub_features_names(self) -> list[str]:
+    def _get_sub_features_names(self) -> list[str]:
         return [self.feature_name]
 
-    def get_config_to_string(self) -> str:
+    def _get_config_to_string(self) -> str:
         return f"MockFeature_{self.feature_name}"
+
+    def get_metadata(self) -> FeatureMetadata:
+        """Get metadata for the mock feature."""
+        from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
+        return FeatureMetadata(
+            config=BaseParameterSetConfig(type="MockFeature", enabled=True),
+            dataset_id=self.dataset_id,
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature_name=self.feature_name,
+            sub_feature_names=self._get_sub_features_names(),
+            config_to_string=self._get_config_to_string()
+        )
 
 
 class TestFeatureManager:
@@ -399,6 +420,10 @@ class TestFeatureManager:
             feature_computation_config=feature_computation_config,
         )
         manager.request_features_update(sample_computation_request)
+
+        # Override the data to be empty after update
+        for feature in manager._features.values():
+            feature.data = pd.DataFrame()
 
         # When
         result = manager.compute_all()

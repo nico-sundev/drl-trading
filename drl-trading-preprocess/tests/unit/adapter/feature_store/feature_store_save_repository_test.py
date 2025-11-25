@@ -11,8 +11,8 @@ from drl_trading_preprocess.adapter.feature_store import FeatureStoreSaveReposit
 import pandas as pd
 import pytest
 from drl_trading_common.enum import FeatureRoleEnum
-from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
-from drl_trading_core.common.model.feature_view_metadata import FeatureViewMetadata
+from drl_trading_core.core.dto.feature_service_metadata import FeatureServiceMetadata
+from drl_trading_core.core.dto.offline_storage_request import OfflineStorageRequest
 from pandas import DataFrame
 
 
@@ -50,20 +50,19 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         sample_features_df: DataFrame,
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
-        feature_view_requests: list[FeatureViewMetadata],
-        feature_version_info: FeatureConfigVersionInfo
+        feature_service_metadata: FeatureServiceMetadata
     ) -> None:
         """Test successful storage of computed features offline."""
         # Given
         mock_offline_repo.store_features_incrementally.return_value = len(sample_features_df)
 
-        # When
-        feature_store_save_repository.store_computed_features_offline(
-            sample_features_df,
-            eurusd_h1_symbol,
-            feature_version_info,
-            feature_view_requests
+        request = OfflineStorageRequest.create(
+            features_df=sample_features_df,
+            feature_service_metadata=feature_service_metadata
         )
+
+        # When
+        feature_store_save_repository.store_computed_features_offline(request)
 
         # Then
         # Implementation converts timestamps to UTC, so we need to check the actual call
@@ -90,20 +89,19 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         feature_store_save_repository: FeatureStoreSaveRepository,
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
-        feature_view_requests: list[FeatureViewMetadata],
-        feature_version_info: FeatureConfigVersionInfo
+        feature_service_metadata: FeatureServiceMetadata
     ) -> None:
         """Test handling of empty DataFrame during offline storage."""
         # Given
         empty_df = DataFrame()
 
-        # When
-        feature_store_save_repository.store_computed_features_offline(
-            empty_df,
-            eurusd_h1_symbol,
-            feature_version_info,
-            feature_view_requests
+        request = OfflineStorageRequest(
+            features_df=empty_df,
+            feature_service_metadata=feature_service_metadata
         )
+
+        # When
+        feature_store_save_repository.store_computed_features_offline(request)
 
         # Then
         mock_offline_repo.store_features_incrementally.assert_not_called()
@@ -113,8 +111,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         feature_store_save_repository: FeatureStoreSaveRepository,
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
-        feature_view_requests: list[FeatureViewMetadata],
-        feature_version_info: FeatureConfigVersionInfo
+        feature_service_metadata: FeatureServiceMetadata
     ) -> None:
         """Test error handling when event_timestamp column is missing."""
         # Given
@@ -124,14 +121,14 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
             # Missing event_timestamp column
         })
 
+        request = OfflineStorageRequest.create(
+            features_df=invalid_df,
+            feature_service_metadata=feature_service_metadata
+        )
+
         # When & Then
         with pytest.raises(ValueError, match="features_df must contain 'event_timestamp' column"):
-            feature_store_save_repository.store_computed_features_offline(
-                invalid_df,
-                eurusd_h1_symbol,
-                feature_version_info,
-                feature_view_requests
-            )
+            feature_store_save_repository.store_computed_features_offline(request)
 
     def test_store_computed_features_offline_no_new_features_stored(
         self,
@@ -139,20 +136,19 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         sample_features_df: DataFrame,
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
-        feature_view_requests: list[FeatureViewMetadata],
-        feature_version_info: FeatureConfigVersionInfo
+        feature_service_metadata: FeatureServiceMetadata
     ) -> None:
         """Test handling when no new features are stored (duplicates)."""
         # Given
         mock_offline_repo.store_features_incrementally.return_value = 0
 
-        # When
-        feature_store_save_repository.store_computed_features_offline(
-            sample_features_df,
-            eurusd_h1_symbol,
-            feature_version_info,
-            feature_view_requests
+        request = OfflineStorageRequest.create(
+            features_df=sample_features_df,
+            feature_service_metadata=feature_service_metadata
         )
+
+        # When
+        feature_store_save_repository.store_computed_features_offline(request)
 
         # Then
         mock_offline_repo.store_features_incrementally.assert_called_once()
@@ -167,8 +163,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
         mock_feast_provider: Mock,
-        feature_view_requests: list[FeatureViewMetadata],
-        feature_version_info: FeatureConfigVersionInfo
+        feature_service_metadata: FeatureServiceMetadata
     ) -> None:
         """Test that feature views are created when new features are stored."""
         # Given
@@ -180,13 +175,13 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
 
         mock_feast_provider.get_or_create_feature_service.return_value = mock_feature_service
 
-        # When
-        feature_store_save_repository.store_computed_features_offline(
-            sample_features_df,
-            eurusd_h1_symbol,
-            feature_version_info,
-            feature_view_requests
+        request = OfflineStorageRequest.create(
+            features_df=sample_features_df,
+            feature_service_metadata=feature_service_metadata
         )
+
+        # When
+        feature_store_save_repository.store_computed_features_offline(request)
 
         # Then
         # Verify feature service creation
@@ -194,7 +189,7 @@ class TestFeatureStoreSaveRepositoryOfflineStorage:
         call_args = mock_feast_provider.get_or_create_feature_service.call_args
         assert "service_name" in call_args.kwargs
         assert "feature_view_requests" in call_args.kwargs
-        assert call_args.kwargs["feature_view_requests"] == feature_view_requests
+        assert call_args.kwargs["feature_view_requests"] == feature_service_metadata.feature_view_metadata_list
 
         # Verify logging
         mock_logger.info.assert_called()
@@ -445,8 +440,7 @@ class TestFeatureStoreSaveRepositoryPrivateMethods:
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
         mock_feast_provider: Mock,
-        feature_view_requests: list[FeatureViewMetadata],
-        feature_version_info: FeatureConfigVersionInfo
+        feature_service_metadata: FeatureServiceMetadata
     ) -> None:
         """Test that _create_and_apply_feature_views is called with correct parameters."""
         # Given
@@ -457,13 +451,13 @@ class TestFeatureStoreSaveRepositoryPrivateMethods:
 
         mock_feast_provider.get_or_create_feature_service.return_value = mock_feature_service
 
-        # When
-        feature_store_save_repository.store_computed_features_offline(
-            sample_features_df,
-            eurusd_h1_symbol,
-            feature_version_info,
-            feature_view_requests
+        request = OfflineStorageRequest.create(
+            features_df=sample_features_df,
+            feature_service_metadata=feature_service_metadata
         )
+
+        # When
+        feature_store_save_repository.store_computed_features_offline(request)
 
         # Then
         # Verify feature service is created with the correct requests
@@ -471,7 +465,7 @@ class TestFeatureStoreSaveRepositoryPrivateMethods:
         call_args = mock_feast_provider.get_or_create_feature_service.call_args
         assert "service_name" in call_args.kwargs
         assert "feature_view_requests" in call_args.kwargs
-        assert call_args.kwargs["feature_view_requests"] == feature_view_requests
+        assert call_args.kwargs["feature_view_requests"] == feature_service_metadata.feature_view_metadata_list
 
 
 class TestFeatureStoreSaveRepositoryErrorHandling:
@@ -484,22 +478,21 @@ class TestFeatureStoreSaveRepositoryErrorHandling:
         eurusd_h1_symbol: str,
         mock_offline_repo: Mock,
         mock_feast_provider: Mock,
-        feature_view_requests: list[FeatureViewMetadata],
-        feature_version_info: FeatureConfigVersionInfo
+        feature_service_metadata: FeatureServiceMetadata
     ) -> None:
         """Test error handling when feast provider raises exception."""
         # Given
         mock_offline_repo.store_features_incrementally.return_value = len(sample_features_df)
         mock_feast_provider.get_or_create_feature_service.side_effect = Exception("Feast provider error")
 
+        request = OfflineStorageRequest.create(
+            features_df=sample_features_df,
+            feature_service_metadata=feature_service_metadata
+        )
+
         # When & Then
         with pytest.raises(Exception, match="Feast provider error"):
-            feature_store_save_repository.store_computed_features_offline(
-                sample_features_df,
-                eurusd_h1_symbol,
-                feature_version_info,
-                feature_view_requests,
-            )
+            feature_store_save_repository.store_computed_features_offline(request)
 
     def test_batch_materialize_features_feast_store_exception(
         self,

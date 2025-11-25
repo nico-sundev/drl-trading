@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, Optional, Type
 
-from drl_trading_common.base.base_feature import BaseFeature
+from drl_trading_common.core.model.base_feature import BaseFeature
 from drl_trading_common.base.thread_safe_discoverable_registry import (
     ThreadSafeDiscoverableRegistry,
 )

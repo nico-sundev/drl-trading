@@ -8,8 +8,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List
 
-from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model.market_data_model import MarketDataModel
+from drl_trading_common.core.model.timeframe import Timeframe
+from drl_trading_core.core.model.market_data_model import MarketDataModel
 
 
 @dataclass(frozen=True)

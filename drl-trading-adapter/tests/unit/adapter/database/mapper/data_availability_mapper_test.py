@@ -7,7 +7,7 @@ including error handling and edge cases.
 import pytest
 from datetime import datetime, timezone
 from drl_trading_adapter.adapter.database.mapper.market_data_mapper import DataAvailabilityMapper
-from drl_trading_core.common.model.data_availability_summary import DataAvailabilitySummary
+from drl_trading_core.core.model.data_availability_summary import DataAvailabilitySummary
 
 
 class TestDataAvailabilityMapper:

@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Dict, List
-from .base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_common.core.model.base_parameter_set_config import BaseParameterSetConfig
 
 
 @dataclass(frozen=True)

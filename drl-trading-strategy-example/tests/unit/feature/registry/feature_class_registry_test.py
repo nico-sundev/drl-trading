@@ -9,7 +9,7 @@ from typing import Optional, Type
 from unittest.mock import MagicMock, patch
 
 import pytest
-from drl_trading_common.base.base_feature import BaseFeature
+from drl_trading_common.core.model.base_feature import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     ITechnicalIndicatorFacade,
@@ -44,10 +44,10 @@ class SampleRsiFeature(BaseFeature):
     def compute_all(self) -> Optional[DataFrame]:
         return None
 
-    def get_sub_features_names(self) -> list[str]:
+    def _get_sub_features_names(self) -> list[str]:
         return ["rsi"]
 
-    def get_config_to_string(self) -> str:
+    def _get_config_to_string(self) -> str:
         return "A1b2c3"
 
 
@@ -66,10 +66,10 @@ class RsiFeature(BaseFeature):
     def compute_all(self) -> Optional[DataFrame]:
         return None
 
-    def get_sub_features_names(self) -> list[str]:
+    def _get_sub_features_names(self) -> list[str]:
         return ["undecorated"]
 
-    def get_config_to_string(self) -> str:
+    def _get_config_to_string(self) -> str:
         return "A1b2c3"
 
 

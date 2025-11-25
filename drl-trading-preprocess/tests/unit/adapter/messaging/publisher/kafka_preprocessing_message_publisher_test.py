@@ -11,10 +11,10 @@ from unittest.mock import Mock
 
 import pytest
 from builders import FeaturePreprocessingRequestBuilder
-from drl_trading_common.model.feature_preprocessing_request import (
+from drl_trading_common.adapter.model.feature_preprocessing_request import (
     FeaturePreprocessingRequest,
 )
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.adapter.model.timeframe import Timeframe
 from drl_trading_preprocess.adapter.messaging.publisher.kafka_preprocessing_message_publisher import (
     KafkaPreprocessingMessagePublisher,
 )

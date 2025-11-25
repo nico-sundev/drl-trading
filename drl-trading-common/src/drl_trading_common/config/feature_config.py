@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional
 
 from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.adapter.model.timeframe import Timeframe
 from pydantic import Field
 
 from ..base.base_parameter_set_config import BaseParameterSetConfig

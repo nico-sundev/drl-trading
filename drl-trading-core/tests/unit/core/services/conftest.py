@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 from drl_trading_common import BaseParameterSetConfig
 from drl_trading_common.config.feature_config import FeatureDefinition
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.core.model.timeframe import Timeframe
 from pandas import DataFrame
 
 from drl_trading_core.common.model.asset_price_dataset import AssetPriceDataSet
@@ -24,7 +24,7 @@ def mock_feature_definition() -> FeatureDefinition:
     feature_def = MagicMock(spec=FeatureDefinition)
     feature_def.name = "MockFeature"
     feature_def.enabled = True
-    feature_def.parsed_parameter_sets = [mock_param_set]
+    feature_def.parsed_parameter_sets = {"test_config": mock_param_set}
     return feature_def
 
 

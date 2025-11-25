@@ -9,7 +9,7 @@ from typing import Generator, Optional
 import boto3
 import pandas as pd
 import pytest
-from drl_trading_common.base.base_feature import BaseFeature
+from drl_trading_common.core.model.base_feature import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.config.application_config import ApplicationConfig
 from drl_trading_common.config.config_loader import ConfigLoader
@@ -27,8 +27,8 @@ from drl_trading_common.interface.feature.feature_factory_interface import (
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     ITechnicalIndicatorFacade,
 )
-from drl_trading_common.model.dataset_identifier import DatasetIdentifier
-from drl_trading_common.model.feature_config_version_info import (
+from drl_trading_common.adapter.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.adapter.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
 from injector import Injector
@@ -174,10 +174,10 @@ class TestRsiFeature(BaseFeature):
             f"rsi_{config.period}", "rsi", period=config.period
         )
 
-    def get_feature_name(self) -> str:
+    def _get_feature_name(self) -> str:
         return self._feature_name
 
-    def get_sub_features_names(self) -> list[str]:
+    def _get_sub_features_names(self) -> list[str]:
         return []
 
     def compute_all(self) -> Optional[DataFrame]:
@@ -209,7 +209,7 @@ class TestRsiFeature(BaseFeature):
         result[self.dataset_id.symbol] = self.dataset_id.symbol
         return result
 
-    def get_config_to_string(self) -> str:
+    def _get_config_to_string(self) -> str:
         return f"{self.config.period}"
 
 
@@ -227,10 +227,10 @@ class TestClosePriceFeature(BaseFeature):
         super().__init__(dataset_id, indicator_service, config, postfix)
         self._feature_name = "close_price"
 
-    def get_feature_name(self) -> str:
+    def _get_feature_name(self) -> str:
         return self._feature_name
 
-    def get_sub_features_names(self) -> list[str]:
+    def _get_sub_features_names(self) -> list[str]:
         return []
 
     def compute_all(self) -> Optional[DataFrame]:
@@ -262,7 +262,7 @@ class TestClosePriceFeature(BaseFeature):
         result[self.dataset_id.symbol] = self.dataset_id.symbol
         return result
 
-    def get_config_to_string(self) -> Optional[str]:
+    def _get_config_to_string(self) -> Optional[str]:
         return None
 
 
@@ -287,10 +287,10 @@ class TestRewardFeature(BaseFeature):
             "cumulative_return", "cumulative_return"
         )
 
-    def get_feature_name(self) -> str:
+    def _get_feature_name(self) -> str:
         return self._feature_name
 
-    def get_sub_features_names(self) -> list[str]:
+    def _get_sub_features_names(self) -> list[str]:
         return ["reward", "cumulative_return"]
 
     def compute_all(self) -> Optional[DataFrame]:
@@ -327,7 +327,7 @@ class TestRewardFeature(BaseFeature):
         result[self.dataset_id.symbol] = self.dataset_id.symbol
         return result
 
-    def get_config_to_string(self) -> Optional[str]:
+    def _get_config_to_string(self) -> Optional[str]:
         return None
 
 

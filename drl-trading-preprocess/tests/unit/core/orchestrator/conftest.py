@@ -11,7 +11,7 @@ import pytest
 from unittest.mock import Mock
 from pandas import DataFrame
 
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_preprocess.core.orchestrator.preprocessing_orchestrator import PreprocessingOrchestrator
 from drl_trading_preprocess.core.service.compute.computing_service import FeatureComputingService
 from drl_trading_preprocess.core.service.validate.feature_validator import FeatureValidator
@@ -20,7 +20,7 @@ from drl_trading_preprocess.core.service.coverage.feature_coverage_analyzer impo
 from drl_trading_preprocess.core.port.feature_store_save_port import IFeatureStoreSavePort
 from drl_trading_preprocess.core.port.preprocessing_message_publisher_port import PreprocessingMessagePublisherPort
 from drl_trading_preprocess.core.model.resample.resampling_response import ResamplingResponse
-from drl_trading_core.common.model.market_data_model import MarketDataModel
+from drl_trading_core.core.model.market_data_model import MarketDataModel
 from builders import FeaturePreprocessingRequestBuilder
 
 @pytest.fixture
@@ -113,17 +113,28 @@ def mock_feature_coverage_evaluator() -> Mock:
 
 @pytest.fixture
 def mock_message_publisher() -> Mock:
-    """
-    Mock PreprocessingMessagePublisherPort.
-
-    This is the PRIMARY mock we care about in these tests,
-    since we're testing the fire-and-forget notification behavior.
-    """
+    """Mock PreprocessingMessagePublisherPort."""
     mock = Mock(spec=PreprocessingMessagePublisherPort)
+    # Default behavior: successful publishing
     mock.publish_preprocessing_completed.return_value = None
     mock.publish_preprocessing_error.return_value = None
     mock.publish_feature_validation_error.return_value = None
     mock.health_check.return_value = True
+    return mock
+
+
+@pytest.fixture
+def mock_feature_manager() -> Mock:
+    """Mock FeatureManager."""
+    from drl_trading_core.core.service.feature_manager import FeatureManager
+    from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+
+    mock = Mock(spec=FeatureManager)
+    # Default behavior: return empty metadata dict grouped by role
+    mock.get_feature_metadata_list.return_value = {
+        FeatureRoleEnum.OBSERVATION_SPACE: [],
+        FeatureRoleEnum.REWARD_ENGINEERING: []
+    }
     return mock
 
 
@@ -136,6 +147,7 @@ def mock_dependencies(
     mock_feature_coverage_analyzer: Mock,
     mock_feature_coverage_evaluator: Mock,
     mock_message_publisher: Mock,
+    mock_feature_manager: Mock,
 ) -> dict:
     """
     Provides all mock dependencies as a dictionary.
@@ -151,6 +163,7 @@ def mock_dependencies(
         'feature_coverage_analyzer': mock_feature_coverage_analyzer,
         'feature_coverage_evaluator': mock_feature_coverage_evaluator,
         'message_publisher': mock_message_publisher,
+        'feature_manager': mock_feature_manager,
     }
 
 
@@ -172,13 +185,11 @@ def preprocessing_orchestrator(mock_dependencies: dict) -> PreprocessingOrchestr
             scheduler="synchronous",
             num_workers=1,
             threads_per_worker=1,
-            memory_limit_per_worker_mb=512,
         ),
         feature_computation=DaskConfig(
             scheduler="synchronous",
             num_workers=1,
             threads_per_worker=1,
-            memory_limit_per_worker_mb=512,
         ),
     )
 
@@ -195,6 +206,7 @@ def preprocessing_orchestrator(mock_dependencies: dict) -> PreprocessingOrchestr
         feature_coverage_analyzer=mock_dependencies['feature_coverage_analyzer'],
         feature_coverage_evaluator=mock_dependencies['feature_coverage_evaluator'],
         message_publisher=mock_dependencies['message_publisher'],
+        feature_manager=mock_dependencies['feature_manager'],
         dask_configs=dask_configs,
         feature_computation_config=feature_computation_config
     )

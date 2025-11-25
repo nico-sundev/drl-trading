@@ -8,17 +8,18 @@ from dask.delayed import Delayed
 from injector import inject
 from pandas import DataFrame
 
-from drl_trading_common.base.base_feature import BaseFeature
+from drl_trading_common import BaseFeature
+from drl_trading_common.core.model.feature_metadata import FeatureMetadata
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.interface.computable import Computable
 from drl_trading_common.interface.feature.feature_factory_interface import (
     IFeatureFactory,
 )
-from drl_trading_core.core.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 from drl_trading_core.core.config.feature_computation_config import (
     FeatureComputationConfig,
 )
-from drl_trading_core.core.model.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_common.core.model.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_core.core.model.feature_computation_request import (
     FeatureComputationRequest,
 )
@@ -97,7 +98,7 @@ class FeatureManager(Computable):
         self._features_name_role_cache: Dict[str, FeatureRoleEnum] = {}
 
         # Observability metrics
-        self._feature_creation_stats: Dict[str, Union[int | Dict]] = {
+        self._feature_creation_stats: Dict[str, Union[int, Dict[str, int]]] = {
             "total_requested": 0,
             "successfully_created": 0,
             "creation_failures": 0,
@@ -164,21 +165,30 @@ class FeatureManager(Computable):
             # Track by symbol
             symbol = feature_key.dataset_id.symbol
 
-            if symbol not in self._feature_creation_stats["features_by_symbol"]:
-                self._feature_creation_stats["features_by_symbol"][symbol] = 0
-            self._feature_creation_stats["features_by_symbol"][symbol] += 1
+            features_by_symbol = cast(
+                Dict[str, int], self._feature_creation_stats["features_by_symbol"]
+            )
+            if symbol not in features_by_symbol:
+                features_by_symbol[symbol] = 0
+            features_by_symbol[symbol] += 1
 
             # Track by timeframe
             timeframe = feature_key.dataset_id.timeframe.value
-            if timeframe not in self._feature_creation_stats["features_by_timeframe"]:
-                self._feature_creation_stats["features_by_timeframe"][timeframe] = 0
-            self._feature_creation_stats["features_by_timeframe"][timeframe] += 1
+            features_by_timeframe = cast(
+                Dict[str, int], self._feature_creation_stats["features_by_timeframe"]
+            )
+            if timeframe not in features_by_timeframe:
+                features_by_timeframe[timeframe] = 0
+            features_by_timeframe[timeframe] += 1
 
             # Track by feature type
             feature_name = feature_key.feature_name
-            if feature_name not in self._feature_creation_stats["features_by_type"]:
-                self._feature_creation_stats["features_by_type"][feature_name] = 0
-            self._feature_creation_stats["features_by_type"][feature_name] += 1
+            features_by_type = cast(
+                Dict[str, int], self._feature_creation_stats["features_by_type"]
+            )
+            if feature_name not in features_by_type:
+                features_by_type[feature_name] = 0
+            features_by_type[feature_name] += 1
 
     def _log_initialization_summary(self) -> None:
         """
@@ -190,19 +200,22 @@ class FeatureManager(Computable):
         logger.debug(f"Total features created: {stats['successfully_created']}")
         logger.debug(f"Creation failures: {stats['creation_failures']}")
 
-        if stats["features_by_symbol"]:
+        features_by_symbol = cast(Dict[str, int], stats["features_by_symbol"])
+        if features_by_symbol:
             logger.debug("Features by symbol:")
-            for symbol, count in stats["features_by_symbol"].items():
+            for symbol, count in features_by_symbol.items():
                 logger.debug(f"  {symbol}: {count} features")
 
-        if stats["features_by_timeframe"]:
+        features_by_timeframe = cast(Dict[str, int], stats["features_by_timeframe"])
+        if features_by_timeframe:
             logger.debug("Features by timeframe:")
-            for timeframe, count in stats["features_by_timeframe"].items():
+            for timeframe, count in features_by_timeframe.items():
                 logger.debug(f"  {timeframe}: {count} features")
 
-        if stats["features_by_type"]:
+        features_by_type = cast(Dict[str, int], stats["features_by_type"])
+        if features_by_type:
             logger.debug("Features by type:")
-            for feature_type, count in stats["features_by_type"].items():
+            for feature_type, count in features_by_type.items():
                 logger.debug(f"  {feature_type}: {count} instances")
 
         logger.debug("=======================================")
@@ -354,7 +367,7 @@ class FeatureManager(Computable):
             stored_count += 1
             logger.debug(f"Stored feature: {feature_key}")
             self._features_name_role_cache[feature_key.feature_name] = (
-                feature_instance.get_feature_role()
+                feature_instance.get_metadata().feature_role
             )
 
         if reused_count > 0:
@@ -416,22 +429,17 @@ class FeatureManager(Computable):
         )
         return self._features.get(feature_key)
 
-    def _update_features_data(self, request: FeatureComputationRequest) -> None:
+    def _update_features_data(self, df: DataFrame) -> None:
         """
         Update all feature instances with new data.
 
         Args:
-            new_data: New data to update features with.
+            df: New data to update features with.
         """
-        dataset_filtered_features = [
-            feature for feature in self._features.values()
-            if feature.dataset_id == request.dataset_id
-        ]
-
-        for feature in dataset_filtered_features:
+        for feature in self._features.values():
             try:
                 computable_feature: Computable = cast(Computable, feature)
-                computable_feature.update(request.market_data)
+                computable_feature.update(df)
             except Exception as e:
                 logger.error(f"Error updating feature {feature}: {str(e)}")
 
@@ -445,13 +453,16 @@ class FeatureManager(Computable):
         Returns:
             Delayed object that will compute and return the latest feature values when executed.
         """
-        return delayed(
-            lambda f: (
-                f.compute_latest()
-                if hasattr(f, "compute_latest") and callable(f.compute_latest)
-                else None
-            )
-        )(feature)
+        return cast(
+            Delayed,
+            delayed(
+                lambda f: (
+                    f.compute_latest()
+                    if hasattr(f, "compute_latest") and callable(f.compute_latest)
+                    else None
+                )
+            )(feature),
+        )
 
     def _compute_features_latest_delayed(self) -> List[Delayed]:
         """
@@ -610,9 +621,28 @@ class FeatureManager(Computable):
                 # Final fallback: return first dataframe if all else fails
                 return dataframes[0] if dataframes else None
 
-    def request_features_update(
-        self, request: FeatureComputationRequest
+    # This has to be refactored soon
+    def initialize_features(
+        self,
+        dataset_id: DatasetIdentifier,
+        feature_definitions: List[FeatureDefinition],
     ) -> None:
+        """
+        Public method to initialize features based on the configuration.
+
+        Args:
+            request: Feature computation request containing definitions and dataset info.
+        """
+
+        self._update_features(
+            FeatureComputationRequest(
+                dataset_id=dataset_id,
+                feature_definitions=feature_definitions,
+                market_data=DataFrame(),  # Empty DataFrame for initialization
+            )
+        )
+
+    def request_features_update(self, request: FeatureComputationRequest) -> None:
         """
         Public method to update features with new data.
 
@@ -622,7 +652,7 @@ class FeatureManager(Computable):
         """
 
         self._update_features(request)
-        self._update_features_data(request)
+        self._update_features_data(request.market_data)
 
     def update(self, df: DataFrame) -> None:
         """
@@ -749,7 +779,7 @@ class FeatureManager(Computable):
             True if feature is supported and can be created, False otherwise
         """
         try:
-            return self.feature_factory.is_feature_supported(feature_name)
+            return bool(self.feature_factory.is_feature_supported(feature_name))
         except Exception as e:
             logger.warning(f"Failed to validate feature {feature_name}: {e}")
             return False
@@ -796,3 +826,71 @@ class FeatureManager(Computable):
             return cached_feature_role
         logger.warning(f"Feature {feature_name} not found when retrieving role")
         return None
+
+    def get_feature_metadata_list(
+        self,
+        feature_definitions: List[FeatureDefinition],
+        dataset_id: DatasetIdentifier,
+    ) -> Dict[FeatureRoleEnum, List[FeatureMetadata]]:
+        """
+        Get feature metadata for a list of feature definitions by searching the features cache.
+
+        This method searches the existing feature cache for instances matching the dataset_id
+        and feature definitions, extracting metadata from cached instances and grouping by feature role.
+
+        Args:
+            feature_definitions: List of feature definitions to get metadata for
+            dataset_id: Dataset identifier to search for cached features
+
+        Returns:
+            Dict mapping FeatureRoleEnum to List of FeatureMetadata objects for features found in cache
+        """
+        logger.debug(
+            f"Extracting metadata for {len(feature_definitions)} feature definitions from cache for {dataset_id}"
+        )
+
+        metadata_by_role: Dict[FeatureRoleEnum, List[FeatureMetadata]] = {}
+
+        for feature_def in feature_definitions:
+            try:
+                # Handle features with parameter sets
+                if feature_def.parsed_parameter_sets:
+                    for param_set in feature_def.parsed_parameter_sets:
+                        key = FeatureKey(
+                            feature_def.name, dataset_id, param_set.hash_id
+                        )
+                        feature = self._features.get(key)
+                        if feature:
+                            role = feature.get_metadata().feature_role
+                            if role not in metadata_by_role:
+                                metadata_by_role[role] = []
+                            metadata_by_role[role].append(feature.get_metadata())
+                            logger.debug(
+                                f"Found cached metadata for feature '{feature_def.name}' with params in {dataset_id}, role {role}"
+                            )
+                else:
+                    # Handle features without parameter sets
+                    key = FeatureKey(feature_def.name, dataset_id, NO_CONFIG_HASH)
+                    feature = self._features.get(key)
+                    if feature:
+                        role = feature.get_metadata().feature_role
+                        if role not in metadata_by_role:
+                            metadata_by_role[role] = []
+                        metadata_by_role[role].append(feature.get_metadata())
+                        logger.debug(
+                            f"Found cached metadata for feature '{feature_def.name}' in {dataset_id}, role {role}"
+                        )
+                    else:
+                        logger.warning(
+                            f"No cached feature instance found for '{feature_def.name}' in {dataset_id}"
+                        )
+
+            except Exception as e:
+                logger.error(
+                    f"Error extracting metadata for feature '{feature_def.name}': {e}"
+                )
+
+        logger.debug(
+            f"Successfully extracted metadata for {sum(len(v) for v in metadata_by_role.values())} features from cache, grouped by role"
+        )
+        return metadata_by_role

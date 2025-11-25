@@ -11,9 +11,9 @@ from typing import List, Optional
 from uuid import uuid4
 
 from drl_trading_common.base.base_schema import BaseSchema
-from drl_trading_common.config.feature_config import FeatureDefinition
-from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.adapter.model.feature_definition import FeatureDefinition
+from drl_trading_common.adapter.model.feature_config_version_info import FeatureConfigVersionInfo
+from drl_trading_common.adapter.model.timeframe import Timeframe
 from pydantic import Field, field_validator
 
 
@@ -108,7 +108,7 @@ class FeaturePreprocessingRequest(BaseSchema):
             raise ValueError("Feature definitions cannot be empty in configuration")
 
         # Check for enabled features
-        enabled_features = [f for f in v.feature_definitions if f.get("enabled", False)]
+        enabled_features = [f for f in v.feature_definitions if f.enabled]
         if not enabled_features:
             raise ValueError("At least one feature must be enabled in configuration")
 
@@ -301,12 +301,12 @@ class FeaturePreprocessingRequest(BaseSchema):
         """Get only enabled feature definitions as domain objects."""
         feature_definitions = []
         for feature_dict in self.feature_config_version_info.feature_definitions:
-            if feature_dict.get("enabled", False):
+            if feature_dict.enabled:
                 feature_def = FeatureDefinition(
-                    name=feature_dict["name"],
-                    enabled=feature_dict["enabled"],
-                    derivatives=feature_dict.get("derivatives", []),
-                    parameter_sets=feature_dict.get("parameter_sets", []),
+                    name=feature_dict.name,
+                    enabled=feature_dict.enabled,
+                    derivatives=feature_dict.derivatives,
+                    parameter_sets=feature_dict.parameter_sets,
                     parsed_parameter_sets={},
                 )
                 feature_definitions.append(feature_def)
@@ -317,10 +317,10 @@ class FeaturePreprocessingRequest(BaseSchema):
         feature_definitions = []
         for feature_dict in self.feature_config_version_info.feature_definitions:
             feature_def = FeatureDefinition(
-                name=feature_dict["name"],
-                enabled=feature_dict["enabled"],
-                derivatives=feature_dict.get("derivatives", []),
-                parameter_sets=feature_dict.get("parameter_sets", []),
+                name=feature_dict.name,
+                enabled=feature_dict.enabled,
+                derivatives=feature_dict.derivatives,
+                parameter_sets=feature_dict.parameter_sets,
                 parsed_parameter_sets={},
             )
             feature_definitions.append(feature_def)

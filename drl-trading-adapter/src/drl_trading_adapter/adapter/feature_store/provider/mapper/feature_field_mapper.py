@@ -6,21 +6,21 @@ from abc import ABC, abstractmethod
 from feast import Field
 from feast.types import Float32
 
-from drl_trading_common.base import BaseFeature
+from drl_trading_common.core.model.feature_metadata import FeatureMetadata
 
 logger = logging.getLogger(__name__)
 
 
 class IFeatureFieldMapper(ABC):
-    """Interface for mapping BaseFeature instances to Feast Field objects."""
+    """Interface for mapping FeatureMetadata to Feast Field objects."""
 
     @abstractmethod
-    def get_field_base_name(self, feature: BaseFeature) -> str:
+    def get_field_base_name(self, feature_metadata: FeatureMetadata) -> str:
         """
         Create a unique field name based on the feature name and its config hash.
 
         Args:
-            feature: The feature object
+            feature_metadata: The feature metadata object
 
         Returns:
             str: A unique name for the field
@@ -28,12 +28,12 @@ class IFeatureFieldMapper(ABC):
         pass
 
     @abstractmethod
-    def create_fields(self, feature: BaseFeature) -> list[Field]:
+    def create_fields(self, feature_metadata: FeatureMetadata) -> list[Field]:
         """
         Create Feast fields for the feature based on its type and role.
 
         Args:
-            feature: The feature for which fields are created
+            feature_metadata: The feature metadata for which fields are created
 
         Returns:
             list[Field]: List of Feast fields for the feature
@@ -43,7 +43,7 @@ class IFeatureFieldMapper(ABC):
 
 class FeatureFieldMapper(IFeatureFieldMapper):
     """
-    Maps BaseFeature instances to Feast Field objects.
+    Maps FeatureMetadata to Feast Field objects.
 
     This class encapsulates the logic for:
     - Generating unique field names from feature metadata
@@ -56,7 +56,7 @@ class FeatureFieldMapper(IFeatureFieldMapper):
     - Easier maintenance and modification of mapping logic
     """
 
-    def get_field_base_name(self, feature: BaseFeature) -> str:
+    def get_field_base_name(self, feature_metadata: FeatureMetadata) -> str:
         """
         Create a unique field name based on the feature name and its config hash.
         Current schema looks like:
@@ -71,39 +71,39 @@ class FeatureFieldMapper(IFeatureFieldMapper):
         the resulting name will be "close_price".
 
         Args:
-            feature: The feature object
+            feature_metadata: The feature metadata object
 
         Returns:
             str: A unique name for the field
         """
-        config = feature.get_config()
+        config = feature_metadata.config
         config_string = (
-            f"_{feature.get_config_to_string()}_{config.hash_id()}" if config else ""
+            f"_{feature_metadata.config_to_string}_{config.hash_id()}" if config else ""
         )
-        return f"{feature.get_feature_name()}{config_string}"
+        return f"{feature_metadata.feature_name}{config_string}"
 
-    def create_fields(self, feature: BaseFeature) -> list[Field]:
+    def create_fields(self, feature_metadata: FeatureMetadata) -> list[Field]:
         """
         Create fields for the feature view based on the feature's type and role.
         Current schema looks like:
         [field_base_name][_[sub_feature_name]] if sub-features exist
 
         Args:
-            feature: The feature for which fields are created
+            feature_metadata: The feature metadata for which fields are created
 
         Returns:
             list[Field]: List of fields for the feature view
         """
-        feature_name = self.get_field_base_name(feature)
+        feature_name = self.get_field_base_name(feature_metadata)
         logger.debug(f"Feast fields will be created for feature: {feature_name}")
 
-        if len(feature.get_sub_features_names()) == 0:
+        if len(feature_metadata.sub_feature_names) == 0:
             # If no sub-features, create a single field for the feature
             logger.debug(f"Creating feast field: {feature_name}")
             return [Field(name=feature_name, dtype=Float32)]
 
         fields = []
-        for sub_feature in feature.get_sub_features_names():
+        for sub_feature in feature_metadata.sub_feature_names:
             # Combine feature name with sub-feature name to create unique field names
             feast_field_name = f"{feature_name}_{sub_feature}"
             logger.debug(f"Creating feast field: {feast_field_name}")

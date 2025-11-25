@@ -9,7 +9,7 @@ supporting configuration retrieval for all services that need feature config acc
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
+from drl_trading_core.core.model.feature_config_version_info import FeatureConfigVersionInfo
 
 
 class FeatureConfigReaderPort(ABC):

@@ -10,8 +10,8 @@ from datetime import datetime, timedelta
 from typing import List
 from unittest.mock import Mock
 
-from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model.market_data_model import MarketDataModel
+from drl_trading_common.core.model.timeframe import Timeframe
+from drl_trading_core.core.model.market_data_model import MarketDataModel
 from drl_trading_preprocess.core.service.resample.market_data_resampling_service import (
     MarketDataResamplingService,
 )

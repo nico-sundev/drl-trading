@@ -12,10 +12,10 @@ from typing import Any, Dict, List
 from drl_trading_common.adapter.messaging.kafka_producer_adapter import (
     KafkaProducerAdapter,
 )
-from drl_trading_common.model.feature_preprocessing_request import (
+from drl_trading_common.adapter.model.feature_preprocessing_request import (
     FeaturePreprocessingRequest,
 )
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.adapter.model.timeframe import Timeframe
 from drl_trading_preprocess.core.port.preprocessing_message_publisher_port import (
     PreprocessingMessagePublisherPort,
 )

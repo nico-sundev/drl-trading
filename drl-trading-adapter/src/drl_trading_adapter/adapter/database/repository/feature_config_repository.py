@@ -13,7 +13,7 @@ from injector import inject
 from drl_trading_adapter.adapter.database.session_factory import SQLAlchemySessionFactory, SessionFactoryError
 from drl_trading_adapter.adapter.database.entity.feature_config_entity import FeatureConfigEntity
 from drl_trading_adapter.adapter.database.mapper.feature_config_mapper import FeatureConfigMapper
-from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
+from drl_trading_common.adapter.model.feature_config_version_info import FeatureConfigVersionInfo
 from drl_trading_core.core.port.feature_config_reader_port import FeatureConfigReaderPort
 
 

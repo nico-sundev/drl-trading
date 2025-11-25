@@ -7,12 +7,13 @@ repository strategies (local filesystem and S3).
 
 import logging
 import pytest
-from drl_trading_core.common.model.feature_view_metadata import FeatureViewMetadata
-from drl_trading_core.common.model.feature_service_metadata import (
+from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
+from drl_trading_core.core.dto.feature_service_metadata import (
     FeatureServiceMetadata,
 )
-from drl_trading_common.model.feature_config_version_info import FeatureConfigVersionInfo
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_core.core.dto.offline_storage_request import OfflineStorageRequest
+from drl_trading_common.adapter.model.feature_config_version_info import FeatureConfigVersionInfo
+from drl_trading_common.adapter.model.timeframe import Timeframe
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from injector import Injector
 from pandas import DataFrame
@@ -44,12 +45,13 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         fetch_repo = parametrized_integration_container.get(IFeatureStoreFetchPort)
 
         # When - Store features offline
-        save_repo.store_computed_features_offline(
+        request = OfflineStorageRequest.create(
             features_df=sample_trading_features_df,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
-            feature_view_requests=feature_view_requests_fixture
+            feature_view_metadata_list=feature_view_requests_fixture
         )
+        save_repo.store_computed_features_offline(request)
 
         # And fetch them back (offline)
         timestamps = sample_trading_features_df["event_timestamp"]
@@ -95,12 +97,13 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         fetch_repo = parametrized_integration_container.get(IFeatureStoreFetchPort)
 
         # Store features offline first
-        save_repo.store_computed_features_offline(
+        request = OfflineStorageRequest.create(
             features_df=sample_trading_features_df,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
-            feature_view_requests=feature_view_requests_fixture
+            feature_view_metadata_list=feature_view_requests_fixture
         )
+        save_repo.store_computed_features_offline(request)
 
         # When - Materialize to online store
         save_repo.batch_materialize_features(
@@ -141,20 +144,22 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         fetch_repo = parametrized_integration_container.get(IFeatureStoreFetchPort)
 
         # Store initial features
-        save_repo.store_computed_features_offline(
+        request = OfflineStorageRequest.create(
             features_df=sample_trading_features_df,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
-            feature_view_requests=feature_view_requests_fixture
+            feature_view_metadata_list=feature_view_requests_fixture
         )
+        save_repo.store_computed_features_offline(request)
 
         # When - Store the same features again (should handle duplicates gracefully)
-        save_repo.store_computed_features_offline(
+        request = OfflineStorageRequest.create(
             features_df=sample_trading_features_df,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
-            feature_view_requests=feature_view_requests_fixture
+            feature_view_metadata_list=feature_view_requests_fixture
         )
+        save_repo.store_computed_features_offline(request)
 
         # Then - Fetch should still return the correct number of unique features
         timestamps = sample_trading_features_df["event_timestamp"]
@@ -194,20 +199,22 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         second_batch = sample_trading_features_df.iloc[mid_point:]
 
         # When - Store first batch
-        save_repo.store_computed_features_offline(
+        request = OfflineStorageRequest.create(
             features_df=first_batch,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
-            feature_view_requests=feature_view_requests_fixture
+            feature_view_metadata_list=feature_view_requests_fixture
         )
+        save_repo.store_computed_features_offline(request)
 
         # And store second batch
-        save_repo.store_computed_features_offline(
+        request = OfflineStorageRequest.create(
             features_df=second_batch,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
-            feature_view_requests=feature_view_requests_fixture
+            feature_view_metadata_list=feature_view_requests_fixture
         )
+        save_repo.store_computed_features_offline(request)
 
         # Then - Fetch all features
         all_timestamps = sample_trading_features_df["event_timestamp"]
@@ -259,12 +266,13 @@ class TestParametrizedFeatureStoreRepositoriesIntegration:
         symbol_features["symbol"] = symbol
 
         # When - Store features for this symbol
-        save_repo.store_computed_features_offline(
+        request = OfflineStorageRequest.create(
             features_df=symbol_features,
             symbol=symbol,
             feature_version_info=feature_version_info_fixture,
-            feature_view_requests=symbol_feature_view_requests_fixture
+            feature_view_metadata_list=symbol_feature_view_requests_fixture
         )
+        save_repo.store_computed_features_offline(request)
 
         # Then - Fetch features and verify correctness
         timestamps = sample_trading_features_df["event_timestamp"]

@@ -9,7 +9,7 @@ from typing import Type
 from unittest.mock import MagicMock, patch
 
 import pytest
-from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_common.adapter.model.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_strategy_example.decorator.feature_type_decorator import feature_type
 from drl_trading_strategy_example.enum.feature_type_enum import FeatureTypeEnum
 from drl_trading_strategy_example.feature.registry.feature_config_registry import (

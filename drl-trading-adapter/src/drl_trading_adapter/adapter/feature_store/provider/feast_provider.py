@@ -21,10 +21,10 @@ from drl_trading_adapter.adapter.feature_store.provider.mapper.feature_field_map
     IFeatureFieldMapper,
 )
 from drl_trading_adapter.adapter.feature_store.util.feature_store_utilities import get_feature_view_name
-from drl_trading_common.base import BaseFeature
+from drl_trading_common.core.model.feature_metadata import FeatureMetadata
 from drl_trading_common.config import FeatureStoreConfig
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_core.common.model import FeatureViewMetadata
+from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +87,7 @@ class FeastProvider:
         try:
             for request in requests:
                 feature_view_name = self.feature_field_mapper.get_field_base_name(
-                    request.feature
+                    request.feature_metadata
                 )
                 # Validate request parameters
                 request.validate()
@@ -103,13 +103,13 @@ class FeastProvider:
         except (ValueError, RuntimeError, OSError) as e:
             # Re-raise known exception types with context
             logger.error(
-                f"Error creating feature view '{feature_view_name}' for symbol '{request.symbol}': {e}"
+                f"Error creating feature view '{feature_view_name}' for symbol '{request.dataset_identifier.symbol}': {e}"
             )
             raise
         except Exception as e:
             # Catch any unexpected errors and wrap them
             logger.error(
-                f"Unexpected error creating feature view '{feature_view_name}' for symbol '{request.symbol}': {e}"
+                f"Unexpected error creating feature view '{feature_view_name}' for symbol '{request.dataset_identifier.symbol}': {e}"
             )
             raise RuntimeError(
                 f"Unexpected error during feature view creation: {e}"
@@ -149,7 +149,7 @@ class FeastProvider:
         # Get sanitized inputs
         symbol = request.get_sanitized_symbol()
         base_feature_view_name = self.feature_field_mapper.get_field_base_name(
-            request.feature
+            request.feature_metadata
         )
 
         # Create symbol-specific feature view name for proper isolation
@@ -161,21 +161,21 @@ class FeastProvider:
         # Create data directory and file source
         source = self._create_file_source(feature_view_name, symbol)
 
-        fields = self._create_fields_from_features([request.feature])
+        fields = self._create_fields_from_features([request.feature_metadata])
 
         # Create entity
         entity = self._get_or_create_entity()
 
         # Create and return the feature view
         logger.info(
-            f"Creating feature view '{feature_view_name}' for symbol '{symbol}', timeframe '{request.timeframe.value}', role '{request.feature_role.value}'"
+            f"Creating feature view '{feature_view_name}' for symbol '{symbol}', timeframe '{request.dataset_identifier.timeframe.value}', role '{request.feature_metadata.feature_role.value}'"
         )
         fv = self._create_feature_view(
             feature_view_name=feature_view_name,
             entity=entity,
             fields=fields,
             source=source,
-            feature_role=request.feature_role,
+            feature_role=request.feature_metadata.feature_role,
             symbol=symbol,
         )
         return fv
@@ -208,14 +208,14 @@ class FeastProvider:
             ) from e
 
     def _create_fields_from_features(
-        self, features_for_role: list[BaseFeature]
+        self, features_metadata: list[FeatureMetadata]
     ) -> list[Field]:
-        """Create Feast fields from features."""
+        """Create Feast fields from feature metadata."""
         fields = []
 
         try:
-            for feature in features_for_role:
-                feature_fields = self.feature_field_mapper.create_fields(feature)
+            for feature_metadata in features_metadata:
+                feature_fields = self.feature_field_mapper.create_fields(feature_metadata)
                 if feature_fields:
                     fields.extend(feature_fields)
         except Exception as e:
@@ -298,13 +298,13 @@ class FeastProvider:
 
         # Create a dictionary for quick feature name lookup
         feature_requests_map: dict[str, FeatureViewMetadata] = {
-            self.feature_field_mapper.get_field_base_name(request.feature): request
+            self.feature_field_mapper.get_field_base_name(request.feature_metadata): request
             for request in requests
         }
 
         # Attempt to fetch existing feature views
         symbol = requests[0].get_sanitized_symbol()
-        role = requests[0].feature_role.value
+        role = requests[0].feature_metadata.feature_role.value
         existing_feature_views = self._find_feature_views_by_name(
             list(feature_requests_map.keys()), symbol=symbol, feature_role=role
         )

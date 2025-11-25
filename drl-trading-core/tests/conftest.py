@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 from drl_trading_common.interface.feature.feature_factory_interface import IFeatureFactory
 import pytest
 from drl_trading_common import BaseParameterSetConfig
-from drl_trading_common.base.base_feature import BaseFeature
+from drl_trading_common.core.model.base_feature import BaseFeature
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     ITechnicalIndicatorFacade,
 )
@@ -70,15 +70,15 @@ class RsiFeature(BaseFeature):
             return result_df
         return None
 
-    def get_sub_features_names(self) -> list[str]:
+    def _get_sub_features_names(self) -> list[str]:
         """Get sub-feature names."""
         return [f"rsi_{self.config.length}{self.postfix}"]
 
-    def get_feature_name(self) -> str:
+    def _get_feature_name(self) -> str:
         """Get feature name."""
         return "rsi"
 
-    def get_config_to_string(self) -> str:
+    def _get_config_to_string(self) -> str:
         return f"{self.config.length}"
 
 @pytest.fixture(scope="session")

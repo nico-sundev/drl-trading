@@ -5,7 +5,7 @@ Tests the orchestrator's coordination logic and message publishing behavior.
 """
 from typing import TYPE_CHECKING
 
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.core.model.timeframe import Timeframe
 
 if TYPE_CHECKING:
     from unittest.mock import Mock
@@ -689,7 +689,7 @@ class TestPreprocessingOrchestratorEdgeCases:
     ) -> None:
         """Test processing large feature sets (stress test)."""
         # Given
-        from drl_trading_common.config.feature_config import FeatureDefinition
+        from drl_trading_core.core.model.feature_definition import FeatureDefinition
 
         # Create 100 features
         large_feature_set = [
@@ -697,7 +697,7 @@ class TestPreprocessingOrchestratorEdgeCases:
                 name=f"feature_{i}",
                 enabled=True,
                 derivatives=[0],
-                parameter_sets=[]
+                parsed_parameter_sets={}
             )
             for i in range(100)
         ]

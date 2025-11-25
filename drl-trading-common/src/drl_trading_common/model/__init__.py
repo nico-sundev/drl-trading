@@ -1,6 +1,5 @@
 """Common data models for trading system."""
 from .timeframe import Timeframe
-from .dataset_identifier import DatasetIdentifier
 
 # Import external model classes
 from .asset_price_import_properties import AssetPriceImportProperties
@@ -11,7 +10,6 @@ from .trading_event_payload import TradingEventPayload
 # Export all models
 __all__ = [
     "AssetPriceImportProperties",
-    "DatasetIdentifier",
     "FeatureConfigVersionInfo",
     "TradingContext",
     "TradingEventPayload",

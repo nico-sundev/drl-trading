@@ -8,7 +8,7 @@ import pytest
 from datetime import datetime, timezone
 from drl_trading_adapter.adapter.database.mapper.market_data_mapper import MarketDataMapper
 from drl_trading_adapter.adapter.database.entity.market_data_entity import MarketDataEntity
-from drl_trading_core.common.model.market_data_model import MarketDataModel
+from drl_trading_core.core.model.market_data_model import MarketDataModel
 
 class TestMarketDataMapperEntityToModel:
     """Test suite for MarketDataMapper.entity_to_model() method."""

@@ -43,14 +43,13 @@ class TestEnhancedServiceConfigLoader:
     def test_enhanced_loader_has_all_required_methods(self) -> None:
         """Test that EnhancedServiceConfigLoader has all required methods."""
         # Given
-        required_methods = [
-            'load_config',
-            '_substitute_secrets'
-        ]
+        required_methods = ["load_config", "_substitute_secrets"]
 
         # When/Then
         for method_name in required_methods:
-            assert hasattr(ServiceConfigLoader, method_name), f"Missing method: {method_name}"
+            assert hasattr(
+                ServiceConfigLoader, method_name
+            ), f"Missing method: {method_name}"
 
     def test_basic_config_loading(self) -> None:
         """Test basic configuration loading functionality."""
@@ -67,7 +66,9 @@ port: 9000
             config_file.write_text(config_content)
 
             # When - Load configuration
-            with patch.dict(os.environ, {'CONFIG_DIR': temp_dir, 'STAGE': 'local'}, clear=True):
+            with patch.dict(
+                os.environ, {"CONFIG_DIR": temp_dir, "STAGE": "local"}, clear=True
+            ):
                 config = ServiceConfigLoader.load_config(TestConfig)
 
             # Then - Configuration should be loaded correctly
@@ -92,12 +93,15 @@ port: 9000
             config_file.write_text(config_content)
 
             # When - Load with environment variables set
-            with patch.dict(os.environ, {
-                'CONFIG_DIR': temp_dir,
-                'STAGE': 'local',
-                'DB_URL': 'postgresql://prod.example.com:5432/prod_db',
-                'API_KEY': 'prod_api_key_xyz'
-            }):
+            with patch.dict(
+                os.environ,
+                {
+                    "CONFIG_DIR": temp_dir,
+                    "STAGE": "local",
+                    "DB_URL": "postgresql://prod.example.com:5432/prod_db",
+                    "API_KEY": "prod_api_key_xyz",
+                },
+            ):
                 config = ServiceConfigLoader.load_config(TestConfig)
 
             # Then - Environment variables should be substituted
@@ -122,7 +126,9 @@ port: 9000
             config_file.write_text(config_content)
 
             # When - Load without environment variables (should use defaults)
-            with patch.dict(os.environ, {'CONFIG_DIR': temp_dir, 'STAGE': 'local'}, clear=True):
+            with patch.dict(
+                os.environ, {"CONFIG_DIR": temp_dir, "STAGE": "local"}, clear=True
+            ):
                 config = ServiceConfigLoader.load_config(TestConfig)
 
             # Then - Default values should be used
@@ -155,7 +161,7 @@ port: 9090
             stage_config.write_text(stage_content)
 
             # When - Load with stage override
-            with patch.dict(os.environ, {'CONFIG_DIR': temp_dir, 'STAGE': 'prod'}):
+            with patch.dict(os.environ, {"CONFIG_DIR": temp_dir, "STAGE": "prod"}):
                 config = ServiceConfigLoader.load_config(TestConfig)
 
             # Then - Stage overrides should be applied
@@ -165,35 +171,38 @@ port: 9090
             assert config.api_key == "prod_key"  # Overridden
             assert config.port == 9090  # Overridden
 
-    def test_environment_override_functionality(self) -> None:
-        """Test enhanced environment variable override support."""
+    def test_environment_variable_templating(self) -> None:
+        """Test that environment variables can be injected via templating in config files."""
         # Given
         with tempfile.TemporaryDirectory() as temp_dir:
             config_file = Path(temp_dir) / "application.yaml"
             config_content = """
 app_name: "test_service"
-service_name: "test_service"
+service_name: "${SERVICE_NAME:test_service}"
 database_url: "localhost"
 api_key: "default_key"
-port: 8080
+port: ${PORT:8080}
 """
             config_file.write_text(config_content)
 
-            # When - Load with environment overrides
-            with patch.dict(os.environ, {
-                'CONFIG_DIR': temp_dir,
-                'STAGE': 'local',
-                'TESTCONFIG__SERVICE_NAME': 'overridden_service',
-                'TESTCONFIG__PORT': '9999'
-            }):
+            # When - Load with environment variables for templating
+            with patch.dict(
+                os.environ,
+                {
+                    "CONFIG_DIR": temp_dir,
+                    "STAGE": "local",
+                    "SERVICE_NAME": "overridden_service",
+                    "PORT": "9999",
+                },
+            ):
                 config = ServiceConfigLoader.load_config(TestConfig)
 
-            # Then - Environment variables should override config values
-            assert config.app_name == "test_service"  # Not overridden
-            assert config.service_name == "overridden_service"
-            assert config.port == 9999
-            assert config.database_url == "localhost"  # Not overridden
-            assert config.api_key == "default_key"  # Not overridden
+            # Then - Environment variables should be injected via templating
+            assert config.app_name == "test_service"  # Not templated
+            assert config.service_name == "overridden_service"  # Injected from env
+            assert config.port == 9999  # Injected from env
+            assert config.database_url == "localhost"  # Not templated
+            assert config.api_key == "default_key"  # Not templated
 
 
 class TestServiceIntegration:
@@ -227,8 +236,12 @@ class TestSecretSubstitutionPattern:
         for test_string, expected in test_cases:
             match = pattern.search(test_string)
             assert match is not None, f"Pattern should match: {test_string}"
-            assert match.group(1) == expected[0], f"Variable name mismatch for: {test_string}"
-            assert match.group(2) == expected[1], f"Default value mismatch for: {test_string}"
+            assert (
+                match.group(1) == expected[0]
+            ), f"Variable name mismatch for: {test_string}"
+            assert (
+                match.group(2) == expected[1]
+            ), f"Default value mismatch for: {test_string}"
 
     def test_substitute_secrets_method(self) -> None:
         """Test the _substitute_secrets method directly."""
@@ -237,18 +250,21 @@ class TestSecretSubstitutionPattern:
             "database": {
                 "host": "${DB_HOST:localhost}",
                 "password": "${DB_PASSWORD}",
-                "port": 5432
+                "port": 5432,
             },
             "api_key": "${API_KEY:default_key}",
-            "service_name": "test_service"
+            "service_name": "test_service",
         }
 
         # When
-        with patch.dict(os.environ, {
-            'DB_HOST': 'prod.database.com',
-            'DB_PASSWORD': 'super_secret',
-            # API_KEY not set, should use default
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "DB_HOST": "prod.database.com",
+                "DB_PASSWORD": "super_secret",
+                # API_KEY not set, should use default
+            },
+        ):
             result = ServiceConfigLoader._substitute_secrets(test_data)
 
         # Then
@@ -262,15 +278,11 @@ class TestSecretSubstitutionPattern:
         """Test secret substitution with list values."""
         # Given
         test_data = {
-            "hosts": [
-                "${HOST1:localhost}",
-                "${HOST2:127.0.0.1}",
-                "static.host.com"
-            ]
+            "hosts": ["${HOST1:localhost}", "${HOST2:127.0.0.1}", "static.host.com"]
         }
 
         # When
-        with patch.dict(os.environ, {'HOST1': 'prod1.example.com'}):
+        with patch.dict(os.environ, {"HOST1": "prod1.example.com"}):
             result = ServiceConfigLoader._substitute_secrets(test_data)
 
         # Then

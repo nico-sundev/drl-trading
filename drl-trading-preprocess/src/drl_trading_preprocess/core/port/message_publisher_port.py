@@ -8,8 +8,8 @@ to messaging infrastructure (Kafka, Redis, etc.) for consumption by ingest servi
 from abc import ABC, abstractmethod
 from typing import Dict, List
 
-from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model.market_data_model import MarketDataModel
+from drl_trading_common.core.model.timeframe import Timeframe
+from drl_trading_core.core.model.market_data_model import MarketDataModel
 
 
 class StoreResampledDataMessagePublisherPort(ABC):

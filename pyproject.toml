@@ -113,7 +113,8 @@ addopts = [
     "-ra",
     "-m not slow",
     "--strict-markers",
-    "--disable-warnings"
+    "--disable-warnings",
+    "--ignore=.venv"
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",
@@ -128,7 +129,8 @@ omit = [
     "*/tests/*",
     "*/setup.py",
     "*/__pycache__/*",
-    "*/site-packages/*"
+    "*/site-packages/*",
+    "*/.venv/*"
 ]
 
 [tool.coverage.report]

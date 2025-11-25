@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 
 from pandas import DataFrame
 
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.core.model.timeframe import Timeframe
 
 
 @dataclass

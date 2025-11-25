@@ -8,8 +8,10 @@ import pytest
 def temp_config_file():
     """Creates a temporary JSON config file for testing."""
     config_data = {
-        "appName": "drl-trading-core",
-        "localDataImportConfig": {
+        "app_name": "drl-trading-core",
+        "version": "1.0.0",
+        "stage": "local",
+        "local_data_import_config": {
             "symbols": [
                 {
                     "symbol": "EURUSD",
@@ -30,14 +32,14 @@ def temp_config_file():
             "limit": 100,
             "strategy": "csv",
         },
-        "featuresConfig": {
-            "datasetDefinitions": {"EURUSD": ["1h", "4h"], "BTCUSDT": ["1h", "4h"]},
-            "featureDefinitions": [
+        "features_config": {
+            "dataset_definitions": {"EURUSD": ["1h", "4h"], "BTCUSDT": ["1h", "4h"]},
+            "feature_definitions": [
                 {
                     "name": "rsi",
                     "enabled": True,
                     "derivatives": [1],
-                    "parameterSets": [
+                    "parameter_sets": [
                         {"enabled": True, "length": 7},
                         {"enabled": True, "length": 14},
                         {"enabled": True, "length": 21},
@@ -45,54 +47,54 @@ def temp_config_file():
                 }
             ],
         },
-        "rlModelConfig": {
+        "rl_model_config": {
             "agents": ["PPO", "A2C", "DDPG", "SAC", "TD3", "Ensemble"],
-            "trainingSplitRatio": 0.8,
-            "validatingSplitRatio": 0.1,
-            "testingSplitRatio": 0.1,
+            "training_split_ratio": 0.8,
+            "validating_split_ratio": 0.1,
+            "testing_split_ratio": 0.1,
             "agent_threshold": 0.1,
             "total_timesteps": 10000,
         },
-        "environmentConfig": {
+        "environment_config": {
             "fee": 0.005,
-            "slippageAtrBased": 0.01,
-            "slippageAgainstTradeProbability": 0.6,
-            "startBalance": 10000.0,
-            "maxDailyDrawdown": 0.02,
-            "maxAlltimeDrawdown": 0.05,
-            "maxPercentageOpenPosition": 100.0,
-            "minPercentageOpenPosition": 1.0,
-            "maxTimeInTrade": 10,
-            "optimalExitTime": 3,
-            "variancePenaltyWeight": 0.5,
-            "atrPenaltyWeight": 0.3,
+            "slippage_atr_based": 0.01,
+            "slippage_against_trade_probability": 0.6,
+            "start_balance": 10000.0,
+            "max_daily_drawdown": 0.02,
+            "max_alltime_drawdown": 0.05,
+            "max_percentage_open_position": 100.0,
+            "min_percentage_open_position": 1.0,
+            "max_time_in_trade": 10,
+            "optimal_exit_time": 3,
+            "variance_penalty_weight": 0.5,
+            "atr_penalty_weight": 0.3,
         },
-        "featureStoreConfig": {
-            "enabled": False,
-            "configDirectory": "testrepo",
-            "entityName": "symbol",
-            "ttlDays": 365,
-            "onlineEnabled": True,
-            "serviceName": "test_service",
-            "serviceVersion": "1.0.0",
-            "offlineRepoStrategy": "local",
-            "localRepoConfig": {
-                "repoPath": "test_data"
+        "feature_store_config": {
+            "cache_enabled": False,
+            "config_directory": "testrepo",
+            "entity_name": "symbol",
+            "ttl_days": 365,
+            "online_enabled": True,
+            "service_name": "test_service",
+            "service_version": "1.0.0",
+            "offline_repo_strategy": "local",
+            "local_repo_config": {
+                "repo_path": "test_data"
             },
-            "s3RepoConfig": {
-                "bucketName": "drl-trading-features-test",
+            "s3_repo_config": {
+                "bucket_name": "drl-trading-features-test",
                 "prefix": "features",
-                "endpointUrl": None,
+                "endpoint_url": None,
                 "region": "us-east-1",
-                "accessKeyId": None,
-                "secretAccessKey": None
+                "access_key_id": None,
+                "secret_access_key": None
             }
         },
-        "contextFeatureConfig": {
-            "primaryContextColumns": ["High", "Low", "Close"],
-            "derivedContextColumns": ["Open", "Volume"],
-            "optionalContextColumns": ["Atr"],
-            "timeColumn": "Time",
+        "context_feature_config": {
+            "primary_context_columns": ["High", "Low", "Close"],
+            "derived_context_columns": ["Open", "Volume"],
+            "optional_context_columns": ["Atr"],
+            "time_column": "Time",
         },
     }
 

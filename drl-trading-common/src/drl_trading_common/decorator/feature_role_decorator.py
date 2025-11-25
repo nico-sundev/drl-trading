@@ -4,7 +4,7 @@ from typing import Type, TypeVar, TYPE_CHECKING
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 
 if TYPE_CHECKING:
-    from drl_trading_common.base.base_feature import BaseFeature
+    from drl_trading_common import BaseFeature
 
 # Type variables for generic typing
 T = TypeVar('T')

@@ -9,8 +9,8 @@ import pytest
 from drl_trading_common.adapter.messaging.kafka_producer_adapter import (
     KafkaProducerAdapter,
 )
-from drl_trading_common.model.timeframe import Timeframe
-from drl_trading_core.common.model.market_data_model import MarketDataModel
+from drl_trading_common.adapter.model.timeframe import Timeframe
+from drl_trading_adapter.adapter.database.entity.market_data_entity import MarketDataEntity
 from drl_trading_preprocess.adapter.messaging.publisher.kafka_message_publisher import (
     KafkaMessagePublisher,
 )
@@ -68,10 +68,10 @@ class TestKafkaMessagePublisherPublishResampledData:
         )
 
     @pytest.fixture
-    def sample_market_data(self) -> List[MarketDataModel]:
+    def sample_market_data(self) -> List[MarketDataEntity]:
         """Create sample market data for testing."""
         return [
-            MarketDataModel(
+            MarketDataEntity(
                 symbol="AAPL",
                 timeframe=Timeframe.MINUTE_1,
                 timestamp=datetime(2024, 1, 1, 10, 0),
@@ -81,7 +81,7 @@ class TestKafkaMessagePublisherPublishResampledData:
                 close_price=150.5,
                 volume=1000,
             ),
-            MarketDataModel(
+            MarketDataEntity(
                 symbol="AAPL",
                 timeframe=Timeframe.MINUTE_1,
                 timestamp=datetime(2024, 1, 1, 10, 1),
@@ -97,13 +97,13 @@ class TestKafkaMessagePublisherPublishResampledData:
         self,
         publisher: KafkaMessagePublisher,
         mock_resampled_producer: Mock,
-        sample_market_data: List[MarketDataModel],
+        sample_market_data: List[MarketDataEntity],
     ) -> None:
         """Test successful publication of resampled data."""
         # Given
         symbol = "AAPL"
         base_timeframe = Timeframe.MINUTE_1
-        resampled_data: Dict[Timeframe, List[MarketDataModel]] = {
+        resampled_data: Dict[Timeframe, List[MarketDataEntity]] = {
             Timeframe.MINUTE_5: sample_market_data
         }
         new_candles_count: Dict[Timeframe, int] = {Timeframe.MINUTE_5: 2}
@@ -123,7 +123,7 @@ class TestKafkaMessagePublisherPublishResampledData:
         assert call_kwargs["key"] == symbol
         assert call_kwargs["headers"]["event_type"] == "resampled_data"
         assert call_kwargs["headers"]["symbol"] == symbol
-        
+
         # Verify payload structure
         payload = call_kwargs["value"]
         assert payload["symbol"] == symbol
@@ -136,13 +136,13 @@ class TestKafkaMessagePublisherPublishResampledData:
         self,
         publisher: KafkaMessagePublisher,
         mock_resampled_producer: Mock,
-        sample_market_data: List[MarketDataModel],
+        sample_market_data: List[MarketDataEntity],
     ) -> None:
         """Test publication with multiple target timeframes."""
         # Given
         symbol = "AAPL"
         base_timeframe = Timeframe.MINUTE_1
-        resampled_data: Dict[Timeframe, List[MarketDataModel]] = {
+        resampled_data: Dict[Timeframe, List[MarketDataEntity]] = {
             Timeframe.MINUTE_5: sample_market_data,
             Timeframe.MINUTE_15: sample_market_data[:1],
         }
@@ -163,7 +163,7 @@ class TestKafkaMessagePublisherPublishResampledData:
         mock_resampled_producer.publish.assert_called_once()
         call_kwargs = mock_resampled_producer.publish.call_args.kwargs
         payload = call_kwargs["value"]
-        
+
         assert payload["total_records"] == 3  # 2 + 1
         assert payload["total_new_candles"] == 3  # 2 + 1
         assert len(payload["resampled_data"]) == 2
@@ -205,11 +205,11 @@ class TestKafkaMessagePublisherPublishResamplingError:
         # Then
         publisher._error_producer.publish.assert_called_once()
         call_kwargs = publisher._error_producer.publish.call_args.kwargs
-        
+
         assert call_kwargs["topic"] == "error.preprocess-data"
         assert call_kwargs["key"] == symbol
         assert call_kwargs["headers"]["event_type"] == "resampling_error"
-        
+
         # Verify payload
         payload = call_kwargs["value"]
         assert payload["symbol"] == symbol

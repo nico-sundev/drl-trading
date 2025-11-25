@@ -11,7 +11,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from drl_trading_common.model.timeframe import Timeframe
+from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_preprocess.core.service.resample.market_data_resampling_service import (
     MarketDataResamplingService,
 )
@@ -421,7 +421,7 @@ class TestContextBasedResampling:
         target_timeframes = [Timeframe.MINUTE_5]
 
         # Mock data fetch to return some data (so save happens)
-        from drl_trading_core.common.model.market_data_model import MarketDataModel
+        from drl_trading_core.core.model.market_data_model import MarketDataModel
         mock_data = [
             MarketDataModel(
                 symbol=symbol,
