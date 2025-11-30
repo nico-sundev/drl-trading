@@ -14,8 +14,8 @@ from unittest.mock import Mock
 from datetime import datetime
 import pandas as pd
 
+from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_core.core.model import FeatureConfigVersionInfo
-from drl_trading_core.core.model import Timeframe
 from drl_trading_core.core.model.data_availability_summary import DataAvailabilitySummary
 from drl_trading_core.core.dto.feature_service_metadata import FeatureServiceMetadata
 from drl_trading_preprocess.core.service.coverage.feature_coverage_analyzer import FeatureCoverageAnalyzer

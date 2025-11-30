@@ -2,12 +2,11 @@
 import pytest
 from drl_trading_common.config.application_config import ApplicationConfig
 from drl_trading_common.config.config_loader import ConfigLoader
-
-from drl_trading_core.core.service.feature_definition_parser import FeatureDefinitionParser
+from drl_trading_core.core.service.feature_parameter_set_parser import FeatureParameterSetParser
 
 @pytest.fixture
 def feature_definition_parser(feature_factory):
-    return FeatureDefinitionParser(feature_factory)
+    return FeatureParameterSetParser(feature_factory)
 
 def test_load_config_from_json(temp_config_file, feature_factory, mock_rsi_config_class, feature_definition_parser):
     temp_file_path, expected_data = temp_config_file

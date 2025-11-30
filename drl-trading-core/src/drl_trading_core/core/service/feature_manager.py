@@ -24,9 +24,7 @@ from drl_trading_core.core.model.feature_computation_request import (
     FeatureComputationRequest,
 )
 from drl_trading_core.core.model.feature_definition import FeatureDefinition
-from drl_trading_core.core.service.feature_definition_parser import (
-    FeatureDefinitionParser,
-)
+from drl_trading_core.core.service.feature_parameter_set_parser import FeatureParameterSetParser
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +75,7 @@ class FeatureManager(Computable):
     def __init__(
         self,
         feature_factory: IFeatureFactory,
-        feature_definition_parser: FeatureDefinitionParser,
+        feature_parameter_set_parser: FeatureParameterSetParser,
         feature_computation_config: FeatureComputationConfig,
     ) -> None:
         """
@@ -85,11 +83,11 @@ class FeatureManager(Computable):
 
         Args:
             feature_factory: Factory for creating feature instances.
-            feature_definition_parser: Parser for feature definitions.
+            feature_parameter_set_parser: Parser for feature definitions.
             feature_computation_config: Configuration for feature computation parallelization.
         """
         self.feature_factory = feature_factory
-        self.feature_definition_parser = feature_definition_parser
+        self.feature_parameter_set_parser = feature_parameter_set_parser
         self.feature_computation_config = feature_computation_config
 
         # Enhanced feature storage with structured, observable keys
@@ -114,7 +112,7 @@ class FeatureManager(Computable):
         logger.info("Starting feature initialization process...")
 
         # Populate parsed feature configurations
-        self.feature_definition_parser.parse_feature_definitions(
+        self.feature_parameter_set_parser.parse_feature_definitions(
             request.feature_definitions
         )
 
@@ -857,7 +855,7 @@ class FeatureManager(Computable):
                 if feature_def.parsed_parameter_sets:
                     for param_set in feature_def.parsed_parameter_sets:
                         key = FeatureKey(
-                            feature_def.name, dataset_id, param_set.hash_id
+                            feature_def.name, dataset_id, param_set
                         )
                         feature = self._features.get(key)
                         if feature:

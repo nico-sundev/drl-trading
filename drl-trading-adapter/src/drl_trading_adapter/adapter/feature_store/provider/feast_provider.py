@@ -11,6 +11,7 @@ from feast import (
     OnDemandFeatureView,
 )
 from feast.data_format import ParquetFormat
+from feast.types import String
 from injector import inject
 
 from drl_trading_adapter.adapter.feature_store.offline import IOfflineFeatureRepository
@@ -163,6 +164,10 @@ class FeastProvider:
 
         fields = self._create_fields_from_features([request.feature_metadata])
 
+        # Add symbol field to satisfy Feast entity join key requirement
+        # TODO: Consider making join keys configurable in the future
+        fields.append(Field(name="symbol", dtype=String))
+
         # Create entity
         entity = self._get_or_create_entity()
 
@@ -263,7 +268,9 @@ class FeastProvider:
                 entities=[entity],
                 ttl=timedelta(days=self.feature_store_config.ttl_days),
                 schema=fields,
-                online=self.feature_store_config.online_enabled,  # Use config setting
+                # online=self.feature_store_config.online_enabled,  # Use config setting
+                online=True,  # Use config setting,
+                # offline=True,  # Use config setting,
                 source=source,
                 tags={
                     "feature_role": f"{feature_role.value}",

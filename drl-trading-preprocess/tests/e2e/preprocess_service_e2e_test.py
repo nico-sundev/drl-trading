@@ -21,6 +21,7 @@ from typing import Any
 
 import pytest
 
+from drl_trading_common.adapter.model.feature_definition import FeatureDefinition
 from drl_trading_common.adapter.model.timeframe import Timeframe
 from builders import FeaturePreprocessingRequestBuilder
 
@@ -56,13 +57,11 @@ class TestPreprocessServiceE2E:
         time.sleep(2)  # Let consumer subscribe
 
         # Build RSI feature with proper parameters
-        from drl_trading_common.config.feature_config import FeatureDefinition
-
         rsi_feature = FeatureDefinition(
             name="rsi",
             enabled=True,
             derivatives=[0],
-            parameter_sets=[{"type": "rsi", "enabled": True, "length": 14}],
+            raw_parameter_sets=[{"type": "rsi", "enabled": True, "length": 14}],
         )
 
         # Build request using test builder (ensures correct schema)
@@ -128,13 +127,12 @@ class TestPreprocessServiceE2E:
         test_symbols = ["BTCUSD", "ETHUSD", "SOLUSD"]
 
         # Build RSI feature with proper parameters
-        from drl_trading_common.config.feature_config import FeatureDefinition
 
         rsi_feature = FeatureDefinition(
             name="rsi",
             enabled=True,
             derivatives=[0],
-            parameter_sets=[{"type": "rsi", "enabled": True, "length": 14}],
+            raw_parameter_sets=[{"type": "rsi", "enabled": True, "length": 14}],
         )
 
         # When - Publish requests for all symbols using builder

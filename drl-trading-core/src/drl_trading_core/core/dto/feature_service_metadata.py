@@ -2,12 +2,10 @@ from dataclasses import dataclass
 from typing import List
 
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_common.adapter.model.feature_config_version_info import (
-    FeatureConfigVersionInfo,
-)
 from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
+from drl_trading_core.core.model.feature_config_version_info import FeatureConfigVersionInfo
 
 
 @dataclass

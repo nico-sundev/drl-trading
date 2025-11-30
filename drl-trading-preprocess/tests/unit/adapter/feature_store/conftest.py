@@ -18,7 +18,8 @@ from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrate
 from drl_trading_common.adapter.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
-from drl_trading_common.adapter.model.timeframe import Timeframe
+from drl_trading_common.core.model.timeframe import Timeframe
+from drl_trading_core.core.model.feature_config_version_info import FeatureConfigVersionInfo as CoreFeatureConfigVersionInfo
 from drl_trading_core.core.dto.feature_service_metadata import FeatureServiceMetadata
 from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
 from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
@@ -158,9 +159,9 @@ def mock_feature_view_name_mapper() -> Mock:
 
 
 @pytest.fixture
-def feature_version_info() -> FeatureConfigVersionInfo:
+def feature_version_info() -> CoreFeatureConfigVersionInfo:
     """Create a test feature configuration version info."""
-    return FeatureConfigVersionInfo(
+    return CoreFeatureConfigVersionInfo(
         semver="1.0.0",
         hash="abc123def456",
         created_at=datetime.fromisoformat("2024-01-01T00:00:00"),

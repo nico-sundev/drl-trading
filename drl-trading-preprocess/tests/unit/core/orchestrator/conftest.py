@@ -30,6 +30,101 @@ def request_builder() -> FeaturePreprocessingRequestBuilder:
 
 
 @pytest.fixture
+def core_request_factory() -> Callable:
+    """
+    Factory for creating core FeaturePreprocessingRequest instances for unit tests.
+
+    This creates core models directly, avoiding the adapter models used by the request_builder
+    which is intended for e2e testing.
+    """
+    from drl_trading_core.core.dto.feature_preprocessing_request import FeaturePreprocessingRequest
+    from drl_trading_core.core.model.feature_definition import FeatureDefinition
+    from drl_trading_core.core.model.feature_config_version_info import FeatureConfigVersionInfo
+    from datetime import datetime, timezone
+
+    def _create(
+        symbol: str = "BTCUSD",
+        base_timeframe: Timeframe = Timeframe.MINUTE_1,
+        target_timeframes: list[Timeframe] | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        processing_context: str = "training",
+        skip_existing_features: bool = True,
+        force_recompute: bool = False,
+        feature_names: list[str] | None = None,
+        **kwargs
+    ) -> FeaturePreprocessingRequest:
+        """
+        Create a core FeaturePreprocessingRequest for unit testing.
+
+        Args:
+            symbol: Trading symbol
+            base_timeframe: Base timeframe for resampling
+            target_timeframes: Target timeframes for feature computation
+            start_time: Start of processing period
+            end_time: End of processing period
+            processing_context: Context (training, inference, backfill)
+            skip_existing_features: Whether to skip existing features
+            force_recompute: Whether to force recomputation
+            feature_names: Names of features to include
+            **kwargs: Additional parameters
+
+        Returns:
+            Core FeaturePreprocessingRequest instance
+        """
+        if target_timeframes is None:
+            target_timeframes = [Timeframe.MINUTE_5]
+
+        if start_time is None:
+            start_time = datetime(2023, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+
+        if end_time is None:
+            end_time = datetime(2023, 1, 2, 0, 0, 0, tzinfo=timezone.utc)
+
+        if feature_names is None:
+            feature_names = ["test_feature"]
+
+        # Set force_recompute based on processing context if not explicitly provided
+        if 'force_recompute' not in kwargs:
+            force_recompute = processing_context == "inference"
+        else:
+            force_recompute = kwargs.pop('force_recompute')
+
+        # Create feature definitions
+        feature_definitions = [
+            FeatureDefinition(
+                name=name,
+                enabled=True,
+                derivatives=[0],
+                parsed_parameter_sets={}
+            )
+            for name in feature_names
+        ]
+
+        # Create feature config
+        feature_config = FeatureConfigVersionInfo(
+            semver="1.0.0",
+            hash="test_hash",
+            created_at=datetime(2023, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            feature_definitions=feature_definitions,
+            description="Test features"
+        )
+
+        return FeaturePreprocessingRequest(
+            symbol=symbol,
+            base_timeframe=base_timeframe,
+            target_timeframes=target_timeframes,
+            feature_config_version_info=feature_config,
+            start_time=start_time,
+            end_time=end_time,
+            processing_context=processing_context,
+            skip_existing_features=skip_existing_features,
+            force_recompute=force_recompute,
+            **kwargs
+        )
+
+    return _create
+@pytest.fixture
 def mock_market_data_resampler() -> Mock:
     """Mock MarketDataResamplingService."""
     mock = Mock(spec=MarketDataResamplingService)

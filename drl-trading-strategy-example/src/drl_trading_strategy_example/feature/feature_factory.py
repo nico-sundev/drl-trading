@@ -1,8 +1,8 @@
 import logging
 from typing import Optional
 
-from drl_trading_common.base import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_common.core.model.base_feature import BaseFeature
 from drl_trading_common.interface.feature.feature_factory_interface import (
     IFeatureFactory,
 )

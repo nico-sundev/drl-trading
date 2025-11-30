@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Dict, List
-from drl_trading_common.adapter.model.base_parameter_set_config import BaseParameterSetConfig
+from typing import List
 
 
 @dataclass(frozen=True)
@@ -17,4 +16,4 @@ class FeatureDefinition:
     name: str  # Feature type identifier (e.g., "rsi", "macd", "close_price")
     enabled: bool
     derivatives: List[int]
-    parsed_parameter_sets: Dict[str, BaseParameterSetConfig] = field(default_factory=dict)
+    raw_parameter_sets: List[dict] = field(default_factory=list)

@@ -9,10 +9,11 @@ import logging
 import pandas as pd
 import pytest
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_common.adapter.model.feature_config_version_info import (
+from drl_trading_core.core.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
-from drl_trading_common.adapter.model.timeframe import Timeframe
+from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
 from drl_trading_core.core.dto.offline_storage_request import OfflineStorageRequest
 from drl_trading_core.core.dto.feature_service_metadata import (
@@ -48,21 +49,26 @@ class TestFeatureStoreRepositoriesIntegration:
         fetch_repo = integration_container.get(IFeatureStoreFetchPort)
 
         # When - Store features offline
+        dataset_identifier = DatasetIdentifier(symbol=symbol, timeframe=Timeframe.HOUR_1)
+        feature_service_metadata = FeatureServiceMetadata.create(
+            dataset_identifier=dataset_identifier,
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature_config_version=feature_version_info_fixture,
+            feature_view_metadata_list=feature_view_requests_fixture
+        )
         request = OfflineStorageRequest.create(
             features_df=sample_trading_features_df,
-            symbol=symbol,
-            feature_version_info=feature_version_info_fixture,
-            feature_view_metadata_list=feature_view_requests_fixture
+            feature_service_metadata=feature_service_metadata
         )
         save_repo.store_computed_features_offline(request)
 
         # And fetch them back (offline)
         timestamps = sample_trading_features_df["event_timestamp"]
-        feature_service_request = FeatureServiceMetadata(
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            symbol=symbol,
-            feature_version_info=feature_version_info_fixture,
-            timeframe=Timeframe.HOUR_1
+        feature_service_request = FeatureServiceMetadata.create(
+            dataset_identifier=dataset_identifier,
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature_config_version=feature_version_info_fixture,
+            feature_view_metadata_list=feature_view_requests_fixture
         )
         fetched_features = fetch_repo.get_offline(
             feature_service_request=feature_service_request,
@@ -100,11 +106,16 @@ class TestFeatureStoreRepositoriesIntegration:
         fetch_repo = integration_container.get(IFeatureStoreFetchPort)
 
         # Store features offline first
+        dataset_identifier = DatasetIdentifier(symbol=symbol, timeframe=Timeframe.HOUR_1)
+        feature_service_metadata = FeatureServiceMetadata.create(
+            dataset_identifier=dataset_identifier,
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature_config_version=feature_version_info_fixture,
+            feature_view_metadata_list=feature_view_requests_fixture
+        )
         request = OfflineStorageRequest.create(
             features_df=sample_trading_features_df,
-            symbol=symbol,
-            feature_version_info=feature_version_info_fixture,
-            feature_view_metadata_list=feature_view_requests_fixture
+            feature_service_metadata=feature_service_metadata
         )
         save_repo.store_computed_features_offline(request)
 
@@ -115,11 +126,11 @@ class TestFeatureStoreRepositoriesIntegration:
         )
 
         # And fetch from online store
-        feature_service_request = FeatureServiceMetadata(
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            symbol=symbol,
-            feature_version_info=feature_version_info_fixture,
-            timeframe=Timeframe.HOUR_1
+        feature_service_request = FeatureServiceMetadata.create(
+            dataset_identifier=dataset_identifier,
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature_config_version=feature_version_info_fixture,
+            feature_view_metadata_list=feature_view_requests_fixture
         )
         online_features = fetch_repo.get_online(
             feature_service_request=feature_service_request
@@ -149,11 +160,16 @@ class TestFeatureStoreRepositoriesIntegration:
 
         # IMPORTANT: First create feature views by doing an offline save
         # This is required before any online operations can work
+        dataset_identifier = DatasetIdentifier(symbol=symbol, timeframe=Timeframe.HOUR_1)
+        feature_service_metadata = FeatureServiceMetadata.create(
+            dataset_identifier=dataset_identifier,
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature_config_version=feature_version_info_fixture,
+            feature_view_metadata_list=feature_view_requests_fixture
+        )
         request = OfflineStorageRequest.create(
             features_df=sample_trading_features_df,
-            symbol=symbol,
-            feature_version_info=feature_version_info_fixture,
-            feature_view_metadata_list=feature_view_requests_fixture
+            feature_service_metadata=feature_service_metadata
         )
         save_repo.store_computed_features_offline(request)
 
@@ -175,11 +191,11 @@ class TestFeatureStoreRepositoriesIntegration:
         )
 
         # And fetch from online store
-        feature_service_request = FeatureServiceMetadata(
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            symbol=symbol,
-            feature_version_info=feature_version_info_fixture,
-            timeframe=Timeframe.HOUR_1
+        feature_service_request = FeatureServiceMetadata.create(
+            dataset_identifier=dataset_identifier,
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature_config_version=feature_version_info_fixture,
+            feature_view_metadata_list=feature_view_requests_fixture
         )
         online_features = fetch_repo.get_online(
             feature_service_request=feature_service_request
@@ -203,11 +219,16 @@ class TestFeatureStoreRepositoriesIntegration:
         save_repo = integration_container.get(IFeatureStoreSavePort)
 
         # When - Store should work when feature store is properly configured
+        dataset_identifier = DatasetIdentifier(symbol=symbol, timeframe=Timeframe.HOUR_1)
+        feature_service_metadata = FeatureServiceMetadata.create(
+            dataset_identifier=dataset_identifier,
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature_config_version=feature_version_info_fixture,
+            feature_view_metadata_list=feature_view_requests_fixture
+        )
         request = OfflineStorageRequest.create(
             features_df=sample_trading_features_df,
-            symbol=symbol,
-            feature_version_info=feature_version_info_fixture,
-            feature_view_metadata_list=feature_view_requests_fixture
+            feature_service_metadata=feature_service_metadata
         )
         save_repo.store_computed_features_offline(request)
 
@@ -232,11 +253,16 @@ class TestFeatureStoreRepositoriesIntegration:
         save_repo = integration_container.get(IFeatureStoreSavePort)
 
         # IMPORTANT: First create feature views by doing an offline save
+        dataset_identifier = DatasetIdentifier(symbol=symbol, timeframe=Timeframe.HOUR_1)
+        feature_service_metadata = FeatureServiceMetadata.create(
+            dataset_identifier=dataset_identifier,
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature_config_version=feature_version_info_fixture,
+            feature_view_metadata_list=feature_view_requests_fixture
+        )
         request = OfflineStorageRequest.create(
             features_df=sample_trading_features_df,
-            symbol=symbol,
-            feature_version_info=feature_version_info_fixture,
-            feature_view_metadata_list=feature_view_requests_fixture
+            feature_service_metadata=feature_service_metadata
         )
         save_repo.store_computed_features_offline(request)
 
@@ -282,11 +308,16 @@ class TestFeatureStoreRepositoriesIntegration:
 
         # When/Then - Should raise ValueError for all operations
         with pytest.raises(ValueError, match="event_timestamp"):
+            dataset_identifier = DatasetIdentifier(symbol=symbol, timeframe=Timeframe.HOUR_1)
+            feature_service_metadata = FeatureServiceMetadata.create(
+                dataset_identifier=dataset_identifier,
+                feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+                feature_config_version=feature_version_info_fixture,
+                feature_view_metadata_list=feature_view_requests_fixture
+            )
             request = OfflineStorageRequest.create(
                 features_df=invalid_df,
-                symbol=symbol,
-                feature_version_info=feature_version_info_fixture,
-                feature_view_metadata_list=feature_view_requests_fixture
+                feature_service_metadata=feature_service_metadata
             )
             save_repo.store_computed_features_offline(request)
 
@@ -317,11 +348,16 @@ class TestFeatureStoreRepositoriesIntegration:
 
         # When/Then - Should raise ValueError for empty DataFrame
         with pytest.raises(ValueError, match="features_df must be a non-empty DataFrame"):
+            dataset_identifier = DatasetIdentifier(symbol=symbol, timeframe=Timeframe.HOUR_1)
+            feature_service_metadata = FeatureServiceMetadata.create(
+                dataset_identifier=dataset_identifier,
+                feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+                feature_config_version=feature_version_info_fixture,
+                feature_view_metadata_list=feature_view_requests_fixture
+            )
             OfflineStorageRequest.create(
                 features_df=empty_df,
-                symbol=symbol,
-                feature_version_info=feature_version_info_fixture,
-                feature_view_metadata_list=feature_view_requests_fixture
+                feature_service_metadata=feature_service_metadata
             )
 
     def test_large_dataset_performance(
@@ -357,21 +393,26 @@ class TestFeatureStoreRepositoriesIntegration:
         fetch_repo = integration_container.get(IFeatureStoreFetchPort)
 
         # When - Store large dataset
+        dataset_identifier = DatasetIdentifier(symbol=symbol, timeframe=Timeframe.HOUR_1)
+        feature_service_metadata = FeatureServiceMetadata.create(
+            dataset_identifier=dataset_identifier,
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature_config_version=feature_version_info_fixture,
+            feature_view_metadata_list=feature_view_requests_fixture
+        )
         request = OfflineStorageRequest.create(
             features_df=large_features_df,
-            symbol=symbol,
-            feature_version_info=feature_version_info_fixture,
-            feature_view_metadata_list=feature_view_requests_fixture
+            feature_service_metadata=feature_service_metadata
         )
         save_repo.store_computed_features_offline(request)
 
         # And fetch subset back
         subset_timestamps = large_features_df["event_timestamp"].iloc[100:200]
-        feature_service_request = FeatureServiceMetadata(
-            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
-            symbol=symbol,
-            feature_version_info=feature_version_info_fixture,
-            timeframe=Timeframe.HOUR_1
+        feature_service_request = FeatureServiceMetadata.create(
+            dataset_identifier=dataset_identifier,
+            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+            feature_config_version=feature_version_info_fixture,
+            feature_view_metadata_list=feature_view_requests_fixture
         )
         fetched_features = fetch_repo.get_offline(
             feature_service_request=feature_service_request,
@@ -407,11 +448,12 @@ class TestFeatureStoreRepositoriesErrorScenarios:
 
         # When/Then - Should raise RuntimeError when no feature service can be created
         with pytest.raises((RuntimeError, Exception)):  # Allow broader exception types
-            invalid_request = FeatureServiceMetadata(
-                feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
-                symbol=symbol,
-                feature_version_info=invalid_version_info,
-                timeframe=Timeframe.HOUR_1
+            dataset_identifier = DatasetIdentifier(symbol=symbol, timeframe=Timeframe.HOUR_1)
+            invalid_request = FeatureServiceMetadata.create(
+                dataset_identifier=dataset_identifier,
+                feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+                feature_config_version=invalid_version_info,
+                feature_view_metadata_list=[]
             )
             fetch_repo.get_online(
                 feature_service_request=invalid_request
@@ -419,11 +461,11 @@ class TestFeatureStoreRepositoriesErrorScenarios:
 
         with pytest.raises((RuntimeError, Exception)):  # Allow broader exception types
             timestamps = pd.Series([pd.Timestamp("2024-01-01 09:00:00", tz="UTC")])
-            invalid_request = FeatureServiceMetadata(
-                feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
-                symbol=symbol,
-                feature_version_info=invalid_version_info,
-                timeframe=Timeframe.HOUR_1
+            invalid_request = FeatureServiceMetadata.create(
+                dataset_identifier=dataset_identifier,
+                feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+                feature_config_version=invalid_version_info,
+                feature_view_metadata_list=[]
             )
             fetch_repo.get_offline(
                 feature_service_request=invalid_request,
@@ -453,19 +495,24 @@ class TestFeatureStoreRepositoriesErrorScenarios:
             # Create symbol-specific feature view requests
             symbol_specific_requests = []
             for request in feature_view_requests_fixture:
+                dataset_identifier = DatasetIdentifier(symbol=test_symbol, timeframe=Timeframe.HOUR_1)
                 modified_request = FeatureViewMetadata(
-                    symbol=test_symbol,
-                    feature_metadata=request.feature_metadata,
-                    timeframe=Timeframe.HOUR_1
+                    dataset_identifier=dataset_identifier,
+                    feature_metadata=request.feature_metadata
                 )
                 symbol_specific_requests.append(modified_request)
 
             # When - Save for each symbol
+            dataset_identifier = DatasetIdentifier(symbol=test_symbol, timeframe=Timeframe.HOUR_1)
+            feature_service_metadata = FeatureServiceMetadata.create(
+                dataset_identifier=dataset_identifier,
+                feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+                feature_config_version=feature_version_info_fixture,
+                feature_view_metadata_list=symbol_specific_requests
+            )
             request = OfflineStorageRequest.create(
                 features_df=modified_df,
-                symbol=test_symbol,
-                feature_version_info=feature_version_info_fixture,
-                feature_view_metadata_list=symbol_specific_requests
+                feature_service_metadata=feature_service_metadata
             )
             save_repo.store_computed_features_offline(request)
 
@@ -475,11 +522,12 @@ class TestFeatureStoreRepositoriesErrorScenarios:
 
             try:
                 # Try offline fetch first
-                feature_service_request = FeatureServiceMetadata(
-                    feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
-                    symbol=test_symbol,
-                    feature_version_info=feature_version_info_fixture,
-                    timeframe=Timeframe.HOUR_1
+                dataset_identifier = DatasetIdentifier(symbol=test_symbol, timeframe=Timeframe.HOUR_1)
+                feature_service_request = FeatureServiceMetadata.create(
+                    dataset_identifier=dataset_identifier,
+                    feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+                    feature_config_version=feature_version_info_fixture,
+                    feature_view_metadata_list=feature_view_requests_fixture
                 )
                 fetched_features = fetch_repo.get_offline(
                     feature_service_request=feature_service_request,
@@ -496,11 +544,11 @@ class TestFeatureStoreRepositoriesErrorScenarios:
 
                     # Try online fetch first to see if it works without additional push
                     try:
-                        feature_service_request = FeatureServiceMetadata(
-                            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
-                            symbol=test_symbol,
-                            feature_version_info=feature_version_info_fixture,
-                            timeframe=Timeframe.HOUR_1
+                        feature_service_request = FeatureServiceMetadata.create(
+                            dataset_identifier=dataset_identifier,
+                            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+                            feature_config_version=feature_version_info_fixture,
+                            feature_view_metadata_list=feature_view_requests_fixture
                         )
                         online_features = fetch_repo.get_online(
                             feature_service_request=feature_service_request
@@ -520,11 +568,11 @@ class TestFeatureStoreRepositoriesErrorScenarios:
                         )
 
                         # Now try online fetch again
-                        feature_service_request = FeatureServiceMetadata(
-                            feature_service_role=FeatureRoleEnum.OBSERVATION_SPACE,
-                            symbol=test_symbol,
-                            feature_version_info=feature_version_info_fixture,
-                            timeframe=Timeframe.HOUR_1
+                        feature_service_request = FeatureServiceMetadata.create(
+                            dataset_identifier=dataset_identifier,
+                            feature_role=FeatureRoleEnum.OBSERVATION_SPACE,
+                            feature_config_version=feature_version_info_fixture,
+                            feature_view_metadata_list=feature_view_requests_fixture
                         )
                         online_features = fetch_repo.get_online(
                             feature_service_request=feature_service_request

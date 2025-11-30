@@ -41,6 +41,7 @@ import pandas as pd
 import psycopg2
 import pytest
 
+from drl_trading_common.adapter.model.feature_definition import FeatureDefinition
 from drl_trading_common.adapter.model.timeframe import Timeframe
 from builders import FeaturePreprocessingRequestBuilder
 
@@ -223,13 +224,11 @@ class TestProductionBackfillWorkflow:
         print("✓ Kafka topics drained")
 
         # Build RSI feature configuration
-        from drl_trading_common.config.feature_config import FeatureDefinition
-
         rsi_feature = FeatureDefinition(
             name="rsi",
             enabled=True,
             derivatives=[0],
-            parameter_sets=[{"type": "rsi", "enabled": True, "length": 14}],
+            raw_parameter_sets=[{"type": "rsi", "enabled": True, "length": 14}],
         )
 
         # ==========================================

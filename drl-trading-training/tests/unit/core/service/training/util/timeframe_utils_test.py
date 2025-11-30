@@ -1,4 +1,4 @@
-from drl_trading_training.core.service.training.util.util import detect_timeframe
+from drl_trading_training.core.service.training.util.timeframe_utils import detect_timeframe
 import pandas as pd
 import pytest
 

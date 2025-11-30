@@ -68,9 +68,11 @@ def topic_handlers(mock_orchestrator: Mock) -> Dict[str, KafkaMessageHandler]:
     """Create topic->handler mapping for topic-based routing."""
     # Given
     from drl_trading_preprocess.adapter.messaging.kafka_message_handler_factory import KafkaMessageHandlerFactory
+    from drl_trading_common.adapter.mappers.feature_preprocessing_request_mapper import FeaturePreprocessingRequestMapper
 
     factory = KafkaMessageHandlerFactory()
-    preprocessing_handler = factory.create_preprocessing_request_handler(mock_orchestrator)
+    request_mapper = FeaturePreprocessingRequestMapper()
+    preprocessing_handler = factory.create_preprocessing_request_handler(mock_orchestrator, request_mapper)
 
     return {
         TEST_TOPIC: preprocessing_handler,
@@ -96,14 +98,6 @@ class TestKafkaConsumerIntegration:
             "end_time": "2024-01-31T23:59:59Z",
             "base_timeframe": "1m",
             "target_timeframes": ["1h", "4h"],
-            "feature_definitions": [
-                {
-                    "name": "rsi",
-                    "feature_type": "technical_indicator",
-                    "enabled": True,
-                    "parameters": {"period": 14}
-                }
-            ],
             "processing_context": "backtest",
             "skip_existing_features": False,
             "force_recompute": False,
@@ -115,9 +109,9 @@ class TestKafkaConsumerIntegration:
                 "feature_definitions": [
                     {
                         "name": "rsi",
-                        "feature_type": "technical_indicator",
                         "enabled": True,
-                        "parameters": {"period": 14}
+                        "derivatives": [14],
+                        "raw_parameter_sets": [{"period": 14}]
                     }
                 ]
             }
@@ -255,14 +249,6 @@ class TestKafkaConsumerIntegration:
             "end_time": "2024-01-01T01:00:00Z",
             "base_timeframe": "1m",
             "target_timeframes": ["5m"],
-            "feature_definitions": [
-                {
-                    "name": "rsi",
-                    "feature_type": "technical_indicator",
-                    "enabled": True,
-                    "parameters": {"period": 14}
-                }
-            ],
             "processing_context": "backtest",
             "skip_existing_features": False,
             "force_recompute": False,
@@ -274,9 +260,9 @@ class TestKafkaConsumerIntegration:
                 "feature_definitions": [
                     {
                         "name": "rsi",
-                        "feature_type": "technical_indicator",
                         "enabled": True,
-                        "parameters": {"period": 14}
+                        "derivatives": [14],
+                        "raw_parameter_sets": [{"period": 14}]
                     }
                 ]
             }
@@ -332,14 +318,6 @@ class TestKafkaConsumerIntegration:
             "end_time": "2024-01-01T01:00:00Z",
             "base_timeframe": "1m",
             "target_timeframes": ["5m"],
-            "feature_definitions": [
-                {
-                    "name": "rsi",
-                    "feature_type": "technical_indicator",
-                    "enabled": True,
-                    "parameters": {"period": 14}
-                }
-            ],
             "processing_context": "backtest",
             "skip_existing_features": False,
             "force_recompute": False,
@@ -351,9 +329,9 @@ class TestKafkaConsumerIntegration:
                 "feature_definitions": [
                     {
                         "name": "rsi",
-                        "feature_type": "technical_indicator",
                         "enabled": True,
-                        "parameters": {"period": 14}
+                        "derivatives": [14],
+                        "raw_parameter_sets": [{"period": 14}]
                     }
                 ]
             }
@@ -482,14 +460,6 @@ class TestKafkaConsumerIntegration:
             "end_time": "2024-01-01T01:00:00Z",
             "base_timeframe": "1m",
             "target_timeframes": ["5m"],
-            "feature_definitions": [
-                {
-                    "name": "rsi",
-                    "feature_type": "technical_indicator",
-                    "enabled": True,
-                    "parameters": {"period": 14}
-                }
-            ],
             "processing_context": "backtest",
             "skip_existing_features": False,
             "force_recompute": False,
@@ -501,9 +471,9 @@ class TestKafkaConsumerIntegration:
                 "feature_definitions": [
                     {
                         "name": "rsi",
-                        "feature_type": "technical_indicator",
                         "enabled": True,
-                        "parameters": {"period": 14}
+                        "derivatives": [14],
+                        "raw_parameter_sets": [{"period": 14}]
                     }
                 ]
             }
@@ -599,14 +569,6 @@ class TestKafkaConsumerIntegration:
             "end_time": "2024-01-01T01:00:00Z",
             "base_timeframe": "1m",
             "target_timeframes": ["5m"],
-            "feature_definitions": [
-                {
-                    "name": "rsi",
-                    "feature_type": "technical_indicator",
-                    "enabled": True,
-                    "parameters": {"period": 14}
-                }
-            ],
             "processing_context": "backtest",
             "skip_existing_features": False,
             "force_recompute": False,
@@ -618,9 +580,9 @@ class TestKafkaConsumerIntegration:
                 "feature_definitions": [
                     {
                         "name": "rsi",
-                        "feature_type": "technical_indicator",
                         "enabled": True,
-                        "parameters": {"period": 14}
+                        "derivatives": [14],
+                        "raw_parameter_sets": [{"period": 14}]
                     }
                 ]
             }

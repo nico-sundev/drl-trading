@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional
-from .feature_definition import FeatureDefinition
+
+from drl_trading_core.core.model.feature_definition import FeatureDefinition
 
 
 @dataclass

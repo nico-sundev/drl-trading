@@ -1,12 +1,12 @@
 
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 
 import pandas as pd
 
 from drl_trading_core.core.dto.feature_service_metadata import FeatureServiceMetadata
 
 
-class IFeatureStoreFetchPort(ABC):
+class IFeatureStoreFetchPort(metaclass=ABCMeta):
     @abstractmethod
     def get_online(
         self,

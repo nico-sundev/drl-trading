@@ -4,10 +4,10 @@ from unittest.mock import MagicMock
 import pytest
 from drl_trading_common import BaseParameterSetConfig
 from drl_trading_common.core.model.base_feature import BaseFeature
+from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     ITechnicalIndicatorFacade,
 )
-from drl_trading_common.adapter.model.dataset_identifier import DatasetIdentifier
 from drl_trading_strategy_example.feature.feature_factory import FeatureFactory
 from drl_trading_strategy_example.feature.registry.feature_class_registry_interface import (
     IFeatureClassRegistry,

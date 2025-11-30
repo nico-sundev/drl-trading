@@ -6,8 +6,9 @@ from unittest.mock import Mock
 
 import pytest
 
-from drl_trading_common.config.feature_config import FeatureDefinition
+from drl_trading_core.core.model.feature_definition import FeatureDefinition
 from drl_trading_core.core.service.feature_manager import FeatureManager
+from drl_trading_core.core.service.feature_parameter_set_parser import FeatureParameterSetParser
 from drl_trading_preprocess.core.service.validate.feature_validator import FeatureValidator
 
 
@@ -20,9 +21,14 @@ class TestFeatureValidator:
         return Mock(spec=FeatureManager)
 
     @pytest.fixture
-    def feature_validator(self, feature_manager_mock: Mock) -> FeatureValidator:
+    def feature_parameter_set_parser_mock(self) -> Mock:
+        """Create mock for FeatureParameterSetParser."""
+        return Mock(spec=FeatureParameterSetParser)
+
+    @pytest.fixture
+    def feature_validator(self, feature_manager_mock: Mock, feature_parameter_set_parser_mock: Mock) -> FeatureValidator:
         """Create FeatureValidator instance with mocked dependencies."""
-        return FeatureValidator(feature_manager=feature_manager_mock)
+        return FeatureValidator(feature_manager=feature_manager_mock, feature_parameter_set_parser=feature_parameter_set_parser_mock)
 
     @pytest.fixture
     def sample_feature_definitions(self) -> List[FeatureDefinition]:
@@ -31,26 +37,33 @@ class TestFeatureValidator:
         feature1.name = "rsi_14"
         feature1.feature_class = "RSIFeature"
         feature1.parameters = {"period": 14}
+        feature1.raw_parameter_sets = [{"period": 14}]
+        feature1.parameter_sets = []
 
         feature2 = Mock(spec=FeatureDefinition)
         feature2.name = "sma_20"
         feature2.feature_class = "SMAFeature"
         feature2.parameters = {"period": 20}
+        feature2.raw_parameter_sets = [{"period": 20}]
+        feature2.parameter_sets = []
 
         feature3 = Mock(spec=FeatureDefinition)
         feature3.name = "bollinger_bands"
         feature3.feature_class = "BollingerBandsFeature"
         feature3.parameters = {"period": 20, "std_dev": 2}
+        feature3.raw_parameter_sets = [{"period": 20, "std_dev": 2}]
+        feature3.parameter_sets = []
 
         return [feature1, feature2, feature3]
 
-    def test_initialization(self, feature_manager_mock: Mock) -> None:
+    def test_initialization(self, feature_manager_mock: Mock, feature_parameter_set_parser_mock: Mock) -> None:
         """Test FeatureValidator initialization."""
         # Given/When
-        validator = FeatureValidator(feature_manager=feature_manager_mock)
+        validator = FeatureValidator(feature_manager=feature_manager_mock, feature_parameter_set_parser=feature_parameter_set_parser_mock)
 
         # Then
         assert validator.feature_manager is feature_manager_mock
+        assert validator.feature_parameter_set_parser is feature_parameter_set_parser_mock
 
     def test_validate_definitions_all_supported(
         self,
@@ -199,6 +212,8 @@ class TestFeatureValidator:
         single_feature.name = "macd"
         single_feature.feature_class = "MACDFeature"
         single_feature.parameters = {"fast_period": 12, "slow_period": 26}
+        single_feature.raw_parameter_sets = []
+        single_feature.parameter_sets = []
 
         expected_validation_results = {"macd": True}
         feature_manager_mock.validate_feature_definitions.return_value = (
@@ -231,6 +246,8 @@ class TestFeatureValidator:
         single_feature.name = "custom_indicator"
         single_feature.feature_class = "CustomIndicatorFeature"
         single_feature.parameters = {"threshold": 0.5}
+        single_feature.raw_parameter_sets = []
+        single_feature.parameter_sets = []
 
         expected_validation_results = {"custom_indicator": False}
         feature_manager_mock.validate_feature_definitions.return_value = (
@@ -289,6 +306,8 @@ class TestFeatureValidator:
         for feature_name in validation_results.keys():
             mock_feature = Mock(spec=FeatureDefinition)
             mock_feature.name = feature_name
+            mock_feature.raw_parameter_sets = []
+            mock_feature.parameter_sets = []
             mock_features.append(mock_feature)
 
         feature_manager_mock.validate_feature_definitions.return_value = (

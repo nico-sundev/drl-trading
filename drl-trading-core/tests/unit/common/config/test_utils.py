@@ -8,9 +8,9 @@ import pytest
 from unittest.mock import Mock
 
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
-from drl_trading_common.config.feature_config import FeatureDefinition
+from drl_trading_core.core.model.feature_definition import FeatureDefinition
 from drl_trading_common.interface.feature.feature_factory_interface import IFeatureFactory
-from drl_trading_core.core.service.feature_definition_parser import FeatureDefinitionParser
+from drl_trading_core.core.service.feature_parameter_set_parser import FeatureParameterSetParser
 
 
 class TestParseParameters:
@@ -24,17 +24,17 @@ class TestParseParameters:
         mock_config_instance.hash_id.return_value = "test_hash_123"
         mock_feature_factory.create_config_instance.return_value = mock_config_instance
 
-        parser = FeatureDefinitionParser(mock_feature_factory)
+        parser = FeatureParameterSetParser(mock_feature_factory)
         feature_def = FeatureDefinition(
             name="rsi",
             enabled=True,
             derivatives=[14],
-            parameter_sets=[{"period": 14}],
+            raw_parameter_sets=[{"period": 14}],
             parsed_parameter_sets={}
         )
 
         # When
-        parser.parse_feature_definition(feature_def)
+        parser.parse_feature_definitions([feature_def])
 
         # Then
         mock_feature_factory.create_config_instance.assert_called_once_with("rsi", {"period": 14})
@@ -45,34 +45,34 @@ class TestParseParameters:
         """Test parsing with empty feature name raises ValueError."""
         # Given
         mock_feature_factory = Mock(spec=IFeatureFactory)
-        parser = FeatureDefinitionParser(mock_feature_factory)
+        parser = FeatureParameterSetParser(mock_feature_factory)
         feature_def = FeatureDefinition(
             name="",  # Empty name
             enabled=True,
             derivatives=[],
-            parameter_sets=[{"period": 14}],
+            raw_parameter_sets=[{"period": 14}],
             parsed_parameter_sets={}
         )
 
         # When & Then
         with pytest.raises(ValueError, match="Feature name is required"):
-            parser.parse_feature_definition(feature_def)
+            parser.parse_feature_definitions([feature_def])
 
     def test_parse_parameters_no_parameter_sets(self) -> None:
         """Test parsing with no parameter sets."""
         # Given
         mock_feature_factory = Mock(spec=IFeatureFactory)
-        parser = FeatureDefinitionParser(mock_feature_factory)
+        parser = FeatureParameterSetParser(mock_feature_factory)
         feature_def = FeatureDefinition(
             name="close_price",
             enabled=True,
             derivatives=[],
-            parameter_sets=[],
+            raw_parameter_sets=[],
             parsed_parameter_sets={}
         )
 
         # When
-        parser.parse_feature_definition(feature_def)
+        parser.parse_feature_definitions([feature_def])
 
         # Then
         mock_feature_factory.create_config_instance.assert_not_called()
@@ -83,19 +83,19 @@ class TestParseParameters:
         # Given
         mock_feature_factory = Mock(spec=IFeatureFactory)
         mock_feature_factory.create_config_instance.return_value = None
-        parser = FeatureDefinitionParser(mock_feature_factory)
+        parser = FeatureParameterSetParser(mock_feature_factory)
 
         feature_def = FeatureDefinition(
             name="rsi",
             enabled=True,
             derivatives=[14],
-            parameter_sets=[{"period": 14}],
+            raw_parameter_sets=[{"period": 14}],
             parsed_parameter_sets={}
         )
 
         # When & Then
         with pytest.raises(ValueError, match="Failed to parse any parameter sets for feature 'rsi'"):
-            parser.parse_feature_definition(feature_def)
+            parser.parse_feature_definitions([feature_def])
 
     def test_parse_parameters_multiple_parameter_sets(self) -> None:
         """Test parsing multiple parameter sets."""
@@ -108,18 +108,18 @@ class TestParseParameters:
         config2.hash_id.return_value = "hash_2"
 
         mock_feature_factory.create_config_instance.side_effect = [config1, config2]
-        parser = FeatureDefinitionParser(mock_feature_factory)
+        parser = FeatureParameterSetParser(mock_feature_factory)
 
         feature_def = FeatureDefinition(
             name="rsi",
             enabled=True,
             derivatives=[14],
-            parameter_sets=[{"period": 14}, {"period": 21}],
+            raw_parameter_sets=[{"period": 14}, {"period": 21}],
             parsed_parameter_sets={}
         )
 
         # When
-        parser.parse_feature_definition(feature_def)
+        parser.parse_feature_definitions([feature_def])
 
         # Then
         assert len(feature_def.parsed_parameter_sets) == 2
@@ -137,18 +137,18 @@ class TestParseParameters:
         config2.hash_id.return_value = "same_hash"  # Same hash as config1
 
         mock_feature_factory.create_config_instance.side_effect = [config1, config2]
-        parser = FeatureDefinitionParser(mock_feature_factory)
+        parser = FeatureParameterSetParser(mock_feature_factory)
 
         feature_def = FeatureDefinition(
             name="rsi",
             enabled=True,
             derivatives=[14],
-            parameter_sets=[{"period": 14}, {"period": 14}],  # Same parameters
+            raw_parameter_sets=[{"period": 14}, {"period": 14}],  # Same parameters
             parsed_parameter_sets={}
         )
 
         # When
-        parser.parse_feature_definition(feature_def)
+        parser.parse_feature_definitions([feature_def])
 
         # Then
         assert len(feature_def.parsed_parameter_sets) == 1
@@ -166,20 +166,20 @@ class TestParseAllParameters:
         mock_config_instance.hash_id.return_value = "test_hash"
         mock_feature_factory.create_config_instance.return_value = mock_config_instance
 
-        parser = FeatureDefinitionParser(mock_feature_factory)
+        parser = FeatureParameterSetParser(mock_feature_factory)
         feature_defs = [
             FeatureDefinition(
                 name="rsi",
                 enabled=True,
                 derivatives=[14],
-                parameter_sets=[{"period": 14}],
+                raw_parameter_sets=[{"period": 14}],
                 parsed_parameter_sets={}
             ),
             FeatureDefinition(
                 name="sma",
                 enabled=True,
                 derivatives=[20],
-                parameter_sets=[{"window": 20}],
+                raw_parameter_sets=[{"window": 20}],
                 parsed_parameter_sets={}
             )
         ]
@@ -199,7 +199,7 @@ class TestParseAllParameters:
         """Test parsing empty list of feature definitions."""
         # Given
         mock_feature_factory = Mock(spec=IFeatureFactory)
-        parser = FeatureDefinitionParser(mock_feature_factory)
+        parser = FeatureParameterSetParser(mock_feature_factory)
         feature_defs: list[FeatureDefinition] = []
 
         # When
@@ -216,20 +216,20 @@ class TestParseAllParameters:
         config_with_params.hash_id.return_value = "rsi_hash"
         mock_feature_factory.create_config_instance.return_value = config_with_params
 
-        parser = FeatureDefinitionParser(mock_feature_factory)
+        parser = FeatureParameterSetParser(mock_feature_factory)
         feature_defs = [
             FeatureDefinition(
                 name="rsi",
                 enabled=True,
                 derivatives=[14],
-                parameter_sets=[{"period": 14}],
+                raw_parameter_sets=[{"period": 14}],
                 parsed_parameter_sets={}
             ),
             FeatureDefinition(
                 name="close_price",
                 enabled=True,
                 derivatives=[],
-                parameter_sets=[],  # No parameters
+                raw_parameter_sets=[],  # No parameters
                 parsed_parameter_sets={}
             )
         ]
@@ -260,7 +260,7 @@ class TestEdgeCases:
                 name="test_feature",
                 enabled=True,
                 derivatives=[],
-                parameter_sets=["invalid_string"],  # type: ignore
+                raw_parameter_sets=["invalid_string"],  # type: ignore
                 parsed_parameter_sets={}
             )
 
@@ -269,16 +269,16 @@ class TestEdgeCases:
         # Given
         mock_feature_factory = Mock(spec=IFeatureFactory)
         mock_feature_factory.create_config_instance.side_effect = RuntimeError("Factory error")
-        parser = FeatureDefinitionParser(mock_feature_factory)
+        parser = FeatureParameterSetParser(mock_feature_factory)
 
         feature_def = FeatureDefinition(
             name="test_feature",
             enabled=True,
             derivatives=[],
-            parameter_sets=[{"param": "value"}],
+            raw_parameter_sets=[{"param": "value"}],
             parsed_parameter_sets={}
         )
 
         # When & Then
         with pytest.raises(RuntimeError, match="Factory error"):
-            parser.parse_feature_definition(feature_def)
+            parser.parse_feature_definitions([feature_def])

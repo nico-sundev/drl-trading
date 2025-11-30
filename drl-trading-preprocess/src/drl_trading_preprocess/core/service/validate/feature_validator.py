@@ -3,8 +3,9 @@ from typing import Dict, List
 
 from injector import inject
 
-from drl_trading_common.config.feature_config import FeatureDefinition
+from drl_trading_core.core.model.feature_definition import FeatureDefinition
 from drl_trading_core.core.service.feature_manager import FeatureManager
+from drl_trading_core.core.service.feature_parameter_set_parser import FeatureParameterSetParser
 
 logger = logging.getLogger(__name__)
 
@@ -13,9 +14,11 @@ logger = logging.getLogger(__name__)
 class FeatureValidator:
     """Service for validating feature definitions."""
 
-    def __init__(self, feature_manager: FeatureManager) -> None:
+    def __init__(self, feature_manager: FeatureManager,
+        feature_parameter_set_parser: FeatureParameterSetParser) -> None:
         """Initialize with feature manager for validation."""
         self.feature_manager = feature_manager
+        self.feature_parameter_set_parser = feature_parameter_set_parser
 
     def validate_definitions(
         self, feature_definitions: List[FeatureDefinition]
@@ -28,8 +31,10 @@ class FeatureValidator:
         Returns:
             Dictionary mapping feature names to validation status
         """
-        logger.debug(f"Validating {len(feature_definitions)} feature definitions")
+        logger.debug("Parsing feature parameter sets before validation")
+        self.feature_parameter_set_parser.parse_feature_definitions(feature_definitions)
 
+        logger.debug(f"Validating {len(feature_definitions)} feature definitions")
         # Delegate to FeatureManager's validation method
         validation_results = self.feature_manager.validate_feature_definitions(
             feature_definitions

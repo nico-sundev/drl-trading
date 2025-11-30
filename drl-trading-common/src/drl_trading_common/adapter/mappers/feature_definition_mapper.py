@@ -2,9 +2,13 @@
 Mapper for converting between adapter and core FeatureDefinition models.
 """
 
-from drl_trading_common.adapter.model.feature_definition import FeatureDefinition as AdapterFeatureDefinition
-from drl_trading_core.core.model.feature_definition import FeatureDefinition as CoreFeatureDefinition
-from .base_parameter_set_config_mapper import BaseParameterSetConfigMapper
+from drl_trading_core.core.model.feature_definition import (
+    FeatureDefinition as CoreFeatureDefinition,
+)
+
+from drl_trading_common.adapter.model.feature_definition import (
+    FeatureDefinition as AdapterFeatureDefinition,
+)
 
 
 class FeatureDefinitionMapper:
@@ -23,17 +27,13 @@ class FeatureDefinitionMapper:
         Returns:
             Core FeatureDefinition domain model
         """
-        # Map parameter sets from adapter to core
-        parsed_parameter_sets = {
-            key: BaseParameterSetConfigMapper.dto_to_domain(param_set)
-            for key, param_set in dto.parsed_parameter_sets.items()
-        }
 
         return CoreFeatureDefinition(
             name=dto.name,
             enabled=dto.enabled,
             derivatives=dto.derivatives,
-            parsed_parameter_sets=parsed_parameter_sets
+            raw_parameter_sets=dto.raw_parameter_sets,
+            parsed_parameter_sets={},  # Parsing later by FeatureParameterSetParser
         )
 
     @staticmethod
@@ -47,15 +47,10 @@ class FeatureDefinitionMapper:
         Returns:
             Adapter FeatureDefinition DTO
         """
-        # Map parameter sets from core to adapter
-        parsed_parameter_sets = {
-            key: BaseParameterSetConfigMapper.domain_to_dto(param_set)
-            for key, param_set in domain.parsed_parameter_sets.items()
-        }
 
         return AdapterFeatureDefinition(
             name=domain.name,
             enabled=domain.enabled,
             derivatives=domain.derivatives,
-            parsed_parameter_sets=parsed_parameter_sets
+            raw_parameter_sets=domain.raw_parameter_sets,
         )

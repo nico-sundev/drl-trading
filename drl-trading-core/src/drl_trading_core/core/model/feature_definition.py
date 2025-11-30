@@ -17,4 +17,5 @@ class FeatureDefinition:
     name: str  # Feature type identifier (e.g., "rsi", "macd", "close_price")
     enabled: bool
     derivatives: List[int]
+    raw_parameter_sets: List[dict] = field(default_factory=list)
     parsed_parameter_sets: Dict[str, BaseParameterSetConfig] = field(default_factory=dict)

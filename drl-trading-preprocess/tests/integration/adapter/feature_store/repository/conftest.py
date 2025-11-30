@@ -18,8 +18,8 @@ from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrate
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
     ITechnicalIndicatorFacade,
 )
-from drl_trading_common.adapter.model.dataset_identifier import DatasetIdentifier
-from drl_trading_common.adapter.model.timeframe import Timeframe
+from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.core.model.timeframe import Timeframe
 from injector import Injector
 from pandas import DataFrame
 from testcontainers.minio import MinioContainer
@@ -28,7 +28,7 @@ from testcontainers.minio import MinioContainer
 from drl_trading_preprocess.infrastructure.config.preprocess_config import PreprocessConfig
 from drl_trading_preprocess.infrastructure.di.preprocess_module import PreprocessModule
 from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
-from drl_trading_common.adapter.model.feature_config_version_info import FeatureConfigVersionInfo
+from drl_trading_core.core.model.feature_config_version_info import FeatureConfigVersionInfo
 from datetime import datetime
 
 

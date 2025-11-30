@@ -100,7 +100,7 @@ class StatePersistenceService(IStatePersistencePort):
 
             # Restore symbol states
             from drl_trading_preprocess.core.model.resample.resampling_context import SymbolTimeframeState
-            from drl_trading_common.adapter.model.timeframe import Timeframe
+            from drl_trading_common.core.model.timeframe import Timeframe
 
             for symbol, timeframe_data in state_data.get('symbol_states', {}).items():
                 context._symbol_states[symbol] = {}

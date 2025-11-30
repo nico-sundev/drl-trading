@@ -16,15 +16,23 @@ Test Philosophy:
 """
 
 import logging
-import pytest
 from datetime import datetime
-from injector import Injector
 from unittest.mock import Mock
 
-from drl_trading_adapter.adapter.database.entity.market_data_entity import MarketDataEntity
+import pytest
+from drl_trading_adapter.adapter.database.entity.market_data_entity import (
+    MarketDataEntity,
+)
 from drl_trading_adapter.adapter.feature_store.provider import FeatureStoreWrapper
-from drl_trading_core.core.dto.feature_preprocessing_request import FeaturePreprocessingRequest
+from injector import Injector
+
 from drl_trading_common.core.model.timeframe import Timeframe
+from drl_trading_core.core.dto.feature_preprocessing_request import (
+    FeaturePreprocessingRequest,
+)
+from drl_trading_core.core.model.feature_config_version_info import (
+    FeatureConfigVersionInfo,
+)
 from drl_trading_preprocess.core.orchestrator.preprocessing_orchestrator import (
     PreprocessingOrchestrator,
 )
@@ -103,25 +111,28 @@ class TestPreprocessingOrchestratorIntegration:
 
         # Create feature definitions as FeatureDefinition objects
         from drl_trading_core.core.model.feature_definition import FeatureDefinition
-        from drl_trading_common.core.model.base_parameter_set_config import BaseParameterSetConfig
 
         feature_definitions = [
             FeatureDefinition(
                 name="rsi",
                 enabled=True,
                 derivatives=[],
-                parsed_parameter_sets={"rsi_config": BaseParameterSetConfig(type="rsi", enabled=True)},
+                raw_parameter_sets=[{"enabled": True, "length": 7}],
+                parsed_parameter_sets={},
             ),
             FeatureDefinition(
                 name="close_price",
                 enabled=True,
                 derivatives=[],
+                raw_parameter_sets=[{"enabled": True}],
                 parsed_parameter_sets={},
             ),
         ]
 
         # Create feature config version info
-        from drl_trading_core.core.model.feature_config_version_info import FeatureConfigVersionInfo
+        from drl_trading_core.core.model.feature_config_version_info import (
+            FeatureConfigVersionInfo,
+        )
 
         feature_config_version = FeatureConfigVersionInfo(
             semver="1.0.0-test",
@@ -193,7 +204,7 @@ class TestPreprocessingOrchestratorIntegration:
             populated_market_data: Pre-populated market data in TimescaleDB
         """
         # Given: Feature definitions
-        from drl_trading_common.adapter.model.feature_config_version_info import FeatureConfigVersionInfo
+
         from drl_trading_core.core.model.feature_definition import FeatureDefinition
 
         feature_definitions = [
@@ -201,6 +212,7 @@ class TestPreprocessingOrchestratorIntegration:
                 name="close_price",  # Using simple feature without warmup complexity
                 enabled=True,
                 derivatives=[],
+                raw_parameter_sets=[{"enabled": True}],
                 parsed_parameter_sets={},
             ),
         ]
@@ -258,7 +270,7 @@ class TestPreprocessingOrchestratorIntegration:
             populated_market_data: Pre-populated market data in TimescaleDB
         """
         # Given: Valid feature definition
-        from drl_trading_common.adapter.model.feature_config_version_info import FeatureConfigVersionInfo
+
         from drl_trading_core.core.model.feature_definition import FeatureDefinition
 
         feature_definitions = [
@@ -266,6 +278,7 @@ class TestPreprocessingOrchestratorIntegration:
                 name="unsupported_feature_xyz",  # Invalid/unsupported
                 enabled=True,
                 derivatives=[],
+                raw_parameter_sets=[],
                 parsed_parameter_sets={},
             ),
         ]
@@ -322,7 +335,7 @@ class TestPreprocessingOrchestratorIntegration:
             populated_market_data: Pre-populated market data in TimescaleDB
         """
         # Given: Multiple target timeframes
-        from drl_trading_common.adapter.model.feature_config_version_info import FeatureConfigVersionInfo
+
         from drl_trading_core.core.model.feature_definition import FeatureDefinition
 
         feature_definitions = [
@@ -330,7 +343,7 @@ class TestPreprocessingOrchestratorIntegration:
                 name="close_price",
                 enabled=True,
                 derivatives=[],
-                parsed_parameter_sets={},
+                raw_parameter_sets=[{"enabled": True}],
             ),
         ]
 
@@ -385,23 +398,25 @@ class TestPreprocessingOrchestratorIntegration:
             populated_market_data: Pre-populated market data in TimescaleDB
         """
         # Given: All features disabled
-        from drl_trading_common.adapter.model.feature_config_version_info import FeatureConfigVersionInfo
+
         import pytest
         from pydantic import ValidationError
+
         from drl_trading_core.core.model.feature_definition import FeatureDefinition
-        from drl_trading_common.core.model.base_parameter_set_config import BaseParameterSetConfig
 
         feature_definitions = [
             FeatureDefinition(
                 name="rsi",
                 enabled=False,  # Disabled
                 derivatives=[],
-                parsed_parameter_sets={"rsi_config": BaseParameterSetConfig(type="rsi", enabled=True)},
+                raw_parameter_sets=[{"enabled": True, "length": 7}],
+                parsed_parameter_sets={},
             ),
             FeatureDefinition(
                 name="close_price",
                 enabled=False,  # Disabled
                 derivatives=[],
+                raw_parameter_sets=[{"enabled": True}],
                 parsed_parameter_sets={},
             ),
         ]
@@ -450,7 +465,7 @@ class TestPreprocessingOrchestratorIntegration:
             populated_market_data: Pre-populated market data in TimescaleDB
         """
         # Given: Request with inference context
-        from drl_trading_common.adapter.model.feature_config_version_info import FeatureConfigVersionInfo
+
         from drl_trading_core.core.model.feature_definition import FeatureDefinition
 
         feature_definitions = [
@@ -458,6 +473,7 @@ class TestPreprocessingOrchestratorIntegration:
                 name="close_price",
                 enabled=True,
                 derivatives=[],
+                raw_parameter_sets=[{"enabled": True}],
                 parsed_parameter_sets={},
             ),
         ]
@@ -509,7 +525,7 @@ class TestPreprocessingOrchestratorIntegration:
             populated_market_data: Pre-populated market data in TimescaleDB
         """
         # Given: Feature definitions with skip_existing=False
-        from drl_trading_common.adapter.model.feature_config_version_info import FeatureConfigVersionInfo
+
         from drl_trading_core.core.model.feature_definition import FeatureDefinition
 
         feature_definitions = [
@@ -517,6 +533,7 @@ class TestPreprocessingOrchestratorIntegration:
                 name="close_price",
                 enabled=True,
                 derivatives=[],
+                raw_parameter_sets=[{"enabled": True}],
                 parsed_parameter_sets={},
             ),
         ]
@@ -573,7 +590,7 @@ class TestPreprocessingOrchestratorIntegration:
             integration_container: DI container (no market data populated)
         """
         # Given: No market data populated (fresh container)
-        from drl_trading_common.adapter.model.feature_config_version_info import FeatureConfigVersionInfo
+
         from drl_trading_core.core.model.feature_definition import FeatureDefinition
 
         feature_definitions = [
@@ -581,6 +598,7 @@ class TestPreprocessingOrchestratorIntegration:
                 name="close_price",
                 enabled=True,
                 derivatives=[],
+                raw_parameter_sets=[{"enabled": True}],
                 parsed_parameter_sets={},
             ),
         ]
@@ -635,33 +653,36 @@ class TestPreprocessingOrchestratorIntegration:
             populated_market_data: Pre-populated market data in TimescaleDB
         """
         # Given: Mix of valid and invalid features
-        from drl_trading_common.adapter.model.feature_config_version_info import FeatureConfigVersionInfo
+
         from drl_trading_core.core.model.feature_definition import FeatureDefinition
-        from drl_trading_common.core.model.base_parameter_set_config import BaseParameterSetConfig
 
         feature_definitions = [
             FeatureDefinition(
                 name="close_price",  # Valid
                 enabled=True,
                 derivatives=[],
+                raw_parameter_sets=[{"enabled": True}],
                 parsed_parameter_sets={},
             ),
             FeatureDefinition(
                 name="invalid_feature_one",  # Invalid
                 enabled=True,
                 derivatives=[],
+                raw_parameter_sets=[],
                 parsed_parameter_sets={},
             ),
             FeatureDefinition(
                 name="rsi",  # Valid
                 enabled=True,
                 derivatives=[],
-                parsed_parameter_sets={"rsi_config": BaseParameterSetConfig(type="rsi", period=14)},
+                raw_parameter_sets=[{"enabled": True, "length": 14}],
+                parsed_parameter_sets={},
             ),
             FeatureDefinition(
                 name="invalid_feature_two",  # Invalid
                 enabled=True,
                 derivatives=[],
+                raw_parameter_sets=[],
                 parsed_parameter_sets={},
             ),
         ]
@@ -721,22 +742,24 @@ class TestPreprocessingOrchestratorIntegration:
             populated_market_data: Pre-populated market data (50 bars)
         """
         # Given: Request covering full data range
-        from drl_trading_common.adapter.model.feature_config_version_info import FeatureConfigVersionInfo
+
         import time
+
         from drl_trading_core.core.model.feature_definition import FeatureDefinition
-        from drl_trading_common.core.model.base_parameter_set_config import BaseParameterSetConfig
 
         feature_definitions = [
             FeatureDefinition(
                 name="rsi",
                 enabled=True,
                 derivatives=[],
-                parsed_parameter_sets={"rsi_config": BaseParameterSetConfig(type="rsi", period=14)},
+                raw_parameter_sets=[{"enabled": True, "length": 14}],
+                parsed_parameter_sets={},
             ),
             FeatureDefinition(
                 name="close_price",
                 enabled=True,
                 derivatives=[],
+                raw_parameter_sets=[{"enabled": True}],
                 parsed_parameter_sets={},
             ),
         ]

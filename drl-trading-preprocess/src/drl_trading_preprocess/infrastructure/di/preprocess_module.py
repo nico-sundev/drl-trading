@@ -2,12 +2,20 @@
 
 import logging
 
+from injector import Binder, Module, provider, singleton
+
 from drl_trading_common.adapter.messaging.kafka_producer_adapter import (
     KafkaProducerAdapter,
 )
 from drl_trading_common.config.feature_config import FeatureStoreConfig
 from drl_trading_common.config.infrastructure_config import DatabaseConfig
 from drl_trading_common.messaging.kafka_handler_registry import KafkaHandlerRegistry
+from drl_trading_core.core.config.feature_computation_config import (
+    FeatureComputationConfig,
+)
+from drl_trading_preprocess.adapter.feature_store.feature_store_save_repository import (
+    FeatureStoreSaveRepository,
+)
 from drl_trading_preprocess.adapter.messaging.kafka_handler_constants import (
     HANDLER_ID_PREPROCESSING_REQUEST,
 )
@@ -20,8 +28,14 @@ from drl_trading_preprocess.adapter.messaging.publisher.kafka_message_publisher 
 from drl_trading_preprocess.adapter.messaging.publisher.kafka_preprocessing_message_publisher import (
     KafkaPreprocessingMessagePublisher,
 )
-from drl_trading_preprocess.adapter.feature_store.feature_store_save_repository import (
-    FeatureStoreSaveRepository,
+from drl_trading_preprocess.adapter.resampling.noop_state_persistence_service import (
+    NoOpStatePersistenceService,
+)
+from drl_trading_preprocess.adapter.resampling.state_persistence_service import (
+    StatePersistenceService,
+)
+from drl_trading_preprocess.core.config.preprocessing_orchestrator_config import (
+    PreprocessingOrchestratorConfig,
 )
 from drl_trading_preprocess.core.orchestrator.preprocessing_orchestrator import (
     PreprocessingOrchestrator,
@@ -29,35 +43,31 @@ from drl_trading_preprocess.core.orchestrator.preprocessing_orchestrator import 
 from drl_trading_preprocess.core.port.feature_store_save_port import (
     IFeatureStoreSavePort,
 )
-from drl_trading_preprocess.core.port.message_publisher_port import StoreResampledDataMessagePublisherPort
+from drl_trading_preprocess.core.port.message_publisher_port import (
+    StoreResampledDataMessagePublisherPort,
+)
 from drl_trading_preprocess.core.port.preprocessing_message_publisher_port import (
     PreprocessingMessagePublisherPort,
 )
 from drl_trading_preprocess.core.port.state_persistence_port import (
     IStatePersistencePort,
 )
-from drl_trading_preprocess.adapter.resampling.noop_state_persistence_service import (
-    NoOpStatePersistenceService,
-)
-from drl_trading_preprocess.adapter.resampling.state_persistence_service import (
-    StatePersistenceService,
+from drl_trading_preprocess.infrastructure.config.preprocess_config import (
+    DaskConfigs,
+    PreprocessConfig,
+    ResampleConfig,
 )
 from drl_trading_preprocess.infrastructure.config.preprocess_config import (
-    PreprocessConfig,
-    DaskConfigs,
-    ResampleConfig,
     FeatureComputationConfig as PreprocessFeatureComputationConfig,
-)
-from drl_trading_core.core.config.feature_computation_config import (
-    FeatureComputationConfig,
 )
 from drl_trading_preprocess.infrastructure.config.resilience_constants import (
     RETRY_CONFIG_KAFKA_DLQ,
     RETRY_CONFIG_KAFKA_PREPROCESSING_COMPLETED,
     RETRY_CONFIG_KAFKA_RESAMPLED_DATA,
 )
-from injector import Binder, Module, provider, singleton
-
+from drl_trading_preprocess.infrastructure.di.mapper import (
+    create_preprocessing_orchestrator_config,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -77,8 +87,6 @@ class PreprocessModule(Module):
             to=FeatureStoreSaveRepository,
             scope=singleton,
         )
-        # Prevent auto-wiring of StatePersistenceService - use provider instead
-        # This ensures Optional[StatePersistenceService] doesn't try to auto-instantiate
 
     @provider
     @singleton
@@ -153,6 +161,15 @@ class PreprocessModule(Module):
             state_file_path=self._config.resample_config.state_file_path,
             backup_interval=self._config.resample_config.state_backup_interval
         )
+
+    @provider
+    @singleton
+    def provide_preprocessing_orchestrator_config(
+        self,
+        preprocess_config: PreprocessConfig
+    ) -> PreprocessingOrchestratorConfig:
+        """Provide PreprocessingOrchestratorConfig mapped from PreprocessConfig."""
+        return create_preprocessing_orchestrator_config(preprocess_config)
 
     @provider
     @singleton

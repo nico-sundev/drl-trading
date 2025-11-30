@@ -306,8 +306,7 @@ class FeaturePreprocessingRequest(BaseSchema):
                     name=feature_dict.name,
                     enabled=feature_dict.enabled,
                     derivatives=feature_dict.derivatives,
-                    parameter_sets=feature_dict.parameter_sets,
-                    parsed_parameter_sets={},
+                    raw_parameter_sets=feature_dict.raw_parameter_sets
                 )
                 feature_definitions.append(feature_def)
         return feature_definitions

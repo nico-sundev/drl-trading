@@ -72,7 +72,7 @@ class TestRsiConfig(BaseParameterSetConfig):
 
     type: str = "rsi"
     enabled: bool = True
-    period: int = 14
+    length: int = 14
 
     def hash_id(self) -> str:
         return "A1b2c3"
@@ -93,7 +93,7 @@ class TestRsiFeature(BaseFeature):
         self._feature_name = "rsi"
         # Register the indicator when feature is created
         self.indicator_service.register_instance(
-            f"rsi_{config.period}", "rsi", period=config.period
+            f"rsi_{config.length}", "rsi", length=config.length
         )
 
     def _get_feature_name(self) -> str:
@@ -107,7 +107,7 @@ class TestRsiFeature(BaseFeature):
         # Assert config is TestRsiConfig to satisfy type checker
         assert isinstance(self.config, TestRsiConfig), "Config must be TestRsiConfig"
 
-        indicator_name = f"rsi_{self.config.period}"
+        indicator_name = f"rsi_{self.config.length}"
         indicator_data = self.indicator_service.get_all(indicator_name)
 
         if indicator_data is None:
@@ -127,7 +127,7 @@ class TestRsiFeature(BaseFeature):
         # Assert config is TestRsiConfig to satisfy type checker
         assert isinstance(self.config, TestRsiConfig), "Config must be TestRsiConfig"
 
-        indicator_name = f"rsi_{self.config.period}"
+        indicator_name = f"rsi_{self.config.length}"
         indicator_data = self.indicator_service.get_latest(indicator_name)
 
         if indicator_data is None:
@@ -140,10 +140,10 @@ class TestRsiFeature(BaseFeature):
     def _get_config_to_string(self) -> str:
         # Assert config is TestRsiConfig to satisfy type checker
         assert isinstance(self.config, TestRsiConfig), "Config must be TestRsiConfig"
-        return f"{self.config.period}"
+        return f"{self.config.length}"
 
 
-@feature_role(FeatureRoleEnum.OBSERVATION_SPACE)
+@feature_role(FeatureRoleEnum.REWARD_ENGINEERING)
 class TestClosePriceFeature(BaseFeature):
     """Test close price feature implementation adapted from existing MockFeature pattern."""
 
@@ -227,7 +227,7 @@ class TestFeatureFactory(IFeatureFactory):
         if feature_name == "rsi":
             if config is None or not isinstance(config, TestRsiConfig):
                 # Create default config if none provided
-                config = TestRsiConfig(type="rsi", enabled=True, period=14)
+                config = TestRsiConfig(type="rsi", enabled=True, length=14)
             return TestRsiFeature(dataset_id, self.indicator_facade, config, postfix)
         elif feature_name == "close_price":
             return TestClosePriceFeature(dataset_id, self.indicator_facade, config, postfix)
@@ -414,7 +414,7 @@ def mock_indicator_facade() -> MockTechnicalIndicatorFacade:
     """
     facade = MockTechnicalIndicatorFacade()
     # Pre-register indicators that test features will use
-    facade.register_instance("rsi_14", "rsi", period=14)
+    facade.register_instance("rsi_14", "rsi", length=14)
     facade.register_instance("close_price", "close_price")
     return facade
 

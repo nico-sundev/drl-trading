@@ -15,9 +15,6 @@ from drl_trading_common.config.feature_config import FeatureStoreConfig, LocalRe
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
 from types import SimpleNamespace
-from drl_trading_common.adapter.model.feature_config_version_info import (
-    FeatureConfigVersionInfo,
-)
 from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_core.core.dto.feature_service_metadata import (
     FeatureServiceMetadata,
@@ -26,6 +23,8 @@ from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
 from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 from feast import FeatureService, FeatureStore
 from pandas import DataFrame
+
+from drl_trading_core.core.model.feature_config_version_info import FeatureConfigVersionInfo
 
 @pytest.fixture
 def temp_dir() -> Generator[str, None, None]:

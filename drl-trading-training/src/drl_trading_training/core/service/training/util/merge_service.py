@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, Optional
 
-from drl_trading_training.core.service.training.util.util import detect_timeframe
+from drl_trading_training.core.service.training.util.timeframe_utils import detect_timeframe
 import pandas as pd
 from drl_trading_common.utils import ensure_datetime_index
 from injector import inject

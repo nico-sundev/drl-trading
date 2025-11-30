@@ -88,7 +88,19 @@ class KafkaMessagePublisher(StoreResampledDataMessagePublisherPort):
             "symbol": symbol,
             "base_timeframe": base_timeframe.value,
             "resampled_data": {
-                tf.value: [record.model_dump() for record in records]
+                tf.value: [
+                    {
+                        "symbol": record.symbol,
+                        "timeframe": record.timeframe,
+                        "timestamp": record.timestamp.isoformat(),
+                        "open_price": record.open_price,
+                        "high_price": record.high_price,
+                        "low_price": record.low_price,
+                        "close_price": record.close_price,
+                        "volume": record.volume,
+                    }
+                    for record in records
+                ]
                 for tf, records in resampled_data.items()
             },
             "new_candles_count": {

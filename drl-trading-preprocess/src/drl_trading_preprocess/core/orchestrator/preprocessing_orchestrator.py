@@ -20,21 +20,22 @@ from dask import delayed
 from injector import inject
 from pandas import DataFrame
 
-from drl_trading_core.core.dto.feature_preprocessing_request import (
-    FeaturePreprocessingRequest
-)
-from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.core.model.timeframe import Timeframe
-from drl_trading_core.core.dto.offline_storage_request import OfflineStorageRequest
+from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+from drl_trading_core.core.dto.feature_preprocessing_request import (
+    FeaturePreprocessingRequest,
+)
 from drl_trading_core.core.dto.feature_service_metadata import (
     FeatureServiceMetadata,
 )
 from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
-from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+from drl_trading_core.core.dto.offline_storage_request import OfflineStorageRequest
 from drl_trading_core.core.model.feature_computation_request import (
     FeatureComputationRequest,
 )
 from drl_trading_core.core.model.feature_definition import FeatureDefinition
+from drl_trading_core.core.service.feature_manager import FeatureManager
 from drl_trading_preprocess.core.model.coverage.feature_coverage_analysis import (
     FeatureCoverageAnalysis,
     WarmupPeriod,
@@ -57,7 +58,6 @@ from drl_trading_preprocess.core.service.coverage.feature_coverage_evaluator imp
 from drl_trading_preprocess.core.service.resample.market_data_resampling_service import (
     MarketDataResamplingService,
 )
-from drl_trading_core.core.service.feature_manager import FeatureManager
 from drl_trading_preprocess.core.service.validate.feature_validator import (
     FeatureValidator,
 )
@@ -362,7 +362,9 @@ class PreprocessingOrchestrator:
             dataset_identifier = self._create_dataset_identifier(
                 request.symbol, timeframe
             )
-            self.feature_manager.initialize_features(dataset_identifier, enabled_features)
+            self.feature_manager.initialize_features(
+                dataset_identifier, enabled_features
+            )
             metadata_by_role = self.feature_manager.get_feature_metadata_list(
                 enabled_features, dataset_identifier
             )

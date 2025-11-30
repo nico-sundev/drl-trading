@@ -6,7 +6,6 @@ from unittest.mock import Mock
 
 import pandas as pd
 import pytest
-from drl_trading_common.config.feature_config import FeaturesConfig
 from drl_trading_common.core.model.timeframe import Timeframe
 
 from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
@@ -29,15 +28,7 @@ class TestComputingService:
         """Create a ComputingService instance with mocked dependencies."""
         return FeatureComputingService(feature_manager=feature_manager_service_mock)
 
-    @pytest.fixture
-    def features_config_mock(self) -> Mock:
-        """Create mock for FeaturesConfig."""
-        config = Mock(spec=FeaturesConfig)
-        config.dataset_definitions = {"EURUSD": [Timeframe.MINUTE_5]}
-        config.feature_definitions = []
-        return config
-
-    def test_compute_batch(self, computing_service: FeatureComputingService, feature_manager_service_mock: Mock, features_config_mock: Mock) -> None:
+    def test_compute_batch(self, computing_service: FeatureComputingService, feature_manager_service_mock: Mock) -> None:
         """Test compute_batch method with realistic feature structure."""
         # Given
         sample_df = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
@@ -69,7 +60,7 @@ class TestComputingService:
         # Verify only ONE event_timestamp column exists
         assert list(result.columns).count("event_timestamp") == 1, "Should have exactly one event_timestamp column"
 
-    def test_compute_batch_empty_result(self, computing_service: FeatureComputingService, feature_manager_service_mock: Mock, features_config_mock: Mock) -> None:
+    def test_compute_batch_empty_result(self, computing_service: FeatureComputingService, feature_manager_service_mock: Mock) -> None:
         """Test compute_batch with empty result."""
         # Given
         sample_df = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
@@ -92,7 +83,7 @@ class TestComputingService:
         feature_manager_service_mock.compute_all.assert_called_once()
         assert result.empty
 
-    def test_compute_incremental(self, computing_service: FeatureComputingService, feature_manager_service_mock: Mock, features_config_mock: Mock) -> None:
+    def test_compute_incremental(self, computing_service: FeatureComputingService, feature_manager_service_mock: Mock) -> None:
         """Test compute_incremental method."""
         # Given
         sample_series = pd.Series({"A": 1, "B": 4})
@@ -117,7 +108,7 @@ class TestComputingService:
         assert isinstance(result, pd.Series)
         pd.testing.assert_series_equal(result, expected_df.iloc[-1])
 
-    def test_compute_incremental_empty_result(self, computing_service: FeatureComputingService, feature_manager_service_mock: Mock, features_config_mock: Mock) -> None:
+    def test_compute_incremental_empty_result(self, computing_service: FeatureComputingService, feature_manager_service_mock: Mock) -> None:
         """Test compute_incremental with empty result."""
         # Given
         sample_series = pd.Series({"A": 1, "B": 4})
@@ -139,7 +130,7 @@ class TestComputingService:
         assert isinstance(result, pd.Series)
         assert result.empty
 
-    def test_compute_incremental_empty_dataframe_result(self, computing_service: FeatureComputingService, feature_manager_service_mock: Mock, features_config_mock: Mock) -> None:
+    def test_compute_incremental_empty_dataframe_result(self, computing_service: FeatureComputingService, feature_manager_service_mock: Mock) -> None:
         """Test compute_incremental with empty DataFrame result."""
         # Given
         sample_series = pd.Series({"A": 1, "B": 4})
@@ -297,19 +288,10 @@ class TestComputingServiceFeatureDeduplication:
         """Create a ComputingService instance with mocked dependencies."""
         return FeatureComputingService(feature_manager=feature_manager_service_mock)
 
-    @pytest.fixture
-    def features_config_mock(self) -> Mock:
-        """Create mock for FeaturesConfig."""
-        config = Mock(spec=FeaturesConfig)
-        config.dataset_definitions = {"EURUSD": [Timeframe.MINUTE_5]}
-        config.feature_definitions = []
-        return config
-
     def test_compute_batch_deduplicates_event_timestamp(
         self,
         computing_service: FeatureComputingService,
-        feature_manager_service_mock: Mock,
-        features_config_mock: Mock
+        feature_manager_service_mock: Mock
     ) -> None:
         """Test that compute_batch handles duplicate event_timestamp columns correctly.
 
@@ -363,8 +345,7 @@ class TestComputingServiceFeatureDeduplication:
     def test_compute_incremental_handles_event_timestamp(
         self,
         computing_service: FeatureComputingService,
-        feature_manager_service_mock: Mock,
-        features_config_mock: Mock
+        feature_manager_service_mock: Mock
     ) -> None:
         """Test compute_incremental with event_timestamp in result."""
         # Given: Single data point
