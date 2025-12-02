@@ -56,6 +56,9 @@ docs/_build/*
 cover/*
 MANIFEST
 
+# Generated code and clients
+**/generated/**
+
 # Per-project virtualenvs
 .venv*/
 .conda*/
@@ -75,6 +78,9 @@ logs/*
 .env
 *.env
 !example.env
+
+# UV global config
+uv.toml
 
 # feast
 **/data/feature_store/**

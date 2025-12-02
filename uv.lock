@@ -15,8 +15,16 @@ members = [
     "drl-trading-inference",
     "drl-trading-ingest",
     "drl-trading-preprocess",
-    "drl-trading-strategy-example",
     "drl-trading-training",
+]
+
+[[package]]
+name = "a2wsgi"
+version = "1.10.10"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/9a/cb/822c56fbea97e9eee201a2e434a80437f6750ebcb1ed307ee3a0a7505b14/a2wsgi-1.10.10.tar.gz", hash = "sha256:a5bcffb52081ba39df0d5e9a884fc6f819d92e3a42389343ba77cbf809fe1f45", size = 18799, upload-time = "2025-06-18T09:00:10.843Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/02/d5/349aba3dc421e73cbd4958c0ce0a4f1aa3a738bc0d7de75d2f40ed43a535/a2wsgi-1.10.10-py3-none-any.whl", hash = "sha256:d2b21379479718539dc15fce53b876251a0efe7615352dfe49f6ad1bc507848d", size = 17389, upload-time = "2025-06-18T09:00:09.676Z" },
 ]
 
 [[package]]
@@ -183,6 +191,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/74/cd/15777dfde1c29d96de7f18edf4cc94c385646852e7c7b0320aa91ccca583/argon2_cffi_bindings-25.1.0-cp39-abi3-win32.whl", hash = "sha256:473bcb5f82924b1becbb637b63303ec8d10e84c8d241119419897a26116515d2", size = 27180, upload-time = "2025-07-30T10:01:57.759Z" },
     { url = "https://files.pythonhosted.org/packages/e2/c6/a759ece8f1829d1f162261226fbfd2c6832b3ff7657384045286d2afa384/argon2_cffi_bindings-25.1.0-cp39-abi3-win_amd64.whl", hash = "sha256:a98cd7d17e9f7ce244c0803cad3c23a7d379c301ba618a5fa76a67d116618b98", size = 31715, upload-time = "2025-07-30T10:01:58.56Z" },
     { url = "https://files.pythonhosted.org/packages/42/b9/f8d6fa329ab25128b7e98fd83a3cb34d9db5b059a9847eddb840a0af45dd/argon2_cffi_bindings-25.1.0-cp39-abi3-win_arm64.whl", hash = "sha256:b0fdbcf513833809c882823f98dc2f931cf659d9a1429616ac3adebb49f5db94", size = 27149, upload-time = "2025-07-30T10:01:59.329Z" },
+]
+
+[[package]]
+name = "asgiref"
+version = "3.11.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/76/b9/4db2509eabd14b4a8c71d1b24c8d5734c52b8560a7b1e1a8b56c8d25568b/asgiref-3.11.0.tar.gz", hash = "sha256:13acff32519542a1736223fb79a715acdebe24286d98e8b164a73085f40da2c4", size = 37969, upload-time = "2025-11-19T15:32:20.106Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/91/be/317c2c55b8bbec407257d45f5c8d1b6867abc76d12043f2d3d58c538a4ea/asgiref-3.11.0-py3-none-any.whl", hash = "sha256:1db9021efadb0d9512ce8ffaf72fcef601c7b73a8807a1bb2ef143dc6b14846d", size = 24096, upload-time = "2025-11-19T15:32:19.004Z" },
 ]
 
 [[package]]
@@ -417,6 +434,37 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/e8/34/1145c73d4ab35ce71ce8fcc9238a59fddb304de01dbf8a10039ab8ff55ea/confluent_kafka-2.11.1-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:639b7b776dc1d830b0ee4188487c54977fe7d5bf70befbdcf222ac9e1b72ab7e", size = 3916834, upload-time = "2025-08-18T21:27:02.376Z" },
     { url = "https://files.pythonhosted.org/packages/af/a3/77a5d2bbd20808ed571844e5de40b3422261824f66a20a5f3e0f44aa1061/confluent_kafka-2.11.1-cp313-cp313-win_amd64.whl", hash = "sha256:09f7703fe54429911f7d1cdf62c3044c4b7eaefa0af9d2dbcf4b513d97673380", size = 4098185, upload-time = "2025-08-18T21:27:04.82Z" },
     { url = "https://files.pythonhosted.org/packages/b1/70/8f56755827e9423777571116518127c9b2f357299f082ed386898f63740a/confluent_kafka-2.11.1-cp313-cp313t-manylinux_2_28_aarch64.whl", hash = "sha256:bc6eceedf0cda75ea666899d972ca9c68b529f1ff36ed99f5f15503d0d08d1b3", size = 15379674, upload-time = "2025-08-18T21:27:09.249Z" },
+]
+
+[[package]]
+name = "connexion"
+version = "3.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "asgiref" },
+    { name = "httpx" },
+    { name = "inflection" },
+    { name = "jinja2" },
+    { name = "jsonschema" },
+    { name = "python-multipart" },
+    { name = "pyyaml" },
+    { name = "requests" },
+    { name = "starlette" },
+    { name = "typing-extensions" },
+    { name = "werkzeug" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/70/5c/d07253d9c06b3c16c0eaa222f892ee97f9a2bec5df212efc80d888a6b11b/connexion-3.3.0.tar.gz", hash = "sha256:63e4b32c170c297f245b63e26a78e299d4df86f8f6f37ef1f70db62efaba77cf", size = 86496, upload-time = "2025-10-13T12:41:49.511Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9d/3b/d9cbe13627ba18bc8c9fb3575aa818ba7b4b557e50be9c6e22c505273d75/connexion-3.3.0-py3-none-any.whl", hash = "sha256:4ed0b1a90f5a39f58e984b270b3e945c5038a1d064748a23478833027428102c", size = 113552, upload-time = "2025-10-13T12:41:48.133Z" },
+]
+
+[package.optional-dependencies]
+flask = [
+    { name = "a2wsgi" },
+    { name = "flask", extra = ["async"] },
+]
+swagger-ui = [
+    { name = "swagger-ui-bundle" },
 ]
 
 [[package]]
@@ -1181,6 +1229,7 @@ source = { editable = "drl-trading-ingest" }
 dependencies = [
     { name = "alembic" },
     { name = "alpha-vantage" },
+    { name = "connexion", extra = ["flask", "swagger-ui"] },
     { name = "drl-trading-adapter" },
     { name = "drl-trading-common" },
     { name = "flask" },
@@ -1226,6 +1275,7 @@ test = [
 requires-dist = [
     { name = "alembic", specifier = ">=1.12.0" },
     { name = "alpha-vantage", specifier = ">=2.3.0" },
+    { name = "connexion", extras = ["swagger-ui", "flask"], specifier = ">=3.0.0" },
     { name = "drl-trading-adapter", editable = "drl-trading-adapter" },
     { name = "drl-trading-common", editable = "drl-trading-common" },
     { name = "flask", specifier = ">=3.1.1" },
@@ -1304,6 +1354,7 @@ dev-full = [
     { name = "pytest-benchmark" },
     { name = "pytest-cov" },
     { name = "pytest-mock" },
+    { name = "pytest-xdist" },
     { name = "ruff" },
     { name = "testcontainers" },
 ]
@@ -1314,6 +1365,7 @@ test = [
     { name = "pytest-benchmark" },
     { name = "pytest-cov" },
     { name = "pytest-mock" },
+    { name = "pytest-xdist" },
     { name = "testcontainers" },
 ]
 
@@ -1324,7 +1376,7 @@ requires-dist = [
     { name = "drl-trading-adapter", editable = "drl-trading-adapter" },
     { name = "drl-trading-common", editable = "drl-trading-common" },
     { name = "drl-trading-core", editable = "drl-trading-core" },
-    { name = "drl-trading-strategy-example", editable = "drl-trading-strategy-example" },
+    { name = "drl-trading-strategy-example", directory = "drl-trading-strategy-example" },
     { name = "feast", specifier = ">=0.53.0" },
     { name = "injector", specifier = ">=0.22.0" },
     { name = "numpy", specifier = ">=1.24.0" },
@@ -1351,6 +1403,7 @@ dev-full = [
     { name = "pytest-benchmark", specifier = ">=4.0.0" },
     { name = "pytest-cov", specifier = ">=4.0.0" },
     { name = "pytest-mock", specifier = ">=3.12.0" },
+    { name = "pytest-xdist", specifier = ">=3.0.0" },
     { name = "ruff", specifier = ">=0.1.0" },
     { name = "testcontainers", specifier = ">=4.0.0" },
 ]
@@ -1361,13 +1414,14 @@ test = [
     { name = "pytest-benchmark", specifier = ">=4.0.0" },
     { name = "pytest-cov", specifier = ">=4.0.0" },
     { name = "pytest-mock", specifier = ">=3.12.0" },
+    { name = "pytest-xdist", specifier = ">=3.0.0" },
     { name = "testcontainers", specifier = ">=4.0.0" },
 ]
 
 [[package]]
 name = "drl-trading-strategy-example"
 version = "0.1.0"
-source = { editable = "drl-trading-strategy-example" }
+source = { directory = "drl-trading-strategy-example" }
 dependencies = [
     { name = "drl-trading-common" },
     { name = "injector" },
@@ -1377,42 +1431,9 @@ dependencies = [
     { name = "talipp" },
 ]
 
-[package.optional-dependencies]
-dev = [
-    { name = "ipython" },
-    { name = "mypy" },
-    { name = "ruff" },
-]
-testing = [
-    { name = "pytest" },
-    { name = "pytest-cov" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "ipython" },
-    { name = "mypy" },
-    { name = "ruff" },
-]
-dev-full = [
-    { name = "ipython" },
-    { name = "mypy" },
-    { name = "pytest" },
-    { name = "pytest-benchmark" },
-    { name = "pytest-cov" },
-    { name = "pytest-mock" },
-    { name = "ruff" },
-]
-test = [
-    { name = "pytest" },
-    { name = "pytest-benchmark" },
-    { name = "pytest-cov" },
-    { name = "pytest-mock" },
-]
-
 [package.metadata]
 requires-dist = [
-    { name = "drl-trading-common", editable = "drl-trading-common" },
+    { name = "drl-trading-common", directory = "drl-trading-common" },
     { name = "injector", specifier = ">=0.22.0" },
     { name = "ipython", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "jsonpickle", specifier = ">=3.0.0" },
@@ -1457,9 +1478,11 @@ dependencies = [
     { name = "drl-trading-adapter" },
     { name = "drl-trading-common" },
     { name = "drl-trading-core" },
+    { name = "drl-trading-strategy-example" },
     { name = "gymnasium" },
     { name = "pandas" },
     { name = "pyyaml" },
+    { name = "requests" },
     { name = "stable-baselines3" },
 ]
 
@@ -1474,6 +1497,7 @@ dev-full = [
     { name = "ipython" },
     { name = "mypy" },
     { name = "numpy" },
+    { name = "openapi-generator-cli" },
     { name = "pandas" },
     { name = "pytest" },
     { name = "pytest-benchmark" },
@@ -1495,9 +1519,11 @@ requires-dist = [
     { name = "drl-trading-adapter", editable = "drl-trading-adapter" },
     { name = "drl-trading-common", editable = "drl-trading-common" },
     { name = "drl-trading-core", editable = "drl-trading-core" },
+    { name = "drl-trading-strategy-example", directory = "drl-trading-strategy-example" },
     { name = "gymnasium", specifier = ">=0.29.0" },
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "pyyaml", specifier = ">=6.0" },
+    { name = "requests", specifier = ">=2.31.0" },
     { name = "stable-baselines3", specifier = ">=2.0.0" },
 ]
 
@@ -1512,6 +1538,7 @@ dev-full = [
     { name = "ipython", specifier = ">=8.0.0" },
     { name = "mypy", specifier = ">=1.8.0" },
     { name = "numpy", specifier = ">=1.24.0" },
+    { name = "openapi-generator-cli", specifier = ">=6.6.0" },
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "pytest", specifier = ">=8.0.0" },
     { name = "pytest-benchmark", specifier = ">=4.0.0" },
@@ -1525,6 +1552,15 @@ test = [
     { name = "pytest-cov", specifier = ">=4.0.0" },
     { name = "pytest-mock", specifier = ">=3.12.0" },
     { name = "testcontainers", specifier = ">=4.0.0" },
+]
+
+[[package]]
+name = "execnet"
+version = "2.1.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/bf/89/780e11f9588d9e7128a3f87788354c7946a9cbb1401ad38a48c4db9a4f07/execnet-2.1.2.tar.gz", hash = "sha256:63d83bfdd9a23e35b9c6a3261412324f964c2ec8dcd8d3c6916ee9373e0befcd", size = 166622, upload-time = "2025-11-12T09:56:37.75Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ab/84/02fc1827e8cdded4aa65baef11296a9bbe595c474f0d6d758af082d849fd/execnet-2.1.2-py3-none-any.whl", hash = "sha256:67fba928dd5a544b783f6056f449e5e3931a5c378b128bc18501f7ea79e296ec", size = 40708, upload-time = "2025-11-12T09:56:36.333Z" },
 ]
 
 [[package]]
@@ -1623,6 +1659,11 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/dc/6d/cfe3c0fcc5e477df242b98bfe186a4c34357b4847e87ecaef04507332dab/flask-3.1.2.tar.gz", hash = "sha256:bf656c15c80190ed628ad08cdfd3aaa35beb087855e2f494910aa3774cc4fd87", size = 720160, upload-time = "2025-08-19T21:03:21.205Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ec/f9/7f9263c5695f4bd0023734af91bedb2ff8209e8de6ead162f35d8dc762fd/flask-3.1.2-py3-none-any.whl", hash = "sha256:ca1d8112ec8a6158cc29ea4858963350011b5c846a414cdb7a954aa9e967d03c", size = 103308, upload-time = "2025-08-19T21:03:19.499Z" },
+]
+
+[package.optional-dependencies]
+async = [
+    { name = "asgiref" },
 ]
 
 [[package]]
@@ -1822,6 +1863,19 @@ wheels = [
 ]
 
 [[package]]
+name = "httpcore"
+version = "1.0.9"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "certifi" },
+    { name = "h11" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/06/94/82699a10bca87a5556c9c59b5963f2d039dbd239f25bc2a63907a05a14cb/httpcore-1.0.9.tar.gz", hash = "sha256:6e34463af53fd2ab5d807f399a9b45ea31c3dfa2276f15a2c3f00afff6e176e8", size = 85484, upload-time = "2025-04-24T22:06:22.219Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl", hash = "sha256:2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55", size = 78784, upload-time = "2025-04-24T22:06:20.566Z" },
+]
+
+[[package]]
 name = "httptools"
 version = "0.6.4"
 source = { registry = "https://pypi.org/simple" }
@@ -1844,12 +1898,36 @@ wheels = [
 ]
 
 [[package]]
+name = "httpx"
+version = "0.28.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "certifi" },
+    { name = "httpcore" },
+    { name = "idna" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b1/df/48c586a5fe32a0f01324ee087459e112ebb7224f646c0b5023f5e79e9956/httpx-0.28.1.tar.gz", hash = "sha256:75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc", size = 141406, upload-time = "2024-12-06T15:37:23.222Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl", hash = "sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad", size = 73517, upload-time = "2024-12-06T15:37:21.509Z" },
+]
+
+[[package]]
 name = "idna"
 version = "3.10"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f1/70/7703c29685631f5a7590aa73f1f1d3fa9a380e654b86af429e0934a32f7d/idna-3.10.tar.gz", hash = "sha256:12f65c9b470abda6dc35cf8e63cc574b1c52b11df2c86030af0ac09b01b13ea9", size = 190490, upload-time = "2024-09-15T18:07:39.745Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/76/c6/c88e154df9c4e1a2a66ccf0005a88dfb2650c1dffb6f5ce603dfbd452ce3/idna-3.10-py3-none-any.whl", hash = "sha256:946d195a0d259cbba61165e88e65941f16e9b36ea6ddb97f00452bae8b1287d3", size = 70442, upload-time = "2024-09-15T18:07:37.964Z" },
+]
+
+[[package]]
+name = "inflection"
+version = "0.5.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e1/7e/691d061b7329bc8d54edbf0ec22fbfb2afe61facb681f9aaa9bff7a27d04/inflection-0.5.1.tar.gz", hash = "sha256:1a29730d366e996aaacffb2f1f1cb9593dc38e2ddd30c91250c6dde09ea9b417", size = 15091, upload-time = "2020-08-22T08:16:29.139Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/59/91/aa6bde563e0085a02a435aa99b49ef75b0a4b062635e606dab23ce18d720/inflection-0.5.1-py2.py3-none-any.whl", hash = "sha256:f38b2b640938a4f35ade69ac3d053042959b62a0f1076a5bbaa1b9526605a8a2", size = 9454, upload-time = "2020-08-22T08:16:27.816Z" },
 ]
 
 [[package]]
@@ -2630,6 +2708,15 @@ wheels = [
 ]
 
 [[package]]
+name = "openapi-generator-cli"
+version = "7.17.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/46/2c/f6f224c077d8783bd6ce37aeb07b727049838366bc93387a0504a1a299c3/openapi_generator_cli-7.17.0.tar.gz", hash = "sha256:00678095abe01d61ddab24d83d5cb34c72ee3ec1e45045200f800c11c183ecba", size = 27726081, upload-time = "2025-10-30T01:41:54.672Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f8/3e/9ef133eaf0c5f703a23f07fbf29b5bba15ffd148a4c007181af45bf61538/openapi_generator_cli-7.17.0-py3-none-any.whl", hash = "sha256:0a6f11e43598ed34c6a20c85dc9f1d4a81fe503a8ebcb58f8661b6f973c24d7b", size = 27739927, upload-time = "2025-10-30T01:41:51.163Z" },
+]
+
+[[package]]
 name = "packaging"
 version = "25.0"
 source = { registry = "https://pypi.org/simple" }
@@ -3186,6 +3273,19 @@ wheels = [
 ]
 
 [[package]]
+name = "pytest-xdist"
+version = "3.8.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "execnet" },
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/78/b4/439b179d1ff526791eb921115fca8e44e596a13efeda518b9d845a619450/pytest_xdist-3.8.0.tar.gz", hash = "sha256:7e578125ec9bc6050861aa93f2d59f1d8d085595d6551c2c90b6f4fad8d3a9f1", size = 88069, upload-time = "2025-07-01T13:30:59.346Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ca/31/d4e37e9e550c2b92a9cbc2e4d0b7420a27224968580b5a447f420847c975/pytest_xdist-3.8.0-py3-none-any.whl", hash = "sha256:202ca578cfeb7370784a8c33d6d05bc6e13b4f25b5053c30a152269fd10f0b88", size = 46396, upload-time = "2025-07-01T13:30:56.632Z" },
+]
+
+[[package]]
 name = "python-dateutil"
 version = "2.9.0.post0"
 source = { registry = "https://pypi.org/simple" }
@@ -3204,6 +3304,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f6/b0/4bc07ccd3572a2f9df7e6782f52b0c6c90dcbb803ac4a167702d7d0dfe1e/python_dotenv-1.1.1.tar.gz", hash = "sha256:a8a6399716257f45be6a007360200409fce5cda2661e3dec71d23dc15f6189ab", size = 41978, upload-time = "2025-06-24T04:21:07.341Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5f/ed/539768cf28c661b5b068d66d96a2f155c4971a5d55684a514c1a0e0dec2f/python_dotenv-1.1.1-py3-none-any.whl", hash = "sha256:31f23644fe2602f88ff55e1f5c79ba497e01224ee7737937930c448e4d0e24dc", size = 20556, upload-time = "2025-06-24T04:21:06.073Z" },
+]
+
+[[package]]
+name = "python-multipart"
+version = "0.0.20"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f3/87/f44d7c9f274c7ee665a29b885ec97089ec5dc034c7f3fafa03da9e39a09e/python_multipart-0.0.20.tar.gz", hash = "sha256:8dd0cab45b8e23064ae09147625994d090fa46f5b0d1e13af944c331a7fa9d13", size = 37158, upload-time = "2024-12-16T19:45:46.972Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/45/58/38b5afbc1a800eeea951b9285d3912613f2603bdf897a4ab0f4bd7f405fc/python_multipart-0.0.20-py3-none-any.whl", hash = "sha256:8a62d3a8335e06589fe01f2a3e178cdcc632f3fbe0d492ad9ee0ec35aab1f104", size = 24546, upload-time = "2024-12-16T19:45:44.423Z" },
 ]
 
 [[package]]
@@ -3531,6 +3640,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a7/a5/d6f429d43394057b67a6b5bbe6eae2f77a6bf7459d961fdb224bf206eee6/starlette-0.48.0.tar.gz", hash = "sha256:7e8cee469a8ab2352911528110ce9088fdc6a37d9876926e73da7ce4aa4c7a46", size = 2652949, upload-time = "2025-09-13T08:41:05.699Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/be/72/2db2f49247d0a18b4f1bb9a5a39a0162869acf235f3a96418363947b3d46/starlette-0.48.0-py3-none-any.whl", hash = "sha256:0764ca97b097582558ecb498132ed0c7d942f233f365b86ba37770e026510659", size = 73736, upload-time = "2025-09-13T08:41:03.869Z" },
+]
+
+[[package]]
+name = "swagger-ui-bundle"
+version = "1.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "jinja2" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/01/e6/d8ae21087a42627c2a04a738c947825b78c26b18595704b94bd3227197a2/swagger_ui_bundle-1.1.0.tar.gz", hash = "sha256:20673c3431c8733d5d1615ecf79d9acf30cff75202acaf21a7d9c7f489714529", size = 2599741, upload-time = "2023-11-01T19:58:17.397Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a2/66/8fb11445940bde7ca328d6aa23dd36b6056197d862f4bd6bb51c820c50e5/swagger_ui_bundle-1.1.0-py3-none-any.whl", hash = "sha256:f7526f7bb99923e10594c54247265839bec97e96b0438561ac86faf40d40dd57", size = 2626591, upload-time = "2023-11-01T19:58:15.366Z" },
 ]
 
 [[package]]

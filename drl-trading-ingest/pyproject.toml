@@ -38,6 +38,8 @@ dependencies = [
     # Dependency injection
     "injector>=0.22.0",
     "flask>=3.1.1",
+    # REST API
+    "connexion[swagger-ui,flask]>=3.0.0",
     # Configuration support - required by drl-trading-common
     "PyYAML>=6.0",
     "python-dotenv>=1.1.1",

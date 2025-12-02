@@ -70,21 +70,19 @@ class DaskConfigs(BaseSchema):
     """
     coverage_analysis: DaskConfig = Field(
         default_factory=lambda: DaskConfig(
-            scheduler="threads",  # Good for I/O-bound operations
+            scheduler="threads",  # Temporarily use threads to debug pickling issue
             num_workers=None,  # Auto-detect for I/O
             threads_per_worker=1,
-            memory_limit_per_worker_mb=512,
         ),
         description="Dask config for I/O-bound coverage analysis (DB/Feast queries)"
     )
     feature_computation: DaskConfig = Field(
         default_factory=lambda: DaskConfig(
-            scheduler="threads",  # Use threads due to unpicklable RLock in indicator service
+            scheduler="threads",  # Temporarily use threads to debug pickling issue
             num_workers=4,  # Explicit count for predictable resource usage
             threads_per_worker=1,
-            memory_limit_per_worker_mb=1024,  # More memory for feature computation
         ),
-        description="Dask config for feature computation (uses threads due to RLock in indicator service)"
+        description="Dask config for CPU-bound feature computation"
     )
 
 

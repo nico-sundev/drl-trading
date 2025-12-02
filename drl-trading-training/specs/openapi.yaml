@@ -1,0 +1,247 @@
+openapi: 3.0.3
+info:
+  title: DRL Trading Ingest API
+  description: API for ingesting trading data and requests
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/api/v1
+paths:
+  /preprocessing-requests:
+    post:
+      operationId: submit_preprocessing_request
+      summary: Submit a feature preprocessing request
+      description: Accepts a feature preprocessing request for processing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeaturePreprocessingRequest'
+      responses:
+        '200':
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request_id:
+                    type: string
+                  status:
+                    type: string
+                    example: accepted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+components:
+  schemas:
+    Timeframe:
+      type: string
+      enum:
+        - tick
+        - 1m
+        - 5m
+        - 15m
+        - 30m
+        - 1h
+        - 4h
+        - 1d
+        - 1w
+        - 1M
+      description: Timeframe for trading data aggregation
+
+    FeatureDefinition:
+      type: object
+      description: Feature definition configuration
+      properties:
+        name:
+          type: string
+          description: Feature type identifier (e.g., "rsi", "macd", "close_price")
+        enabled:
+          type: boolean
+          description: Whether this feature is enabled
+        derivatives:
+          type: array
+          items:
+            type: integer
+          description: List of derivative orders for this feature
+        raw_parameter_sets:
+          type: array
+          items:
+            type: object
+          description: Raw parameter sets for configurable features
+          default: []
+        parsed_parameter_sets:
+          type: object
+          additionalProperties:
+            type: object
+          description: Parsed parameter sets with proper types
+          default: {}
+      required:
+        - name
+        - enabled
+        - derivatives
+
+    FeatureConfigVersionInfo:
+      type: object
+      description: Feature configuration version information
+      properties:
+        semver:
+          type: string
+          description: Semantic version of the configuration
+        hash:
+          type: string
+          description: Hash identifier for the configuration
+        created_at:
+          type: string
+          format: date-time
+          description: When this configuration was created
+        feature_definitions:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeatureDefinition'
+          description: List of feature definitions in this configuration
+        description:
+          type: string
+          nullable: true
+          description: Optional description of the configuration
+      required:
+        - semver
+        - hash
+        - created_at
+        - feature_definitions
+
+    FeaturePreprocessingRequest:
+      description: Domain model for feature preprocessing requests.
+      type: object
+      properties:
+        symbol:
+          type: string
+          description: Trading symbol (e.g., "AAPL", "EURUSD")
+        base_timeframe:
+          $ref: '#/components/schemas/Timeframe'
+          description: Base timeframe for feature computation
+        target_timeframes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Timeframe'
+          description: Target timeframes for feature aggregation
+        feature_config_version_info:
+          type: object
+          description: Feature configuration to use for computation
+          properties:
+            semver:
+              type: string
+              description: Semantic version of the configuration
+            hash:
+              type: string
+              description: Hash identifier for the configuration
+            created_at:
+              type: string
+              format: date-time
+              description: When this configuration was created
+            feature_definitions:
+              type: array
+              items:
+                type: object
+                description: Feature definition configuration
+                properties:
+                  name:
+                    type: string
+                    description: Feature type identifier (e.g., "rsi", "macd", "close_price")
+                  enabled:
+                    type: boolean
+                    description: Whether this feature is enabled
+                  derivatives:
+                    type: array
+                    items:
+                      type: integer
+                    description: List of derivative orders for this feature
+                  raw_parameter_sets:
+                    type: array
+                    items:
+                      type: object
+                    description: Raw parameter sets for configurable features
+                    default: []
+                  parsed_parameter_sets:
+                    type: object
+                    additionalProperties:
+                      type: object
+                    description: Parsed parameter sets with proper types
+                    default: {}
+                required:
+                  - name
+                  - enabled
+                  - derivatives
+              description: List of feature definitions in this configuration
+            description:
+              type: string
+              nullable: true
+              description: Optional description of the configuration
+          required:
+            - semver
+            - hash
+            - created_at
+            - feature_definitions
+        start_time:
+          type: string
+          format: date-time
+          description: Start time for data processing
+        end_time:
+          type: string
+          format: date-time
+          description: End time for data processing
+        request_id:
+          type: string
+          description: Unique identifier for the request (auto-generated if not provided)
+        force_recompute:
+          type: boolean
+          default: false
+          description: Override existing features and recompute from scratch
+        incremental_mode:
+          type: boolean
+          default: true
+          description: Process only new data vs full recomputation
+        processing_context:
+          type: string
+          default: training
+          enum: [training, inference, backfill]
+          description: Context for different use cases
+        skip_existing_features:
+          type: boolean
+          default: true
+          description: Skip features that already exist in feature store
+        materialize_online:
+          type: boolean
+          default: false
+          description: Push computed features to online store after computation
+        batch_size:
+          type: integer
+          nullable: true
+          description: Processing batch size for chunked computation
+        parallel_processing:
+          type: boolean
+          default: true
+          description: Enable parallel feature computation across timeframes
+      required:
+        - symbol
+        - base_timeframe
+        - target_timeframes
+        - feature_config_version_info
+        - start_time
+        - end_time

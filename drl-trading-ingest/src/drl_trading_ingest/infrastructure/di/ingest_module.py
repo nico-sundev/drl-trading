@@ -6,9 +6,19 @@ from injector import Binder, Injector, Module, provider, singleton
 from drl_trading_ingest.adapter.migration.alembic_migration_service import (
     AlembicMigrationService,
 )
-from drl_trading_ingest.adapter.rest.ingestion_controller import (
-    IngestionController,
-    IngestionControllerInterface,
+from drl_trading_ingest.adapter.memory.preprocessing_repo import (
+    InMemoryPreprocessingRepo,
+)
+from drl_trading_ingest.adapter.rest.preprocessing_controller import (
+    PreprocessingController,
+    PreprocessingControllerInterface,
+)
+from drl_trading_ingest.core.port.preprocessing_repo_interface import (
+    PreprocessingRepoPort,
+)
+from drl_trading_ingest.core.service.preprocessing_service import (
+    PreprocessingService,
+    PreprocessingServiceInterface,
 )
 from drl_trading_ingest.adapter.timescale.market_data_repo import MarketDataRepo
 from drl_trading_ingest.core.port.market_data_repo_interface import (
@@ -16,10 +26,6 @@ from drl_trading_ingest.core.port.market_data_repo_interface import (
 )
 from drl_trading_ingest.core.port.migration_service_interface import (
     MigrationServiceInterface,
-)
-from drl_trading_ingest.core.service.ingestion_service import (
-    IngestionService,
-    IngestionServiceInterface,
 )
 from drl_trading_ingest.infrastructure.bootstrap.flask_app_factory import (
     FlaskAppFactory,
@@ -64,9 +70,10 @@ class IngestModule(Module):
     def configure(self, binder: Binder) -> None:
         """Configure the module with necessary bindings."""
         # Core services
-        binder.bind(IngestionServiceInterface, to=IngestionService, scope=singleton)
+        binder.bind(PreprocessingServiceInterface, to=PreprocessingService, scope=singleton)
 
         # Adapters
-        binder.bind(IngestionControllerInterface, to=IngestionController, scope=singleton)
+        binder.bind(PreprocessingControllerInterface, to=PreprocessingController, scope=singleton)
         binder.bind(MarketDataRepoPort, to=MarketDataRepo, scope=singleton)
+        binder.bind(PreprocessingRepoPort, to=InMemoryPreprocessingRepo, scope=singleton)
         binder.bind(MigrationServiceInterface, to=AlembicMigrationService, scope=singleton)

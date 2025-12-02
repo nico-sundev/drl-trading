@@ -19,10 +19,16 @@ class OfflineLocalParquetFeatureRepo(BaseParquetFeatureRepo):
     def __init__(self, config: FeatureStoreConfig):
         if not config.local_repo_config:
             raise ValueError("local_repo_config required for LOCAL strategy")
+        self.config_path = config.config_directory
         self.base_path = config.local_repo_config.repo_path
 
     def get_repo_path(self, symbol: str) -> str:
         path = os.path.join(self.base_path, symbol)
+        return path
+
+    def get_correct_path(self, symbol: str) -> str:
+        """Get the correct repository path for a given symbol."""
+        path = os.path.join(self.config_path, self.base_path, symbol)
         os.makedirs(path, exist_ok=True)
         return path
 
@@ -32,7 +38,7 @@ class OfflineLocalParquetFeatureRepo(BaseParquetFeatureRepo):
 
     def _load_metadata(self, symbol: str) -> Optional[Dict[str, Any]]:
         """Load metadata for a symbol (tracks partitions, timestamps, etc.)"""
-        metadata_path = os.path.join(self.get_repo_path(symbol), "_metadata.json")
+        metadata_path = os.path.join(self.get_correct_path(symbol), "_metadata.json")
         if not os.path.exists(metadata_path):
             return None
         try:
@@ -44,7 +50,7 @@ class OfflineLocalParquetFeatureRepo(BaseParquetFeatureRepo):
 
     def _save_metadata(self, symbol: str, metadata: Dict[str, Any]) -> None:
         """Save metadata for a symbol."""
-        metadata_path = os.path.join(self.get_repo_path(symbol), "_metadata.json")
+        metadata_path = os.path.join(self.get_correct_path(symbol), "_metadata.json")
         try:
             with open(metadata_path, 'w') as f:
                 json.dump(metadata, f, indent=2)
@@ -82,7 +88,7 @@ class OfflineLocalParquetFeatureRepo(BaseParquetFeatureRepo):
 
     def _store_with_datetime_organization(self, features_df: DataFrame, symbol: str) -> List[Dict[str, Any]]:
         """Store features in partitioned parquet files and return file metadata."""
-        base = self.get_repo_path(symbol)
+        base = self.get_correct_path(symbol)
         features_df = features_df.copy()
         features_df["_date"] = features_df["event_timestamp"].dt.date
         stored_files = []

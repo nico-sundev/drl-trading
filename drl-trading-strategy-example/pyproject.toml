@@ -33,7 +33,7 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-drl-trading-common = { workspace = true }
+drl-trading-common = { path = "../drl-trading-common" }
 
 ## Optional extras (for external consumers) kept thin; dev/test go via dependency-groups
 [project.optional-dependencies]

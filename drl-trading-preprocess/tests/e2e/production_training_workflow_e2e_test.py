@@ -1,10 +1,11 @@
 """
-Comprehensive E2E test for production backfill workflow.
+Comprehensive E2E test for production training workflow.
 
 This test validates real-world production scenarios across multiple requests:
-1. Cold start: Initial backfill with no prior data
+1. Cold start: Initial training data preparation with no prior features
 2. Warm start: Duplicate request (should skip computation)
-3. Incremental: Gap fill with new time range
+3. Incremental: New data updates for ongoing training
+4. Full historical: Complete dataset recomputation for model retraining
 
 External systems involved:
 - Kafka (requested.preprocess-data, completed.preprocess-data, requested.store-resampled-data)
@@ -17,13 +18,13 @@ Production workflow:
 2. Service publishes resampled data to requested.store-resampled-data Kafka topic
 3. Ingest service (simulated in test) consumes and stores 5m data to TimescaleDB
 4. Service computes features from resampled 5m data in TimescaleDB
-5. Service persists features to Feast offline store (parquet)
+5. Service persists features to Feast offline store (parquet) in incremental mode
 
 Test simulation:
 - Seed 1m base data in TimescaleDB
 - Wait for resampling message on Kafka
 - Store resampled 5m data to TimescaleDB (simulate ingest service)
-- Verify feature computation and persistence
+- Verify feature computation and incremental persistence
 - Validate feature instance reuse across requests (no duplicates)
 
 Prerequisites:
@@ -153,15 +154,15 @@ def seed_unique_symbol_data(unique_symbol: str, timescale_connection: Any) -> Ge
 
 
 @pytest.mark.e2e
-class TestProductionBackfillWorkflow:
+class TestProductionTrainingWorkflow:
     """
-    E2E test simulating complete production backfill workflow.
+    E2E test simulating complete production training workflow.
 
     Uses unique symbol per test run to avoid conflicts with previous test data.
     Validates state transitions across cold start → warm start → incremental → full historical scenarios.
     """
 
-    def test_production_backfill_workflow(
+    def test_production_training_workflow(
         self,
         unique_symbol: str,
         timescale_connection: Any,
@@ -172,39 +173,44 @@ class TestProductionBackfillWorkflow:
         feast_offline_store_path: Path,
     ) -> None:
         """
-        Test complete production backfill workflow across 4 scenarios.
+        Test complete production training workflow across 4 scenarios.
 
         Flow per scenario:
         1. Publish preprocessing request to Kafka
         2. Service resamples 1m → 5m, publishes to requested.store-resampled-data
         3. Test consumes resampling message, stores 5m data to TimescaleDB (simulates ingest service)
         4. Service computes features from 5m data in TimescaleDB
-        5. Service persists features to Feast parquet
+        5. Service persists features to Feast parquet in incremental mode
         6. Verify completion message and artifacts
 
         Scenario 1 (Cold start): [00:00-02:00]
-        - First time processing, can bootstrap features from scratch if no prior data exists
-        - Should compute all features in batch mode
+        - First time processing, no prior resampled data
+        - Should compute all features for initial training dataset
 
         Scenario 2 (Warm start): [00:00-02:00] (duplicate)
         - Resampled 5m data exists from scenario 1
         - skip_existing=True should skip computation
         - Reuses cached feature instances (no new instances)
 
-        Scenario 3 (Incremental): [02:00-04:00] (gap fill)
-        - New time range, new resampled data
-        - Should compute features for gap
+        Scenario 3 (Incremental): [02:00-04:00] (new data)
+        - New time range for ongoing training updates
+        - Should compute features incrementally
         - Still reuses feature instances from scenario 1
 
+        Scenario 3.5 (Backfill retraining): [00:00-04:00]
+        - Backfill for retraining after data corrections
+        - skip_existing=False forces recompute in batch mode
+        - Tests cross-context workflow for model updates
+
         Scenario 4 (Full historical): [None - 2024-01-01 08:00]
-        - Backfill from earliest available data (start=None) to specific end date
+        - Full dataset recomputation for model retraining
         - skip_existing=False forces recomputation
-        - Tests complete historical data processing
+        - Tests complete training data refresh
 
         Verifications:
         - Kafka messages (resampling + completion)
         - TimescaleDB state (5m resampled data persisted)
-        - Feast parquet files (features persisted)
+        - Feast parquet files (features persisted incrementally)
         - Feature instance reuse (service logs should show 1 RSI instance, not 8)
         """
 
@@ -232,16 +238,16 @@ class TestProductionBackfillWorkflow:
         )
 
         # ==========================================
-        # SCENARIO 1: COLD START - INITIAL BACKFILL
+        # SCENARIO 1: COLD START - INITIAL TRAINING DATA
         # ==========================================
         print(f"\n{'='*60}")
         print(f"SCENARIO 1: COLD START - Symbol: {unique_symbol}")
         print(f"{'='*60}")
 
-        # Given - First backfill request
+        # Given - First training request
         request_1 = (
             FeaturePreprocessingRequestBuilder()
-            .for_backfill()
+            .for_training()
             .with_symbol(unique_symbol)
             .with_target_timeframes([Timeframe.MINUTE_5])
             .with_time_range(
@@ -354,19 +360,19 @@ class TestProductionBackfillWorkflow:
         print(f"✓ Feature record count unchanged: {len(all_features_after)}")
 
         # ==========================================
-        # SCENARIO 3: INCREMENTAL - GAP FILL
+        # SCENARIO 3: INCREMENTAL - NEW TRAINING DATA
         # ==========================================
         print(f"\n{'='*60}")
-        print(f"SCENARIO 3: INCREMENTAL GAP FILL - Symbol: {unique_symbol}")
+        print(f"SCENARIO 3: INCREMENTAL NEW DATA - Symbol: {unique_symbol}")
         print(f"{'='*60}")
 
         # Give service a moment to settle
         time.sleep(1)
 
-        # Given - New time range (gap after scenario 1)
+        # Given - New time range for incremental training updates
         request_3 = (
             FeaturePreprocessingRequestBuilder()
-            .for_backfill()
+            .for_training()
             .with_symbol(unique_symbol)
             .with_target_timeframes([Timeframe.MINUTE_5])
             .with_time_range(
@@ -380,7 +386,7 @@ class TestProductionBackfillWorkflow:
         )
 
         # When - Publish incremental request
-        print(f"Publishing request 3 (gap fill): {unique_symbol} [02:00-04:00]")
+        print(f"Publishing request 3 (incremental): {unique_symbol} [02:00-04:00]")
         publish_kafka_message(
             topic="requested.preprocess-data",
             key=unique_symbol,
@@ -391,7 +397,7 @@ class TestProductionBackfillWorkflow:
         print("Waiting for resampling message...")
         resample_message_3 = wait_for_kafka_message(resample_consumer, timeout=30)
 
-        assert resample_message_3 is not None, "Should receive resampling message for gap"
+        assert resample_message_3 is not None, "Should receive resampling message for new data"
         assert resample_message_3["symbol"] == unique_symbol
 
         print(f"✓ Received resampling message: {resample_message_3['total_new_candles']} new candles")
@@ -403,13 +409,13 @@ class TestProductionBackfillWorkflow:
             resample_message_3
         )
 
-        # Then - Verify computation completed for gap
+        # Then - Verify computation completed for new data
         print("Waiting for completion message...")
         completion_3 = wait_for_kafka_message(output_consumer, timeout=30)
 
         assert completion_3 is not None
         assert completion_3["symbol"] == unique_symbol
-        assert completion_3["total_features_computed"] > 0, "Should compute features for gap"
+        assert completion_3["total_features_computed"] > 0, "Should compute features for new data"
 
         print(f"✓ Completion received: {completion_3['total_features_computed']} features computed")
 
@@ -421,24 +427,84 @@ class TestProductionBackfillWorkflow:
 
         # Verify total feature records increased
         all_features_final = pd.concat([pd.read_parquet(f) for f in parquet_files_final])
-        assert len(all_features_final) > initial_feature_count, "Should have more features after gap fill"
+        assert len(all_features_final) > initial_feature_count, "Should have more features after incremental update"
 
         print(f"✓ Feature record count increased: {len(all_features_final)} (was {initial_feature_count})")
 
         # ==========================================
-        # SCENARIO 4: FULL HISTORICAL BACKFILL UP TO SPECIFIC DATE
+        # SCENARIO 3.5: BACKFILL FOR RETRAINING AFTER CORRECTIONS
         # ==========================================
         print(f"\n{'='*60}")
-        print(f"SCENARIO 4: FULL HISTORICAL BACKFILL - Symbol: {unique_symbol}")
+        print(f"SCENARIO 3.5: BACKFILL RETRAINING - Symbol: {unique_symbol}")
         print(f"{'='*60}")
 
         # Give service a moment to settle
         time.sleep(1)
 
-        # Given - Full backfill from earliest data to specific end date
-        request_4 = (
+        # Given - Backfill request for retraining after data corrections
+        retrain_request = (
             FeaturePreprocessingRequestBuilder()
             .for_backfill()
+            .with_symbol(unique_symbol)
+            .with_target_timeframes([Timeframe.MINUTE_5])
+            .with_time_range(
+                start=datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),  # Overlap with training data
+                end=datetime(2024, 1, 1, 4, 0, tzinfo=timezone.utc),    # Covers trained period
+            )
+            .with_features([rsi_feature])
+            .with_skip_existing(False)  # Force recompute for retraining
+            .with_force_recompute(False)
+            .build()
+        )
+
+        # When - Publish backfill retraining request
+        print(f"Publishing retraining backfill: {unique_symbol} [00:00-04:00]")
+        publish_kafka_message(
+            topic="requested.preprocess-data",
+            key=unique_symbol,
+            value=retrain_request.model_dump(mode="json")
+        )
+
+        # Then - Wait for resampling message and store to DB
+        print("Waiting for retraining resampling message...")
+        retrain_resample = wait_for_kafka_message(resample_consumer, timeout=30)
+
+        assert retrain_resample is not None, "Should receive retraining resampling message"
+        assert retrain_resample["symbol"] == unique_symbol
+
+        print(f"✓ Received retraining resampling message: {retrain_resample['total_new_candles']} new candles")
+
+        # Simulate ingest service storing retraining resampled data
+        print("Storing retraining resampled 5m data to TimescaleDB...")
+        self._store_resampled_data_to_timescale(
+            timescale_connection,
+            retrain_resample
+        )
+
+        # Then - Verify retraining computation completed
+        print("Waiting for retraining completion message...")
+        retrain_completion = wait_for_kafka_message(output_consumer, timeout=30)
+
+        assert retrain_completion is not None, "Should receive retraining completion message"
+        assert retrain_completion["symbol"] == unique_symbol
+        assert retrain_completion["total_features_computed"] > 0, "Should recompute features for retraining"
+
+        print(f"✓ Retraining completion received: {retrain_completion['total_features_computed']} features computed")
+
+        # ==========================================
+        # SCENARIO 4: FULL HISTORICAL - MODEL RETRAINING
+        # ==========================================
+        print(f"\n{'='*60}")
+        print(f"SCENARIO 4: FULL HISTORICAL RETRAINING - Symbol: {unique_symbol}")
+        print(f"{'='*60}")
+
+        # Give service a moment to settle
+        time.sleep(1)
+
+        # Given - Full dataset recomputation for model retraining
+        request_4 = (
+            FeaturePreprocessingRequestBuilder()
+            .for_training()
             .with_symbol(unique_symbol)
             .with_target_timeframes([Timeframe.MINUTE_5])
             .with_time_range(
@@ -446,12 +512,12 @@ class TestProductionBackfillWorkflow:
                 end=datetime(2024, 1, 1, 8, 0, tzinfo=timezone.utc),  # Covers more data
             )
             .with_features([rsi_feature])
-            .with_skip_existing(False)  # Force full recompute for historical backfill
+            .with_skip_existing(False)  # Force full recompute for retraining
             .with_force_recompute(False)
             .build()
         )
 
-        # When - Publish full backfill request
+        # When - Publish full retraining request
         print(f"Publishing request 4: {unique_symbol} [None - 2024-01-01 08:00]")
         publish_kafka_message(
             topic="requested.preprocess-data",
@@ -463,7 +529,7 @@ class TestProductionBackfillWorkflow:
         print("Waiting for resampling message...")
         resample_message_4 = wait_for_kafka_message(resample_consumer, timeout=30)
 
-        assert resample_message_4 is not None, "Should receive resampling message for full backfill"
+        assert resample_message_4 is not None, "Should receive resampling message for full retraining"
         assert resample_message_4["symbol"] == unique_symbol
 
         print(f"✓ Received resampling message: {resample_message_4['total_new_candles']} new candles")
@@ -481,7 +547,7 @@ class TestProductionBackfillWorkflow:
 
         assert completion_4 is not None
         assert completion_4["symbol"] == unique_symbol
-        assert completion_4["total_features_computed"] > 0, "Should compute features for full range"
+        assert completion_4["total_features_computed"] > 0, "Should compute features for full retraining"
 
         print(f"✓ Completion received: {completion_4['total_features_computed']} features computed")
 
@@ -493,7 +559,7 @@ class TestProductionBackfillWorkflow:
 
         # Verify total feature records increased
         all_features_final_final = pd.concat([pd.read_parquet(f) for f in parquet_files_final_final])
-        assert len(all_features_final_final) > len(all_features_final), "Should have more features after full backfill"
+        assert len(all_features_final_final) > len(all_features_final), "Should have more features after full retraining"
 
         print(f"✓ Feature record count increased: {len(all_features_final_final)} (was {len(all_features_final)})")
 

@@ -19,11 +19,11 @@ logging:
 # Dask automatically handles task queuing based on num_workers
 dask_configs:
   coverage_analysis:
-    scheduler: "threads"              # I/O-bound: DB/Feast queries
+    scheduler: "threads"              # I/O-bound: DB/Feast queries (temporarily threads to debug)
     num_workers: null                 # Auto-detect for I/O operations
     threads_per_worker: 1
   feature_computation:
-    scheduler: "threads"            # CPU-bound: Feature computation
+    scheduler: "threads"            # CPU-bound: Feature computation (temporarily threads to debug)
     num_workers: 4                    # Explicit for predictable CPU usage
     threads_per_worker: 1
 

@@ -1,6 +1,6 @@
 import logging
 import threading
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from drl_trading_common.base.base_indicator import BaseIndicator
 from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
@@ -36,7 +36,7 @@ class TaLippIndicatorService(ITechnicalIndicatorFacade):
         self.registry = registry
         self._lock = threading.RLock()  # Reentrant lock for nested calls
 
-    def register_instance(self, name: str, indicator_type: str, **params) -> None:
+    def register_instance(self, name: str, indicator_type: str, **params: Any) -> None:
         """
         Thread-safe registration of indicator instances.
 
@@ -181,3 +181,26 @@ class TaLippIndicatorService(ITechnicalIndicatorFacade):
         """Thread-safe string representation."""
         with self._lock:
             return f"TaLippIndicatorService({len(self.instances)} indicators)"
+
+    def __getstate__(self) -> Dict:
+        """
+        Prepare object for pickling by excluding unpicklable lock.
+
+        Returns:
+            State dictionary without the threading lock
+        """
+        state = self.__dict__.copy()
+        # Remove the unpicklable lock
+        state.pop('_lock', None)
+        return state
+
+    def __setstate__(self, state: Dict) -> None:
+        """
+        Restore object from pickled state and recreate the lock.
+
+        Args:
+            state: The unpickled state dictionary
+        """
+        self.__dict__.update(state)
+        # Recreate the lock in the new process
+        self._lock = threading.RLock()

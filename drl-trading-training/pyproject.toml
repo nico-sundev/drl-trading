@@ -30,21 +30,27 @@ dependencies = [
     "drl-trading-common",
     "drl-trading-core",
     "drl-trading-adapter", # For database adapters and entities
+    "drl-trading-strategy-example>=0.1.0", # Strategy-specific features and environments
     # Core ML dependencies
     "pandas>=2.0.0",
     "gymnasium>=0.29.0",
     "stable-baselines3>=2.0.0",
     # CLI framework
     "click",
+    # REST API client
+    "requests>=2.31.0",
     # Configuration support - required by drl-trading-common
     "PyYAML>=6.0",
 ]
+
+[project.scripts]
+generate-clients = "drl_trading_training.scripts.generate_clients:main"
 
 [tool.uv.sources]
 drl-trading-common = { workspace = true }
 drl-trading-core = { workspace = true }
 drl-trading-adapter = { workspace = true }
-drl-trading-strategy-example = { workspace = true }
+drl-trading-strategy-example = { path = "../drl-trading-strategy-example" }
 
 [dependency-groups]
 # Testing dependencies (following workspace standards)
@@ -75,6 +81,8 @@ dev-full = [
     "numpy>=1.24.0",
     "pandas>=2.0.0",
     "gymnasium>=0.29.0",
+    # API client generation
+    "openapi-generator-cli>=6.6.0",
 ]
 
 # Project-specific ruff configuration (overrides workspace defaults where needed)

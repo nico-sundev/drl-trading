@@ -4,6 +4,7 @@ import logging
 
 from injector import Binder, Module, provider, singleton
 
+from drl_trading_common.adapter.mappers.feature_preprocessing_request_mapper import FeaturePreprocessingRequestMapper
 from drl_trading_common.adapter.messaging.kafka_producer_adapter import (
     KafkaProducerAdapter,
 )
@@ -176,8 +177,9 @@ class PreprocessModule(Module):
     def provide_kafka_handler_registry(self, orchestrator: PreprocessingOrchestrator) -> KafkaHandlerRegistry:
         """Register all Kafka message handlers for this service."""
         factory = KafkaMessageHandlerFactory()
+        request_mapper = FeaturePreprocessingRequestMapper()
         handlers = {
-            HANDLER_ID_PREPROCESSING_REQUEST: factory.create_preprocessing_request_handler(orchestrator),
+            HANDLER_ID_PREPROCESSING_REQUEST: factory.create_preprocessing_request_handler(orchestrator, request_mapper),
         }
         return KafkaHandlerRegistry(handlers)
 

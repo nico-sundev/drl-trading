@@ -2,7 +2,7 @@
 
 ## Quick Thoughts
 
-- proceed with preporch unit tests
+- check why this : 2025-12-01 00:45:31 | ERROR    | d.c.s.c.feature_coverage_analyzer        | drl-trading-preprocess | Error fetching features for role observation_space: Unexpected error during historical features fetch for TESTBC0DFA: "['rsi_14_d96c08b4dbc0b3ee845986f64170fea9_value'] not in index"
 - refactoring the interface between drl-trading-core and drl-trading-strategy
   - currently: 100% decoupling, both depend on interfaces in drl-trading-common, coupling happens in service where both are needed (preprocessing), directly in injector setup
   - future expectation: treat drl-trading-strategy like an adapter, following existing hexarch design
@@ -10,19 +10,6 @@
     - create dependency of strategy->core
     - move implementations of strategy package, like featurefactory or featureregistry/featureconfigregistry into core
     - evaluate best way to tie together both packages practically using DI injector (use drl-trading-preprocess to examine)
-- resolve design issue with technical indicators and dask
-Dask's processes scheduler uses multiprocessing to create separate Python processes
-To send objects to worker processes, Python uses pickle to serialize them
-threading.RLock cannot be pickled because locks are process-specific
-Your TalippIndicatorService has self._lock = threading.RLock()
-This service is injected into feature objects, making them unpicklable
-- prepare pyproject.toml of preprocessing and training project to integrate drl-trading-strategy seamlessly
-  - priority: choose dependency from personal gitlab artifactory over workspace artifact
-  - goal:
-    - by default, after cloning the whole repository, the workspace's "drl-trading-strategy-example" should be used for compilation
-    - for myself, i have the need for an easy switch as i am deploying my system with the "proprietary" version of the "drl-trading-strategy"
-    - maybe solution (challenge this): use same dependency (name of the package), just distinct by version: the example project is being installed as -SNAPSHOT whereas my real one uses reasonable semvers
-    - this should be somehow controllable over environment variable or some compareable config file, so i can populate that config switch for my personal stages and other people dont have it after freshly cloning the repo -> use snapshot artifact
 - refactor drl-trading-strategy-example in terms of hexarch design and fix violations (like the TypeMapper dependency of core -> adapter [feature -> indicator])
 - replace all primitive dataframes which are passed around from core to preprocessing by objects, holding these with built in validation logic e.g. for datetimeindex (Note: feast requires the event_timestamp column, whereas the rest of the application should be decoupled of this mandate - so a design for mapping column names from core to feast is also necessary)
 - remove in memory states from preprocessing and integrate redis as adapter

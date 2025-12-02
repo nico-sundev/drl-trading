@@ -9,6 +9,7 @@ from feast import (
     Field,
     FileSource,
     OnDemandFeatureView,
+    ValueType,
 )
 from feast.data_format import ParquetFormat
 from feast.types import String
@@ -203,7 +204,7 @@ class FeastProvider:
         try:
             return FileSource(
                 path=offline_store_path,
-                s3_endpoint_override="https://localhost:9000",
+                s3_endpoint_override= self.feature_store_config.s3_repo_config.endpoint_url if self.feature_store_config.s3_repo_config else None,
                 file_format=ParquetFormat(),
                 timestamp_field="event_timestamp",
             )
@@ -443,4 +444,5 @@ class FeastProvider:
             name=entity_name,
             join_keys=["symbol"],  # Column name in DataFrame, not the symbol value
             description="Shared entity for all trading symbol asset price data",
+            value_type=ValueType.STRING
         )

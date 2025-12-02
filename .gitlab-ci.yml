@@ -1,0 +1,91 @@
+# GitLab CI/CD for DRL Trading Monorepo
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
+
+cache:
+  paths:
+    - .uv-cache/
+
+# Test stage - runs for all branches with changes
+test:training:
+  stage: test
+  image: python:3.12
+  before_script:
+    - cd drl-trading-training
+    - pip install uv
+    - uv sync --group dev-full
+  script:
+    - uv run pytest tests/ -v --cov=src --cov-report=xml:coverage.xml --cov-report=html
+  rules:
+    - changes:
+        - drl-trading-training/**/*
+        - drl-trading-ingest/specs/**/*
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: drl-trading-training/htmlcov/coverage.xml
+    expire_in: 1 week
+
+test:ingest:
+  stage: test
+  image: python:3.12
+  before_script:
+    - cd drl-trading-ingest
+    - pip install uv
+    - uv sync --group dev-full
+  script:
+    - uv run pytest tests/ -v
+    - uv run ruff check src/
+  rules:
+    - changes:
+        - drl-trading-ingest/**/*
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: drl-trading-ingest/htmlcov/coverage.xml
+    expire_in: 1 week
+
+# Build stage - only for main/develop branches
+build:training:
+  stage: build
+  image: python:3.12
+  before_script:
+    - cd drl-trading-training
+    - pip install uv
+    - uv sync --group dev-full
+  script:
+    - uv run python -m build
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
+      changes:
+        - drl-trading-training/**/*
+        - drl-trading-ingest/specs/**/*
+  artifacts:
+    paths:
+      - drl-trading-training/dist/
+    expire_in: 1 month
+
+# Deploy stage - only for main branch
+deploy:training:
+  stage: deploy
+  image: python:3.12
+  before_script:
+    - cd drl-trading-training
+    - pip install uv
+    - uv sync
+  script:
+    - echo "Deploy training service to production"
+    # Add your deployment commands here
+    # Example: deploy to Kubernetes, Docker registry, etc.
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  environment:
+    name: production
+    url: https://your-training-service.com

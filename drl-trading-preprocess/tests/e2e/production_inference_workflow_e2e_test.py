@@ -1,15 +1,18 @@
 """
-Comprehensive E2E test for production backfill workflow.
+Comprehensive E2E test for production inference workflow.
 
 This test validates real-world production scenarios across multiple requests:
-1. Cold start: Initial backfill with no prior data
+0. Chained backfill: Backfill to catch up before inference
+1. Cold start: Initial inference with no prior features
 2. Warm start: Duplicate request (should skip computation)
-3. Incremental: Gap fill with new time range
+3. Incremental: New data for ongoing inference
+4. Full historical: Complete inference recomputation
 
 External systems involved:
 - Kafka (requested.preprocess-data, completed.preprocess-data, requested.store-resampled-data)
 - TimescaleDB (1-minute base data + 5-minute resampled data)
 - Feast Offline Store (parquet files)
+- Feast Online Store (for real-time serving)
 - Service internal cache (feature instances - should persist and reuse)
 
 Production workflow:
@@ -17,17 +20,18 @@ Production workflow:
 2. Service publishes resampled data to requested.store-resampled-data Kafka topic
 3. Ingest service (simulated in test) consumes and stores 5m data to TimescaleDB
 4. Service computes features from resampled 5m data in TimescaleDB
-5. Service persists features to Feast offline store (parquet)
+5. Service persists features to Feast offline store (parquet) in incremental mode
+6. Service pushes features to online store for real-time inference
 
 Test simulation:
 - Seed 1m base data in TimescaleDB
-- Wait for resampling message on Kafka
+- Wait for resampling message on Kafka (with retry for robustness)
 - Store resampled 5m data to TimescaleDB (simulate ingest service)
-- Verify feature computation and persistence
+- Verify feature computation, persistence, and online serving
 - Validate feature instance reuse across requests (no duplicates)
 
 Prerequisites:
-- Docker Compose running (Kafka, TimescaleDB, etc.)
+- Docker Compose running (Kafka, TimescaleDB, Feast, etc.)
 - Preprocess service running: `STAGE=ci python main.py`
 """
 
@@ -153,15 +157,15 @@ def seed_unique_symbol_data(unique_symbol: str, timescale_connection: Any) -> Ge
 
 
 @pytest.mark.e2e
-class TestProductionBackfillWorkflow:
+class TestProductionInferenceWorkflow:
     """
-    E2E test simulating complete production backfill workflow.
+    E2E test simulating complete production inference workflow.
 
     Uses unique symbol per test run to avoid conflicts with previous test data.
     Validates state transitions across cold start → warm start → incremental → full historical scenarios.
     """
 
-    def test_production_backfill_workflow(
+    def test_production_inference_workflow(
         self,
         unique_symbol: str,
         timescale_connection: Any,
@@ -172,39 +176,45 @@ class TestProductionBackfillWorkflow:
         feast_offline_store_path: Path,
     ) -> None:
         """
-        Test complete production backfill workflow across 4 scenarios.
+        Test complete production inference workflow across 5 scenarios.
 
         Flow per scenario:
         1. Publish preprocessing request to Kafka
         2. Service resamples 1m → 5m, publishes to requested.store-resampled-data
         3. Test consumes resampling message, stores 5m data to TimescaleDB (simulates ingest service)
         4. Service computes features from 5m data in TimescaleDB
-        5. Service persists features to Feast parquet
-        6. Verify completion message and artifacts
+        5. Service persists features to Feast offline store (parquet) in incremental mode
+        6. Service pushes features to online store for real-time serving
+        7. Verify completion message and artifacts
+
+        Scenario 0 (Chained backfill): [2023-12-31 08:00 - 2024-01-01 00:00]
+        - Backfill historical data to ensure no gaps before inference starts
+        - Uses batch mode to prepare clean historical features
 
         Scenario 1 (Cold start): [00:00-02:00]
-        - First time processing, can bootstrap features from scratch if no prior data exists
-        - Should compute all features in batch mode
+        - First inference processing after backfill
+        - Should compute all features and push to online store
 
         Scenario 2 (Warm start): [00:00-02:00] (duplicate)
-        - Resampled 5m data exists from scenario 1
+        - Features exist from scenario 1
         - skip_existing=True should skip computation
         - Reuses cached feature instances (no new instances)
 
-        Scenario 3 (Incremental): [02:00-04:00] (gap fill)
-        - New time range, new resampled data
-        - Should compute features for gap
+        Scenario 3 (Incremental): [02:00-04:00] (new data)
+        - New time range for ongoing inference updates
+        - Should compute features incrementally and update online store
         - Still reuses feature instances from scenario 1
 
         Scenario 4 (Full historical): [None - 2024-01-01 08:00]
-        - Backfill from earliest available data (start=None) to specific end date
-        - skip_existing=False forces recomputation
-        - Tests complete historical data processing
+        - Complete inference recomputation
+        - skip_existing=False forces recomputation and online store refresh
+        - Tests full inference pipeline refresh
 
         Verifications:
         - Kafka messages (resampling + completion)
         - TimescaleDB state (5m resampled data persisted)
-        - Feast parquet files (features persisted)
+        - Feast offline store (parquet files)
+        - Feast online store (features available for serving)
         - Feature instance reuse (service logs should show 1 RSI instance, not 8)
         """
 
@@ -232,16 +242,71 @@ class TestProductionBackfillWorkflow:
         )
 
         # ==========================================
-        # SCENARIO 1: COLD START - INITIAL BACKFILL
+        # SCENARIO 0: CHAINED BACKFILL - CATCH UP BEFORE INFERENCE
+        # ==========================================
+        print(f"\n{'='*60}")
+        print(f"SCENARIO 0: CHAINED BACKFILL - Symbol: {unique_symbol}")
+        print(f"{'='*60}")
+
+        # Given - Backfill request to prepare historical data
+        backfill_request = (
+            FeaturePreprocessingRequestBuilder()
+            .for_backfill()
+            .with_symbol(unique_symbol)
+            .with_target_timeframes([Timeframe.MINUTE_5])
+            .with_time_range(
+                start=datetime(2023, 12, 31, 8, 0, tzinfo=timezone.utc),  # Historical period
+                end=datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),     # Up to inference start
+            )
+            .with_features([rsi_feature])
+            .with_skip_existing(True)
+            .with_force_recompute(False)
+            .build()
+        )
+
+        # When - Publish backfill request first
+        print(f"Publishing backfill request: {unique_symbol} [2023-12-31 08:00 - 2024-01-01 00:00]")
+        publish_kafka_message(
+            topic="requested.preprocess-data",
+            key=unique_symbol,
+            value=backfill_request.model_dump(mode="json")
+        )
+
+        # Then - Wait for resampling message and store to DB
+        print("Waiting for backfill resampling message...")
+        backfill_resample = self._wait_for_message_with_retry(wait_for_kafka_message, resample_consumer, timeout=30)
+
+        assert backfill_resample["symbol"] == unique_symbol
+
+        print(f"✓ Received backfill resampling message: {backfill_resample['total_new_candles']} new candles")
+
+        # Simulate ingest service storing backfill resampled data
+        print("Storing backfill resampled 5m data to TimescaleDB...")
+        self._store_resampled_data_to_timescale(
+            timescale_connection,
+            backfill_resample
+        )
+
+        # Then - Verify backfill computation completed
+        print("Waiting for backfill completion message...")
+        backfill_completion = self._wait_for_message_with_retry(wait_for_kafka_message, output_consumer, timeout=30)
+
+        assert backfill_completion["symbol"] == unique_symbol
+        assert backfill_completion["total_features_computed"] > 0, "Backfill should compute features"
+
+        print(f"✓ Backfill completion received: {backfill_completion['total_features_computed']} features computed")
+
+        # ==========================================
+        # SCENARIO 1: COLD START - INITIAL INFERENCE
         # ==========================================
         print(f"\n{'='*60}")
         print(f"SCENARIO 1: COLD START - Symbol: {unique_symbol}")
         print(f"{'='*60}")
 
-        # Given - First backfill request
+        # Given - First inference request
         request_1 = (
             FeaturePreprocessingRequestBuilder()
-            .for_backfill()
+            .for_inference()
             .with_symbol(unique_symbol)
             .with_target_timeframes([Timeframe.MINUTE_5])
             .with_time_range(
@@ -251,6 +316,7 @@ class TestProductionBackfillWorkflow:
             .with_features([rsi_feature])
             .with_skip_existing(True)
             .with_force_recompute(False)
+            .with_materialize_online(True)  # Enable online serving for inference
             .build()
         )
 
@@ -264,9 +330,8 @@ class TestProductionBackfillWorkflow:
 
         # Then - Wait for resampling message and store to DB (simulate ingest service)
         print("Waiting for resampling message...")
-        resample_message_1 = wait_for_kafka_message(resample_consumer, timeout=30)
+        resample_message_1 = self._wait_for_message_with_retry(wait_for_kafka_message, resample_consumer, timeout=30)
 
-        assert resample_message_1 is not None, "Should receive resampling message"
         assert resample_message_1["symbol"] == unique_symbol
 
         print(f"✓ Received resampling message: {resample_message_1['total_new_candles']} new candles")
@@ -280,9 +345,8 @@ class TestProductionBackfillWorkflow:
 
         # Then - Verify computation completed
         print("Waiting for completion message...")
-        completion_1 = wait_for_kafka_message(output_consumer, timeout=30)
+        completion_1 = self._wait_for_message_with_retry(wait_for_kafka_message, output_consumer, timeout=30)
 
-        assert completion_1 is not None, "Should receive completion message"
         assert completion_1["symbol"] == unique_symbol
         assert completion_1["total_features_computed"] > 0, "Features should be computed on cold start"
 
@@ -333,9 +397,8 @@ class TestProductionBackfillWorkflow:
 
         # Then - Verify completion indicates skipping
         print("Waiting for completion message...")
-        completion_2 = wait_for_kafka_message(output_consumer, timeout=30)
+        completion_2 = self._wait_for_message_with_retry(wait_for_kafka_message, output_consumer, timeout=30)
 
-        assert completion_2 is not None
         assert completion_2["symbol"] == unique_symbol
         assert completion_2["total_features_computed"] == 0, "Should skip - features already exist"
 
@@ -354,19 +417,19 @@ class TestProductionBackfillWorkflow:
         print(f"✓ Feature record count unchanged: {len(all_features_after)}")
 
         # ==========================================
-        # SCENARIO 3: INCREMENTAL - GAP FILL
+        # SCENARIO 3: INCREMENTAL - NEW INFERENCE DATA
         # ==========================================
         print(f"\n{'='*60}")
-        print(f"SCENARIO 3: INCREMENTAL GAP FILL - Symbol: {unique_symbol}")
+        print(f"SCENARIO 3: INCREMENTAL NEW DATA - Symbol: {unique_symbol}")
         print(f"{'='*60}")
 
         # Give service a moment to settle
         time.sleep(1)
 
-        # Given - New time range (gap after scenario 1)
+        # Given - New time range for incremental inference updates
         request_3 = (
             FeaturePreprocessingRequestBuilder()
-            .for_backfill()
+            .for_inference()
             .with_symbol(unique_symbol)
             .with_target_timeframes([Timeframe.MINUTE_5])
             .with_time_range(
@@ -376,11 +439,12 @@ class TestProductionBackfillWorkflow:
             .with_features([rsi_feature])
             .with_skip_existing(True)
             .with_force_recompute(False)
+            .with_materialize_online(True)
             .build()
         )
 
         # When - Publish incremental request
-        print(f"Publishing request 3 (gap fill): {unique_symbol} [02:00-04:00]")
+        print(f"Publishing request 3 (incremental): {unique_symbol} [02:00-04:00]")
         publish_kafka_message(
             topic="requested.preprocess-data",
             key=unique_symbol,
@@ -389,9 +453,8 @@ class TestProductionBackfillWorkflow:
 
         # Then - Wait for resampling message and store to DB
         print("Waiting for resampling message...")
-        resample_message_3 = wait_for_kafka_message(resample_consumer, timeout=30)
+        resample_message_3 = self._wait_for_message_with_retry(wait_for_kafka_message, resample_consumer, timeout=30)
 
-        assert resample_message_3 is not None, "Should receive resampling message for gap"
         assert resample_message_3["symbol"] == unique_symbol
 
         print(f"✓ Received resampling message: {resample_message_3['total_new_candles']} new candles")
@@ -403,13 +466,12 @@ class TestProductionBackfillWorkflow:
             resample_message_3
         )
 
-        # Then - Verify computation completed for gap
+        # Then - Verify computation completed for new data
         print("Waiting for completion message...")
-        completion_3 = wait_for_kafka_message(output_consumer, timeout=30)
+        completion_3 = self._wait_for_message_with_retry(wait_for_kafka_message, output_consumer, timeout=30)
 
-        assert completion_3 is not None
         assert completion_3["symbol"] == unique_symbol
-        assert completion_3["total_features_computed"] > 0, "Should compute features for gap"
+        assert completion_3["total_features_computed"] > 0, "Should compute features for new data"
 
         print(f"✓ Completion received: {completion_3['total_features_computed']} features computed")
 
@@ -421,24 +483,24 @@ class TestProductionBackfillWorkflow:
 
         # Verify total feature records increased
         all_features_final = pd.concat([pd.read_parquet(f) for f in parquet_files_final])
-        assert len(all_features_final) > initial_feature_count, "Should have more features after gap fill"
+        assert len(all_features_final) > initial_feature_count, "Should have more features after incremental update"
 
         print(f"✓ Feature record count increased: {len(all_features_final)} (was {initial_feature_count})")
 
         # ==========================================
-        # SCENARIO 4: FULL HISTORICAL BACKFILL UP TO SPECIFIC DATE
+        # SCENARIO 4: FULL HISTORICAL - INFERENCE REFRESH
         # ==========================================
         print(f"\n{'='*60}")
-        print(f"SCENARIO 4: FULL HISTORICAL BACKFILL - Symbol: {unique_symbol}")
+        print(f"SCENARIO 4: FULL HISTORICAL REFRESH - Symbol: {unique_symbol}")
         print(f"{'='*60}")
 
         # Give service a moment to settle
         time.sleep(1)
 
-        # Given - Full backfill from earliest data to specific end date
+        # Given - Complete inference recomputation
         request_4 = (
             FeaturePreprocessingRequestBuilder()
-            .for_backfill()
+            .for_inference()
             .with_symbol(unique_symbol)
             .with_target_timeframes([Timeframe.MINUTE_5])
             .with_time_range(
@@ -446,12 +508,13 @@ class TestProductionBackfillWorkflow:
                 end=datetime(2024, 1, 1, 8, 0, tzinfo=timezone.utc),  # Covers more data
             )
             .with_features([rsi_feature])
-            .with_skip_existing(False)  # Force full recompute for historical backfill
+            .with_skip_existing(False)  # Force full recompute for inference refresh
             .with_force_recompute(False)
+            .with_materialize_online(True)
             .build()
         )
 
-        # When - Publish full backfill request
+        # When - Publish full inference refresh request
         print(f"Publishing request 4: {unique_symbol} [None - 2024-01-01 08:00]")
         publish_kafka_message(
             topic="requested.preprocess-data",
@@ -461,9 +524,8 @@ class TestProductionBackfillWorkflow:
 
         # Then - Wait for resampling message and store to DB
         print("Waiting for resampling message...")
-        resample_message_4 = wait_for_kafka_message(resample_consumer, timeout=30)
+        resample_message_4 = self._wait_for_message_with_retry(wait_for_kafka_message, resample_consumer, timeout=30)
 
-        assert resample_message_4 is not None, "Should receive resampling message for full backfill"
         assert resample_message_4["symbol"] == unique_symbol
 
         print(f"✓ Received resampling message: {resample_message_4['total_new_candles']} new candles")
@@ -477,11 +539,10 @@ class TestProductionBackfillWorkflow:
 
         # Then - Verify computation completed for full range
         print("Waiting for completion message...")
-        completion_4 = wait_for_kafka_message(output_consumer, timeout=30)
+        completion_4 = self._wait_for_message_with_retry(wait_for_kafka_message, output_consumer, timeout=30)
 
-        assert completion_4 is not None
         assert completion_4["symbol"] == unique_symbol
-        assert completion_4["total_features_computed"] > 0, "Should compute features for full range"
+        assert completion_4["total_features_computed"] > 0, "Should compute features for full refresh"
 
         print(f"✓ Completion received: {completion_4['total_features_computed']} features computed")
 
@@ -493,7 +554,7 @@ class TestProductionBackfillWorkflow:
 
         # Verify total feature records increased
         all_features_final_final = pd.concat([pd.read_parquet(f) for f in parquet_files_final_final])
-        assert len(all_features_final_final) > len(all_features_final), "Should have more features after full backfill"
+        assert len(all_features_final_final) > len(all_features_final), "Should have more features after full refresh"
 
         print(f"✓ Feature record count increased: {len(all_features_final_final)} (was {len(all_features_final)})")
 
@@ -501,37 +562,52 @@ class TestProductionBackfillWorkflow:
         print(f"ALL SCENARIOS PASSED FOR {unique_symbol}")
         print(f"{'='*60}\n")
 
-    def _drain_consumer(self, consumer: Any, timeout_seconds: int = 2) -> None:
+    def _wait_for_message_with_retry(
+        self,
+        wait_for_kafka_message: Any,
+        consumer: Any,
+        timeout: int = 30,
+        retries: int = 3,
+        retry_delay: float = 5.0
+    ) -> Any:
         """
-        Drain all pending messages from a Kafka consumer.
+        Wait for a Kafka message with retry logic for robustness.
 
-        This removes old messages from previous test runs that may still be
-        in the topic, ensuring tests only process messages from the current run.
+        This handles transient failures like Kafka timeouts or temporary service issues
+        by retrying the wait operation multiple times with delays.
 
         Args:
-            consumer: Kafka consumer to drain
-            timeout_seconds: How long to poll for messages before stopping
+            wait_for_kafka_message: The fixture function to wait for messages
+            consumer: Kafka consumer to poll
+            timeout: Timeout per attempt in seconds
+            retries: Number of retry attempts
+            retry_delay: Delay between retries in seconds
+
+        Returns:
+            The received message
+
+        Raises:
+            AssertionError: If message not received after all retries
         """
-        from confluent_kafka import KafkaError
+        import time
 
-        drained_count = 0
-        start_time = time.time()
+        for attempt in range(retries):
+            try:
+                message = wait_for_kafka_message(consumer, timeout=timeout)
+                if message is not None:
+                    return message
+                if attempt < retries - 1:
+                    print(f"Message not received, retrying in {retry_delay}s... (attempt {attempt + 1}/{retries})")
+                    time.sleep(retry_delay)
+            except Exception as e:
+                if attempt < retries - 1:
+                    print(f"Error waiting for message: {e}, retrying in {retry_delay}s... (attempt {attempt + 1}/{retries})")
+                    time.sleep(retry_delay)
+                else:
+                    raise
 
-        while time.time() - start_time < timeout_seconds:
-            msg = consumer.poll(timeout=0.5)
-
-            if msg is None:
-                continue
-
-            if msg.error():
-                if msg.error().code() == KafkaError._PARTITION_EOF:
-                    continue
-                break
-
-            drained_count += 1
-
-        if drained_count > 0:
-            print(f"  Drained {drained_count} old message(s)")
+        # If we get here, all retries failed
+        raise AssertionError(f"Failed to receive message after {retries} attempts with {timeout}s timeout each")
 
     def _store_resampled_data_to_timescale(
         self,
