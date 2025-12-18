@@ -14,7 +14,7 @@ from typing import Any, Optional
 from pandas import DataFrame
 
 
-class ITechnicalIndicatorFacade(ABC):
+class ITechnicalIndicatorServicePort(ABC):
     """
     Generic technical indicator interface with no strategy dependencies.
 

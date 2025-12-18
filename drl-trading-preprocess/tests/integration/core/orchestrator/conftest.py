@@ -4,14 +4,14 @@ from unittest.mock import Mock
 
 import pandas as pd
 import pytest
-from drl_trading_common.core.model.base_feature import BaseFeature
+from drl_trading_core.core.port.base_feature import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
-from drl_trading_common.decorator.feature_role_decorator import feature_role
+from drl_trading_core.core.service.feature.decorator.feature_role_decorator import feature_role
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
-    ITechnicalIndicatorFacade,
+from drl_trading_core.core.port.technical_indicator_service_port import (
+    ITechnicalIndicatorServicePort,
 )
-from drl_trading_common.interface.feature.feature_factory_interface import IFeatureFactory
+from drl_trading_core.core.service.feature.feature_factory_interface import IFeatureFactory
 from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 from injector import Injector
 from pandas import DataFrame
@@ -23,7 +23,7 @@ from drl_trading_common.core.model.timeframe import Timeframe
 
 
 # Test Feature Implementations for Core Integration Testing
-class MockTechnicalIndicatorFacade(ITechnicalIndicatorFacade):
+class MockTechnicalIndicatorFacade(ITechnicalIndicatorServicePort):
     """Mock technical indicator facade that returns controlled test data for integration testing."""
 
     def __init__(self) -> None:
@@ -96,6 +96,10 @@ class TestRsiFeature(BaseFeature):
             f"rsi_{config.length}", "rsi", length=config.length
         )
 
+    def _call_indicator_backend(self, method_call) -> Optional[DataFrame]:
+        """Mock implementation."""
+        return None
+
     def _get_feature_name(self) -> str:
         return self._feature_name
 
@@ -156,6 +160,10 @@ class TestClosePriceFeature(BaseFeature):
     ):
         super().__init__(dataset_id, indicator_service, config, postfix)
         self._feature_name = "close_price"
+
+    def _call_indicator_backend(self, method_call) -> Optional[DataFrame]:
+        """Mock implementation."""
+        return None
 
     def _get_feature_name(self) -> str:
         return self._feature_name

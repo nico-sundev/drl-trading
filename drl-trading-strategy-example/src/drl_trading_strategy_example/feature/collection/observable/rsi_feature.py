@@ -1,12 +1,12 @@
 
 from typing import Callable, Optional
 
-from drl_trading_common import BaseParameterSetConfig
-from drl_trading_common.core.model.base_feature import BaseFeature
-from drl_trading_common.decorator.feature_role_decorator import feature_role
+from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_core.core.port.base_feature import BaseFeature
+from drl_trading_core.core.service.feature.decorator.feature_role_decorator import feature_role
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
-    ITechnicalIndicatorFacade,
+from drl_trading_core.core.port.technical_indicator_service_port import (
+    ITechnicalIndicatorServicePort,
 )
 from drl_trading_common.adapter.model.dataset_identifier import DatasetIdentifier
 from drl_trading_strategy_example.decorator import feature_type
@@ -16,7 +16,7 @@ from drl_trading_strategy_example.decorator.feature_type_decorator import (
 from drl_trading_strategy_example.enum.feature_type_enum import FeatureTypeEnum
 from drl_trading_strategy_example.feature.config import RsiConfig
 from drl_trading_strategy_example.mapper.mapper import TypeMapper
-from pandas import DataFrame
+from pandas import DataFrame, Index
 
 
 @feature_type(FeatureTypeEnum.RSI)
@@ -26,7 +26,7 @@ class RsiFeature(BaseFeature):
     def __init__(
         self,
         dataset_id: DatasetIdentifier,
-        indicator_service: ITechnicalIndicatorFacade,
+        indicator_service: ITechnicalIndicatorServicePort,
         config: Optional[BaseParameterSetConfig] = None,
         postfix: str = ""
     ) -> None:
@@ -43,26 +43,6 @@ class RsiFeature(BaseFeature):
         index_corrected_dataframe = self._prepare_source_df(df)
         self.indicator_service.add(self.feature_name, index_corrected_dataframe)
 
-    def compute_latest(self) -> Optional[DataFrame]:
-        """
-        Get latest RSI value with timestamp.
-
-        Returns:
-            DataFrame with DatetimeIndex and latest RSI value
-        """
-        return self._call_indicator_backend(self.indicator_service.get_latest)
-
-    def compute_all(self) -> Optional[DataFrame]:
-        """
-        Get all RSI values with timestamps.
-
-        Returns:
-            DataFrame with DatetimeIndex containing all RSI values.
-            The index preserves the original timestamps from the OHLCV data,
-            enabling proper time-based partitioning in the feature store.
-        """
-        return self._call_indicator_backend(self.indicator_service.get_all)
-
     def _call_indicator_backend(self, method_call: Callable[[str], Optional[DataFrame]]) -> Optional[DataFrame]:
         """
         Generic method to call indicator backend methods in a thread-safe manner.
@@ -78,11 +58,12 @@ class RsiFeature(BaseFeature):
             return None
 
         # Rename column to match feature name (indicator returns "rsi", we want "rsi_14" etc.)
-        result.columns = [f"rsi_{self.config.length}{self.postfix}"]
+        feature_base_name = self.get_metadata().__str__()
+        result.columns = Index([feature_base_name])
         return result
 
     def _get_sub_features_names(self) -> list[str]:
-        return ["value"]
+        return []
 
     def _get_feature_type(self) -> FeatureTypeEnum:
         return get_feature_type_from_class(self.__class__)

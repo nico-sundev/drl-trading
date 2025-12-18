@@ -3,10 +3,10 @@ from typing import Optional
 from unittest.mock import MagicMock
 
 import pytest
-from drl_trading_common.core.model.base_feature import BaseFeature
-from drl_trading_common.core.model.feature_metadata import FeatureMetadata
+from drl_trading_core.core.port.base_feature import BaseFeature
+from drl_trading_core.core.model.feature.feature_metadata import FeatureMetadata
 from drl_trading_common.core.model.base_parameter_set_config import BaseParameterSetConfig
-from drl_trading_common.interface.indicator.technical_indicator_facade_interface import ITechnicalIndicatorFacade
+from drl_trading_core.core.port.technical_indicator_service_port import ITechnicalIndicatorServicePort
 from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.core.model.timeframe import Timeframe
 from pandas import DataFrame
@@ -18,13 +18,17 @@ class MockFeature(BaseFeature):
     def __init__(
         self,
         dataset_id: DatasetIdentifier,
-        indicator_service: ITechnicalIndicatorFacade,
+        indicator_service: ITechnicalIndicatorServicePort,
         config: Optional[BaseParameterSetConfig] = None,
         postfix: str = "",
         feature_name: str = "mock_feature"
     ) -> None:
         super().__init__(dataset_id, indicator_service, config, postfix)
         self._feature_name = feature_name
+
+    def _call_indicator_backend(self, method_call) -> Optional[DataFrame]:
+        """Mock implementation."""
+        return None
 
     def update(self, df: DataFrame) -> None:
         """Mock implementation of add method."""
@@ -54,7 +58,7 @@ class MockFeature(BaseFeature):
 @pytest.fixture
 def mock_feature() -> MockFeature:
     """Create a mock feature for testing."""
-    mock_indicator_service = MagicMock(spec=ITechnicalIndicatorFacade)
+    mock_indicator_service = MagicMock(spec=ITechnicalIndicatorServicePort)
     mock_dataset_id = DatasetIdentifier(symbol="EURUSD", timeframe=Timeframe.HOUR_1)
 
     return MockFeature(

@@ -8,9 +8,9 @@ import logging
 
 from injector import Module, provider, singleton
 
-from drl_trading_common.interface.feature.feature_factory_interface import IFeatureFactory
-from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
-    ITechnicalIndicatorFacade,
+from drl_trading_core.core.service.feature.feature_factory_interface import IFeatureFactory
+from drl_trading_core.core.port.technical_indicator_service_port import (
+    ITechnicalIndicatorServicePort,
 )
 from drl_trading_strategy_example.feature.feature_factory import FeatureFactory
 from drl_trading_strategy_example.feature.registry.feature_class_registry import (
@@ -44,7 +44,7 @@ class FeatureComputationModule(Module):
     def configure(self, binder) -> None:  # type: ignore[no-untyped-def,override]
         """Configure interface bindings."""
         binder.bind(IFeatureFactory, to=FeatureFactory, scope=singleton)  # type: ignore[type-abstract]
-        binder.bind(ITechnicalIndicatorFacade, to=TaLippIndicatorService, scope=singleton)  # type: ignore[type-abstract]
+        binder.bind(ITechnicalIndicatorServicePort, to=TaLippIndicatorService, scope=singleton)  # type: ignore[type-abstract]
         logger.info("FeatureComputationModule configured")
 
     @provider

@@ -3,7 +3,7 @@ from pandas import DataFrame
 
 from drl_trading_common.config.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.config.feature_config_collection import ${FeatureName}Config
-from drl_trading_core.preprocess.feature.collection.base_feature import BaseFeature
+from drl_trading_core.core.service.feature.base_feature import BaseFeature
 
 class ${FeatureName}Feature(BaseFeature):
 

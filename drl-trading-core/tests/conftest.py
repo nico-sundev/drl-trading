@@ -2,12 +2,12 @@ import os
 from typing import Literal, Optional, Type
 from unittest.mock import MagicMock
 
-from drl_trading_common.interface.feature.feature_factory_interface import IFeatureFactory
+from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_core.core.service.feature.feature_factory_interface import IFeatureFactory
 import pytest
-from drl_trading_common import BaseParameterSetConfig
-from drl_trading_common.core.model.base_feature import BaseFeature
-from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
-    ITechnicalIndicatorFacade,
+from drl_trading_core.core.port.base_feature import BaseFeature
+from drl_trading_core.core.port.technical_indicator_service_port import (
+    ITechnicalIndicatorServicePort,
 )
 from injector import Injector
 from pandas import DataFrame
@@ -40,7 +40,7 @@ class RsiFeature(BaseFeature):
     def __init__(
         self,
         config: BaseParameterSetConfig,
-        indicator_service: ITechnicalIndicatorFacade,
+        indicator_service: ITechnicalIndicatorServicePort,
         postfix: str = "",
     ) -> None:
         super().__init__(config, indicator_service, postfix)
@@ -68,6 +68,10 @@ class RsiFeature(BaseFeature):
             result_df = DataFrame(index=self.df_source.index)
             result_df[f"rsi_{self.config.length}{self.postfix}"] = rsi_values
             return result_df
+        return None
+
+    def _call_indicator_backend(self, method_call) -> Optional[DataFrame]:
+        """Mock implementation."""
         return None
 
     def _get_sub_features_names(self) -> list[str]:

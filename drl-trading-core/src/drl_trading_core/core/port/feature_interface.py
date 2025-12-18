@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from drl_trading_common.core.model.feature_metadata import FeatureMetadata
+from drl_trading_core.core.model.feature.feature_metadata import FeatureMetadata
 
 
 class IFeature(ABC):

@@ -175,7 +175,7 @@ def feature_view_requests(
 ) -> list[FeatureViewMetadata]:
     """Create sample FeatureViewRequest list for tests."""
     # Create mock BaseFeature objects for testing
-    from drl_trading_common.core.model.feature_metadata import FeatureMetadata
+    from drl_trading_core.core.model.feature.feature_metadata import FeatureMetadata
     from drl_trading_common.enum import FeatureRoleEnum
 
     mock_obs_feature = FeatureMetadata(

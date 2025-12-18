@@ -2,7 +2,7 @@
 
 ## Quick Thoughts
 
-- check why this : 2025-12-01 00:45:31 | ERROR    | d.c.s.c.feature_coverage_analyzer        | drl-trading-preprocess | Error fetching features for role observation_space: Unexpected error during historical features fetch for TESTBC0DFA: "['rsi_14_d96c08b4dbc0b3ee845986f64170fea9_value'] not in index"
+- check why this : 2025-12-01 00:45:31 | ERROR    | d.c.s.c.feature_coverage_analyzer        | drl-trading-preprocess | Error fetching features for role observation_space: Unexpected error during historical features fetch for TESTBC0DFA: "['rsi_14_d96c08b4dbc0b3ee845986f64170fea9_value'] not in index" -> Check if the offline local parquet store writes this into the files
 - refactoring the interface between drl-trading-core and drl-trading-strategy
   - currently: 100% decoupling, both depend on interfaces in drl-trading-common, coupling happens in service where both are needed (preprocessing), directly in injector setup
   - future expectation: treat drl-trading-strategy like an adapter, following existing hexarch design

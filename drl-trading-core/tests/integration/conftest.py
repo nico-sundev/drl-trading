@@ -9,7 +9,7 @@ from typing import Generator, Optional
 import boto3
 import pandas as pd
 import pytest
-from drl_trading_common.core.model.base_feature import BaseFeature
+from drl_trading_core.core.port.base_feature import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.config.application_config import ApplicationConfig
 from drl_trading_common.config.config_loader import ConfigLoader
@@ -18,14 +18,14 @@ from drl_trading_common.config.feature_config import (
     LocalRepoConfig,
     S3RepoConfig,
 )
-from drl_trading_common.decorator.feature_role_decorator import feature_role
+from drl_trading_core.core.service.feature.decorator.feature_role_decorator import feature_role
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
-from drl_trading_common.interface.feature.feature_factory_interface import (
+from drl_trading_core.core.service.feature.feature_factory_interface import (
     IFeatureFactory,
 )
-from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
-    ITechnicalIndicatorFacade,
+from drl_trading_core.core.port.technical_indicator_service_port import (
+    ITechnicalIndicatorServicePort,
 )
 from drl_trading_common.adapter.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.adapter.model.feature_config_version_info import (
@@ -89,7 +89,7 @@ def configure_logging():
 
 
 # Test Feature Implementations for Core Integration Testing
-class MockTechnicalIndicatorFacade(ITechnicalIndicatorFacade):
+class MockTechnicalIndicatorFacade(ITechnicalIndicatorServicePort):
     """Mock technical indicator facade that returns controlled test data for integration testing."""
 
     def __init__(self) -> None:
@@ -174,6 +174,10 @@ class TestRsiFeature(BaseFeature):
             f"rsi_{config.period}", "rsi", period=config.period
         )
 
+    def _call_indicator_backend(self, method_call) -> Optional[DataFrame]:
+        """Mock implementation."""
+        return None
+
     def _get_feature_name(self) -> str:
         return self._feature_name
 
@@ -226,6 +230,10 @@ class TestClosePriceFeature(BaseFeature):
     ):
         super().__init__(dataset_id, indicator_service, config, postfix)
         self._feature_name = "close_price"
+
+    def _call_indicator_backend(self, method_call) -> Optional[DataFrame]:
+        """Mock implementation."""
+        return None
 
     def _get_feature_name(self) -> str:
         return self._feature_name
@@ -286,6 +294,10 @@ class TestRewardFeature(BaseFeature):
         self.indicator_service.register_instance(
             "cumulative_return", "cumulative_return"
         )
+
+    def _call_indicator_backend(self, method_call) -> Optional[DataFrame]:
+        """Mock implementation."""
+        return None
 
     def _get_feature_name(self) -> str:
         return self._feature_name

@@ -1,13 +1,12 @@
 from abc import abstractmethod
 from datetime import datetime
-from typing import Optional
+from typing import Callable, Optional
 
-from .base_parameter_set_config import BaseParameterSetConfig
-from .feature_metadata import FeatureMetadata
-from ..port.feature_interface import IFeature
-from drl_trading_common.decorator.feature_role_decorator import get_feature_role_from_class
-from drl_trading_common.interface.computable import Computable
-from drl_trading_common.interface.indicator.technical_indicator_facade_interface import ITechnicalIndicatorFacade
+from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_core.core.model.feature.feature_metadata import FeatureMetadata
+from drl_trading_core.core.port.feature_interface import IFeature
+from drl_trading_core.core.port.computable import Computable
+from drl_trading_core.core.port.technical_indicator_service_port import ITechnicalIndicatorServicePort
 from drl_trading_common.adapter.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.utils.utils import ensure_datetime_index
 from pandas import DataFrame
@@ -18,7 +17,7 @@ class BaseFeature(Computable, IFeature):
     def __init__(
         self,
         dataset_id: DatasetIdentifier,
-        indicator_service: ITechnicalIndicatorFacade,
+        indicator_service: ITechnicalIndicatorServicePort,
         config: Optional[BaseParameterSetConfig] = None,
         postfix: str = "",
     ) -> None:
@@ -41,6 +40,30 @@ class BaseFeature(Computable, IFeature):
         """
         feature_name = description or self._get_feature_name()
         return ensure_datetime_index(source, f"{feature_name} source data")
+
+    @abstractmethod
+    def _call_indicator_backend(self, method_call: Callable[[str], Optional[DataFrame]]) -> Optional[DataFrame]:
+        ...
+
+    def compute_latest(self) -> Optional[DataFrame]:
+        """
+        Get latest RSI value with timestamp.
+
+        Returns:
+            DataFrame with DatetimeIndex and latest RSI value
+        """
+        return self._call_indicator_backend(self.indicator_service.get_latest)
+
+    def compute_all(self) -> Optional[DataFrame]:
+        """
+        Get all RSI values with timestamps.
+
+        Returns:
+            DataFrame with DatetimeIndex containing all RSI values.
+            The index preserves the original timestamps from the OHLCV data,
+            enabling proper time-based partitioning in the feature store.
+        """
+        return self._call_indicator_backend(self.indicator_service.get_all)
 
     @abstractmethod
     def _get_sub_features_names(self) -> list[str]:
@@ -66,6 +89,8 @@ class BaseFeature(Computable, IFeature):
         Returns:
             FeatureMetadata: Metadata object containing feature information
         """
+        from drl_trading_core.core.service.feature.decorator.feature_role_decorator import get_feature_role_from_class
+
         return FeatureMetadata(
             config=self.config,
             dataset_id=self.dataset_id,

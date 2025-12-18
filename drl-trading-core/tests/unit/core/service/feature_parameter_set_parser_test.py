@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import Mock
 
-from drl_trading_common.interface.feature.feature_factory_interface import IFeatureFactory
+from drl_trading_core.core.service.feature.feature_factory_interface import IFeatureFactory
 from drl_trading_core.core.model.feature_definition import FeatureDefinition
 from drl_trading_core.core.service.feature_parameter_set_parser import FeatureParameterSetParser
 

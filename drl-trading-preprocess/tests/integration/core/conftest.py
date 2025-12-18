@@ -8,9 +8,9 @@ from drl_trading_common.config.feature_config import (
     FeatureStoreConfig,
 )
 from drl_trading_common.config.infrastructure_config import DatabaseConfig
-from drl_trading_common.interface.feature.feature_factory_interface import IFeatureFactory
-from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
-    ITechnicalIndicatorFacade,
+from drl_trading_core.core.service.feature.feature_factory_interface import IFeatureFactory
+from drl_trading_core.core.port.technical_indicator_service_port import (
+    ITechnicalIndicatorServicePort,
 )
 from drl_trading_core.infrastructure.di.core_module import CoreModule
 from drl_trading_preprocess.core.port.message_publisher_port import StoreResampledDataMessagePublisherPort
@@ -33,7 +33,7 @@ class TestBindingsModule(Module):
         resampling_message_publisher: StoreResampledDataMessagePublisherPort,
         database_config: DatabaseConfig,
         feature_factory: IFeatureFactory,
-        indicator_facade: ITechnicalIndicatorFacade,
+        indicator_facade: ITechnicalIndicatorServicePort,
     ):
         self._preprocessing_message_publisher = preprocessing_message_publisher
         self._resampling_message_publisher = resampling_message_publisher
@@ -71,7 +71,7 @@ class TestBindingsModule(Module):
 
     @provider  # type: ignore[misc]
     @singleton
-    def provide_indicator_facade(self) -> ITechnicalIndicatorFacade:
+    def provide_indicator_facade(self) -> ITechnicalIndicatorServicePort:
         """Provide the mock indicator facade."""
         return self._indicator_facade
 
@@ -155,7 +155,7 @@ def real_feast_container(
     spy_resampling_message_publisher: StoreResampledDataMessagePublisherPort,
     database_config: DatabaseConfig,
     test_feature_factory: IFeatureFactory,
-    mock_indicator_facade: ITechnicalIndicatorFacade,
+    mock_indicator_facade: ITechnicalIndicatorServicePort,
     test_preprocess_config: PreprocessConfig,
 ) -> Injector:
     """Create a dependency injection container with REAL Feast integration.

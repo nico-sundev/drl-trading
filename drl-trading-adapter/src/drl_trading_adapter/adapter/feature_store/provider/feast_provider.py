@@ -20,10 +20,10 @@ from drl_trading_adapter.adapter.feature_store.provider.feature_store_wrapper im
     FeatureStoreWrapper,
 )
 from drl_trading_adapter.adapter.feature_store.provider.mapper.feature_field_mapper import (
-    IFeatureFieldMapper,
+    IFeatureFieldFactory,
 )
 from drl_trading_adapter.adapter.feature_store.util.feature_store_utilities import get_feature_view_name
-from drl_trading_common.core.model.feature_metadata import FeatureMetadata
+from drl_trading_core.core.model.feature.feature_metadata import FeatureMetadata
 from drl_trading_common.config import FeatureStoreConfig
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
@@ -42,7 +42,7 @@ class FeastProvider:
         feature_store_config: FeatureStoreConfig,
         feature_store_wrapper: FeatureStoreWrapper,
         offline_feature_repo: IOfflineFeatureRepository,
-        feature_field_mapper: IFeatureFieldMapper,
+        feature_field_mapper: IFeatureFieldFactory,
     ):
         self.feature_store_config = feature_store_config
         self.feature_store = feature_store_wrapper.get_feature_store()
@@ -88,9 +88,8 @@ class FeastProvider:
 
         try:
             for request in requests:
-                feature_view_name = self.feature_field_mapper.get_field_base_name(
-                    request.feature_metadata
-                )
+                feature_view_name = request.feature_metadata.__str__()
+
                 # Validate request parameters
                 request.validate()
 
@@ -150,9 +149,7 @@ class FeastProvider:
         """
         # Get sanitized inputs
         symbol = request.get_sanitized_symbol()
-        base_feature_view_name = self.feature_field_mapper.get_field_base_name(
-            request.feature_metadata
-        )
+        base_feature_view_name = request.feature_metadata.__str__()
 
         # Create symbol-specific feature view name for proper isolation
         feature_view_name = get_feature_view_name(
@@ -306,7 +303,7 @@ class FeastProvider:
 
         # Create a dictionary for quick feature name lookup
         feature_requests_map: dict[str, FeatureViewMetadata] = {
-            self.feature_field_mapper.get_field_base_name(request.feature_metadata): request
+            request.feature_metadata.__str__(): request
             for request in requests
         }
 

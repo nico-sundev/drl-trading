@@ -19,14 +19,14 @@ from feast.types import Float32
 from drl_trading_adapter.adapter.feature_store.offline import IOfflineFeatureRepository
 from drl_trading_adapter.adapter.feature_store.provider.feast_provider import FeastProvider
 from drl_trading_adapter.adapter.feature_store.provider.feature_store_wrapper import FeatureStoreWrapper
-from drl_trading_adapter.adapter.feature_store.provider.mapper.feature_field_mapper import IFeatureFieldMapper
-from drl_trading_common.core.port.feature_interface import IFeature
+from drl_trading_adapter.adapter.feature_store.provider.mapper.feature_field_mapper import IFeatureFieldFactory
+from drl_trading_core.core.port.feature_interface import IFeature
 from drl_trading_common.config import FeatureStoreConfig
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
 from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
-from drl_trading_common.core.model.feature_metadata import FeatureMetadata
+from drl_trading_core.core.model.feature.feature_metadata import FeatureMetadata
 
 
 # ================================================================================================
@@ -216,8 +216,7 @@ class TestFeastProviderSetup:
     @pytest.fixture
     def mock_feature_field_mapper(self) -> Mock:
         """Mock feature field mapper with standard behavior."""
-        mapper = Mock(spec=IFeatureFieldMapper)
-        mapper.get_field_base_name.return_value = TestConstants.DEFAULT_FEATURE_NAME
+        mapper = Mock(spec=IFeatureFieldFactory)
         mapper.create_fields.return_value = [FeastObjectBuilder.create_field()]
         return mapper
 

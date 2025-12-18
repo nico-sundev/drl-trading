@@ -3,8 +3,8 @@ import threading
 from typing import Any, Dict, Optional
 
 from drl_trading_common.base.base_indicator import BaseIndicator
-from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
-    ITechnicalIndicatorFacade,
+from drl_trading_core.core.port.technical_indicator_service_port import (
+    ITechnicalIndicatorServicePort,
 )
 from drl_trading_strategy_example.enum.indicator_type_enum import IndicatorTypeEnum
 from drl_trading_strategy_example.technical_indicator.registry.indicator_class_registry_interface import (
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 @inject
-class TaLippIndicatorService(ITechnicalIndicatorFacade):
+class TaLippIndicatorService(ITechnicalIndicatorServicePort):
     """
     Thread-safe technical indicator service for concurrent access.
 

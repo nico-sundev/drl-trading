@@ -2,11 +2,11 @@ from typing import Type
 from unittest.mock import MagicMock
 
 import pytest
-from drl_trading_common import BaseParameterSetConfig
-from drl_trading_common.core.model.base_feature import BaseFeature
+from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_core.core.port.base_feature import BaseFeature
 from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
-from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
-    ITechnicalIndicatorFacade,
+from drl_trading_core.core.port.technical_indicator_service_port import (
+    ITechnicalIndicatorServicePort,
 )
 from drl_trading_strategy_example.feature.feature_factory import FeatureFactory
 from drl_trading_strategy_example.feature.registry.feature_class_registry_interface import (
@@ -97,7 +97,7 @@ def factory(class_registry, config_registry, mock_indicator_service) -> FeatureF
 
 def test_create_feature(
     factory: FeatureFactory,
-    mock_indicator_service: ITechnicalIndicatorFacade,
+    mock_indicator_service: ITechnicalIndicatorServicePort,
     mock_rsi_feature_class: Type[BaseFeature],
     mock_macd_feature_class: Type[BaseFeature],
 ) -> None:
@@ -143,6 +143,9 @@ def test_create_feature_without_config() -> None:
         def __init__(self, dataset_id, indicator_service, config=None, postfix=""):
             super().__init__(dataset_id, indicator_service, config, postfix)
 
+        def _call_indicator_backend(self, method_call):
+            return None
+
         def _get_sub_features_names(self):
             return []
 
@@ -168,7 +171,7 @@ def test_create_feature_without_config() -> None:
     mock_config_registry = MagicMock(spec=IFeatureConfigRegistry)
     mock_config_registry.get_config_class.return_value = None  # No config class needed
 
-    mock_indicator_service = MagicMock(spec=ITechnicalIndicatorFacade)
+    mock_indicator_service = MagicMock(spec=ITechnicalIndicatorServicePort)
 
     # Create factory with mocked dependencies
     factory = FeatureFactory(mock_class_registry, mock_config_registry, mock_indicator_service)

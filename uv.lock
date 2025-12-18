@@ -1424,6 +1424,7 @@ version = "0.1.0"
 source = { directory = "drl-trading-strategy-example" }
 dependencies = [
     { name = "drl-trading-common" },
+    { name = "drl-trading-core" },
     { name = "injector" },
     { name = "jsonpickle" },
     { name = "numpy" },
@@ -1434,6 +1435,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "drl-trading-common", directory = "drl-trading-common" },
+    { name = "drl-trading-core", directory = "drl-trading-core" },
     { name = "injector", specifier = ">=0.22.0" },
     { name = "ipython", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "jsonpickle", specifier = ">=3.0.0" },

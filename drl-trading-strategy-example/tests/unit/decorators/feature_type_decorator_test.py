@@ -5,10 +5,11 @@ Tests the @feature_type decorator and get_feature_type_from_class utility functi
 to ensure proper feature type registration and extraction.
 """
 
+from typing import Optional
 from unittest.mock import Mock
 
 import pytest
-from drl_trading_common.core.model.base_feature import BaseFeature
+from drl_trading_core.core.port.base_feature import BaseFeature
 from drl_trading_strategy_example.decorator.feature_type_decorator import (
     feature_type,
     get_feature_type_from_class,
@@ -97,6 +98,9 @@ class TestFeatureTypeDecorator:
 
             def compute_latest(self) -> DataFrame:
                 return self.compute()
+
+            def _call_indicator_backend(self, method_call) -> Optional[DataFrame]:
+                return None
 
             def _get_sub_features_names(self) -> list[str]:
                 return ["test_feature"]

@@ -16,3 +16,19 @@ class FeatureMetadata:
     feature_name: str
     sub_feature_names: list[str]
     config_to_string: Optional[str] = None
+
+    def __str__(self) -> str:
+        """
+        Create a string representation of the feature metadata.
+
+        Returns a unique identifier in the format:
+        - With config: "[feature_name]_[config_to_string]_[config_hash]"
+        - Without config: "[feature_name]"
+
+        Returns:
+            str: String representation of the feature metadata
+        """
+        config_string = (
+            f"_{self.config_to_string}_{self.config.hash_id()}" if self.config else ""
+        )
+        return f"{self.feature_name}{config_string}"

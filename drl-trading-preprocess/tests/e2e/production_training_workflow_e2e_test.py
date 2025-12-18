@@ -306,11 +306,12 @@ class TestProductionTrainingWorkflow:
 
         assert "event_timestamp" in all_features.columns
         assert "symbol" in all_features.columns
-        assert "rsi_14" in all_features.columns
+        assert any(col.startswith("rsi_14") for col in all_features.columns), f"Expected column starting with 'rsi_14', found: {all_features.columns.tolist()}"
         assert len(all_features) > 0
 
         # Count valid RSI values (not NaN)
-        valid_rsi_count = all_features["rsi_14"].notna().sum()
+        rsi_col = next(col for col in all_features.columns if col.startswith("rsi_14"))
+        valid_rsi_count = all_features[rsi_col].notna().sum()
         print(f"✓ Parquet contains {len(all_features)} records, {valid_rsi_count} valid RSI values")
 
         initial_feature_count = len(all_features)

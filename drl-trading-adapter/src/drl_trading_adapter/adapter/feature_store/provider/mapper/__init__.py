@@ -1,3 +1,3 @@
-from .feature_field_mapper import FeatureFieldMapper, IFeatureFieldMapper
+from .feature_field_mapper import FeatureFieldFactory, IFeatureFieldFactory
 
-__all__ = ["FeatureFieldMapper", "IFeatureFieldMapper"]
+__all__ = ["FeatureFieldFactory", "IFeatureFieldFactory"]

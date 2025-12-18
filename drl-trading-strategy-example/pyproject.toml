@@ -25,6 +25,7 @@ classifiers = [
 # Runtime dependencies ONLY (installation into deployable services)
 dependencies = [
     "drl-trading-common", # Workspace dependency
+    "drl-trading-core",
     "numpy>=1.24.0", # Numerical ops
     "pandas>=2.0.0", # DataFrames
     "talipp", # Technical indicators (strategy specific)
@@ -34,6 +35,7 @@ dependencies = [
 
 [tool.uv.sources]
 drl-trading-common = { path = "../drl-trading-common" }
+drl-trading-core = { path = "../drl-trading-core" }
 
 ## Optional extras (for external consumers) kept thin; dev/test go via dependency-groups
 [project.optional-dependencies]

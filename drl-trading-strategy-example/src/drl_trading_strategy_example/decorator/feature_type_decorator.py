@@ -8,7 +8,7 @@ for repetitive static get_feature_type() methods.
 
 from typing import Type, TypeVar
 
-from drl_trading_common.core.model.base_feature import BaseFeature
+from drl_trading_core.core.port.base_feature import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
 
 from drl_trading_strategy_example.enum.feature_type_enum import FeatureTypeEnum

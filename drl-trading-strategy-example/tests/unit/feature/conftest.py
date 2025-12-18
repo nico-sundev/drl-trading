@@ -3,9 +3,10 @@ from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
-from drl_trading_common import BaseParameterSetConfig, BaseFeature
-from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
-    ITechnicalIndicatorFacade,
+from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_core.core.port.base_feature import BaseFeature
+from drl_trading_core.core.port.technical_indicator_service_port import (
+    ITechnicalIndicatorServicePort,
 )
 from drl_trading_common.adapter.model.dataset_identifier import DatasetIdentifier
 
@@ -17,7 +18,7 @@ class MockMacdFeature(BaseFeature):
         self,
         config: BaseParameterSetConfig,
         dataset_id: DatasetIdentifier,
-        indicator_service: ITechnicalIndicatorFacade,
+        indicator_service: ITechnicalIndicatorServicePort,
         postfix: str = "",
     ) -> None:
         super().__init__(config, dataset_id, indicator_service, postfix)
@@ -53,6 +54,10 @@ class MockMacdFeature(BaseFeature):
         result_df[f"macd_histogram{self.postfix}"] = 0.05
         return result_df
 
+    def _call_indicator_backend(self, method_call) -> Optional[pd.DataFrame]:
+        """Mock implementation."""
+        return None
+
     def _get_sub_features_names(self) -> list[str]:
         """Get the names of the sub-features."""
         return [
@@ -76,7 +81,7 @@ class MockRsiFeature(BaseFeature):
         self,
         config: BaseParameterSetConfig,
         dataset_id: DatasetIdentifier,
-        indicator_service: ITechnicalIndicatorFacade,
+        indicator_service: ITechnicalIndicatorServicePort,
         postfix: str = "",
     ) -> None:
         super().__init__(config, dataset_id, indicator_service, postfix)
@@ -108,6 +113,10 @@ class MockRsiFeature(BaseFeature):
         result_df[f"rsi{self.postfix}"] = 50.0
         return result_df
 
+    def _call_indicator_backend(self, method_call) -> Optional[pd.DataFrame]:
+        """Mock implementation."""
+        return None
+
     def _get_sub_features_names(self) -> list[str]:
         """Get the names of the sub-features."""
         return [f"rsi{self.postfix}"]
@@ -135,7 +144,7 @@ def mock_rsi_feature_class():
 @pytest.fixture
 def mock_indicator_service():
     """Fixture providing a mock indicator service."""
-    return MagicMock(spec=ITechnicalIndicatorFacade)
+    return MagicMock(spec=ITechnicalIndicatorServicePort)
 
 
 @pytest.fixture

@@ -6,7 +6,7 @@ This demonstrates the container pattern for feature view creation parameters.
 from typing import Any
 
 import pytest
-from drl_trading_common.core.model.feature_metadata import FeatureMetadata
+from drl_trading_core.core.model.feature.feature_metadata import FeatureMetadata
 from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.core.model.timeframe import Timeframe
 

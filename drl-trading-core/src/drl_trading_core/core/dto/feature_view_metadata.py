@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from drl_trading_common.core.model.feature_metadata import FeatureMetadata
+from drl_trading_core.core.model.feature.feature_metadata import FeatureMetadata
 from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 

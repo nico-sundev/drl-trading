@@ -4,9 +4,9 @@ from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
-from drl_trading_common import BaseParameterSetConfig
 from pandas import DataFrame
 
+from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_core.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_core.core.model.feature_definition import FeatureDefinition

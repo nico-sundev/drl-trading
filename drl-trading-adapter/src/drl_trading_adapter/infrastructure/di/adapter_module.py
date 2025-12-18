@@ -14,8 +14,8 @@ from drl_trading_adapter.adapter.feature_store.provider import (
     FeatureStoreWrapper,
 )
 from drl_trading_adapter.adapter.feature_store.provider.mapper.feature_field_mapper import (
-    FeatureFieldMapper,
-    IFeatureFieldMapper,
+    FeatureFieldFactory,
+    IFeatureFieldFactory,
 )
 from drl_trading_adapter.adapter.database import (
     MarketDataRepository,
@@ -31,7 +31,7 @@ class AdapterModule(Module):
         # Feature store bindings
         binder.bind(FeatureStoreWrapper, to=FeatureStoreWrapper, scope=singleton)
         binder.bind(FeastProvider, to=FeastProvider, scope=singleton)
-        binder.bind(IFeatureFieldMapper, to=FeatureFieldMapper, scope=singleton)
+        binder.bind(IFeatureFieldFactory, to=FeatureFieldFactory, scope=singleton)
         binder.bind(
             IFeatureStoreFetchPort, to=FeatureStoreFetchRepository, scope=singleton
         )

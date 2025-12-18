@@ -6,26 +6,13 @@ from abc import ABC, abstractmethod
 from feast import Field
 from feast.types import Float32
 
-from drl_trading_common.core.model.feature_metadata import FeatureMetadata
+from drl_trading_core.core.model.feature.feature_metadata import FeatureMetadata
 
 logger = logging.getLogger(__name__)
 
 
-class IFeatureFieldMapper(ABC):
+class IFeatureFieldFactory(ABC):
     """Interface for mapping FeatureMetadata to Feast Field objects."""
-
-    @abstractmethod
-    def get_field_base_name(self, feature_metadata: FeatureMetadata) -> str:
-        """
-        Create a unique field name based on the feature name and its config hash.
-
-        Args:
-            feature_metadata: The feature metadata object
-
-        Returns:
-            str: A unique name for the field
-        """
-        pass
 
     @abstractmethod
     def create_fields(self, feature_metadata: FeatureMetadata) -> list[Field]:
@@ -41,46 +28,7 @@ class IFeatureFieldMapper(ABC):
         pass
 
 
-class FeatureFieldMapper(IFeatureFieldMapper):
-    """
-    Maps FeatureMetadata to Feast Field objects.
-
-    This class encapsulates the logic for:
-    - Generating unique field names from feature metadata
-    - Creating Feast Field objects with proper data types
-    - Handling sub-features and feature hierarchies
-
-    Separating this logic allows for:
-    - Better testing (can mock the mapper in integration tests)
-    - Single Responsibility Principle adherence
-    - Easier maintenance and modification of mapping logic
-    """
-
-    def get_field_base_name(self, feature_metadata: FeatureMetadata) -> str:
-        """
-        Create a unique field name based on the feature name and its config hash.
-        Current schema looks like:
-        [feature_name]_[config_to_string]_[config_hash]
-
-        Example 1: A feature relying on a config
-        If feature name is "rsi", config_to_string is "14" and config_hash is "abc123",
-        the resulting name will be "rsi_14_abc123".
-
-        Example 2: A feature without a config
-        If feature name is "close_price",
-        the resulting name will be "close_price".
-
-        Args:
-            feature_metadata: The feature metadata object
-
-        Returns:
-            str: A unique name for the field
-        """
-        config = feature_metadata.config
-        config_string = (
-            f"_{feature_metadata.config_to_string}_{config.hash_id()}" if config else ""
-        )
-        return f"{feature_metadata.feature_name}{config_string}"
+class FeatureFieldFactory(IFeatureFieldFactory):
 
     def create_fields(self, feature_metadata: FeatureMetadata) -> list[Field]:
         """
@@ -94,7 +42,7 @@ class FeatureFieldMapper(IFeatureFieldMapper):
         Returns:
             list[Field]: List of fields for the feature view
         """
-        feature_name = self.get_field_base_name(feature_metadata)
+        feature_name = feature_metadata.__str__()
         logger.debug(f"Feast fields will be created for feature: {feature_name}")
 
         if len(feature_metadata.sub_feature_names) == 0:

@@ -45,9 +45,12 @@ git clone https://github.com/yourusername/drl-trading.git
 cd drl-trading
 uv sync --group dev-full
 
-# Run example training
-cd drl-trading-strategy-example
-uv run python -m drl_trading_strategy_example.main
+# Generate openapi clients by spec files
+./scripts/openapi/generate-and-install-clients.sh
+
+# Run example preprocess
+cd drl-trading-preprocess
+uv run main.py
 
 # End-to-end test
 docker-compose -f docker-compose.training.yml up

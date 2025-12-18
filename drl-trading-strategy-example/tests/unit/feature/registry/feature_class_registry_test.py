@@ -9,10 +9,10 @@ from typing import Optional, Type
 from unittest.mock import MagicMock, patch
 
 import pytest
-from drl_trading_common.core.model.base_feature import BaseFeature
+from drl_trading_core.core.port.base_feature import BaseFeature
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
-from drl_trading_common.interface.indicator.technical_indicator_facade_interface import (
-    ITechnicalIndicatorFacade,
+from drl_trading_core.core.port.technical_indicator_service_port import (
+    ITechnicalIndicatorServicePort,
 )
 from drl_trading_strategy_example.decorator.feature_type_decorator import feature_type
 from drl_trading_strategy_example.enum.feature_type_enum import FeatureTypeEnum
@@ -23,7 +23,7 @@ from pandas import DataFrame
 
 
 # Mock technical indicator interface to avoid import issues
-class MockTechnicalIndicatorFacade(ITechnicalIndicatorFacade):
+class MockTechnicalIndicatorFacade(ITechnicalIndicatorServicePort):
     """Mock technical indicator facade for testing."""
     pass
 

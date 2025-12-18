@@ -10,14 +10,14 @@ from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 from drl_trading_common.config.dask_config import DaskConfig
-from drl_trading_common.interface.feature.feature_factory_interface import IFeatureFactory
+from drl_trading_core.core.service.feature.feature_factory_interface import IFeatureFactory
 from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
-from drl_trading_common.core.model.base_feature import BaseFeature
-from drl_trading_common.core.model.feature_metadata import FeatureMetadata
+from drl_trading_core.core.port.base_feature import BaseFeature
+from drl_trading_core.core.model.feature.feature_metadata import FeatureMetadata
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_common.decorator.feature_role_decorator import feature_role
+from drl_trading_core.core.service.feature.decorator.feature_role_decorator import feature_role
 from pandas import DataFrame
 
 from drl_trading_core.core.service.feature_manager import FeatureManager, FeatureKey

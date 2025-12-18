@@ -8,11 +8,11 @@ from dask.delayed import Delayed
 from injector import inject
 from pandas import DataFrame
 
-from drl_trading_common import BaseFeature
-from drl_trading_common.core.model.feature_metadata import FeatureMetadata
+from drl_trading_core.core.port.base_feature import BaseFeature
+from drl_trading_core.core.model.feature.feature_metadata import FeatureMetadata
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
-from drl_trading_common.interface.computable import Computable
-from drl_trading_common.interface.feature.feature_factory_interface import (
+from drl_trading_core.core.port.computable import Computable
+from drl_trading_core.core.service.feature.feature_factory_interface import (
     IFeatureFactory,
 )
 from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier

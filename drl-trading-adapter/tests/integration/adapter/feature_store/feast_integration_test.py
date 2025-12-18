@@ -3,12 +3,12 @@ from unittest.mock import Mock
 from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
-from drl_trading_common.core.model.feature_metadata import FeatureMetadata
+from drl_trading_core.core.model.feature.feature_metadata import FeatureMetadata
 from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
 from feast import FeatureStore, Field
 from feast.types import Float32
 from injector import Injector
-from drl_trading_common.core.port.feature_interface import IFeature
+from drl_trading_core.core.port.feature_interface import IFeature
 
 from drl_trading_adapter.adapter.feature_store.provider import (
     FeastProvider,
@@ -17,7 +17,7 @@ from drl_trading_adapter.adapter.feature_store.provider import (
     FeatureStoreWrapper,
 )
 from drl_trading_adapter.adapter.feature_store.provider.mapper import (
-    IFeatureFieldMapper,
+    IFeatureFieldFactory,
 )
 
 
@@ -48,17 +48,14 @@ class _TestFeature(IFeature):
 
 def create_mock_mapper(field_responses: dict[str, list[Field]]) -> Mock:
     """Create a mock feature field mapper that returns predefined fields."""
-    mock_mapper = Mock(spec=IFeatureFieldMapper)
+    mock_mapper = Mock(spec=IFeatureFieldFactory)
 
     def side_effect_create_fields(feature_metadata):
         feature_name = feature_metadata.feature_name
         return field_responses.get(feature_name, [Field(name=feature_name, dtype=Float32)])
 
-    def side_effect_get_field_base_name(feature_metadata):
-        return feature_metadata.feature_name
 
     mock_mapper.create_fields.side_effect = side_effect_create_fields
-    mock_mapper.get_field_base_name.side_effect = side_effect_get_field_base_name
     return mock_mapper
 
 
@@ -162,12 +159,10 @@ class TestFeastIntegration:
         mock_feature = create_simple_mock_feature("mapper_test_feature", symbol="MAPPERTEST", timeframe=Timeframe.HOUR_1, feature_role=FeatureRoleEnum.OBSERVATION_SPACE)
 
         # Create a mock mapper with custom behavior
-        mock_mapper = Mock(spec=IFeatureFieldMapper)
+        mock_mapper = Mock(spec=IFeatureFieldFactory)
         mock_mapper.create_fields.return_value = [
             Field(name="custom_mapped_field", dtype=Float32)
         ]
-        mock_mapper.get_field_base_name.return_value = "mapper_test_feature"
-
         # Inject the mock mapper
         feast_provider.feature_field_mapper = mock_mapper
 
