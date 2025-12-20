@@ -777,6 +777,222 @@ class TestFullCoverageAnalysis:
         assert result.adjusted_end_time == ohlcv_end
 
 
+class TestIncrementalResamplingDetection:
+    """Test detection of incremental resampling needs."""
+
+    @pytest.fixture
+    def analyzer(self) -> FeatureCoverageAnalyzer:
+        """Create analyzer with mocked dependencies."""
+        return FeatureCoverageAnalyzer(
+            feature_store_fetch_port=Mock(),
+            market_data_reader=Mock(),
+            feature_coverage_evaluator=Mock()
+        )
+
+    @pytest.fixture
+    def feature_config(self) -> FeatureConfigVersionInfo:
+        """Create feature configuration."""
+        return FeatureConfigVersionInfo(
+            semver="1.0.0",
+            hash="abc123",
+            created_at=datetime(2024, 1, 1),
+            feature_definitions=[{"name": "rsi"}]
+        )
+
+    def test_detect_resampling_when_base_has_newer_data_than_target(
+        self, analyzer: FeatureCoverageAnalyzer, feature_config: FeatureConfigVersionInfo
+    ) -> None:
+        """Test that resampling is detected when base timeframe has data beyond target timeframe."""
+        # Given - Scenario 3 from E2E test
+        # Target timeframe (5m) has data up to 2024-01-01 16:35:00 (from Scenario 1)
+        # Base timeframe (1m) has data up to 2024-01-01 16:39:00
+        # This means there are 1m candles that haven't been resampled yet
+
+        target_availability = DataAvailabilitySummary(
+            symbol=TEST_SYMBOL,
+            timeframe=Timeframe.MINUTE_5,
+            record_count=400,
+            earliest_timestamp=datetime(2023, 12, 31, 7, 20, 0),
+            latest_timestamp=datetime(2024, 1, 1, 16, 35, 0)  # 5m data ends here
+        )
+
+        base_availability = DataAvailabilitySummary(
+            symbol=TEST_SYMBOL,
+            timeframe=Timeframe.MINUTE_1,
+            record_count=2000,
+            earliest_timestamp=datetime(2023, 12, 31, 7, 20, 0),
+            latest_timestamp=datetime(2024, 1, 1, 16, 40, 0)  # 1m data extends 5 minutes beyond 5m
+        )
+
+        # Mock get_data_availability to return different results based on timeframe
+        def mock_availability(symbol, timeframe):
+            if timeframe == Timeframe.MINUTE_5:
+                return target_availability
+            elif timeframe == Timeframe.MINUTE_1:
+                return base_availability
+            return DataAvailabilitySummary(
+                symbol=symbol,
+                timeframe=timeframe,
+                record_count=0,
+                earliest_timestamp=None,
+                latest_timestamp=None
+            )
+
+        analyzer.market_data_reader.get_data_availability = Mock(side_effect=mock_availability)
+        analyzer.feature_store_fetch_port.get_offline = Mock(return_value=pd.DataFrame())
+
+        from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+        from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+
+        observation_metadata = Mock(spec=FeatureServiceMetadata)
+        observation_metadata.feature_service_role = FeatureRoleEnum.OBSERVATION_SPACE
+        observation_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=Timeframe.MINUTE_5)
+
+        feature_service_metadata_list = [observation_metadata]
+
+        # When - Request period that should trigger incremental resampling
+        result = analyzer.analyze_feature_coverage(
+            symbol=TEST_SYMBOL,
+            timeframe=Timeframe.MINUTE_5,
+            base_timeframe=Timeframe.MINUTE_1,
+            feature_names=['rsi'],
+            requested_start_time=datetime(2024, 1, 1, 2, 0, 0),
+            requested_end_time=datetime(2024, 1, 1, 4, 0, 0),
+            feature_config_version_info=feature_config,
+            feature_service_metadata_list=feature_service_metadata_list
+        )
+
+        # Then - Should detect that resampling is needed
+        assert result.requires_resampling is True, \
+            "Should detect resampling needed when base timeframe has data beyond target timeframe"
+        assert result.ohlcv_available is True
+
+    def test_no_resampling_when_target_is_up_to_date(
+        self, analyzer: FeatureCoverageAnalyzer, feature_config: FeatureConfigVersionInfo
+    ) -> None:
+        """Test that no resampling is detected when target timeframe is up-to-date with base."""
+        # Given - Both timeframes have same latest timestamp (target is fully resampled)
+        target_availability = DataAvailabilitySummary(
+            symbol=TEST_SYMBOL,
+            timeframe=Timeframe.MINUTE_5,
+            record_count=400,
+            earliest_timestamp=datetime(2023, 12, 31, 7, 20, 0),
+            latest_timestamp=datetime(2024, 1, 1, 16, 35, 0)
+        )
+
+        base_availability = DataAvailabilitySummary(
+            symbol=TEST_SYMBOL,
+            timeframe=Timeframe.MINUTE_1,
+            record_count=2000,
+            earliest_timestamp=datetime(2023, 12, 31, 7, 20, 0),
+            latest_timestamp=datetime(2024, 1, 1, 16, 39, 0)  # Only 4 min beyond (< 5m interval)
+        )
+
+        def mock_availability(symbol, timeframe):
+            if timeframe == Timeframe.MINUTE_5:
+                return target_availability
+            elif timeframe == Timeframe.MINUTE_1:
+                return base_availability
+            return DataAvailabilitySummary(
+                symbol=symbol,
+                timeframe=timeframe,
+                record_count=0,
+                earliest_timestamp=None,
+                latest_timestamp=None
+            )
+
+        analyzer.market_data_reader.get_data_availability = Mock(side_effect=mock_availability)
+        analyzer.feature_store_fetch_port.get_offline = Mock(return_value=pd.DataFrame())
+
+        from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+        from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+
+        observation_metadata = Mock(spec=FeatureServiceMetadata)
+        observation_metadata.feature_service_role = FeatureRoleEnum.OBSERVATION_SPACE
+        observation_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=Timeframe.MINUTE_5)
+
+        feature_service_metadata_list = [observation_metadata]
+
+        # When - Request period within already resampled range
+        result = analyzer.analyze_feature_coverage(
+            symbol=TEST_SYMBOL,
+            timeframe=Timeframe.MINUTE_5,
+            base_timeframe=Timeframe.MINUTE_1,
+            feature_names=['rsi'],
+            requested_start_time=datetime(2024, 1, 1, 0, 0, 0),
+            requested_end_time=datetime(2024, 1, 1, 2, 0, 0),
+            feature_config_version_info=feature_config,
+            feature_service_metadata_list=feature_service_metadata_list
+        )
+
+        # Then - Should not require resampling
+        assert result.requires_resampling is False, \
+            "Should not require resampling when target timeframe is up-to-date"
+
+    def test_cold_start_resampling_detection(
+        self, analyzer: FeatureCoverageAnalyzer, feature_config: FeatureConfigVersionInfo
+    ) -> None:
+        """Test that cold start (no target data) correctly triggers resampling."""
+        # Given - No target timeframe data, but base timeframe exists
+        target_availability = DataAvailabilitySummary(
+            symbol=TEST_SYMBOL,
+            timeframe=Timeframe.MINUTE_5,
+            record_count=0,
+            earliest_timestamp=None,
+            latest_timestamp=None
+        )
+
+        base_availability = DataAvailabilitySummary(
+            symbol=TEST_SYMBOL,
+            timeframe=Timeframe.MINUTE_1,
+            record_count=2000,
+            earliest_timestamp=datetime(2023, 12, 31, 7, 20, 0),
+            latest_timestamp=datetime(2024, 1, 1, 16, 39, 0)
+        )
+
+        def mock_availability(symbol, timeframe):
+            if timeframe == Timeframe.MINUTE_5:
+                return target_availability
+            elif timeframe == Timeframe.MINUTE_1:
+                return base_availability
+            return DataAvailabilitySummary(
+                symbol=symbol,
+                timeframe=timeframe,
+                record_count=0,
+                earliest_timestamp=None,
+                latest_timestamp=None
+            )
+
+        analyzer.market_data_reader.get_data_availability = Mock(side_effect=mock_availability)
+        analyzer.feature_store_fetch_port.get_offline = Mock(return_value=pd.DataFrame())
+
+        from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
+        from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+
+        observation_metadata = Mock(spec=FeatureServiceMetadata)
+        observation_metadata.feature_service_role = FeatureRoleEnum.OBSERVATION_SPACE
+        observation_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=Timeframe.MINUTE_5)
+
+        feature_service_metadata_list = [observation_metadata]
+
+        # When
+        result = analyzer.analyze_feature_coverage(
+            symbol=TEST_SYMBOL,
+            timeframe=Timeframe.MINUTE_5,
+            base_timeframe=Timeframe.MINUTE_1,
+            feature_names=['rsi'],
+            requested_start_time=datetime(2024, 1, 1, 0, 0, 0),
+            requested_end_time=datetime(2024, 1, 1, 2, 0, 0),
+            feature_config_version_info=feature_config,
+            feature_service_metadata_list=feature_service_metadata_list
+        )
+
+        # Then - Should require resampling for cold start
+        assert result.requires_resampling is True, \
+            "Should require resampling when no target data exists but base data does"
+        assert result.ohlcv_available is True
+
+
 class TestNoDataAnalysisCreation:
     """Test creation of no-data analysis results."""
 

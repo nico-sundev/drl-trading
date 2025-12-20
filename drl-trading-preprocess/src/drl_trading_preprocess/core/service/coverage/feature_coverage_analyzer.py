@@ -108,21 +108,42 @@ class FeatureCoverageAnalyzer:
 
         requires_resampling = False
 
-        # Step 1b: Fallback to base timeframe if target doesn't exist (cold start scenario)
+        # Step 1b: Also check base timeframe to determine resampling needs
+        base_availability = self._check_ohlcv_availability(
+            symbol, base_timeframe, requested_start_time, requested_end_time
+        )
+
+        # Step 1c: Determine if resampling is needed
         if not ohlcv_availability.available:
-            logger.info(
-                f"No data in target timeframe {timeframe.value}, "
-                f"checking base timeframe {base_timeframe.value} for cold start"
-            )
-            ohlcv_availability = self._check_ohlcv_availability(
-                symbol, base_timeframe, requested_start_time, requested_end_time
-            )
-            if ohlcv_availability.available:
+            # Cold start: No target timeframe data exists
+            if base_availability.available:
                 requires_resampling = True
+                ohlcv_availability = base_availability
                 logger.info(
-                    f"Found {ohlcv_availability.record_count} records in base timeframe {base_timeframe.value}. "
+                    f"No data in target timeframe {timeframe.value}, "
+                    f"checking base timeframe {base_timeframe.value} for cold start"
+                )
+                logger.info(
+                    f"Found {base_availability.record_count} records in base timeframe {base_timeframe.value}. "
                     f"Target timeframe {timeframe.value} will be resampled from base."
                 )
+        else:
+            # Target data exists - check if base has newer data (incremental resampling)
+            if base_availability.available and base_availability.latest_timestamp and ohlcv_availability.latest_timestamp:
+                # Calculate the minimum time difference that would constitute new data to resample
+                # For a 5m timeframe, we need at least 5 minutes of new 1m data
+                timeframe_minutes = timeframe.to_minutes()
+                time_diff_seconds = (base_availability.latest_timestamp - ohlcv_availability.latest_timestamp).total_seconds()
+                time_diff_minutes = time_diff_seconds / 60.0
+
+                if time_diff_minutes >= timeframe_minutes:
+                    requires_resampling = True
+                    logger.info(
+                        f"Incremental resampling needed: Base timeframe {base_timeframe.value} has data "
+                        f"up to {base_availability.latest_timestamp}, target timeframe {timeframe.value} "
+                        f"only has data up to {ohlcv_availability.latest_timestamp} "
+                        f"({time_diff_minutes:.1f} minutes gap >= {timeframe_minutes} minutes threshold)"
+                    )
 
         # Step 2: Determine adjusted time period based on OHLCV constraints
         adjusted_start_time = requested_start_time
