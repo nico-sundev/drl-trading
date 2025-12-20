@@ -1,9 +1,8 @@
 ---
 mode: agent
 ---
-Appreciate it.
-Now i want you to do a final review of your recent changes. Consider those files, which appear to be changed in your last episode.
-- Is is well structured?
+Do a final review of your recent changes. Consider those files, which got updated in this session.
+- Is the code well structured?
 - Is the integration of the code into the existing codebase appropriate, does it really solve the original problem now?
 - Do we comply with our logging standards?
 - What do we log, what might be missing?

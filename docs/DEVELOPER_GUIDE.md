@@ -1,17 +1,47 @@
 # Developer Guide
 
-> **For AI Agents**: See [.github/instructions/](./.github/instructions/)
+
+## Development Standards
+
+- **Code Quality**: All code must pass `ruff check`, `mypy`, and `pytest`
+- **Testing**: Follow Given/When/Then structure for all tests
+- **Architecture**: Follow hexagonal architecture and SOLID principles
+- **Documentation**: Update relevant docs with architectural decisions
 
 ## Quick Setup
 
+### Prerequisites
+
+- Python 3.11+
+- [uv](https://github.com/astral-sh/uv) package manager
+- Docker & Docker Compose (optional)
+
+### Setup
+
 ```bash
-# Clone and install
-git clone https://github.com/yourusername/drl-trading.git
+# Clone the repository
+git clone https://github.com/nico-sundev/drl-trading.git
 cd drl-trading
+
+# Install dependencies for all services
 uv sync --group dev-full
 
-# Verify setup
-./scripts/verify_setup.sh
+# Generate openapi clients by spec files
+./scripts/openapi/generate-and-install-clients.sh
+
+# Run example strategy training
+cd drl-trading-strategy-example
+uv run python -m drl_trading_strategy_example.main
+```
+
+### End-to-End Test
+
+```bash
+# Start all services (docker-compose)
+docker-compose -f docker-compose.training.yml up
+
+# Verify pipeline
+./scripts/e2e_test.sh
 ```
 
 ## Service Development
@@ -31,7 +61,7 @@ src/drl_trading_{service}/
 ```bash
 # Service development
 cd drl-trading-{service}
-uv sync --group dev-full
+uv sync --group=dev-full
 uv run pytest tests/
 uv run ruff check . --fix
 uv run mypy src/
