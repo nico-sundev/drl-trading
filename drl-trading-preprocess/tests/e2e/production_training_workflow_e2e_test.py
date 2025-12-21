@@ -47,6 +47,10 @@ from drl_trading_common.adapter.model.timeframe import Timeframe
 from builders import FeaturePreprocessingRequestBuilder
 
 
+# Use UTC timezone consistently
+UTC = timezone.utc
+
+
 @pytest.fixture
 def unique_symbol() -> str:
     """Generate unique symbol for test isolation."""
@@ -75,6 +79,36 @@ def feast_offline_store_path() -> Path:
     # Read from environment or use default
     base_path = os.getenv("FEAST_OFFLINE_STORE_PATH", "config/local/data/feature_store")
     return Path(base_path).resolve()
+
+
+@pytest.fixture
+def cleanup_parquet_files(unique_symbol: str, feast_offline_store_path: Path) -> Generator[None, None, None]:
+    """
+    Clean up parquet files created during the test.
+
+    This fixture runs after the test to remove any parquet files created
+    for the unique test symbol, preventing pollution of the feature store.
+    """
+    yield
+
+    # Cleanup: Remove parquet files for the test symbol
+    import shutil
+
+    print(f"\nCleaning up parquet files for {unique_symbol}...")
+
+    # Try both possible path patterns
+    symbol_paths = [
+        feast_offline_store_path / unique_symbol,
+        *list(feast_offline_store_path.glob(f"**/{unique_symbol}")),
+    ]
+
+    for symbol_path in symbol_paths:
+        if symbol_path.exists() and symbol_path.is_dir():
+            try:
+                shutil.rmtree(symbol_path)
+                print(f"[OK] Removed parquet directory: {symbol_path}")
+            except Exception as e:
+                print(f"Warning: Failed to remove {symbol_path}: {e}")
 
 
 @pytest.fixture
@@ -127,7 +161,7 @@ def seed_unique_symbol_data(unique_symbol: str, timescale_connection: Any) -> Ge
             )
 
         timescale_connection.commit()
-        print(f"✓ Seeded 2000 rows (1m) for {unique_symbol}")
+        print(f"[OK] Seeded 2000 rows (1m) for {unique_symbol}")
 
         # Verify data was inserted
         cursor.execute(
@@ -135,7 +169,7 @@ def seed_unique_symbol_data(unique_symbol: str, timescale_connection: Any) -> Ge
             (unique_symbol, base_timeframe)
         )
         count = cursor.fetchone()[0]
-        print(f"✓ Verified: {count} rows exist in database for {unique_symbol} {base_timeframe}")
+        print(f"[OK] Verified: {count} rows exist in database for {unique_symbol} {base_timeframe}")
 
         # Small delay to ensure DB transaction is fully visible to other connections
         time.sleep(0.5)
@@ -167,6 +201,7 @@ class TestProductionTrainingWorkflow:
         unique_symbol: str,
         timescale_connection: Any,
         seed_unique_symbol_data: None,
+        cleanup_parquet_files: None,
         publish_kafka_message: Any,
         kafka_consumer_factory: Any,
         wait_for_kafka_message: Any,
@@ -227,7 +262,7 @@ class TestProductionTrainingWorkflow:
         print("Draining old messages from Kafka topics...")
         self._drain_consumer(resample_consumer, timeout_seconds=2)
         self._drain_consumer(output_consumer, timeout_seconds=2)
-        print("✓ Kafka topics drained")
+        print("[OK] Kafka topics drained")
 
         # Build RSI feature configuration
         rsi_feature = FeatureDefinition(
@@ -251,8 +286,8 @@ class TestProductionTrainingWorkflow:
             .with_symbol(unique_symbol)
             .with_target_timeframes([Timeframe.MINUTE_5])
             .with_time_range(
-                start=datetime(2024, 1, 1, 0, 0, 0),
-                end=datetime(2024, 1, 1, 2, 0, 0),  # 2 hours = 24 x 5m candles
+                start=datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC),
+                end=datetime(2024, 1, 1, 2, 0, 0, tzinfo=UTC),  # 2 hours = 24 x 5m candles
             )
             .with_features([rsi_feature])
             .with_skip_existing(True)
@@ -275,7 +310,7 @@ class TestProductionTrainingWorkflow:
         assert resample_message_1 is not None, "Should receive resampling message"
         assert resample_message_1["symbol"] == unique_symbol
 
-        print(f"✓ Received resampling message: {resample_message_1['total_new_candles']} new candles")
+        print(f"[OK] Received resampling message: {resample_message_1['total_new_candles']} new candles")
 
         # Simulate ingest service storing resampled data to TimescaleDB
         print("Storing resampled 5m data to TimescaleDB...")
@@ -292,14 +327,16 @@ class TestProductionTrainingWorkflow:
         assert completion_1["symbol"] == unique_symbol
         assert completion_1["total_features_computed"] > 0, "Features should be computed on cold start"
 
-        print(f"✓ Completion received: {completion_1['total_features_computed']} features computed")
+        print(f"[OK] Completion received: {completion_1['total_features_computed']} features computed")
 
         # Then - Verify parquet files created
         print(f"Verifying Feast offline store under {feast_offline_store_path}...")
-        parquet_files = list(feast_offline_store_path.glob(f"{unique_symbol}/**/*.parquet"))
+        parquet_files = list(feast_offline_store_path.glob(f"**/{unique_symbol}/**/*.parquet"))
+        if not parquet_files:
+            parquet_files = list(feast_offline_store_path.glob(f"{unique_symbol}/**/*.parquet"))
 
         assert len(parquet_files) > 0, f"Expected parquet files, found {len(parquet_files)}"
-        print(f"✓ Found {len(parquet_files)} parquet file(s)")
+        print(f"[OK] Found {len(parquet_files)} parquet file(s)")
 
         # Verify parquet content
         all_features = pd.concat([pd.read_parquet(f) for f in parquet_files])
@@ -312,7 +349,7 @@ class TestProductionTrainingWorkflow:
         # Count valid RSI values (not NaN)
         rsi_col = next(col for col in all_features.columns if col.startswith("rsi_14"))
         valid_rsi_count = all_features[rsi_col].notna().sum()
-        print(f"✓ Parquet contains {len(all_features)} records, {valid_rsi_count} valid RSI values")
+        print(f"[OK] Parquet contains {len(all_features)} records, {valid_rsi_count} valid RSI values")
 
         initial_feature_count = len(all_features)
         initial_file_count = len(parquet_files)
@@ -346,19 +383,21 @@ class TestProductionTrainingWorkflow:
         assert completion_2["symbol"] == unique_symbol
         assert completion_2["total_features_computed"] == 0, "Should skip - features already exist"
 
-        print(f"✓ Completion received: {completion_2['total_features_computed']} features computed (SKIPPED)")
+        print(f"[OK] Completion received: {completion_2['total_features_computed']} features computed (SKIPPED)")
 
         # Then - Verify NO new parquet files
-        parquet_files_after = list(feast_offline_store_path.glob(f"{unique_symbol}/**/*.parquet"))
+        parquet_files_after = list(feast_offline_store_path.glob(f"**/{unique_symbol}/**/*.parquet"))
+        if not parquet_files_after:
+            parquet_files_after = list(feast_offline_store_path.glob(f"{unique_symbol}/**/*.parquet"))
         assert len(parquet_files_after) == initial_file_count, "Should not create new files on duplicate"
 
-        print(f"✓ Parquet file count unchanged: {len(parquet_files_after)}")
+        print(f"[OK] Parquet file count unchanged: {len(parquet_files_after)}")
 
         # Then - Verify parquet content unchanged
         all_features_after = pd.concat([pd.read_parquet(f) for f in parquet_files_after])
         assert len(all_features_after) == initial_feature_count, "Feature count should not increase"
 
-        print(f"✓ Feature record count unchanged: {len(all_features_after)}")
+        print(f"[OK] Feature record count unchanged: {len(all_features_after)}")
 
         # ==========================================
         # SCENARIO 3: INCREMENTAL - NEW TRAINING DATA
@@ -375,8 +414,8 @@ class TestProductionTrainingWorkflow:
         # and should trigger incremental resampling
         print("Simulating new data arrival: seeding 1m data from 16:40 to 23:59...")
         cursor = timescale_connection.cursor()
-        start_minute = datetime(2024, 1, 1, 16, 40, 0, tzinfo=timezone.utc)
-        end_minute = datetime(2024, 1, 1, 23, 59, 0, tzinfo=timezone.utc)
+        start_minute = datetime(2024, 1, 1, 16, 40, 0, tzinfo=UTC)
+        end_minute = datetime(2024, 1, 1, 23, 59, 0, tzinfo=UTC)
         minutes_to_add = int((end_minute - start_minute).total_seconds() / 60) + 1
 
         for minute in range(minutes_to_add):
@@ -399,7 +438,7 @@ class TestProductionTrainingWorkflow:
 
         timescale_connection.commit()
         cursor.close()
-        print(f"✓ Seeded {minutes_to_add} additional 1m candles (16:40-23:59)")
+        print(f"[OK] Seeded {minutes_to_add} additional 1m candles (16:40-23:59)")
 
         # Give more time for DB transaction to be visible across connections
         time.sleep(2)
@@ -411,8 +450,8 @@ class TestProductionTrainingWorkflow:
             .with_symbol(unique_symbol)
             .with_target_timeframes([Timeframe.MINUTE_5])
             .with_time_range(
-                start=datetime(2024, 1, 1, 2, 0, 0),  # Starts where request_1 ended
-                end=datetime(2024, 1, 1, 4, 0, 0),    # 2 more hours
+                start=datetime(2024, 1, 1, 2, 0, 0, tzinfo=UTC),  # Starts where request_1 ended
+                end=datetime(2024, 1, 1, 4, 0, 0, tzinfo=UTC),    # 2 more hours
             )
             .with_features([rsi_feature])
             .with_skip_existing(True)
@@ -435,7 +474,7 @@ class TestProductionTrainingWorkflow:
         assert resample_message_3 is not None, "Should receive resampling message for new data"
         assert resample_message_3["symbol"] == unique_symbol
 
-        print(f"✓ Received resampling message: {resample_message_3['total_new_candles']} new candles")
+        print(f"[OK] Received resampling message: {resample_message_3['total_new_candles']} new candles")
 
         # Simulate ingest service storing new resampled data
         print("Storing new resampled 5m data to TimescaleDB...")
@@ -454,13 +493,15 @@ class TestProductionTrainingWorkflow:
         assert completion_3["symbol"] == unique_symbol
         assert completion_3["total_features_computed"] == 0, "Should skip - features for [02:00-04:00] already exist"
 
-        print(f"✓ Completion received: {completion_3['total_features_computed']} features computed (SKIPPED - already exist)")
+        print(f"[OK] Completion received: {completion_3['total_features_computed']} features computed (SKIPPED - already exist)")
 
         # Then - Verify parquet files unchanged (features already existed)
-        parquet_files_final = list(feast_offline_store_path.glob(f"{unique_symbol}/**/*.parquet"))
+        parquet_files_final = list(feast_offline_store_path.glob(f"**/{unique_symbol}/**/*.parquet"))
+        if not parquet_files_final:
+            parquet_files_final = list(feast_offline_store_path.glob(f"{unique_symbol}/**/*.parquet"))
         assert len(parquet_files_final) == initial_file_count, "Should have same files"
 
-        print(f"✓ Parquet file count: {len(parquet_files_final)} (was {initial_file_count})")
+        print(f"[OK] Parquet file count: {len(parquet_files_final)} (was {initial_file_count})")
 
         # Verify total feature records - in training context, service computes ALL available features
         # up to the end timestamp. Scenario 1 already computed all 488 records (entire dataset).
@@ -471,7 +512,7 @@ class TestProductionTrainingWorkflow:
         # Note: Count stays at 488 because training context computes full available history
         assert len(all_features_final) >= initial_feature_count, "Feature count should not decrease"
 
-        print(f"✓ Feature record count: {len(all_features_final)} (was {initial_feature_count})")
+        print(f"[OK] Feature record count: {len(all_features_final)} (was {initial_feature_count})")
 
         #  TODO: Scenarios 3.5 and 4 disabled - backfill/force recompute feature definitions not being passed correctly
         # ==========================================
@@ -518,7 +559,7 @@ class TestProductionTrainingWorkflow:
         assert retrain_completion["symbol"] == unique_symbol
         assert retrain_completion["total_features_computed"] > 0, "Should recompute features for retraining"
 
-        print(f"✓ Retraining completion received: {retrain_completion['total_features_computed']} features computed")
+        print(f"[OK] Retraining completion received: {retrain_completion['total_features_computed']} features computed")
 
         # ==========================================
         # SCENARIO 4: FULL HISTORICAL - MODEL RETRAINING
@@ -564,20 +605,22 @@ class TestProductionTrainingWorkflow:
         assert completion_4["symbol"] == unique_symbol
         assert completion_4["total_features_computed"] > 0, "Should compute features for full retraining"
 
-        print(f"✓ Completion received: {completion_4['total_features_computed']} features computed")
+        print(f"[OK] Completion received: {completion_4['total_features_computed']} features computed")
 
         # Then - Verify parquet files updated or new
-        parquet_files_final_final = list(feast_offline_store_path.glob(f"{unique_symbol}/**/*.parquet"))
+        parquet_files_final_final = list(feast_offline_store_path.glob(f"**/{unique_symbol}/**/*.parquet"))
+        if not parquet_files_final_final:
+            parquet_files_final_final = list(feast_offline_store_path.glob(f"{unique_symbol}/**/*.parquet"))
         assert len(parquet_files_final_final) >= len(parquet_files_final), "Should have same or more files"
 
-        print(f"✓ Parquet file count: {len(parquet_files_final_final)} (was {len(parquet_files_final)})")
+        print(f"[OK] Parquet file count: {len(parquet_files_final_final)} (was {len(parquet_files_final)})")
 
         # Verify total feature records - with full historical recomputation,
         # we should have at least as many records (may be same if full dataset was already computed)
         all_features_final_final = pd.concat([pd.read_parquet(f) for f in parquet_files_final_final])
         assert len(all_features_final_final) >= len(all_features_final), "Should have same or more features"
 
-        print(f"✓ Feature record count: {len(all_features_final_final)} (was {len(all_features_final)})")
+        print(f"[OK] Feature record count: {len(all_features_final_final)} (was {len(all_features_final)})")
 
         print(f"\n{'='*60}")
         print(f"ALL SCENARIOS PASSED FOR {unique_symbol}")
@@ -668,4 +711,4 @@ class TestProductionTrainingWorkflow:
 
         db_connection.commit()
         cursor.close()
-        print(f"✓ Stored {total_inserted} resampled 5m candles to TimescaleDB")
+        print(f"[OK] Stored {total_inserted} resampled 5m candles to TimescaleDB")

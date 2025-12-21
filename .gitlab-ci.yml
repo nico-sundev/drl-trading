@@ -6,25 +6,100 @@ stages:
 
 variables:
   UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
+  # Use uv's official Python 3.12 image (bookworm-slim based)
+  UV_IMAGE: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
 cache:
   paths:
     - .uv-cache/
 
 # Test stage - runs for all branches with changes
-test:training:
+test:adapter:
   stage: test
-  image: python:3.12
+  image: $UV_IMAGE
   before_script:
-    - cd drl-trading-training
-    - pip install uv
+    - cd drl-trading-adapter
     - uv sync --group dev-full
   script:
-    - uv run pytest tests/ -v --cov=src --cov-report=xml:coverage.xml --cov-report=html
-  rules:
-    - changes:
-        - drl-trading-training/**/*
-        - drl-trading-ingest/specs/**/*
+    - uv run pytest tests/ -v --ignore=tests/e2e --cov=src --cov-report=xml:coverage.xml --cov-report=html
+  # rules:
+  #   - changes:
+  #       - drl-trading-adapter/**/*
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: drl-trading-adapter/htmlcov/coverage.xml
+    expire_in: 1 week
+
+test:common:
+  stage: test
+  image: $UV_IMAGE
+  before_script:
+    - cd drl-trading-common
+    - uv sync --group dev-full
+  script:
+    - uv run pytest tests/ -v --ignore=tests/e2e --cov=src --cov-report=xml:coverage.xml --cov-report=html
+  # rules:
+  #   - changes:
+  #       - drl-trading-common/**/*
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: drl-trading-common/htmlcov/coverage.xml
+    expire_in: 1 week
+
+test:core:
+  stage: test
+  image: $UV_IMAGE
+  before_script:
+    - cd drl-trading-core
+    - uv sync --group dev-full
+  script:
+    - uv run pytest tests/ -v --ignore=tests/e2e --cov=src --cov-report=xml:coverage.xml --cov-report=html
+  # rules:
+  #   - changes:
+  #       - drl-trading-core/**/*
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: drl-trading-core/htmlcov/coverage.xml
+    expire_in: 1 week
+
+test:preprocess:
+  stage: test
+  image: $UV_IMAGE
+  before_script:
+    - cd drl-trading-preprocess
+    - uv sync --group dev-full
+  script:
+    - uv run pytest tests/ -v --ignore=tests/e2e --cov=src --cov-report=xml:coverage.xml --cov-report=html
+  # rules:
+  #   - changes:
+  #       - drl-trading-preprocess/**/*
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: drl-trading-preprocess/htmlcov/coverage.xml
+    expire_in: 1 week
+
+# Test stage - runs for all branches with changes
+test:training:
+  stage: test
+  image: $UV_IMAGE
+  before_script:
+    - cd drl-trading-training
+    - uv sync --group dev-full
+    - ../scripts/openapi/generate-and-install-clients.sh
+  script:
+    - uv run pytest tests/ -v --ignore=tests/e2e --cov=src --cov-report=xml:coverage.xml --cov-report=html
+  # rules:
+  #   - changes:
+  #       - drl-trading-training/**/*
+  #       - drl-trading-ingest/specs/**/*
   artifacts:
     reports:
       coverage_report:
@@ -34,14 +109,12 @@ test:training:
 
 test:ingest:
   stage: test
-  image: python:3.12
+  image: $UV_IMAGE
   before_script:
     - cd drl-trading-ingest
-    - pip install uv
     - uv sync --group dev-full
   script:
-    - uv run pytest tests/ -v
-    - uv run ruff check src/
+    - uv run pytest tests/ -v --ignore=tests/e2e --cov=src --cov-report=xml:coverage.xml --cov-report=html
   rules:
     - changes:
         - drl-trading-ingest/**/*
@@ -52,18 +125,35 @@ test:ingest:
         path: drl-trading-ingest/htmlcov/coverage.xml
     expire_in: 1 week
 
-# Build stage - only for main/develop branches
-build:training:
+# Build stage - only for master/develop branches
+build:preprocess:
   stage: build
-  image: python:3.12
+  image: $UV_IMAGE
   before_script:
-    - cd drl-trading-training
-    - pip install uv
+    - cd drl-trading-preprocess
     - uv sync --group dev-full
   script:
     - uv run python -m build
   rules:
-    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
+      changes:
+        - drl-trading-preprocess/**/*
+  artifacts:
+    paths:
+      - drl-trading-preprocess/dist/
+    expire_in: 1 month
+
+# Build stage - only for master/develop branches
+build:training:
+  stage: build
+  image: $UV_IMAGE
+  before_script:
+    - cd drl-trading-training
+    - uv sync --group dev-full
+  script:
+    - uv run python -m build
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
       changes:
         - drl-trading-training/**/*
         - drl-trading-ingest/specs/**/*
@@ -72,20 +162,19 @@ build:training:
       - drl-trading-training/dist/
     expire_in: 1 month
 
-# Deploy stage - only for main branch
+# Deploy stage - only for master branch
 deploy:training:
   stage: deploy
-  image: python:3.12
+  image: $UV_IMAGE
   before_script:
     - cd drl-trading-training
-    - pip install uv
     - uv sync
   script:
     - echo "Deploy training service to production"
     # Add your deployment commands here
     # Example: deploy to Kubernetes, Docker registry, etc.
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "master"
   environment:
     name: production
     url: https://your-training-service.com
