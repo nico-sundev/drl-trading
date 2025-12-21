@@ -9,7 +9,10 @@
 ## Current state
 
 This project is a WIP. The framework is not ready-to-use yet.
-Some information may be misleading, some files may be ready to be cleaned up and GitLab Pipelines may be incomplete and broken.
+Some information may be misleading, some files may be about to be cleaned up, GitLab Pipelines may be breaking and
+hexagonal architecture violations may be still around somewhere.
+
+Most mature service so far, which is also the backbone of the system: [drl-trading-preprocess](./drl-trading-preprocess) (~90% code cov and partially e2e tested)
 
 > Side note: This repository is being mirrored from my GitLab Repository
 
