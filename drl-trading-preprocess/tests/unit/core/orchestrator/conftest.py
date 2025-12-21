@@ -14,6 +14,7 @@ from pandas import DataFrame
 from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_preprocess.core.orchestrator.preprocessing_orchestrator import PreprocessingOrchestrator
 from drl_trading_preprocess.core.service.compute.computing_service import FeatureComputingService
+from drl_trading_preprocess.core.service.compute.feature_computation_coordinator import FeatureComputationCoordinator
 from drl_trading_preprocess.core.service.validate.feature_validator import FeatureValidator
 from drl_trading_preprocess.core.service.resample.market_data_resampling_service import MarketDataResamplingService
 from drl_trading_preprocess.core.service.coverage.feature_coverage_analyzer import FeatureCoverageAnalyzer
@@ -143,6 +144,61 @@ def mock_feature_computer() -> Mock:
 
 
 @pytest.fixture
+def mock_feature_computation_coordinator(mock_feature_computer: Mock) -> Mock:
+    """Mock FeatureComputationCoordinator that delegates to feature_computer."""
+    import pandas as pd
+    mock = Mock(spec=FeatureComputationCoordinator)
+
+    # Simulate the coordinator's behavior: it calls feature_computer.compute_batch
+    # for each timeframe and returns results in {timeframe: DataFrame} format
+    # IMPORTANT: The real coordinator adds event_timestamp and symbol columns
+    def compute_features_side_effect(request, features_to_compute, resampled_data):
+        """Simulate coordinator behavior by delegating to feature_computer for each timeframe."""
+        computed_features = {}
+
+        # For each target timeframe, call the feature computer
+        # The coordinator handles both resampled data (from dict) and DB-fetched data
+        for timeframe in request.target_timeframes:
+            # Get market data for this timeframe (either from resampled_data or would fetch from DB)
+            market_data_df = resampled_data.get(timeframe, DataFrame())
+
+            # Only compute if we have data (coordinator would fetch from DB if not in resampled_data,
+            # but for the mock, we just skip if not present - tests can configure resampled_data)
+            if not market_data_df.empty or timeframe in resampled_data:
+                # Call the feature_computer mock (configured by individual tests)
+                try:
+                    from drl_trading_core.core.model.feature_computation_request import FeatureComputationRequest
+                    from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
+
+                    computation_request = FeatureComputationRequest(
+                        dataset_id=DatasetIdentifier(
+                            symbol=request.symbol,
+                            timeframe=timeframe,
+                        ),
+                        feature_definitions=features_to_compute,
+                        market_data=market_data_df if not market_data_df.empty else resampled_data.get(timeframe, DataFrame()),
+                    )
+                    result_df = mock_feature_computer.compute_batch(computation_request)
+
+                    if result_df is not None and not result_df.empty:
+                        # Mimic the real coordinator behavior: add event_timestamp and symbol columns
+                        result_df = result_df.copy()
+                        result_df["event_timestamp"] = pd.to_datetime(result_df.index)
+                        result_df["symbol"] = request.symbol
+                        computed_features[timeframe] = result_df
+                except Exception:
+                    # If feature computation raises an exception, propagate it
+                    raise
+
+        return computed_features
+
+    mock.compute_features_for_timeframes.side_effect = compute_features_side_effect
+    # Expose the feature_computer for warmup operations
+    mock.feature_computer = mock_feature_computer
+    return mock
+
+
+@pytest.fixture
 def mock_feature_validator() -> Mock:
     """Mock FeatureValidator."""
     mock = Mock(spec=FeatureValidator)
@@ -237,6 +293,7 @@ def mock_feature_manager() -> Mock:
 def mock_dependencies(
     mock_market_data_resampler: Mock,
     mock_feature_computer: Mock,
+    mock_feature_computation_coordinator: Mock,
     mock_feature_validator: Mock,
     mock_feature_store_port: Mock,
     mock_feature_coverage_analyzer: Mock,
@@ -253,6 +310,7 @@ def mock_dependencies(
     return {
         'market_data_resampler': mock_market_data_resampler,
         'feature_computer': mock_feature_computer,
+        'feature_computation_coordinator': mock_feature_computation_coordinator,
         'feature_validator': mock_feature_validator,
         'feature_store_port': mock_feature_store_port,
         'feature_coverage_analyzer': mock_feature_coverage_analyzer,
@@ -295,7 +353,7 @@ def preprocessing_orchestrator(mock_dependencies: dict) -> PreprocessingOrchestr
 
     return PreprocessingOrchestrator(
         market_data_resampler=mock_dependencies['market_data_resampler'],
-        feature_computer=mock_dependencies['feature_computer'],
+        feature_computation_coordinator=mock_dependencies['feature_computation_coordinator'],
         feature_validator=mock_dependencies['feature_validator'],
         feature_store_port=mock_dependencies['feature_store_port'],
         feature_coverage_analyzer=mock_dependencies['feature_coverage_analyzer'],

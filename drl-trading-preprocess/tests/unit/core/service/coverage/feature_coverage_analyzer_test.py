@@ -41,18 +41,21 @@ class TestFeatureCoverageAnalyzerInitialization:
         mock_feature_store = Mock()
         mock_market_data_reader = Mock()
         mock_evaluator = Mock()
+        mock_feature_manager = Mock()
 
         # When
         analyzer = FeatureCoverageAnalyzer(
             feature_store_fetch_port=mock_feature_store,
             market_data_reader=mock_market_data_reader,
-            feature_coverage_evaluator=mock_evaluator
+            feature_coverage_evaluator=mock_evaluator,
+            feature_manager=mock_feature_manager
         )
 
         # Then
         assert analyzer.feature_store_fetch_port == mock_feature_store
         assert analyzer.market_data_reader == mock_market_data_reader
         assert analyzer.feature_coverage_evaluator == mock_evaluator
+        assert analyzer.feature_manager == mock_feature_manager
 
 
 class TestOHLCVAvailabilityChecking:
@@ -64,7 +67,8 @@ class TestOHLCVAvailabilityChecking:
         return FeatureCoverageAnalyzer(
             feature_store_fetch_port=Mock(),
             market_data_reader=Mock(),
-            feature_coverage_evaluator=Mock()
+            feature_coverage_evaluator=Mock(),
+            feature_manager=Mock()
         )
 
     def test_check_ohlcv_availability_with_data(self, analyzer: FeatureCoverageAnalyzer) -> None:
@@ -185,7 +189,8 @@ class TestBatchFetchFeatures:
         return FeatureCoverageAnalyzer(
             feature_store_fetch_port=Mock(),
             market_data_reader=Mock(),
-            feature_coverage_evaluator=Mock()
+            feature_coverage_evaluator=Mock(),
+            feature_manager=Mock()
         )
 
     @pytest.fixture
@@ -232,6 +237,7 @@ class TestBatchFetchFeatures:
         from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 
         observation_metadata = Mock(spec=FeatureServiceMetadata)
+        observation_metadata.feature_view_metadata_list = []
         observation_metadata.feature_service_role = FeatureRoleEnum.OBSERVATION_SPACE
         observation_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=TEST_TIMEFRAME)
 
@@ -276,6 +282,7 @@ class TestBatchFetchFeatures:
         from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 
         observation_metadata = Mock(spec=FeatureServiceMetadata)
+        observation_metadata.feature_view_metadata_list = []
         observation_metadata.feature_service_role = FeatureRoleEnum.OBSERVATION_SPACE
         observation_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=TEST_TIMEFRAME)
 
@@ -313,6 +320,7 @@ class TestBatchFetchFeatures:
         from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 
         observation_metadata = Mock(spec=FeatureServiceMetadata)
+        observation_metadata.feature_view_metadata_list = []
         observation_metadata.feature_service_role = FeatureRoleEnum.OBSERVATION_SPACE
         observation_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=TEST_TIMEFRAME)
 
@@ -354,6 +362,7 @@ class TestBatchFetchFeatures:
         from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 
         observation_metadata = Mock(spec=FeatureServiceMetadata)
+        observation_metadata.feature_view_metadata_list = []
         observation_metadata.feature_service_role = FeatureRoleEnum.OBSERVATION_SPACE
         observation_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=TEST_TIMEFRAME)
 
@@ -389,7 +398,8 @@ class TestIndividualFeatureAnalysis:
         return FeatureCoverageAnalyzer(
             feature_store_fetch_port=Mock(),
             market_data_reader=Mock(),
-            feature_coverage_evaluator=Mock()
+            feature_coverage_evaluator=Mock(),
+            feature_manager=Mock()
         )
 
     def test_analyze_fully_covered_features(self, analyzer: FeatureCoverageAnalyzer) -> None:
@@ -508,7 +518,8 @@ class TestMissingPeriodsIdentification:
         return FeatureCoverageAnalyzer(
             feature_store_fetch_port=Mock(),
             market_data_reader=Mock(),
-            feature_coverage_evaluator=Mock()
+            feature_coverage_evaluator=Mock(),
+            feature_manager=Mock()
         )
 
     def test_identify_no_missing_periods(self, analyzer: FeatureCoverageAnalyzer) -> None:
@@ -606,7 +617,8 @@ class TestFullCoverageAnalysis:
         return FeatureCoverageAnalyzer(
             feature_store_fetch_port=mock_feature_store,
             market_data_reader=mock_market_data_reader,
-            feature_coverage_evaluator=Mock()
+            feature_coverage_evaluator=Mock(),
+            feature_manager=Mock()
         )
 
     @pytest.fixture
@@ -651,6 +663,7 @@ class TestFullCoverageAnalysis:
         from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 
         observation_metadata = Mock(spec=FeatureServiceMetadata)
+        observation_metadata.feature_view_metadata_list = []
         observation_metadata.feature_service_role = FeatureRoleEnum.OBSERVATION_SPACE
         observation_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=TEST_TIMEFRAME)
 
@@ -698,6 +711,7 @@ class TestFullCoverageAnalysis:
         from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 
         observation_metadata = Mock(spec=FeatureServiceMetadata)
+        observation_metadata.feature_view_metadata_list = []
         observation_metadata.feature_service_role = FeatureRoleEnum.OBSERVATION_SPACE
         observation_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=TEST_TIMEFRAME)
 
@@ -752,6 +766,7 @@ class TestFullCoverageAnalysis:
         from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 
         observation_metadata = Mock(spec=FeatureServiceMetadata)
+        observation_metadata.feature_view_metadata_list = []
         observation_metadata.feature_service_role = FeatureRoleEnum.OBSERVATION_SPACE
         observation_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=TEST_TIMEFRAME)
 
@@ -786,7 +801,8 @@ class TestIncrementalResamplingDetection:
         return FeatureCoverageAnalyzer(
             feature_store_fetch_port=Mock(),
             market_data_reader=Mock(),
-            feature_coverage_evaluator=Mock()
+            feature_coverage_evaluator=Mock(),
+            feature_manager=Mock()
         )
 
     @pytest.fixture
@@ -845,6 +861,7 @@ class TestIncrementalResamplingDetection:
         from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 
         observation_metadata = Mock(spec=FeatureServiceMetadata)
+        observation_metadata.feature_view_metadata_list = []
         observation_metadata.feature_service_role = FeatureRoleEnum.OBSERVATION_SPACE
         observation_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=Timeframe.MINUTE_5)
 
@@ -908,6 +925,7 @@ class TestIncrementalResamplingDetection:
         from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 
         observation_metadata = Mock(spec=FeatureServiceMetadata)
+        observation_metadata.feature_view_metadata_list = []
         observation_metadata.feature_service_role = FeatureRoleEnum.OBSERVATION_SPACE
         observation_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=Timeframe.MINUTE_5)
 
@@ -970,6 +988,7 @@ class TestIncrementalResamplingDetection:
         from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 
         observation_metadata = Mock(spec=FeatureServiceMetadata)
+        observation_metadata.feature_view_metadata_list = []
         observation_metadata.feature_service_role = FeatureRoleEnum.OBSERVATION_SPACE
         observation_metadata.dataset_identifier = DatasetIdentifier(symbol=TEST_SYMBOL, timeframe=Timeframe.MINUTE_5)
 
@@ -1002,7 +1021,8 @@ class TestNoDataAnalysisCreation:
         return FeatureCoverageAnalyzer(
             feature_store_fetch_port=Mock(),
             market_data_reader=Mock(),
-            feature_coverage_evaluator=Mock()
+            feature_coverage_evaluator=Mock(),
+            feature_manager=Mock()
         )
 
     def test_create_no_data_analysis(self, analyzer: FeatureCoverageAnalyzer) -> None:

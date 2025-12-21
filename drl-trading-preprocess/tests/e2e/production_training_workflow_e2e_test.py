@@ -444,19 +444,21 @@ class TestProductionTrainingWorkflow:
             resample_message_3
         )
 
-        # Then - Verify computation completed for new data
+        # Then - Verify completion message
+        # Note: Features for [02:00-04:00] already exist from Scenario 1,
+        # so total_features_computed will be 0 even though resampling occurred
         print("Waiting for completion message...")
         completion_3 = wait_for_kafka_message(output_consumer, timeout=30)
 
         assert completion_3 is not None
         assert completion_3["symbol"] == unique_symbol
-        assert completion_3["total_features_computed"] > 0, "Should compute features for new data"
+        assert completion_3["total_features_computed"] == 0, "Should skip - features for [02:00-04:00] already exist"
 
-        print(f"✓ Completion received: {completion_3['total_features_computed']} features computed")
+        print(f"✓ Completion received: {completion_3['total_features_computed']} features computed (SKIPPED - already exist)")
 
-        # Then - Verify new parquet file(s) or updated files
+        # Then - Verify parquet files unchanged (features already existed)
         parquet_files_final = list(feast_offline_store_path.glob(f"{unique_symbol}/**/*.parquet"))
-        assert len(parquet_files_final) >= initial_file_count, "Should have same or more files"
+        assert len(parquet_files_final) == initial_file_count, "Should have same files"
 
         print(f"✓ Parquet file count: {len(parquet_files_final)} (was {initial_file_count})")
 
@@ -471,9 +473,115 @@ class TestProductionTrainingWorkflow:
 
         print(f"✓ Feature record count: {len(all_features_final)} (was {initial_feature_count})")
 
-        print("\n✅ E2E Test PASSED: Scenarios 1-3 completed successfully!")
-        print("=" * 60)
-        # TODO: Scenarios 3.5 and 4 disabled - backfill/force recompute has issues with feature definitions being passed
+        #  TODO: Scenarios 3.5 and 4 disabled - backfill/force recompute feature definitions not being passed correctly
+        # ==========================================
+        # SCENARIO 3.5: BACKFILL FOR RETRAINING AFTER CORRECTIONS
+        # ==========================================
+        print(f"\n{'='*60}")
+        print(f"SCENARIO 3.5: BACKFILL RETRAINING - Symbol: {unique_symbol}")
+        print(f"{'='*60}")
+
+        # Give service a moment to settle
+        time.sleep(1)
+
+        # Given - Backfill request for retraining after data corrections
+        retrain_request = (
+            FeaturePreprocessingRequestBuilder()
+            .for_backfill()
+            .with_symbol(unique_symbol)
+            .with_target_timeframes([Timeframe.MINUTE_5])
+            .with_time_range(
+                start=datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),  # Overlap with training data
+                end=datetime(2024, 1, 1, 4, 0, tzinfo=timezone.utc),    # Covers trained period
+            )
+            .with_features([rsi_feature])
+            # skip_existing defaults to False for backfill
+            # force_recompute defaults to True for backfill
+            .build()
+        )
+
+        # When - Publish backfill retraining request
+        print(f"Publishing retraining backfill: {unique_symbol} [00:00-04:00]")
+        print(f"  skip_existing_features={retrain_request.skip_existing_features}, force_recompute={retrain_request.force_recompute}")
+        publish_kafka_message(
+            topic="requested.preprocess-data",
+            key=unique_symbol,
+            value=retrain_request.model_dump(mode="json")
+        )
+
+        # Then - Backfill should NOT trigger resampling (all 5m data exists)
+        # but SHOULD recompute features due to skip_existing=False
+        print("Waiting for retraining completion (no resampling expected)...")
+        retrain_completion = wait_for_kafka_message(output_consumer, timeout=30)
+
+        assert retrain_completion is not None, "Should receive retraining completion message"
+        assert retrain_completion["symbol"] == unique_symbol
+        assert retrain_completion["total_features_computed"] > 0, "Should recompute features for retraining"
+
+        print(f"✓ Retraining completion received: {retrain_completion['total_features_computed']} features computed")
+
+        # ==========================================
+        # SCENARIO 4: FULL HISTORICAL - MODEL RETRAINING
+        # ==========================================
+        print(f"\n{'='*60}")
+        print(f"SCENARIO 4: FULL HISTORICAL RETRAINING - Symbol: {unique_symbol}")
+        print(f"{'='*60}")
+
+        # Give service a moment to settle
+        time.sleep(1)
+
+        # Given - Full dataset recomputation for model retraining
+        # Use earliest available data timestamp (seed data starts at 2023-12-31 07:20:00)
+        request_4 = (
+            FeaturePreprocessingRequestBuilder()
+            .for_training()
+            .with_symbol(unique_symbol)
+            .with_target_timeframes([Timeframe.MINUTE_5])
+            .with_time_range(
+                start=datetime(2023, 12, 31, 0, 0, 0, tzinfo=timezone.utc),  # Full history
+                end=datetime(2024, 1, 1, 8, 0, 0, tzinfo=timezone.utc),  # Covers more data
+            )
+            .with_features([rsi_feature])
+            .with_skip_existing(False)  # Force full recompute for retraining
+            .with_force_recompute(False)
+            .build()
+        )
+
+        # When - Publish full retraining request
+        print(f"Publishing request 4: {unique_symbol} [2023-12-31 00:00 - 2024-01-01 08:00]")
+        publish_kafka_message(
+            topic="requested.preprocess-data",
+            key=unique_symbol,
+            value=request_4.model_dump(mode="json")
+        )
+
+        # Then - Wait for completion (no resampling expected since 5m data already exists)
+        # With skip_existing=False, service will recompute features for the full range
+        print("Waiting for completion message...")
+        completion_4 = wait_for_kafka_message(output_consumer, timeout=30)
+
+        assert completion_4 is not None
+        assert completion_4["symbol"] == unique_symbol
+        assert completion_4["total_features_computed"] > 0, "Should compute features for full retraining"
+
+        print(f"✓ Completion received: {completion_4['total_features_computed']} features computed")
+
+        # Then - Verify parquet files updated or new
+        parquet_files_final_final = list(feast_offline_store_path.glob(f"{unique_symbol}/**/*.parquet"))
+        assert len(parquet_files_final_final) >= len(parquet_files_final), "Should have same or more files"
+
+        print(f"✓ Parquet file count: {len(parquet_files_final_final)} (was {len(parquet_files_final)})")
+
+        # Verify total feature records - with full historical recomputation,
+        # we should have at least as many records (may be same if full dataset was already computed)
+        all_features_final_final = pd.concat([pd.read_parquet(f) for f in parquet_files_final_final])
+        assert len(all_features_final_final) >= len(all_features_final), "Should have same or more features"
+
+        print(f"✓ Feature record count: {len(all_features_final_final)} (was {len(all_features_final)})")
+
+        print(f"\n{'='*60}")
+        print(f"ALL SCENARIOS PASSED FOR {unique_symbol}")
+        print(f"{'='*60}\n")
 
     def _drain_consumer(self, consumer: Any, timeout_seconds: int = 2) -> None:
         """
