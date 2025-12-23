@@ -1,5 +1,6 @@
 # GitLab CI/CD for DRL Trading Monorepo
 stages:
+  - validate
   - test
   - build
   - tag
@@ -11,7 +12,8 @@ variables:
   UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
   # Custom CI image with UV + Docker from ECR
   # Set CI_IMAGE_TAG to override (default: latest)
-  CI_IMAGE: "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/drl-trading-ci:${CI_IMAGE_TAG:-latest}"
+  CI_IMAGE_TAG: "latest"
+  CI_IMAGE: "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/drl-trading-ci:${CI_IMAGE_TAG}"
   # Docker-in-Docker configuration
   DOCKER_HOST: tcp://docker:2376
   DOCKER_TLS_CERTDIR: "/certs"
@@ -21,6 +23,24 @@ variables:
 cache:
   paths:
     - .uv-cache/
+
+# Debug job to verify CI/CD variables are set correctly
+validate:env:
+  stage: validate
+  image: alpine:latest
+  script:
+    - echo "AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID}"
+    - echo "AWS_REGION=${AWS_REGION}"
+    - echo "CI_IMAGE=${CI_IMAGE}"
+    - |
+      if [ -z "$AWS_ACCOUNT_ID" ] || [ -z "$AWS_REGION" ]; then
+        echo "ERROR: Variables not set or not accessible"
+        echo "Check Settings > CI/CD > Variables"
+        echo "Ensure variables are NOT protected (unless branch is protected)"
+        echo "Ensure variables are NOT masked"
+        exit 1
+      fi
+    - echo "Variables validated successfully"
 
 # Reusable test job template
 .test-template:
