@@ -28,6 +28,9 @@ cache:
   image: $CI_IMAGE
   services:
     - docker:27-dind
+  before_script:
+    - cd ${SERVICE_NAME}
+    - uv sync --group dev-full
   script:
     - uv run pytest tests/ -v --ignore=tests/e2e --cov=src --cov-report=xml:coverage.xml --cov-report=html --cov-report=term --cov-fail-under=80
   artifacts:
@@ -38,14 +41,30 @@ cache:
     expire_in: 1 week
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
 
+# Reusable Docker build job template
+.build-docker-template:
+  stage: build
+  image: docker:27
+  services:
+    - docker:27-dind
+  before_script:
+    - apk add --no-cache aws-cli
+    - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+  script:
+    - cd ${SERVICE_NAME}
+    - |
+      docker build \
+        -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${SERVICE_NAME}:$CI_COMMIT_SHORT_SHA \
+        -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${SERVICE_NAME}:$CI_COMMIT_BRANCH \
+        -f ${DOCKERFILE_PATH:-docker/Dockerfile} ..
+    - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${SERVICE_NAME}:$CI_COMMIT_SHORT_SHA
+    - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${SERVICE_NAME}:$CI_COMMIT_BRANCH
+
 # Test stage - runs for all branches with changes
 test:adapter:
   extends: .test-template
   variables:
     SERVICE_NAME: drl-trading-adapter
-  before_script:
-    - cd drl-trading-adapter
-    - uv sync --group dev-full
   # rules:
   #   - changes:
   #       - drl-trading-adapter/**/*
@@ -54,9 +73,6 @@ test:common:
   extends: .test-template
   variables:
     SERVICE_NAME: drl-trading-common
-  before_script:
-    - cd drl-trading-common
-    - uv sync --group dev-full
   # rules:
   #   - changes:
   #       - drl-trading-common/**/*
@@ -65,9 +81,6 @@ test:core:
   extends: .test-template
   variables:
     SERVICE_NAME: drl-trading-core
-  before_script:
-    - cd drl-trading-core
-    - uv sync --group dev-full
   # rules:
   #   - changes:
   #       - drl-trading-core/**/*
@@ -76,20 +89,16 @@ test:preprocess:
   extends: .test-template
   variables:
     SERVICE_NAME: drl-trading-preprocess
-  before_script:
-    - cd drl-trading-preprocess
-    - uv sync --group dev-full
   # rules:
   #   - changes:
   #       - drl-trading-preprocess/**/*
 
-# Test stage - runs for all branches with changes
 test:training:
   extends: .test-template
   variables:
     SERVICE_NAME: drl-trading-training
   before_script:
-    - cd drl-trading-training
+    - cd ${SERVICE_NAME}
     - uv sync --group dev-full
     - ../scripts/openapi/generate-and-install-clients.sh
   # rules:
@@ -101,16 +110,13 @@ test:ingest:
   extends: .test-template
   variables:
     SERVICE_NAME: drl-trading-ingest
-  before_script:
-    - cd drl-trading-ingest
-    - uv sync --group dev-full
   # rules:
   #   - changes:
   #       - drl-trading-ingest/**/*
 
 # Build stage - Docker images pushed to AWS ECR
 
-build:preprocess:docker:
+build:preprocess:
   extends: .build-docker-template
   variables:
     SERVICE_NAME: drl-trading-preprocess
@@ -153,7 +159,7 @@ create:release-tag:
 # Only runs for tagged releases
 deploy:preprocess:
   stage: deploy
-  image: docker:24
+  image: docker:27
   before_script:
     - apk add --no-cache bash aws-cli
   script:
