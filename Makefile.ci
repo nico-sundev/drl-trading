@@ -65,10 +65,10 @@ test-ci-image: ## Test CI image locally
 	@echo "Testing CI image..."
 	@echo ""
 	@echo "UV version:"
-	@docker run --rm $(IMAGE_URI) --version
+	@docker run --rm $(IMAGE_URI) uv --version
 	@echo ""
 	@echo "Docker version:"
-	@docker run --rm $(IMAGE_URI) run docker --version
+	@docker run --rm $(IMAGE_URI) docker --version
 	@echo ""
 	@echo "✅ CI image is functional"
 
@@ -79,7 +79,7 @@ test-ci-image-integration: ## Run integration tests using CI image
 		-v $(PWD):/workspace \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		$(IMAGE_URI) \
-		run pytest tests/integration/ -v
+		uv run pytest tests/integration/ -v
 
 .PHONY: shell-ci-image
 shell-ci-image: ## Open shell in CI image

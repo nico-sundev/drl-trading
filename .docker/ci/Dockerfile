@@ -20,6 +20,5 @@ RUN uv --version && docker --version
 # Set working directory
 WORKDIR /workspace
 
-# Keep UV as entrypoint
-ENTRYPOINT ["uv"]
-CMD ["--help"]
+# Default command (can be overridden by GitLab CI)
+CMD ["/bin/bash"]
