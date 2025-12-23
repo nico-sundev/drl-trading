@@ -46,8 +46,8 @@ from drl_trading_preprocess.core.port.feature_store_save_port import (
 from drl_trading_preprocess.core.port.preprocessing_message_publisher_port import (
     PreprocessingMessagePublisherPort,
 )
-from drl_trading_preprocess.core.service.compute.computing_service import (
-    FeatureComputingService,
+from drl_trading_preprocess.core.service.compute.feature_computation_coordinator import (
+    FeatureComputationCoordinator,
 )
 from drl_trading_preprocess.core.service.coverage.feature_coverage_analyzer import (
     FeatureCoverageAnalyzer,
@@ -104,7 +104,7 @@ class PreprocessingOrchestrator:
     def __init__(
         self,
         market_data_resampler: MarketDataResamplingService,
-        feature_computer: FeatureComputingService,
+        feature_computation_coordinator: FeatureComputationCoordinator,
         feature_validator: FeatureValidator,
         feature_manager: FeatureManager,
         feature_store_port: IFeatureStoreSavePort,
@@ -119,7 +119,7 @@ class PreprocessingOrchestrator:
 
         Args:
             market_data_resampler: Service for resampling market data to higher timeframes
-            feature_computer: Service for dynamic feature computation
+            feature_computation_coordinator: Service for coordinating feature computation and data fetching
             feature_validator: Service for validating feature definitions
             feature_manager: FeatureManager,
             feature_store_port: Port for saving features to Feast
@@ -130,7 +130,7 @@ class PreprocessingOrchestrator:
             feature_computation_config: Configuration for feature computation (warmup settings)
         """
         self.market_data_resampler = market_data_resampler
-        self.feature_computer = feature_computer
+        self.feature_computation_coordinator = feature_computation_coordinator
         self.feature_validator = feature_validator
         self.feature_manager = feature_manager
         self.feature_store_port = feature_store_port
@@ -203,8 +203,14 @@ class PreprocessingOrchestrator:
                 request, coverage_analyses
             )
 
-            # Step 4: Early exit if no computation needed
-            if not features_to_compute:
+            # Step 4: Check if resampling is needed (even if features are fully covered)
+            needs_resampling = any(
+                analysis.requires_resampling
+                for analysis in coverage_analyses.values()
+            )
+
+            # Step 4a: Early exit if no computation and no resampling needed
+            if not features_to_compute and not needs_resampling:
                 logger.info(
                     f"No features to compute for {request.symbol} - all exist or none enabled"
                 )
@@ -219,10 +225,36 @@ class PreprocessingOrchestrator:
                 )
                 return
 
-            # Step 4: Resample market data to target timeframes (ONCE for all timeframes)
+            # Step 4b: Resample market data if needed (even if features exist)
+            if needs_resampling:
+                logger.info(
+                    f"Resampling required for {request.symbol} - triggering resampling workflow"
+                )
+
+            # Step 5: Resample market data to target timeframes (ONCE for all timeframes)
             resampled_data = self._resample_market_data(request, coverage_analyses)
 
-            # Step 5: Handle feature warmup if needed (reuses coverage_analyses and resampled_data)
+            # Step 5a: If resampling was done but no features need computation, exit early
+            if not features_to_compute:
+                logger.info(
+                    f"Resampling completed for {request.symbol}, but all features already exist - skipping computation"
+                )
+
+                # Publish notification that resampling was done but computation was skipped
+                self.message_publisher.publish_preprocessing_completed(
+                    request=request,
+                    processing_context=request.processing_context,
+                    total_features_computed=0,
+                    timeframes_processed=[],
+                    success_details={
+                        "reason": "resampling_only",
+                        "resampling_completed": True,
+                        "features_skipped": True
+                    },
+                )
+                return
+
+            # Step 6: Handle feature warmup if needed (reuses coverage_analyses and resampled_data)
             warmup_successful = self._handle_feature_warmup(
                 request, features_to_compute, resampled_data, coverage_analyses
             )
@@ -239,19 +271,19 @@ class PreprocessingOrchestrator:
                 )
                 return
 
-            # Step 6: Compute features for each timeframe
+            # Step 7: Compute features for each timeframe
             computed_features = self._compute_features_for_timeframes(
                 request, features_to_compute, resampled_data
             )
 
-            # Step 7: Store features in feature store
+            # Step 8: Store features in feature store
             self._store_computed_features(
                 request,
                 computed_features,
                 feature_service_metadata_per_timeframe,
             )
 
-            # Step 8: Publish successful completion notification
+            # Step 9: Publish successful completion notification
             # Subtract 2 for event_timestamp and symbol columns (metadata, not features)
             total_features = sum(
                 len(features_df.columns) - 2
@@ -656,50 +688,25 @@ class PreprocessingOrchestrator:
         """
         Compute features for all timeframes.
 
+        Delegates to FeatureComputationCoordinator which handles:
+        - Using resampled data when available
+        - Fetching from database when resampled data is not available
+        - Converting market data to DataFrame format
+        - Adding required metadata columns (event_timestamp, symbol)
+
         Args:
             request: Original request
             features_to_compute: Features that need computation
-            resampled_data: Market data for each timeframe
+            resampled_data: Market data for each timeframe (may be partial/empty)
 
         Returns:
-            Dictionary mapping timeframes to computed features
+            Dictionary mapping timeframes to computed features with metadata
         """
-        computed_features = {}
-
-        for timeframe, market_data in resampled_data.items():
-            logger.info(
-                f"Computing {len(features_to_compute)} features for "
-                f"{request.symbol} {timeframe.value} ({len(market_data)} data points)"
-            )
-
-            # Compute features for this timeframe using batch computation
-            computation_request = FeatureComputationRequest(
-                dataset_id=DatasetIdentifier(
-                    symbol=request.symbol,
-                    timeframe=timeframe,
-                ),
-                feature_definitions=features_to_compute,
-                market_data=market_data,
-            )
-            features_df = self.feature_computer.compute_batch(computation_request)
-
-            if not features_df.empty:
-                # Add required columns for feature store
-                # event_timestamp: Required by Feast for temporal operations
-                # symbol: Required as entity key for feature lookup
-                features_df = features_df.copy()
-                features_df["event_timestamp"] = pd.to_datetime(features_df.index)
-                features_df["symbol"] = request.symbol
-
-                computed_features[timeframe] = features_df
-                logger.info(
-                    f"Computed {len(features_df.columns) - 2} feature columns "  # -2 for event_timestamp and symbol
-                    f"for {len(features_df)} data points on {timeframe.value}"
-                )
-            else:
-                logger.warning(f"No features computed for {timeframe.value}")
-
-        return computed_features
+        return self.feature_computation_coordinator.compute_features_for_timeframes(
+            request=request,
+            features_to_compute=features_to_compute,
+            resampled_data=resampled_data,
+        )
 
     def _handle_feature_warmup(
         self,
@@ -839,7 +846,7 @@ class PreprocessingOrchestrator:
                 feature_definitions=features_to_compute,
                 market_data=warmup_df,
             )
-            warmup_result = self.feature_computer.compute_batch(
+            warmup_result = self.feature_computation_coordinator.feature_computer.compute_batch(
                 warmup_computation_request
             )
 

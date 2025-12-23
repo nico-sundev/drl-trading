@@ -36,6 +36,21 @@ from pandas import DataFrame
 from testcontainers.minio import MinioContainer
 
 
+def is_docker_available() -> bool:
+    """Check if Docker is available in the environment.
+
+    Returns:
+        bool: True if Docker daemon is accessible, False otherwise
+    """
+    try:
+        import docker
+        client = docker.from_env()
+        client.ping()
+        return True
+    except Exception:
+        return False
+
+
 @pytest.fixture(scope="session", autouse=True)
 def register_cleanup_on_exit():
     """Register cleanup to run when Python exits - much simpler and more reliable.
@@ -676,14 +691,21 @@ def minio_container() -> Generator[MinioContainer, None, None]:
     Start a MinIO container for S3-compatible testing.
 
     MinIO is lighter and faster than LocalStack for pure S3 testing.
+    Skips if Docker is not available (e.g., in CI environments without Docker).
     """
+    if not is_docker_available():
+        pytest.skip("Docker is not available - skipping MinIO container tests")
+
     with MinioContainer() as minio:
         yield minio
 
 
 @pytest.fixture
 def s3_client_minio(minio_container: MinioContainer) -> boto3.client:
-    """Create a boto3 S3 client connected to MinIO container."""
+    """Create a boto3 S3 client connected to MinIO container.
+
+    Note: This fixture depends on minio_container which skips if Docker is not available.
+    """
     return boto3.client(
         "s3",
         endpoint_url=f"http://{minio_container.get_container_host_ip()}:{minio_container.get_exposed_port(9000)}",
@@ -695,7 +717,10 @@ def s3_client_minio(minio_container: MinioContainer) -> boto3.client:
 
 @pytest.fixture
 def s3_test_bucket(s3_client_minio: boto3.client) -> str:
-    """Create a test bucket for feature storage testing."""
+    """Create a test bucket for feature storage testing.
+
+    Note: This fixture depends on s3_client_minio which requires Docker.
+    """
     import uuid
 
     # Use a unique bucket name per test session to ensure isolation

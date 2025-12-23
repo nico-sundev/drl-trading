@@ -50,7 +50,7 @@ generate-clients = "drl_trading_training.scripts.generate_clients:main"
 drl-trading-common = { workspace = true }
 drl-trading-core = { workspace = true }
 drl-trading-adapter = { workspace = true }
-drl-trading-strategy-example = { path = "../drl-trading-strategy-example" }
+drl-trading-strategy-example = { workspace = true }
 
 [dependency-groups]
 # Testing dependencies (following workspace standards)

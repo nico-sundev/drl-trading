@@ -20,7 +20,18 @@ applyTo: '**'
 - Avoid passing dicts or lists of dicts around, use proper classes instead
 - Prefer to use package-level imports and make sure any init.py files are properly exporting the needed classes/functions
 - To test **ANY** code ALWAYS use pytest and stick to the following specifications
-- Testing:
+- Testing & TDD:
+    - **Follow TDD (Red-Green-Refactor) cycle:**
+      1. **RED**: Write a failing test first for the smallest piece of functionality
+      2. **GREEN**: Write minimal code to make the test pass
+      3. **REFACTOR**: Clean up code while keeping tests passing
+      4. Repeat for next functionality increment
+    - **TDD principles:**
+      - Test one behavior at a time (baby steps)
+      - Run tests frequently (after each change)
+      - Test behavior, not implementation details
+      - Cover happy path, edge cases, boundaries, and error scenarios
+      - Never write production code before its test exists
     - as a general rule, a test is located in same parent directories like the class/module it is implemented for.
       Example:
       class/model to be tested: `src/drl_trading_core/data_set_utils/merge_service.py`

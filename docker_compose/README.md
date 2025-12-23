@@ -99,55 +99,6 @@ docker-compose --profile all down
 docker-compose logs -f preprocess-service
 ```
 
-## Adding New Services
-
-To add a new microservice to the compose file:
-
-1. Add service definition with appropriate profile:
-```yaml
-  your-service:
-    build:
-      context: ..
-      dockerfile: drl-trading-your-service/docker/Dockerfile
-    profiles: ["your-service", "all"]
-    ports:
-      - "8081:8081"
-    environment:
-      - STAGE=local
-    depends_on:
-      - kafka
-```
-
-2. Update `run-services.sh` and `run-services.bat` with new profile option
-
-## Development Workflow
-
-### Typical Flow
-```bash
-# 1. Start infrastructure
-./run-services.sh infra
-
-# 2. Develop service locally (outside Docker)
-cd ../drl-trading-preprocess
-STAGE=local uv run python main.py
-
-# 3. Test E2E with Dockerized service
-./run-services.sh preprocess
-
-# 4. Clean up
-./run-services.sh down
-```
-
-### Rebuilding After Code Changes
-```bash
-# Rebuild and restart specific service
-docker-compose --profile preprocess up --build
-
-# Force rebuild (ignore cache)
-docker-compose --profile preprocess build --no-cache
-docker-compose --profile preprocess up
-```
-
 ## Troubleshooting
 
 ### Kafka Connection Issues
@@ -174,16 +125,3 @@ docker-compose down -v
 3. **Check logs** with `docker-compose logs -f <service-name>`
 4. **Mount volumes** for logs/config during development (already configured)
 5. **Stop services** with `./run-services.sh down` (not Ctrl+C) for clean shutdown
-
-## CI/CD Integration
-
-For CI pipelines, use profiles to test specific services:
-
-```yaml
-# Example GitHub Actions
-- name: Start test infrastructure
-  run: docker-compose up -d
-
-- name: Run E2E tests for preprocess
-  run: docker-compose --profile preprocess up --build --abort-on-container-exit
-```

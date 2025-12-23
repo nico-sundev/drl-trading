@@ -74,6 +74,8 @@ class FeatureStoreConfigBuilder:
         config.online_enabled = self._online_enabled
         config.service_name = self._service_name
         config.service_version = self._service_version
+        # Add s3_repo_config to prevent AttributeError when accessing in FeastProvider._create_file_source
+        config.s3_repo_config = None
         return config
 
 

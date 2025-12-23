@@ -55,6 +55,7 @@ from drl_trading_preprocess.core.port.state_persistence_port import (
 )
 from drl_trading_preprocess.infrastructure.config.preprocess_config import (
     DaskConfigs,
+    FeatureComputationCoordinatorConfig,
     PreprocessConfig,
     ResampleConfig,
 )
@@ -112,6 +113,14 @@ class PreprocessModule(Module):
     def provide_resample_config(self) -> ResampleConfig:
         """Provide resample configuration."""
         return self._config.resample_config
+
+    @provider
+    @singleton
+    def provide_feature_computation_coordinator_config(
+        self,
+    ) -> FeatureComputationCoordinatorConfig:
+        """Provide FeatureComputationCoordinator configuration."""
+        return self._config.feature_computation_coordinator_config
 
     @provider
     @singleton

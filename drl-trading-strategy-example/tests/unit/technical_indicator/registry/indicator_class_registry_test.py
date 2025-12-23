@@ -109,7 +109,7 @@ class TestIndicatorClassRegistry:
         # Then
         assert result == mock_alternative_rsi_indicator_class
 
-    @patch('drl_trading_strategy.technical_indicator.registry.indicator_class_registry.IndicatorClassRegistry.discover_classes')
+    @patch('drl_trading_strategy_example.technical_indicator.registry.indicator_class_registry.IndicatorClassRegistry.discover_classes')
     def test_discover_indicator_classes_delegates_to_base_discovery(
         self, mock_discover: MagicMock, registry: IndicatorClassRegistry, mock_rsi_indicator_class: Type[BaseIndicator]
     ) -> None:
@@ -180,7 +180,7 @@ class TestIndicatorClassRegistry:
         # Then
         assert result is False
 
-    @patch('drl_trading_strategy.technical_indicator.registry.indicator_class_registry.get_indicator_type_from_class')
+    @patch('drl_trading_strategy_example.technical_indicator.registry.indicator_class_registry.get_indicator_type_from_class')
     def test_extract_key_from_class_uses_decorator_function(
         self, mock_get_indicator_type: MagicMock, registry: IndicatorClassRegistry,
         decorated_indicator_class: Type[BaseIndicator]

@@ -1,0 +1,96 @@
+# Makefile for CI/CD Docker Image Management
+#
+# Prerequisites: Set these environment variables
+#   AWS_ACCOUNT_ID - Your AWS account ID
+#   AWS_REGION     - AWS region (default: us-east-1)
+#
+# Usage:
+#   make build-ci-image      - Build CI image locally
+#   make push-ci-image       - Build and push to ECR
+#   make pull-ci-image       - Pull from ECR
+#   make test-ci-image       - Test CI image locally
+#   make ci-image-info       - Show image configuration
+
+# Configuration
+AWS_REGION ?= us-east-1
+ECR_REPOSITORY ?= drl-trading-ci
+IMAGE_TAG ?= latest
+
+# Validate AWS_ACCOUNT_ID is set
+ifndef AWS_ACCOUNT_ID
+$(error AWS_ACCOUNT_ID is not set. Export it: export AWS_ACCOUNT_ID=123456789012)
+endif
+
+ECR_REGISTRY := $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
+IMAGE_URI := $(ECR_REGISTRY)/$(ECR_REPOSITORY):$(IMAGE_TAG)
+
+.PHONY: help
+help: ## Show this help message
+	@echo "CI/CD Docker Image Management"
+	@echo ""
+	@echo "Prerequisites:"
+	@echo "  export AWS_ACCOUNT_ID=123456789012"
+	@echo "  export AWS_REGION=us-east-1  # optional"
+	@echo ""
+	@echo "Available targets:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
+
+.PHONY: ci-image-info
+ci-image-info: ## Show CI image configuration
+	@echo "CI Image Configuration:"
+	@echo "  AWS Region:     $(AWS_REGION)"
+	@echo "  AWS Account:    $(AWS_ACCOUNT_ID)"
+	@echo "  ECR Repository: $(ECR_REPOSITORY)"
+	@echo "  Image Tag:      $(IMAGE_TAG)"
+	@echo "  Full URI:       $(IMAGE_URI)"
+
+.PHONY: build-ci-image
+build-ci-image: ## Build CI image locally
+	@echo "Building CI image..."
+	docker build -t $(ECR_REPOSITORY):$(IMAGE_TAG) -t $(IMAGE_URI) .docker/ci/
+	@echo "✅ Built: $(IMAGE_URI)"
+
+.PHONY: push-ci-image
+push-ci-image: ## Build and push CI image to ECR
+	@echo "Building and pushing CI image to ECR..."
+	bash scripts/docker/build-and-push-ci-image.sh $(IMAGE_TAG)
+
+.PHONY: pull-ci-image
+pull-ci-image: ## Pull CI image from ECR
+	@echo "Pulling CI image from ECR..."
+	bash scripts/docker/pull-ci-image.sh $(IMAGE_TAG)
+
+.PHONY: test-ci-image
+test-ci-image: ## Test CI image locally
+	@echo "Testing CI image..."
+	@echo ""
+	@echo "UV version:"
+	@docker run --rm $(IMAGE_URI) uv --version
+	@echo ""
+	@echo "Docker version:"
+	@docker run --rm $(IMAGE_URI) docker --version
+	@echo ""
+	@echo "✅ CI image is functional"
+
+.PHONY: test-ci-image-integration
+test-ci-image-integration: ## Run integration tests using CI image
+	@echo "Running integration tests with CI image..."
+	docker run --rm \
+		-v $(PWD):/workspace \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		$(IMAGE_URI) \
+		uv run pytest tests/integration/ -v
+
+.PHONY: shell-ci-image
+shell-ci-image: ## Open shell in CI image
+	docker run --rm -it \
+		-v $(PWD):/workspace \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		--entrypoint bash \
+		$(IMAGE_URI)
+
+.PHONY: clean-ci-images
+clean-ci-images: ## Remove local CI images
+	@echo "Removing local CI images..."
+	docker rmi $(ECR_REPOSITORY):$(IMAGE_TAG) $(IMAGE_URI) 2>/dev/null || true
+	@echo "✅ Cleaned up local images"

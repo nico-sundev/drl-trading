@@ -7,24 +7,101 @@ from drl_trading_common.config.infrastructure_config import InfrastructureConfig
 from drl_trading_common.config.service_logging_config import ServiceLoggingConfig
 
 
+class BinanceProviderConfig(BaseModel):
+    """Configuration for Binance data provider."""
+
+    enabled: bool = Field(default=False, description="Enable Binance provider")
+    api_key_env: str = Field(default="BINANCE_API_KEY", description="Environment variable for API key")
+    secret_key_env: str = Field(default="BINANCE_SECRET_KEY", description="Environment variable for secret key")
+    base_url: str = Field(default="https://api.binance.com", description="Base URL for Binance API")
+    testnet: bool = Field(default=False, description="Use testnet instead of production")
+
+    # Data configuration
+    symbols: List[str] = Field(
+        default_factory=lambda: ["BTCUSDT", "ETHUSDT", "BNBUSDT"],
+        description="Symbols to fetch data for"
+    )
+    timeframes: List[str] = Field(
+        default_factory=lambda: ["1m", "5m", "1h", "1d"],
+        description="Timeframes/intervals for data"
+    )
+    max_bars: int = Field(default=1000, description="Maximum bars per request")
+
+    # Streaming configuration
+    websocket_url: str = Field(default="wss://stream.binance.com:9443", description="WebSocket URL for streaming")
+    reconnect_attempts: int = Field(default=5, description="Max reconnection attempts")
+    ping_interval: int = Field(default=30, description="WebSocket ping interval in seconds")
+
+
+class TwelveDataProviderConfig(BaseModel):
+    """Configuration for Twelve Data provider."""
+
+    enabled: bool = Field(default=False, description="Enable Twelve Data provider")
+    api_key_env: str = Field(default="TWELVE_DATA_API_KEY", description="Environment variable for API key")
+    base_url: str = Field(default="https://api.twelvedata.com", description="Base URL for Twelve Data API")
+
+    # Data configuration
+    symbols: List[str] = Field(
+        default_factory=lambda: ["AAPL", "GOOGL", "MSFT", "SPY"],
+        description="Symbols to fetch data for"
+    )
+    intervals: List[str] = Field(
+        default_factory=lambda: ["1min", "5min", "1h", "1day"],
+        description="Intervals for data"
+    )
+    outputsize: int = Field(default=5000, description="Number of data points to return")
+
+    # Data types
+    data_types: List[str] = Field(
+        default_factory=lambda: ["stocks", "forex", "crypto"],
+        description="Types of market data to fetch"
+    )
+
+    # Streaming configuration
+    websocket_url: str = Field(default="wss://ws.twelvedata.com/v1", description="WebSocket URL for streaming")
+    price_stream: bool = Field(default=True, description="Enable price streaming")
+    quote_stream: bool = Field(default=False, description="Enable quote streaming")
+
+
+class CsvProviderConfig(BaseModel):
+    """Configuration for CSV file data provider."""
+
+    enabled: bool = Field(default=True, description="Enable CSV provider")
+    base_path: str = Field(default="data/csv", description="Base path for CSV files")
+    symbols: List[str] = Field(
+        default_factory=lambda: ["EURUSD", "GBPUSD"],
+        description="Symbols to load from CSV"
+    )
+    file_pattern: str = Field(default="{symbol}_{timeframe}.csv", description="File naming pattern")
+
+
+class YahooProviderConfig(BaseModel):
+    """Configuration for Yahoo Finance data provider."""
+
+    enabled: bool = Field(default=False, description="Enable Yahoo Finance provider")
+    symbols: List[str] = Field(
+        default_factory=lambda: ["SPY", "QQQ", "IWM", "^GSPC"],
+        description="Symbols to fetch data for"
+    )
+    intervals: List[str] = Field(
+        default_factory=lambda: ["1m", "1h", "1d"],
+        description="Intervals for data"
+    )
+    max_period: str = Field(default="1y", description="Maximum time period to fetch")
+
+
 class DataSourceConfig(BaseModel):
-    """Configuration for data source providers."""
+    """Configuration for all data source providers."""
 
-    # MT5 configuration
-    mt5_enabled: bool = Field(default=True)
-    mt5_symbols: List[str] = Field(default_factory=lambda: ["EURUSD", "GBPUSD", "USDJPY"])
-    mt5_timeframes: List[str] = Field(default_factory=lambda: ["M1", "M5", "H1", "D1"])
-    mt5_max_bars: int = Field(default=10000)
+    # Provider configurations
+    binance: BinanceProviderConfig = Field(default_factory=BinanceProviderConfig)
+    twelve_data: TwelveDataProviderConfig = Field(default_factory=TwelveDataProviderConfig)
+    csv: CsvProviderConfig = Field(default_factory=CsvProviderConfig)
+    yahoo: YahooProviderConfig = Field(default_factory=YahooProviderConfig)
 
-    # Binance configuration
-    binance_enabled: bool = Field(default=False)
-    binance_api_key_env: str = Field(default="BINANCE_API_KEY")
-    binance_secret_key_env: str = Field(default="BINANCE_SECRET_KEY")
-    binance_symbols: List[str] = Field(default_factory=lambda: ["BTCUSDT", "ETHUSDT"])
-
-    # Yahoo Finance configuration
-    yahoo_enabled: bool = Field(default=False)
-    yahoo_symbols: List[str] = Field(default_factory=lambda: ["SPY", "QQQ", "IWM"])
+    # Global settings
+    default_provider: str = Field(default="csv", description="Default provider to use")
+    enable_multiple_providers: bool = Field(default=False, description="Allow using multiple providers simultaneously")
 
 
 class MessageRoutingConfig(BaseModel):

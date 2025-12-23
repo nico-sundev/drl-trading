@@ -1,5 +1,5 @@
+from dataclasses import dataclass
 from typing import List
-from attr import dataclass
 from pandas import DataFrame
 
 from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier

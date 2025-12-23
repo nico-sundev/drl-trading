@@ -46,21 +46,49 @@ infrastructure:
 # DATA SOURCE CONFIGURATION (maps to DataSourceConfig)
 # =============================================================================
 data_source:
-  # MT5 configuration
-  mt5_enabled: true
-  mt5_symbols: ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD"]
-  mt5_timeframes: ["M1", "M5", "H1", "D1"]
-  mt5_max_bars: 10000
+  default_provider: "csv"
+  enable_multiple_providers: false
 
-  # Binance configuration
-  binance_enabled: false
-  binance_api_key_env: "BINANCE_API_KEY"        # Environment variable name
-  binance_secret_key_env: "BINANCE_SECRET_KEY"  # Environment variable name
-  binance_symbols: ["BTCUSDT", "ETHUSDT", "ADAUSDT"]
+  # CSV File Provider (Local files)
+  csv:
+    enabled: true
+    base_path: "drl-trading-core/data/csv"
+    symbols: ["EURUSD", "GBPUSD", "USDJPY"]
+    file_pattern: "{symbol}_{timeframe}.csv"
 
-  # Yahoo Finance configuration
-  yahoo_enabled: false
-  yahoo_symbols: ["SPY", "QQQ", "IWM", "VTI"]
+  # Binance Cryptocurrency Exchange
+  binance:
+    enabled: false
+    api_key_env: "BINANCE_API_KEY"
+    secret_key_env: "BINANCE_SECRET_KEY"
+    base_url: "https://api.binance.com"
+    testnet: false
+    symbols: ["BTCUSDT", "ETHUSDT"]
+    timeframes: ["1h", "1d"]
+    max_bars: 1000
+    websocket_url: "wss://stream.binance.com:9443"
+    reconnect_attempts: 5
+    ping_interval: 30
+
+  # Twelve Data (Stocks, Forex, Crypto)
+  twelve_data:
+    enabled: false
+    api_key_env: "TWELVE_DATA_API_KEY"
+    base_url: "https://api.twelvedata.com"
+    symbols: ["AAPL", "SPY"]
+    intervals: ["1h", "1day"]
+    outputsize: 5000
+    data_types: ["stocks"]
+    websocket_url: "wss://ws.twelvedata.com/v1"
+    price_stream: true
+    quote_stream: false
+
+  # Yahoo Finance (Stocks, ETFs, Indices)
+  yahoo:
+    enabled: false
+    symbols: ["SPY", "QQQ"]
+    intervals: ["1h", "1d"]
+    max_period: "1y"
 
 # =============================================================================
 # MESSAGE ROUTING CONFIGURATION (maps to MessageRoutingConfig)

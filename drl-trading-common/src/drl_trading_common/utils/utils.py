@@ -89,7 +89,7 @@ def ensure_datetime_time_column(
         if not pd.api.types.is_datetime64_any_dtype(df_copy["Time"]):
             logger.debug(f"Converting 'Time' column to datetime for {df_description}.")
             try:
-                df_copy["Time"] = pd.to_datetime(df_copy["Time"])
+                df_copy["Time"] = pd.to_datetime(df_copy["Time"], errors='raise')
             except Exception as e:
                 msg = f"Could not convert 'Time' column to datetime for {df_description}: {e}"
                 logger.error(msg)

@@ -46,17 +46,17 @@ class TaLippIndicatorService(ITechnicalIndicatorServicePort):
             **params: Parameters to pass to indicator constructor
 
         Raises:
-            ValueError: If indicator type not found
+            ValueError: If indicator type not found or if name already exists
 
         Note:
-            If an indicator with the same name already exists, this method is idempotent
-            and will skip registration to allow feature reuse across warmup and computation phases.
+            This method enforces unique naming to prevent race conditions and
+            programming errors. If you need to reuse indicators, check with
+            is_registered() before calling this method.
         """
         with self._lock:
-            # Idempotent: skip if indicator already exists (allows feature reuse)
+            # Check for duplicate names and raise error to ensure thread safety
             if name in self.instances:
-                logger.debug(f"Indicator '{name}' already registered, skipping duplicate registration")
-                return
+                raise ValueError(f"Indicator '{name}' is already registered. Use a unique name or check with is_registered() first.")
 
             # Convert string to enum for internal processing
             try:

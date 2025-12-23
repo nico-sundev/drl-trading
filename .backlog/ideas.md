@@ -2,6 +2,7 @@
 
 ## Quick Thoughts
 
+- implement Redis caching for OHLCV availability checks in FeatureCoverageAnalyzer to eliminate redundant database calls when processing multiple symbols/timeframes (e.g., training request with 10 symbols × 3 timeframes = 30 redundant base timeframe checks → cache with TTL)
 - go on with e2e training test
 - refactoring the interface between drl-trading-core and drl-trading-strategy
   - currently: 100% decoupling, both depend on interfaces in drl-trading-common, coupling happens in service where both are needed (preprocessing), directly in injector setup

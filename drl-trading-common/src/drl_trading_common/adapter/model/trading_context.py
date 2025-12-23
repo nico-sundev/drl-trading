@@ -5,7 +5,7 @@ These DTOs enable consistent context tracking across the DRL trading microservic
 ecosystem, supporting distributed tracing and structured logging.
 """
 
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field
 import uuid
@@ -60,7 +60,7 @@ class TradingContext(BaseModel):
             correlation_id=str(uuid.uuid4()),
             event_id=f"ingest-{uuid.uuid4()}",
             symbol=symbol,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC).replace(tzinfo=None),
             metadata=kwargs
         )
 

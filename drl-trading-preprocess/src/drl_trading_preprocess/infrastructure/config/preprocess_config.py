@@ -23,6 +23,21 @@ class FeatureComputationConfig(StrictAfterMergeSchema):
     warmup_candles: int | None = None  # Number of candles to use for indicator warmup
 
 
+class FeatureComputationCoordinatorConfig(StrictAfterMergeSchema):
+    """Configuration for FeatureComputationCoordinator.
+
+    Controls pagination and data fetching behavior for feature computation.
+
+    Attributes:
+        pagination_chunk_size: Number of records to fetch per database query.
+            Larger values reduce query overhead but increase memory usage.
+    """
+    pagination_chunk_size: int | None = Field(
+        default=10000,
+        description="Number of records to fetch per database query (default: 10000)"
+    )
+
+
 class ResampleConfig(StrictAfterMergeSchema):
     """Configuration for market data resampling operations.
 
@@ -119,6 +134,9 @@ class PreprocessConfig(BaseApplicationConfig):
     logging: ServiceLoggingConfig = Field(default_factory=ServiceLoggingConfig)
     feature_store_config: FeatureStoreConfig | None = None  # Stage-specific override
     feature_computation_config: FeatureComputationConfig  # Required - must be in YAML
+    feature_computation_coordinator_config: FeatureComputationCoordinatorConfig = Field(
+        default_factory=FeatureComputationCoordinatorConfig
+    )
     resample_config: ResampleConfig  # Required - must be in YAML
     dask_configs: DaskConfigs = Field(default_factory=DaskConfigs)
     kafka_consumers: KafkaConsumerConfig | None = None  # Stage-specific override

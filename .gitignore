@@ -18,6 +18,12 @@ logs/*
 logs.egg-info/*
 .dmypy.json
 
+# Environment and secrets
+.env
+.env.local
+*.pem
+*.key
+
 
 # Package manager caches
 .uv/
