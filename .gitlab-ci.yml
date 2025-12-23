@@ -39,7 +39,7 @@ cache:
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
 
 # Test stage - runs for all branches with changes
-# Test stage - runs for all branches with changes\ntest:adapter:
+test:adapter:
   extends: .test-template
   variables:
     SERVICE_NAME: drl-trading-adapter
