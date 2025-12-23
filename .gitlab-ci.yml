@@ -99,33 +99,33 @@ test:adapter:
   extends: .test-template
   variables:
     SERVICE_NAME: drl-trading-adapter
-  # rules:
-  #   - changes:
-  #       - drl-trading-adapter/**/*
+  rules:
+    - changes:
+        - drl-trading-adapter/**/*
 
 test:common:
   extends: .test-template
   variables:
     SERVICE_NAME: drl-trading-common
-  # rules:
-  #   - changes:
-  #       - drl-trading-common/**/*
+  rules:
+    - changes:
+        - drl-trading-common/**/*
 
 test:core:
   extends: .test-template
   variables:
     SERVICE_NAME: drl-trading-core
-  # rules:
-  #   - changes:
-  #       - drl-trading-core/**/*
+  rules:
+    - changes:
+        - drl-trading-core/**/*
 
 test:preprocess:
   extends: .test-template
   variables:
     SERVICE_NAME: drl-trading-preprocess
-  # rules:
-  #   - changes:
-  #       - drl-trading-preprocess/**/*
+  rules:
+    - changes:
+        - drl-trading-preprocess/**/*
 
 test:training:
   extends: .test-template
@@ -135,18 +135,18 @@ test:training:
     - cd ${SERVICE_NAME}
     - uv sync --group dev-full
     - ../scripts/openapi/generate-and-install-clients.sh
-  # rules:
-  #   - changes:
-  #       - drl-trading-training/**/*
-  #       - drl-trading-ingest/specs/**/*
+  rules:
+    - changes:
+        - drl-trading-training/**/*
+        - drl-trading-ingest/specs/**/*
 
 test:ingest:
   extends: .test-template
   variables:
     SERVICE_NAME: drl-trading-ingest
-  # rules:
-  #   - changes:
-  #       - drl-trading-ingest/**/*
+  rules:
+    - changes:
+        - drl-trading-ingest/**/*
 
 # Build stage - Docker images pushed to AWS ECR
 

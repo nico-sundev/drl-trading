@@ -43,24 +43,22 @@ Data Ingestion → Feature Engineering → Model Training → Inference → Trad
 ```
 
 **What's Included:**
-- ✅ Complete microservices architecture with 7 production-ready services
-- ✅ Event-driven messaging infrastructure (easily switch between Kafka, Redis, SQS)
+- ✅ Complete microservices architecture with 5 production-ready services
+- ✅ Event-driven messaging infrastructure (easily switch between Kafka, Redis, SQS thanks to ports & adapters architecture)
 - ✅ Automated feature computation and versioning
 - ✅ Model training orchestration with hyperparameter tuning
-- ✅ Real-time inference engine with sub-second latency
 - ✅ Trade execution framework with risk management hooks
-- ✅ Comprehensive test suite (~90% coverage on core services)
+- ✅ Comprehensive test suite (~90% coverage on all services)
 
 **What You Bring:**
 - Your trading strategy (reward function)
 - Your data sources (or use the built-in Binance integration)
-- Your deployment preferences (local, AWS, or hybrid)
+- Your deployment preferences (local, AWS)
 
 ### Quick Start Path
 
 1. **Get Started**: Clone and run locally → [Developer Guide](docs/DEVELOPER_GUIDE.md)
 2. **Create Your Strategy**: Define reward functions → [Strategy Development](docs/STRATEGY_DEVELOPMENT.md)
-3. **Understand the System**: Learn the architecture → [Learning Journey](docs/LEARNING_JOURNEY.md)
 
 > **Note**: The [drl-trading-strategy-example](./drl-trading-strategy-example/) service provides a minimal reference implementation. Production strategies belong in a separate private repository for intellectual property protection.
 
