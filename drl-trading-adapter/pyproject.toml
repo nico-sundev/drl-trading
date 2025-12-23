@@ -94,6 +94,10 @@ omit = ["*/tests/*", "*/setup.py"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["-ra", "--strict-markers"]
+filterwarnings = [
+    "ignore::DeprecationWarning:testcontainers.*",
+    "ignore:datetime.datetime.utcnow.*:DeprecationWarning:sqlalchemy.*",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/drl_trading_adapter"]

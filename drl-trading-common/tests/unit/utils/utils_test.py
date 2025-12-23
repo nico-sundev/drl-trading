@@ -4,6 +4,7 @@ import numpy as np
 from drl_trading_common.utils.utils import ensure_datetime_time_column
 import pandas as pd
 import pytest
+import warnings
 
 from pandas.testing import assert_frame_equal
 
@@ -83,5 +84,7 @@ def test_ensure_datetime_time_column_with_invalid_time_format():
     )
 
     # When/Then
-    with pytest.raises(ValueError, match="Could not convert 'Time' column to datetime"):
-        ensure_datetime_time_column(df, "invalid time format dataframe")
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=UserWarning, message="Could not infer format")
+        with pytest.raises(ValueError, match="Could not convert 'Time' column to datetime"):
+            ensure_datetime_time_column(df, "invalid time format dataframe")

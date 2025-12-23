@@ -29,7 +29,7 @@ dependencies = [
     "drl-trading-common",
     "drl-trading-core",
     "drl-trading-adapter",
-    "drl-trading-strategy-example>=0.1.0", # Feature discovery and strategy-specific indicators
+    "drl-trading-strategy-example>=0.1.0", # Feature discovery - override via UV_SOURCES__* in .env for proprietary version
     # Core data processing
     "pandas>=2.0.0",
     "numpy>=1.24.0",
@@ -47,7 +47,7 @@ dependencies = [
 drl-trading-common = { workspace = true }
 drl-trading-core = { workspace = true }
 drl-trading-adapter = { workspace = true }
-drl-trading-strategy-example = { path = "../drl-trading-strategy-example" }
+drl-trading-strategy-example = { workspace = true }
 
 [dependency-groups]
 # Testing dependencies (following workspace standards)

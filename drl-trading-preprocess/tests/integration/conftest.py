@@ -16,6 +16,21 @@ from drl_trading_common.config.infrastructure_config import DatabaseConfig
 from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
 
 
+def is_docker_available() -> bool:
+    """Check if Docker is available in the environment.
+
+    Returns:
+        bool: True if Docker daemon is accessible, False otherwise
+    """
+    try:
+        import docker
+        client = docker.from_env()
+        client.ping()
+        return True
+    except Exception:
+        return False
+
+
 @pytest.fixture(scope="session", autouse=True)
 def register_cleanup_on_exit() -> Generator[None, None, None]:
     """Register cleanup to run when Python exits - much simpler and more reliable.
@@ -152,7 +167,11 @@ def postgres_container() -> Generator[PostgresContainer, None, None]:
 
     Uses scope="function" to ensure each test gets a fresh database.
     This prevents test pollution and makes tests truly independent.
+    Skips if Docker is not available (e.g., in CI environments without Docker).
     """
+    if not is_docker_available():
+        pytest.skip("Docker is not available - skipping PostgreSQL container tests")
+
     with PostgresContainer("postgres:15") as postgres:
         yield postgres
 
@@ -160,6 +179,8 @@ def postgres_container() -> Generator[PostgresContainer, None, None]:
 @pytest.fixture(scope="function")
 def database_config(postgres_container: PostgresContainer) -> DatabaseConfig:
     """Create database configuration from testcontainer.
+
+    Note: This fixture depends on postgres_container which requires Docker.
 
     Args:
         postgres_container: Running PostgreSQL container

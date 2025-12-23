@@ -1,10 +1,12 @@
+"""Service to import OHLC data from CSV files."""
+
+import logging
 import os
-from typing import List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import dask
 import pandas as pd
 from dask import delayed
-from drl_trading_common.config.local_data_import_config import LocalDataImportConfig
 
 from drl_trading_core.common.model.asset_price_dataset import AssetPriceDataSet
 from drl_trading_core.common.model.asset_price_import_properties import (
@@ -13,32 +15,61 @@ from drl_trading_core.common.model.asset_price_import_properties import (
 from drl_trading_core.common.model.symbol_import_container import (
     SymbolImportContainer,
 )
+from drl_trading_ingest.core.port import DataProviderPort
 
-from ..base_data_import_service import BaseDataImportService
+logger = logging.getLogger(__name__)
 
 
-class CsvDataImportService(BaseDataImportService):
+class CsvDataImportService(DataProviderPort):
     """Service to import OHLC data from CSV files."""
 
-    def __init__(self, config: LocalDataImportConfig):
+    PROVIDER_NAME = "csv"
+
+    def __init__(self, config: Dict[str, Any]):
         """
-        Initializes with local data import configuration.
-        It dynamically determines the project root.
+        Initialize with local data import configuration.
 
         Args:
-            config: Configuration containing symbols with their datasets
+            config: Configuration containing file paths and symbols
         """
         super().__init__(config)
-        # Determine project root dynamically.
-        # Assumes this file is at <project_root>/src/drl_trading_core/common/data_import/local/csv_data_import_service.py
-        # So, project_root is 5 levels up from this file's directory.
+        self.local_config = config
+
+        # Determine project root dynamically
         self.project_root = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..")
+            os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..", "..")
         )
+
+    @property
+    def provider_name(self) -> str:
+        """Return the unique name of this data provider."""
+        return self.PROVIDER_NAME
+
+    def setup(self) -> None:
+        """Initialize CSV file access and validate paths."""
+        logger.info(f"Setting up {self.provider_name} provider...")
+
+        # Validate that base path exists
+        if hasattr(self.config, 'get'):
+            base_path = self.config.get('base_path', 'data/csv')
+        else:
+            base_path = 'data/csv'
+
+        full_path = os.path.join(self.project_root, base_path)
+        if not os.path.exists(full_path):
+            logger.warning(f"CSV base path does not exist: {full_path}")
+
+        self._is_initialized = True
+        logger.info(f"{self.provider_name} provider ready")
+
+    def teardown(self) -> None:
+        """Clean up CSV resources (no-op for file-based provider)."""
+        logger.info(f"Tearing down {self.provider_name} provider...")
+        self._is_initialized = False
 
     def _load_csv(self, file_path: str, limit: Optional[int] = None) -> pd.DataFrame:
         """
-        Loads a CSV file into a DataFrame with Time as the index.
+        Load a CSV file into a DataFrame with Time as the index.
 
         Args:
             file_path: Path to the CSV file (can be relative to project root)
@@ -67,14 +98,14 @@ class CsvDataImportService(BaseDataImportService):
         self, dataset_properties: AssetPriceImportProperties, symbol: str
     ) -> Tuple[str, AssetPriceDataSet]:
         """
-        Fills an AssetPriceDataSet with data from a CSV file.
+        Fill an AssetPriceDataSet with data from a CSV file.
 
         Args:
-            dataset_properties (AssetPriceImportProperties): Properties of the dataset
-            symbol (str): Symbol for which the dataset is being filled
+            dataset_properties: Properties of the dataset
+            symbol: Symbol for which the dataset is being filled
 
         Returns:
-            Tuple[str, AssetPriceDataSet]: A tuple containing the symbol and the filled AssetPriceDataSet
+            Tuple containing the symbol and the filled AssetPriceDataSet
         """
         return symbol, AssetPriceDataSet(
             timeframe=dataset_properties.timeframe,
@@ -84,12 +115,36 @@ class CsvDataImportService(BaseDataImportService):
             ),
         )
 
+    def fetch_historical_data(
+        self,
+        symbol: str,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        timeframe: Optional[str] = None,
+        limit: Optional[int] = None,
+    ) -> List[SymbolImportContainer]:
+        """Fetch historical data from CSV files."""
+        return self.import_data()
+
+    def map_symbol(self, internal_symbol: str) -> str:
+        """CSV provider uses symbols as-is (file names)."""
+        return internal_symbol
+
+    def start_streaming(
+        self,
+        symbols: List[str],
+        callback: Callable[[Dict[str, Any]], None],
+    ) -> None:
+        """CSV provider does not support streaming."""
+        logger.warning(f"{self.provider_name} provider does not support streaming")
+
+    def stop_streaming(self) -> None:
+        """CSV provider does not support streaming."""
+        pass
+
     def import_data(self) -> List[SymbolImportContainer]:
         """
-        Imports data from CSV files for all symbols.
-
-        Args:
-            limit: Optional limit on number of rows to read
+        Import data from CSV files for all symbols.
 
         Returns:
             List of SymbolImportContainer objects, one for each symbol

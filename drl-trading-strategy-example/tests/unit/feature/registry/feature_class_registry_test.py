@@ -129,7 +129,7 @@ class TestFeatureClassRegistry:
         stored_class = registry.get_feature_class("rsi")
         assert stored_class == decorated_feature_class
 
-    @patch('drl_trading_strategy.feature.registry.feature_class_registry.FeatureClassRegistry.discover_classes')
+    @patch('drl_trading_strategy_example.feature.registry.feature_class_registry.FeatureClassRegistry.discover_classes')
     def test_discover_feature_classes_delegates_to_base_discovery(self, mock_discover: MagicMock, registry: FeatureClassRegistry) -> None:
         """Test that discover_feature_classes properly delegates to base class discovery method."""
         # Given

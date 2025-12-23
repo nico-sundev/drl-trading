@@ -11,6 +11,7 @@ members = [
     "drl-trading-training",
     "drl-trading-preprocess",
     "drl-trading-adapter",
+    "drl-trading-strategy-example",  # Example strategy (override via .env for proprietary version)
 ]
 
 # ============================================================================

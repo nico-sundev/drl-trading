@@ -14,6 +14,8 @@ class TestFeatureFieldMapper:
         # Given
         mapper = FeatureFieldFactory()
         mock_metadata = Mock(spec=FeatureMetadata)
+        # Configure the mock properly so __str__() returns the feature name
+        mock_metadata.__str__ = Mock(return_value="close_price")
         mock_metadata.feature_name = "close_price"
         mock_metadata.config = None
         mock_metadata.sub_feature_names = []
@@ -31,6 +33,8 @@ class TestFeatureFieldMapper:
         # Given
         mapper = FeatureFieldFactory()
         mock_metadata = Mock(spec=FeatureMetadata)
+        # Configure the mock properly so __str__() returns the feature name
+        mock_metadata.__str__ = Mock(return_value="reward")
         mock_metadata.feature_name = "reward"
         mock_metadata.config = None
         mock_metadata.sub_feature_names = [
@@ -54,6 +58,8 @@ class TestFeatureFieldMapper:
         # Given
         mapper = FeatureFieldFactory()
         mock_metadata = Mock(spec=FeatureMetadata)
+        # Configure the mock properly so __str__() returns the feature name
+        mock_metadata.__str__ = Mock(return_value="complex_indicator_param1_hash123")
         mock_metadata.feature_name = "complex_indicator"
         mock_metadata.config_to_string = "param1"
         mock_metadata.sub_feature_names = ["upper", "lower"]

@@ -32,6 +32,21 @@ from drl_trading_core.core.model.feature_config_version_info import FeatureConfi
 from datetime import datetime
 
 
+def is_docker_available() -> bool:
+    """Check if Docker is available in the environment.
+
+    Returns:
+        bool: True if Docker daemon is accessible, False otherwise
+    """
+    try:
+        import docker
+        client = docker.from_env()
+        client.ping()
+        return True
+    except Exception:
+        return False
+
+
 # Test Feature Implementations for Core Integration Testing
 class MockTechnicalIndicatorFacade(ITechnicalIndicatorServicePort):
     """Mock technical indicator facade that returns controlled test data for integration testing."""
@@ -364,14 +379,21 @@ def minio_container() -> Generator[MinioContainer, None, None]:
     Start a MinIO container for S3-compatible testing.
 
     MinIO is lighter and faster than LocalStack for pure S3 testing.
+    Skips if Docker is not available (e.g., in CI environments without Docker).
     """
+    if not is_docker_available():
+        pytest.skip("Docker is not available - skipping MinIO container tests")
+
     with MinioContainer() as minio:
         yield minio
 
 
 @pytest.fixture
 def s3_client_minio(minio_container: MinioContainer) -> boto3.client:
-    """Create a boto3 S3 client connected to MinIO container."""
+    """Create a boto3 S3 client connected to MinIO container.
+
+    Note: This fixture depends on minio_container which skips if Docker is not available.
+    """
     return boto3.client(
         "s3",
         endpoint_url=f"http://{minio_container.get_container_host_ip()}:{minio_container.get_exposed_port(9000)}",
@@ -383,7 +405,10 @@ def s3_client_minio(minio_container: MinioContainer) -> boto3.client:
 
 @pytest.fixture
 def s3_test_bucket(s3_client_minio: boto3.client) -> str:
-    """Create a test bucket for feature storage testing."""
+    """Create a test bucket for feature storage testing.
+
+    Note: This fixture depends on s3_client_minio which requires Docker.
+    """
     import uuid
 
     # Use a unique bucket name per test session to ensure isolation
@@ -409,7 +434,10 @@ def s3_feature_store_config(
     minio_container: MinioContainer,
     temp_feast_repo: str,
 ) -> FeatureStoreConfig:
-    """Create FeatureStoreConfig for S3 testing."""
+    """Create FeatureStoreConfig for S3 testing.
+
+    Note: This fixture depends on minio_container which requires Docker.
+    """
     s3_config = S3RepoConfig(
         bucket_name=s3_test_bucket,
         prefix="features",
