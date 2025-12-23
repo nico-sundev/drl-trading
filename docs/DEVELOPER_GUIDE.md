@@ -14,9 +14,11 @@
 
 - Python 3.11+
 - [uv](https://github.com/astral-sh/uv) package manager
-- Docker & Docker Compose (optional)
+- Docker & Docker Compose
+- GitLab
+- AWS account (for CI/CD)
 
-### Setup
+### Local Development Setup
 
 ```bash
 # Clone the repository
@@ -28,11 +30,13 @@ uv sync --group dev-full
 
 # Generate openapi clients by spec files
 ./scripts/openapi/generate-and-install-clients.sh
-
-# Run example strategy training
-cd drl-trading-strategy-example
-uv run python -m drl_trading_strategy_example.main
 ```
+
+### CI/CD Setup
+
+To enable integration tests in CI pipeline, set up the custom CI image with Docker support:
+
+**→ See [CI Image Setup Guide](CI_IMAGE_SETUP.md)** for complete AWS and GitLab configuration.
 
 ### End-to-End Test
 
@@ -53,18 +57,34 @@ src/drl_trading_{service}/
 ├── core/
 │   ├── port/         # Business contracts
 │   └── service/      # Business logic
-└── infrastructure/   # Config, DI, bootstrap
+└── application/
+│   └── config/      # Config classes
+│   └── di/      # Injector module for DI
 ```
 
 ## Development Workflow
 
 ```bash
-# Service development
-cd drl-trading-{service}
+# 1. Start infrastructure (docker-compose )
+./run-services.sh infra
+
+# 2. Develop service locally (outside Docker)
+cd ../drl-trading-preprocess
+
+# 2.1 Init dependencies
 uv sync --group=dev-full
-uv run pytest tests/
-uv run ruff check . --fix
-uv run mypy src/
+
+# 2.2 (Optional) Run tests
+uv run pytest /tests
+
+# 2.3 Start service with 'local' STAGE environment settings
+STAGE=local uv run python main.py
+
+# 3. (Optional) Test E2E with Dockerized service
+./run-services.sh preprocess
+
+# 4. (Optional) Tear down docker containers
+./run-services.sh down
 
 # Startup observability
 # Each service startup is instrumented with StartupContext.

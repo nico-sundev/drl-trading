@@ -49,7 +49,9 @@ class FeatureParameterSetParser:
             feature_factory: Factory for creating configuration instances
         """
         for feature_def in feature_definitions:
-            for param_dict in feature_def.raw_parameter_sets:
+            # Access parameter_sets - works for both core and common FeatureDefinition
+            param_sets = getattr(feature_def, 'raw_parameter_sets', None) or getattr(feature_def, 'parameter_sets', [])
+            for param_dict in param_sets:
                 if not feature_def.name:
                     raise ValueError("Feature name is required")
 

@@ -17,12 +17,26 @@ from drl_trading_common.config.infrastructure_config import DatabaseConfig
 from drl_trading_common.adapter.model.feature_config_version_info import FeatureConfigVersionInfo
 
 
+def is_docker_available() -> bool:
+    """Check if Docker is available in the environment."""
+    try:
+        import docker
+        client = docker.from_env()
+        client.ping()
+        return True
+    except Exception:
+        return False
+
+
 class TestFeatureConfigRepositoryIntegration:
     """Integration test suite for FeatureConfigRepository with real PostgreSQL."""
 
     @pytest.fixture(scope="function")
     def postgres_container(self):
         """Start PostgreSQL container for integration tests."""
+        if not is_docker_available():
+            pytest.skip("Docker is not available - skipping PostgreSQL container tests")
+
         with PostgresContainer("postgres:15") as postgres:
             yield postgres
 

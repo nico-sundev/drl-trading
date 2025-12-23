@@ -14,6 +14,7 @@ from injector import inject
 
 from drl_trading_core.core.dto.feature_preprocessing_request import FeaturePreprocessingRequest
 from drl_trading_ingest.core.port.preprocessing_repo_interface import PreprocessingRepoPort
+from drl_trading_ingest.core.service.data_provider_manager import DataProviderManager
 
 logger = logging.getLogger("drl-trading-ingest")
 
@@ -46,14 +47,20 @@ class PreprocessingService(PreprocessingServiceInterface):
     and coordinates with other services for feature computation.
     """
 
-    def __init__(self, preprocessing_repo: PreprocessingRepoPort):
+    def __init__(
+        self,
+        preprocessing_repo: PreprocessingRepoPort,
+        data_provider_manager: DataProviderManager
+    ):
         """
         Initialize the preprocessing service.
 
         Args:
             preprocessing_repo: Repository for storing preprocessing requests
+            data_provider_manager: Manager for accessing data providers
         """
         self.preprocessing_repo = preprocessing_repo
+        self.data_provider_manager = data_provider_manager
 
     def submit_preprocessing_request(self, request_data: Dict[str, Any]) -> Dict[str, str]:
         """

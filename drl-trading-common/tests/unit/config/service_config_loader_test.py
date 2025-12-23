@@ -16,8 +16,8 @@ from drl_trading_common.base.base_application_config import BaseApplicationConfi
 from drl_trading_common.config.service_config_loader import ServiceConfigLoader
 
 
-class TestConfig(BaseApplicationConfig):
-    """Test configuration class for migration testing."""
+class _TestConfig(BaseApplicationConfig):
+    """Test configuration class for migration testing (prefixed with _ to avoid pytest collection)."""
 
     app_name: str = "test_service"
     service_name: str = "test_service"
@@ -69,7 +69,7 @@ port: 9000
             with patch.dict(
                 os.environ, {"CONFIG_DIR": temp_dir, "STAGE": "local"}, clear=True
             ):
-                config = ServiceConfigLoader.load_config(TestConfig)
+                config = ServiceConfigLoader.load_config(_TestConfig)
 
             # Then - Configuration should be loaded correctly
             assert config.app_name == "test_service"
@@ -102,7 +102,7 @@ port: 9000
                     "API_KEY": "prod_api_key_xyz",
                 },
             ):
-                config = ServiceConfigLoader.load_config(TestConfig)
+                config = ServiceConfigLoader.load_config(_TestConfig)
 
             # Then - Environment variables should be substituted
             assert config.database_url == "postgresql://prod.example.com:5432/prod_db"
@@ -129,7 +129,7 @@ port: 9000
             with patch.dict(
                 os.environ, {"CONFIG_DIR": temp_dir, "STAGE": "local"}, clear=True
             ):
-                config = ServiceConfigLoader.load_config(TestConfig)
+                config = ServiceConfigLoader.load_config(_TestConfig)
 
             # Then - Default values should be used
             assert config.database_url == "postgresql://localhost:5432/default"
@@ -162,7 +162,7 @@ port: 9090
 
             # When - Load with stage override
             with patch.dict(os.environ, {"CONFIG_DIR": temp_dir, "STAGE": "prod"}):
-                config = ServiceConfigLoader.load_config(TestConfig)
+                config = ServiceConfigLoader.load_config(_TestConfig)
 
             # Then - Stage overrides should be applied
             assert config.app_name == "test_service"  # From base
@@ -195,7 +195,7 @@ port: ${PORT:8080}
                     "PORT": "9999",
                 },
             ):
-                config = ServiceConfigLoader.load_config(TestConfig)
+                config = ServiceConfigLoader.load_config(_TestConfig)
 
             # Then - Environment variables should be injected via templating
             assert config.app_name == "test_service"  # Not templated

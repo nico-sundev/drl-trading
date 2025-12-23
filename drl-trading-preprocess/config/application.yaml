@@ -31,6 +31,10 @@ dask_configs:
 feature_computation_config:
   warmup_candles: 500  # Number of candles for indicator warmup (production default)
 
+# Feature Computation Coordinator Configuration
+feature_computation_coordinator_config:
+  pagination_chunk_size: 10000  # Number of records to fetch per database query
+
 # Resampling Configuration
 resample_config:
   historical_start_date: "1970-01-01T00:00:00"

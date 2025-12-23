@@ -853,9 +853,9 @@ class FeatureManager(Computable):
             try:
                 # Handle features with parameter sets
                 if feature_def.parsed_parameter_sets:
-                    for param_set in feature_def.parsed_parameter_sets:
+                    for param_set in feature_def.parsed_parameter_sets.values():
                         key = FeatureKey(
-                            feature_def.name, dataset_id, param_set
+                            feature_def.name, dataset_id, param_set.hash_id()
                         )
                         feature = self._features.get(key)
                         if feature:

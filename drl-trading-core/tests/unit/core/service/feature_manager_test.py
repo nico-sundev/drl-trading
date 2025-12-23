@@ -75,6 +75,10 @@ class MockFeature(BaseFeature):
     def _get_config_to_string(self) -> str:
         return f"MockFeature_{self.feature_name}"
 
+    def _call_indicator_backend(self, method_call) -> DataFrame | None:
+        """Mock implementation of abstract method."""
+        return None
+
     def get_metadata(self) -> FeatureMetadata:
         """Get metadata for the mock feature."""
         from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig

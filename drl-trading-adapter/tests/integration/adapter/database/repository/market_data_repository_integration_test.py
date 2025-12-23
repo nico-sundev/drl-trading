@@ -18,12 +18,26 @@ from drl_trading_core.core.model.market_data_model import MarketDataModel
 from drl_trading_core.core.model.data_availability_summary import DataAvailabilitySummary
 
 
+def is_docker_available() -> bool:
+    """Check if Docker is available in the environment."""
+    try:
+        import docker
+        client = docker.from_env()
+        client.ping()
+        return True
+    except Exception:
+        return False
+
+
 class TestMarketDataRepositoryIntegration:
     """Integration test suite for MarketDataRepository with real PostgreSQL."""
 
     @pytest.fixture(scope="function")
     def postgres_container(self):
         """Start PostgreSQL container for integration tests."""
+        if not is_docker_available():
+            pytest.skip("Docker is not available - skipping PostgreSQL container tests")
+
         with PostgresContainer("postgres:15") as postgres:
             yield postgres
 

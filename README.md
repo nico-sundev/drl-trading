@@ -9,7 +9,10 @@
 ## Current state
 
 This project is a WIP. The framework is not ready-to-use yet.
-Some information may be misleading, some files may be ready to be cleaned up and GitLab Pipelines may be incomplete and broken.
+Some information may be misleading, some files may be about to be cleaned up, GitLab Pipelines may be breaking and
+hexagonal architecture violations may be still around somewhere.
+
+Most mature service so far, which is also the backbone of the system: [drl-trading-preprocess](./drl-trading-preprocess) (~90% code cov and partially e2e tested)
 
 > Side note: This repository is being mirrored from my GitLab Repository
 
@@ -24,19 +27,40 @@ This project demonstrates the intersection of **financial domain expertise**, **
 - **Event-driven systems** with pluggable messaging infrastructure
 - **AI-assisted development** workflows and best practices
 
-## 🏗️ Architecture (TODO)
+##  How It Works
 
+### The 30-Second Overview
+1. **Define Your Strategy**: Implement a custom reward function (10-50 lines of code)
+2. **Configure Data Sources**: Use built-in Binance API or connect your own data provider
+3. **Train Your Model**: The framework handles feature engineering, model training, and evaluation
+4. **Deploy & Trade**: Automatically generate and execute trading signals based on your trained model
+
+### The Complete Pipeline
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Data Ingest   │───▶│   Preprocessing │───▶│    Training     │
-│                 │    │                 │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                                        │
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Execution     │◄───│   Inference     │◄───│   Strategy      │
-│                 │    │                 │    │   (Pluggable)   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+Data Ingestion → Feature Engineering → Model Training → Inference → Trade Execution
+     ↓                  ↓                    ↓             ↓              ↓
+  Binance API      Feast Store         Stable-B3      Signals     Broker APIs
 ```
+
+**What's Included:**
+- ✅ Complete microservices architecture with 5 production-ready services
+- ✅ Event-driven messaging infrastructure (easily switch between Kafka, Redis, SQS thanks to ports & adapters architecture)
+- ✅ Automated feature computation and versioning
+- ✅ Model training orchestration with hyperparameter tuning
+- ✅ Trade execution framework with risk management hooks
+- ✅ Comprehensive test suite (~90% coverage on all services)
+
+**What You Bring:**
+- Your trading strategy (reward function)
+- Your data sources (or use the built-in Binance integration)
+- Your deployment preferences (local, AWS)
+
+### Quick Start Path
+
+1. **Get Started**: Clone and run locally → [Developer Guide](docs/DEVELOPER_GUIDE.md)
+2. **Create Your Strategy**: Define reward functions → [Strategy Development](docs/STRATEGY_DEVELOPMENT.md)
+
+> **Note**: The [drl-trading-strategy-example](./drl-trading-strategy-example/) service provides a minimal reference implementation. Production strategies belong in a separate private repository for intellectual property protection.
 
 ## 📚 Documentation (TODO)
 
@@ -77,11 +101,6 @@ This project demonstrates the intersection of **financial domain expertise**, **
 | **Database** | PostgreSQL | Data persistence |
 | **Containerization** | Docker | Service deployment |
 | **Cloud Platform** (TODO) | AWS | Production infrastructure |
-
-## 🤝 Contributing
-
-This framework is designed to be extended with custom strategies. See [strategy development](docs/STRATEGY_DEVELOPMENT.md) for guidelines on creating strategy modules and [the general developer guide](docs/DEVELOPER_GUIDE.md).
-
 
 ## � License
 

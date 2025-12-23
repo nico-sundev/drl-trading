@@ -63,6 +63,17 @@ components:
         - 1d
         - 1w
         - 1M
+      x-enum-varnames:
+        - TICK
+        - MINUTE_1
+        - MINUTE_5
+        - MINUTE_15
+        - MINUTE_30
+        - HOUR_1
+        - HOUR_4
+        - DAY_1
+        - WEEK_1
+        - MONTH_1
       description: Timeframe for trading data aggregation
 
     FeatureDefinition:

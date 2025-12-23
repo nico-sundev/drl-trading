@@ -10,26 +10,28 @@ ENV UV_COMPILE_BYTECODE=1 \
 
 WORKDIR /app
 
-# Copy workspace-level lockfile and root pyproject.toml first
+# Copy workspace-level lockfile and root pyproject.toml
 COPY uv.lock pyproject.toml ./
 
-# Copy workspace member pyproject.toml files (needed for workspace structure, not dependency resolution)
+# Copy workspace member pyproject.toml files for dependency resolution
 COPY drl-trading-common/pyproject.toml ./drl-trading-common/
 COPY drl-trading-core/pyproject.toml ./drl-trading-core/
 COPY drl-trading-adapter/pyproject.toml ./drl-trading-adapter/
-COPY drl-trading-strategy-example/pyproject.toml ./drl-trading-strategy-example/
 COPY drl-trading-preprocess/pyproject.toml ./drl-trading-preprocess/
+
+# IMPORTANT: Copy entire strategy-example directory (not just pyproject.toml)
+# Hatchling requires README.md during wheel build, so we need all files before dependency install
+COPY drl-trading-strategy-example ./drl-trading-strategy-example
 
 # Install dependencies only (leverages Docker layer caching)
 RUN --mount=type=cache,target=/root/.cache/uv \
     cd drl-trading-preprocess && \
     uv sync --frozen --no-install-workspace --no-dev
 
-# Now copy the actual source code for workspace packages
+# Copy source code for remaining workspace packages (strategy-example already copied above)
 COPY drl-trading-common ./drl-trading-common
 COPY drl-trading-core ./drl-trading-core
 COPY drl-trading-adapter ./drl-trading-adapter
-COPY drl-trading-strategy-example ./drl-trading-strategy-example
 COPY drl-trading-preprocess ./drl-trading-preprocess
 
 # Install workspace packages (non-editable for production)

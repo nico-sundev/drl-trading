@@ -117,7 +117,7 @@ class TestFeatureConfigRegistry:
         assert result_upper is decorated_config_class
         assert result_mixed is decorated_config_class
 
-    @patch('drl_trading_strategy.feature.registry.feature_config_registry.FeatureConfigRegistry.discover_classes')
+    @patch('drl_trading_strategy_example.feature.registry.feature_config_registry.FeatureConfigRegistry.discover_classes')
     def test_discover_config_classes_delegates_to_base_class(self, mock_discover_classes: MagicMock, registry: FeatureConfigRegistry) -> None:
         """Test that discover_config_classes delegates to the base class discover_classes method."""
         # Given
@@ -258,7 +258,7 @@ class TestFeatureConfigRegistryKeyExtraction:
         """Provide a fresh registry instance for each test."""
         return FeatureConfigRegistry()
 
-    @patch('drl_trading_strategy.feature.registry.feature_config_registry.get_feature_type_from_class')
+    @patch('drl_trading_strategy_example.feature.registry.feature_config_registry.get_feature_type_from_class')
     def test_extract_key_from_class_uses_decorator_utility(self, mock_get_feature_type: MagicMock, registry: FeatureConfigRegistry) -> None:
         """Test that _extract_key_from_class uses the decorator utility function."""
         # Given
@@ -273,8 +273,8 @@ class TestFeatureConfigRegistryKeyExtraction:
         mock_get_feature_type.assert_called_once_with(test_class)
         assert result == expected_enum
 
-    @patch('drl_trading_strategy.feature.registry.feature_config_registry.get_feature_type_from_class')
-    @patch('drl_trading_strategy.feature.registry.feature_config_registry.FeatureTypeConverter.string_to_enum')
+    @patch('drl_trading_strategy_example.feature.registry.feature_config_registry.get_feature_type_from_class')
+    @patch('drl_trading_strategy_example.feature.registry.feature_config_registry.FeatureTypeConverter.string_to_enum')
     def test_extract_key_removes_config_suffix_in_fallback(self, mock_string_to_enum: MagicMock, mock_get_feature_type: MagicMock, registry: FeatureConfigRegistry) -> None:
         """Test that _extract_key_from_class removes 'Config' suffix when falling back to name-based conversion."""
         # Given
@@ -362,7 +362,7 @@ class TestFeatureConfigRegistryErrorHandling:
         """Provide a fresh registry instance for each test."""
         return FeatureConfigRegistry()
 
-    @patch('drl_trading_strategy.feature.registry.feature_config_registry.FeatureTypeConverter.string_to_enum')
+    @patch('drl_trading_strategy_example.feature.registry.feature_config_registry.FeatureTypeConverter.string_to_enum')
     def test_get_config_class_handles_converter_exceptions(self, mock_string_to_enum: MagicMock, registry: FeatureConfigRegistry) -> None:
         """Test that get_config_class handles FeatureTypeConverter exceptions gracefully."""
         # Given
@@ -372,7 +372,7 @@ class TestFeatureConfigRegistryErrorHandling:
         with pytest.raises(ValueError, match="Invalid feature type"):
             registry.get_config_class("invalid_type")
 
-    @patch('drl_trading_strategy.feature.registry.feature_config_registry.FeatureTypeConverter.string_to_enum')
+    @patch('drl_trading_strategy_example.feature.registry.feature_config_registry.FeatureTypeConverter.string_to_enum')
     def test_register_config_class_handles_converter_exceptions(self, mock_string_to_enum: MagicMock, registry: FeatureConfigRegistry) -> None:
         """Test that register_config_class handles FeatureTypeConverter exceptions gracefully."""
         # Given
@@ -399,8 +399,8 @@ class TestFeatureConfigRegistryErrorHandling:
         with pytest.raises(AttributeError):
             registry._extract_key_from_class(None)  # type: ignore
 
-    @patch('drl_trading_strategy.feature.registry.feature_config_registry.get_feature_type_from_class')
-    @patch('drl_trading_strategy.feature.registry.feature_config_registry.FeatureTypeConverter.string_to_enum')
+    @patch('drl_trading_strategy_example.feature.registry.feature_config_registry.get_feature_type_from_class')
+    @patch('drl_trading_strategy_example.feature.registry.feature_config_registry.FeatureTypeConverter.string_to_enum')
     def test_extract_key_handles_both_decorator_and_converter_failures(self, mock_string_to_enum: MagicMock, mock_get_feature_type: MagicMock, registry: FeatureConfigRegistry) -> None:
         """Test that _extract_key_from_class handles failures in both decorator and converter fallback."""
         # Given

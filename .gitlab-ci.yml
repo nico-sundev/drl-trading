@@ -1,91 +1,206 @@
 # GitLab CI/CD for DRL Trading Monorepo
 stages:
+  - validate
   - test
   - build
+  - tag
+  - train
+  - backtest
   - deploy
 
 variables:
   UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
+  # Custom CI image with UV + Docker from ECR
+  # Set CI_IMAGE_TAG to override (default: latest)
+  CI_IMAGE_TAG: "latest"
+  CI_IMAGE: "registry.gitlab.com/${CI_PROJECT_PATH}/drl-trading-ci:latest"
+  # Docker-in-Docker configuration
+  DOCKER_HOST: tcp://docker:2376
+  DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_TLS_VERIFY: 1
+  DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
 
 cache:
   paths:
     - .uv-cache/
 
-# Test stage - runs for all branches with changes
-test:training:
+# Debug job to verify CI/CD variables are set correctly
+validate:env:
+  stage: validate
+  image: alpine:latest
+  script:
+    - echo "AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID}"
+    - echo "AWS_REGION=${AWS_REGION}"
+    - echo "CI_IMAGE=${CI_IMAGE}"
+    - |
+      if [ -z "$AWS_ACCOUNT_ID" ] || [ -z "$AWS_REGION" ]; then
+        echo "ERROR: Variables not set or not accessible"
+        echo "Check Settings > CI/CD > Variables"
+        echo "Ensure variables are NOT protected (unless branch is protected)"
+        echo "Ensure variables are NOT masked"
+        exit 1
+      fi
+    - echo "Variables validated successfully"
+
+# Reusable test job template
+.test-template:
   stage: test
-  image: python:3.12
+  image: $CI_IMAGE
+  services:
+    - docker:27-dind
   before_script:
-    - cd drl-trading-training
-    - pip install uv
+    # Validate required CI/CD variables
+    - |
+      if [ -z "$AWS_ACCOUNT_ID" ] || [ -z "$AWS_REGION" ]; then
+        echo "ERROR: AWS_ACCOUNT_ID and AWS_REGION must be set in GitLab CI/CD variables"
+        echo "Go to: Settings > CI/CD > Variables"
+        exit 1
+      fi
+    - cd ${SERVICE_NAME}
     - uv sync --group dev-full
   script:
-    - uv run pytest tests/ -v --cov=src --cov-report=xml:coverage.xml --cov-report=html
-  rules:
-    - changes:
-        - drl-trading-training/**/*
-        - drl-trading-ingest/specs/**/*
+    - uv run pytest tests/ -v --ignore=tests/e2e --cov=src --cov-report=xml:coverage.xml --cov-report=html --cov-report=term --cov-fail-under=80
   artifacts:
     reports:
       coverage_report:
         coverage_format: cobertura
-        path: drl-trading-training/htmlcov/coverage.xml
+        path: ${CI_PROJECT_DIR}/${SERVICE_NAME}/coverage.xml
     expire_in: 1 week
+  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+
+# Reusable Docker build job template
+.build-docker-template:
+  stage: build
+  image: docker:27
+  services:
+    - docker:27-dind
+  before_script:
+    # Validate required CI/CD variables
+    - |
+      if [ -z "$AWS_ACCOUNT_ID" ] || [ -z "$AWS_REGION" ]; then
+        echo "ERROR: AWS_ACCOUNT_ID and AWS_REGION must be set in GitLab CI/CD variables"
+        echo "Go to: Settings > CI/CD > Variables"
+        exit 1
+      fi
+    - apk add --no-cache aws-cli
+    - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+  script:
+    - cd ${SERVICE_NAME}
+    - |
+      docker build \
+        -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${SERVICE_NAME}:$CI_COMMIT_SHORT_SHA \
+        -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${SERVICE_NAME}:$CI_COMMIT_BRANCH \
+        -f ${DOCKERFILE_PATH:-docker/Dockerfile} ..
+    - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${SERVICE_NAME}:$CI_COMMIT_SHORT_SHA
+    - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${SERVICE_NAME}:$CI_COMMIT_BRANCH
+
+# Test stage - runs for all branches with changes
+test:adapter:
+  extends: .test-template
+  variables:
+    SERVICE_NAME: drl-trading-adapter
+  rules:
+    - changes:
+        - drl-trading-adapter/**/*
+
+test:common:
+  extends: .test-template
+  variables:
+    SERVICE_NAME: drl-trading-common
+  rules:
+    - changes:
+        - drl-trading-common/**/*
+
+test:core:
+  extends: .test-template
+  variables:
+    SERVICE_NAME: drl-trading-core
+  rules:
+    - changes:
+        - drl-trading-core/**/*
+
+test:preprocess:
+  extends: .test-template
+  variables:
+    SERVICE_NAME: drl-trading-preprocess
+  rules:
+    - changes:
+        - drl-trading-preprocess/**/*
+
+test:training:
+  extends: .test-template
+  variables:
+    SERVICE_NAME: drl-trading-training
+  before_script:
+    - cd ${SERVICE_NAME}
+    - uv sync --group dev-full
+    - ../scripts/openapi/generate-and-install-clients.sh
+  rules:
+    - changes:
+        - drl-trading-training/**/*
+        - drl-trading-ingest/specs/**/*
 
 test:ingest:
-  stage: test
-  image: python:3.12
-  before_script:
-    - cd drl-trading-ingest
-    - pip install uv
-    - uv sync --group dev-full
-  script:
-    - uv run pytest tests/ -v
-    - uv run ruff check src/
+  extends: .test-template
+  variables:
+    SERVICE_NAME: drl-trading-ingest
   rules:
     - changes:
         - drl-trading-ingest/**/*
-  artifacts:
-    reports:
-      coverage_report:
-        coverage_format: cobertura
-        path: drl-trading-ingest/htmlcov/coverage.xml
-    expire_in: 1 week
 
-# Build stage - only for main/develop branches
-build:training:
-  stage: build
-  image: python:3.12
-  before_script:
-    - cd drl-trading-training
-    - pip install uv
-    - uv sync --group dev-full
-  script:
-    - uv run python -m build
+# Build stage - Docker images pushed to AWS ECR
+
+build:preprocess:
+  extends: .build-docker-template
+  variables:
+    SERVICE_NAME: drl-trading-preprocess
   rules:
-    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
       changes:
-        - drl-trading-training/**/*
-        - drl-trading-ingest/specs/**/*
-  artifacts:
-    paths:
-      - drl-trading-training/dist/
-    expire_in: 1 month
+        - drl-trading-preprocess/**/*
+        - drl-trading-common/**/*
+        - drl-trading-core/**/*
+        - drl-trading-adapter/**/*
+        - drl-trading-strategy-example/**/*
 
-# Deploy stage - only for main branch
-deploy:training:
-  stage: deploy
-  image: python:3.12
+# Tag stage - create release tag for deployable builds
+create:release-tag:
+  stage: tag
+  image: alpine/git:latest
   before_script:
-    - cd drl-trading-training
-    - pip install uv
-    - uv sync
+    - git config user.email "gitlab-ci@drl-trading.local"
+    - git config user.name "GitLab CI"
   script:
-    - echo "Deploy training service to production"
-    # Add your deployment commands here
-    # Example: deploy to Kubernetes, Docker registry, etc.
+    - |
+      # Create semantic version tag: v<major>.<minor>.<build-number>
+      # Build number is the pipeline IID (auto-incrementing per project)
+      TAG_NAME="v1.0.${CI_PIPELINE_IID}"
+      echo "Creating tag: $TAG_NAME"
+      git tag -a "$TAG_NAME" -m "Automated release build $CI_PIPELINE_IID from $CI_COMMIT_SHORT_SHA"
+
+      # Push tag using CI token
+      git remote set-url origin https://oauth2:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git
+      git push origin "$TAG_NAME"
+
+      echo "Tag $TAG_NAME created and pushed successfully"
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "master"
+      when: manual  # Require manual trigger to create release tags
+  environment:
+    name: tagging
+
+# Deploy stage - stub for future ECS deployment
+# Only runs for tagged releases
+deploy:preprocess:
+  stage: deploy
+  image: docker:27
+  before_script:
+    - apk add --no-cache bash aws-cli
+  script:
+    - bash scripts/aws/deploy-to-ecs.sh drl-trading-preprocess $CI_COMMIT_TAG
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/  # Only run for semantic version tags
   environment:
     name: production
-    url: https://your-training-service.com
+    url: https://drl-trading.example.com
+  when: manual  # Require manual trigger until ECS is fully configured

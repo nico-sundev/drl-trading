@@ -122,7 +122,3 @@ def bootstrap_ingest_service() -> None:
     """
     bootstrap = IngestServiceBootstrap()
     bootstrap.start()
-
-
-# Legacy alias for backward compatibility during transition
-bootstrap_ingest_service_standardized = bootstrap_ingest_service
