@@ -62,20 +62,6 @@ Data Ingestion → Feature Engineering → Model Training → Inference → Trad
 
 > **Note**: The [drl-trading-strategy-example](./drl-trading-strategy-example/) service provides a minimal reference implementation. Production strategies belong in a separate private repository for intellectual property protection.
 
-## 🏗️ Architecture (TODO)
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Data Ingest   │───▶│   Preprocessing │───▶│    Training     │
-│                 │    │                 │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                                        │
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Execution     │◄───│   Inference     │◄───│   Strategy      │
-│                 │    │                 │    │   (Pluggable)   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
-
 ## 📚 Documentation (TODO)
 
 - **[Developer Guide](docs/DEVELOPER_GUIDE.md)** - Technical setup and development workflows
