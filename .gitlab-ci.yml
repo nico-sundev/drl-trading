@@ -13,7 +13,7 @@ variables:
   # Custom CI image with UV + Docker from ECR
   # Set CI_IMAGE_TAG to override (default: latest)
   CI_IMAGE_TAG: "latest"
-  CI_IMAGE: "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/drl-trading-ci:${CI_IMAGE_TAG}"
+  CI_IMAGE: "registry.gitlab.com/${CI_PROJECT_PATH}/drl-trading-ci:latest"
   # Docker-in-Docker configuration
   DOCKER_HOST: tcp://docker:2376
   DOCKER_TLS_CERTDIR: "/certs"
