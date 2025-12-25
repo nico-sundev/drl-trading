@@ -60,6 +60,8 @@ validate:env:
     - uv sync --group dev-full
   script:
     - uv run pytest tests/ -v --ignore=tests/e2e --cov=src --cov-report=xml:coverage.xml --cov-report=html --cov-report=term --cov-fail-under=80
+  rules:
+    - if : $CI_PIPELINE_SOURCE == "merge_request_event"
   artifacts:
     reports:
       coverage_report:
@@ -93,6 +95,9 @@ validate:env:
         -f ${DOCKERFILE_PATH:-docker/Dockerfile} ..
     - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${SERVICE_NAME}:$CI_COMMIT_SHORT_SHA
     - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${SERVICE_NAME}:$CI_COMMIT_BRANCH
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
 
 # Test stage - runs for all branches with changes
 test:adapter:
@@ -154,14 +159,9 @@ build:preprocess:
   extends: .build-docker-template
   variables:
     SERVICE_NAME: drl-trading-preprocess
-  rules:
-    - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
-      changes:
-        - drl-trading-preprocess/**/*
-        - drl-trading-common/**/*
-        - drl-trading-core/**/*
-        - drl-trading-adapter/**/*
-        - drl-trading-strategy-example/**/*
+  needs:
+    - job: test:preprocess
+      optional: true
 
 # Tag stage - create release tag for deployable builds
 create:release-tag:
