@@ -14,7 +14,7 @@ set -e
 TAG="${1:-latest}"
 GITLAB_REGISTRY="${GITLAB_REGISTRY:-registry.gitlab.com}"
 IMAGE_NAME="${IMAGE_NAME:-drl-trading-ci}"
-DOCKER_BUILD_CONTEXT="$(dirname "$0")/../../.docker/ci"
+DOCKER_BUILD_CONTEXT="$(dirname "$0")/ci"
 
 # Validate required variables
 if [ -z "$GITLAB_PROJECT_PATH" ]; then

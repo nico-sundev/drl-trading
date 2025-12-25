@@ -247,7 +247,7 @@ Service container docker:27-dind running
 
 When you need to modify the image:
 
-1. Edit `.docker/ci/Dockerfile`
+1. Edit `infrastructure/cloud/docker/ci/Dockerfile`
 2. **Manually rebuild and push**: `make -f Makefile.ci push-ci-image`
 3. Verify in CI: Watch next pipeline run
 
@@ -282,5 +282,5 @@ make -f Makefile.ci shell-ci-image
 make -f Makefile.ci clean-ci-images
 
 # Quick reference
-bash scripts/docker/ci-image-quickref.sh
+bash infrastructure/cloud/docker/ci-image-quickref.sh
 ```

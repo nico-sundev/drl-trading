@@ -51,7 +51,7 @@ echo "# Build with version tag"
 echo "IMAGE_TAG=v1.0.0 make -f Makefile.ci push-ci-image"
 echo ""
 echo "# Using script directly"
-echo "./scripts/docker/build-and-push-ci-image.sh"
+echo "./infrastructure/cloud/docker/build-and-push-ci-image.sh"
 echo ""
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

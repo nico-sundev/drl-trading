@@ -22,5 +22,5 @@ make -f ../../Makefile.ci push-ci-image
 make -f ../../Makefile.ci test-ci-image
 
 # Quick reference
-bash ../../scripts/docker/ci-image-quickref.sh
+bash ../ci-image-quickref.sh
 ```

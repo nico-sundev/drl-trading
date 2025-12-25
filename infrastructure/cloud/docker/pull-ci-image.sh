@@ -2,7 +2,7 @@
 set -e
 
 # Pull CI image from AWS ECR for local testing
-# Usage: ./scripts/docker/pull-ci-image.sh [tag]
+# Usage: ./infrastructure/cloud/docker/pull-ci-image.sh [tag]
 #
 # Environment variables:
 #   AWS_REGION: AWS region (default: us-east-1)
