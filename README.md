@@ -27,15 +27,17 @@ This project demonstrates the intersection of **financial domain expertise**, **
 - **Event-driven systems** with pluggable messaging infrastructure
 - **AI-assisted development** workflows and best practices
 
-##  How It Works
+## How It Works
 
 ### The 30-Second Overview
+
 1. **Define Your Strategy**: Implement a custom reward function (10-50 lines of code)
 2. **Configure Data Sources**: Use built-in Binance API or connect your own data provider
 3. **Train Your Model**: The framework handles feature engineering, model training, and evaluation
 4. **Deploy & Trade**: Automatically generate and execute trading signals based on your trained model
 
 ### The Complete Pipeline
+
 ```
 Data Ingestion → Feature Engineering → Model Training → Inference → Trade Execution
      ↓                  ↓                    ↓             ↓              ↓
@@ -43,6 +45,7 @@ Data Ingestion → Feature Engineering → Model Training → Inference → Trad
 ```
 
 **What's Included:**
+
 - ✅ Complete microservices architecture with 5 production-ready services
 - ✅ Event-driven messaging infrastructure (easily switch between Kafka, Redis, SQS thanks to ports & adapters architecture)
 - ✅ Automated feature computation and versioning
@@ -51,6 +54,7 @@ Data Ingestion → Feature Engineering → Model Training → Inference → Trad
 - ✅ Comprehensive test suite (~90% coverage on all services)
 
 **What You Bring:**
+
 - Your trading strategy (reward function)
 - Your data sources (or use the built-in Binance integration)
 - Your deployment preferences (local, AWS)
