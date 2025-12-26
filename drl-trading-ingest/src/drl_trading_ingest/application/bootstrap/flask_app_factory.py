@@ -12,7 +12,7 @@ from flask import Flask, request
 from injector import Injector
 
 from drl_trading_ingest.adapter.web.routes import register_routes
-from drl_trading_ingest.infrastructure.config.ingest_config import IngestConfig
+from drl_trading_ingest.application.config.ingest_config import IngestConfig
 
 logger = logging.getLogger(__name__)
 

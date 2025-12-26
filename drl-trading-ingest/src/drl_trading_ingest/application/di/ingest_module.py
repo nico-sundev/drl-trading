@@ -35,10 +35,10 @@ from drl_trading_ingest.core.service.preprocessing_service import (
     PreprocessingServiceInterface,
 )
 from drl_trading_ingest.core.service.data_provider_manager import DataProviderManager
-from drl_trading_ingest.infrastructure.bootstrap.flask_app_factory import (
+from drl_trading_ingest.application.bootstrap.flask_app_factory import (
     FlaskAppFactory,
 )
-from drl_trading_ingest.infrastructure.config.ingest_config import IngestConfig
+from drl_trading_ingest.application.config.ingest_config import IngestConfig
 
 logger = logging.getLogger(__name__)
 

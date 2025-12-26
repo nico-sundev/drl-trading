@@ -20,7 +20,7 @@ from drl_trading_common.infrastructure.health.basic_health_checks import (
 )
 from drl_trading_common.infrastructure.health.health_check import HealthCheck
 from drl_trading_ingest.adapter.web.ingest_route_registrar import IngestRouteRegistrar
-from drl_trading_ingest.infrastructure.config.ingest_config import IngestConfig
+from drl_trading_ingest.application.config.ingest_config import IngestConfig
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ class IngestServiceBootstrap(FlaskServiceBootstrap):
         inside DI modules (prevents divergence & duplicate IO). Import errors
         are surfaced immediately to fail fast.
         """
-        from drl_trading_ingest.infrastructure.di.ingest_module import IngestModule  # type: ignore
+        from drl_trading_ingest.application.di.ingest_module import IngestModule  # type: ignore
 
         return [IngestModule(app_config)]
 

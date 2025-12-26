@@ -22,7 +22,7 @@ from drl_trading_ingest.core.port.migration_service_interface import (
     MigrationError,
     MigrationServiceInterface,
 )
-from drl_trading_ingest.infrastructure.config.ingest_config import IngestConfig
+from drl_trading_ingest.application.config.ingest_config import IngestConfig
 
 
 @inject
