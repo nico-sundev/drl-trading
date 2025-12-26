@@ -3,7 +3,7 @@
 from drl_trading_adapter.adapter.feature_store.offline.offline_feature_repo_interface import (
     IOfflineFeatureRepository,
 )
-from drl_trading_adapter.infrastructure.di.adapter_module import AdapterModule
+from drl_trading_adapter.application.di.adapter_module import AdapterModule
 
 
 def test_injector_loads_successfully(mocked_container):

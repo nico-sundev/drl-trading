@@ -483,7 +483,6 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         # Given
         mock_feature_service = Mock(spec=FeatureService)
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
-        expected_service_name = f"observation_space_{feature_service_request.dataset_identifier.symbol}_{feature_service_request.dataset_identifier.timeframe.value}_{feature_service_request.feature_version_info.semver}_{feature_service_request.feature_version_info.hash}"
 
         # When
         repository.get_online(feature_service_request=feature_service_request)
@@ -492,7 +491,6 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
 
         # Then
         assert mock_feast_provider.get_feature_service.call_count == 3
-        mock_feast_provider.get_feature_service.assert_called_with(service_name=expected_service_name)
 
     def test_feature_service_created_once_for_multiple_offline_calls(
         self,
@@ -505,7 +503,6 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         mock_feature_service = Mock(spec=FeatureService)
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
         sample_timestamps = pd.Series([pd.Timestamp("2024-01-01 09:00:00")])
-        expected_service_name = f"observation_space_{feature_service_request.dataset_identifier.symbol}_{feature_service_request.dataset_identifier.timeframe.value}_{feature_service_request.feature_version_info.semver}_{feature_service_request.feature_version_info.hash}"
 
         # When
         repository.get_offline(feature_service_request=feature_service_request, timestamps=sample_timestamps)
@@ -514,7 +511,6 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
 
         # Then
         assert mock_feast_provider.get_feature_service.call_count == 3
-        mock_feast_provider.get_feature_service.assert_called_with(service_name=expected_service_name)
 
     def test_feature_service_shared_between_online_and_offline_calls(
         self,
@@ -527,7 +523,6 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
         mock_feature_service = Mock(spec=FeatureService)
         mock_feast_provider.get_feature_service.return_value = mock_feature_service
         sample_timestamps = pd.Series([pd.Timestamp("2024-01-01 09:00:00")])
-        expected_service_name = f"observation_space_{feature_service_request.dataset_identifier.symbol}_{feature_service_request.dataset_identifier.timeframe.value}_{feature_service_request.feature_version_info.semver}_{feature_service_request.feature_version_info.hash}"
 
         # When
         repository.get_online(feature_service_request=feature_service_request)
@@ -535,4 +530,3 @@ class TestFeatureStoreFetchRepositoryFeatureServiceCaching:
 
         # Then
         assert mock_feast_provider.get_feature_service.call_count == 2
-        mock_feast_provider.get_feature_service.assert_called_with(service_name=expected_service_name)

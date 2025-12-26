@@ -60,6 +60,7 @@ test = [
     "testcontainers>=4.0.0",
     "minio>=7.2.10",
     "confluent-kafka>=2.3.0",
+    "import-linter>=2.0.0",  # Architecture testing
 ]
 # Development dependencies (following workspace standards)
 dev = [
@@ -83,6 +84,7 @@ dev-full = [
     "pytest-xdist>=3.0.0",
     "testcontainers>=4.0.0",
     "minio>=7.2.10",
+    "import-linter>=2.0.0",  # Architecture testing
     # Core dependencies for preprocessing
     "numpy>=1.24.0",
     "confluent-kafka>=2.3.0",

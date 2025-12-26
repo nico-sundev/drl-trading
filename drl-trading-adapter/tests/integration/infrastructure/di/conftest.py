@@ -1,7 +1,7 @@
 import pytest
 from injector import Injector
 
-from drl_trading_adapter.infrastructure.di.adapter_module import AdapterModule
+from drl_trading_adapter.application.di.adapter_module import AdapterModule
 from drl_trading_common.config.feature_config import FeatureStoreConfig, LocalRepoConfig
 from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
 
@@ -14,8 +14,6 @@ def feature_store_config() -> FeatureStoreConfig:
         entity_name="test_entity",
         ttl_days=30,
         online_enabled=False,
-        service_name="test-service",
-        service_version="1.0.0",
         config_directory="tests/resources/feature_store",
         offline_repo_strategy=OfflineRepoStrategyEnum.LOCAL,
         local_repo_config=LocalRepoConfig(repo_path="tests/resources/features"),

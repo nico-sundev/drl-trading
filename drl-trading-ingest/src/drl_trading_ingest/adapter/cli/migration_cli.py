@@ -12,13 +12,13 @@ import sys
 import click
 from injector import Injector
 from drl_trading_common.config.service_config_loader import ServiceConfigLoader
-from drl_trading_ingest.infrastructure.config.ingest_config import IngestConfig
+from drl_trading_ingest.application.config.ingest_config import IngestConfig
 
 from drl_trading_ingest.core.port.migration_service_interface import (
     MigrationError,
     MigrationServiceInterface,
 )
-from drl_trading_ingest.infrastructure.di.ingest_module import IngestModule
+from drl_trading_ingest.application.di.ingest_module import IngestModule
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

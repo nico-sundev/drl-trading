@@ -53,12 +53,12 @@ build-ci-image: ## Build CI image locally
 .PHONY: push-ci-image
 push-ci-image: ## Build and push CI image to ECR
 	@echo "Building and pushing CI image to ECR..."
-	bash scripts/docker/build-and-push-ci-image.sh $(IMAGE_TAG)
+	bash infrastructure/cloud/docker/build-and-push-ci-image.sh $(IMAGE_TAG)
 
 .PHONY: pull-ci-image
 pull-ci-image: ## Pull CI image from ECR
 	@echo "Pulling CI image from ECR..."
-	bash scripts/docker/pull-ci-image.sh $(IMAGE_TAG)
+	bash infrastructure/cloud/docker/pull-ci-image.sh $(IMAGE_TAG)
 
 .PHONY: test-ci-image
 test-ci-image: ## Test CI image locally

@@ -43,6 +43,7 @@ class FeatureStoreConfigBuilder:
         self._online_enabled = True
         self._service_name = "default_service"
         self._service_version = "1.0.0"
+        self._join_keys = ["symbol"]
 
     def with_ttl_days(self, ttl_days: int) -> "FeatureStoreConfigBuilder":
         self._ttl_days = ttl_days
@@ -65,6 +66,10 @@ class FeatureStoreConfigBuilder:
         self._service_version = version
         return self
 
+    def with_join_keys(self, join_keys: list[str]) -> "FeatureStoreConfigBuilder":
+        self._join_keys = join_keys
+        return self
+
     def build(self) -> Mock:
         """Build a mock FeatureStoreConfig with configured values."""
         config = Mock(spec=FeatureStoreConfig)
@@ -74,6 +79,7 @@ class FeatureStoreConfigBuilder:
         config.online_enabled = self._online_enabled
         config.service_name = self._service_name
         config.service_version = self._service_version
+        config.join_keys = self._join_keys
         # Add s3_repo_config to prevent AttributeError when accessing in FeastProvider._create_file_source
         config.s3_repo_config = None
         return config

@@ -28,6 +28,7 @@ class FeaturePreprocessingRequest(BaseSchema):
     - `for_training()` - Training pipeline
     - `for_inference()` - Real-time inference
     - `for_backfill()` - Historical data processing
+    - `for_catchup()` - Initial catchup before live streaming
     """
 
     # Core processing parameters
@@ -52,7 +53,7 @@ class FeaturePreprocessingRequest(BaseSchema):
     # Context for different use cases
     processing_context: str = Field(
         default="training",
-        description="Context: training | inference | backfill"
+        description="Context: training | inference | backfill | catchup"
     )
 
     # Feature store configuration
@@ -292,6 +293,60 @@ class FeaturePreprocessingRequest(BaseSchema):
             skip_existing_features=bool(kwargs.pop('skip_existing_features', False)),
             materialize_online=bool(kwargs.pop('materialize_online', False)),
             batch_size=batch_size if batch_size is not None else (int(str(kwargs.pop('batch_size'))) if 'batch_size' in kwargs and kwargs['batch_size'] is not None else None),
+            parallel_processing=bool(kwargs.pop('parallel_processing', True)),
+            **kwargs
+        )
+
+    @classmethod
+    def for_catchup(
+        cls: type["FeaturePreprocessingRequest"],
+        symbol: str,
+        target_timeframes: List[Timeframe],
+        feature_config: FeatureConfigVersionInfo,
+        start_time: datetime,
+        end_time: datetime,
+        base_timeframe: Timeframe = Timeframe.MINUTE_1,
+        **kwargs: object
+    ) -> "FeaturePreprocessingRequest":
+        """
+        Create a preprocessing request for catchup operations.
+
+        Catchup prepares the system for live inference by catching up
+        feature computation to the latest available data before streaming starts.
+
+        Catchup context defaults:
+        - incremental_mode: True (process only new data)
+        - skip_existing_features: True (avoid redundant work)
+        - force_recompute: False (use existing where available)
+        - materialize_online: False (no online push during catchup)
+        - parallel_processing: True (maximize throughput)
+        - Publishes to: completed.preprocess-data.catchup (not completed.preprocess-data)
+
+        Args:
+            symbol: Trading symbol (e.g., 'BTCUSD')
+            target_timeframes: List of timeframes to compute features for
+            feature_config: Feature configuration with version info
+            start_time: Start of catchup range
+            end_time: End of catchup range (usually latest available data)
+            base_timeframe: Base timeframe for resampling (default: 1m)
+            **kwargs: Override any other fields
+
+        Returns:
+            Configured request for catchup context
+        """
+        return cls(
+            symbol=symbol,
+            base_timeframe=base_timeframe,
+            target_timeframes=target_timeframes,
+            feature_config_version_info=feature_config,
+            start_time=start_time,
+            end_time=end_time,
+            force_recompute=bool(kwargs.pop('force_recompute', False)),
+            incremental_mode=bool(kwargs.pop('incremental_mode', True)),
+            processing_context="catchup",
+            skip_existing_features=bool(kwargs.pop('skip_existing_features', True)),
+            materialize_online=bool(kwargs.pop('materialize_online', False)),
+            batch_size=int(str(kwargs.pop('batch_size'))) if 'batch_size' in kwargs and kwargs['batch_size'] is not None and isinstance(kwargs['batch_size'], (int, str)) else None,
             parallel_processing=bool(kwargs.pop('parallel_processing', True)),
             **kwargs
         )

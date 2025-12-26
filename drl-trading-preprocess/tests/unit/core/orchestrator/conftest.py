@@ -11,6 +11,7 @@ import pytest
 from unittest.mock import Mock
 from pandas import DataFrame
 
+from drl_trading_common.core.model.processing_context import ProcessingContext
 from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_preprocess.core.orchestrator.preprocessing_orchestrator import PreprocessingOrchestrator
 from drl_trading_preprocess.core.service.compute.computing_service import FeatureComputingService
@@ -49,7 +50,7 @@ def core_request_factory() -> Callable:
         target_timeframes: list[Timeframe] | None = None,
         start_time: datetime | None = None,
         end_time: datetime | None = None,
-        processing_context: str = "training",
+        processing_context: ProcessingContext = ProcessingContext.TRAINING,
         skip_existing_features: bool = True,
         force_recompute: bool = False,
         feature_names: list[str] | None = None,
@@ -329,7 +330,7 @@ def preprocessing_orchestrator(mock_dependencies: dict) -> PreprocessingOrchestr
     go through mocks. This allows us to test the orchestration
     logic without hitting real databases or message queues.
     """
-    from drl_trading_preprocess.infrastructure.config.preprocess_config import DaskConfigs, FeatureComputationConfig
+    from drl_trading_preprocess.application.config.preprocess_config import DaskConfigs, FeatureComputationConfig
     from drl_trading_common.config.dask_config import DaskConfig
 
     # Create default DaskConfigs for tests (synchronous scheduler for deterministic behavior)

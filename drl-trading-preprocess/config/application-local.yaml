@@ -82,11 +82,8 @@ kafka_topics:
 
 feature_store_config:
   cache_enabled: true
-  entity_name: "symbol"
   ttl_days: 1
   online_enabled: false
-  service_name: "drl_trading_preprocess"
-  service_version: "1.0.0"
   config_directory: "config/local"
   offline_repo_strategy: "local"
   local_repo_config:

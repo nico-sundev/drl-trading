@@ -20,7 +20,7 @@ from drl_trading_preprocess.core.service.resample.candle_accumulator_service imp
 )
 from drl_trading_preprocess.core.model.resample.resampling_response import ResamplingResponse
 from drl_trading_preprocess.adapter.resampling.noop_state_persistence_service import NoOpStatePersistenceService
-from drl_trading_preprocess.infrastructure.config.preprocess_config import (
+from drl_trading_preprocess.application.config.preprocess_config import (
     ResampleConfig,
 )
 

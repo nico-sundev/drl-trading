@@ -12,6 +12,7 @@ from uuid import uuid4
 
 from drl_trading_core.core.model.feature_definition import FeatureDefinition
 from drl_trading_core.core.model.feature_config_version_info import FeatureConfigVersionInfo
+from drl_trading_common.core.model.processing_context import ProcessingContext
 from drl_trading_common.core.model.timeframe import Timeframe
 from pydantic import BaseModel, Field, field_validator
 
@@ -28,6 +29,7 @@ class FeaturePreprocessingRequest(BaseModel):
     - `for_training()` - Training pipeline
     - `for_inference()` - Real-time inference
     - `for_backfill()` - Historical data processing
+    - `for_catchup()` - Initial catchup before live streaming
     """
 
     # Core processing parameters
@@ -50,9 +52,9 @@ class FeaturePreprocessingRequest(BaseModel):
     )
 
     # Context for different use cases
-    processing_context: str = Field(
-        default="training",
-        description="Context: training | inference | backfill"
+    processing_context: ProcessingContext = Field(
+        default=ProcessingContext.TRAINING,
+        description="Context: TRAINING | INFERENCE | BACKFILL | CATCHUP"
     )
 
     # Feature store configuration
@@ -146,6 +148,19 @@ class FeaturePreprocessingRequest(BaseModel):
                     )
         return v
 
+    @field_validator("processing_context", mode="after")
+    @classmethod
+    def validate_processing_context_materialization(
+        cls, v: ProcessingContext, info: object
+    ) -> ProcessingContext:
+        """
+        Validate processing context and apply default materialization rules.
+
+        CATCHUP context should not materialize to online store by default.
+        """
+        # This is just validation - actual enforcement happens in model_post_init
+        return v
+
     # Utility Methods
     def get_enabled_features(self) -> List[FeatureDefinition]:
         """Get only enabled feature definitions."""
@@ -174,6 +189,10 @@ class FeaturePreprocessingRequest(BaseModel):
     def should_use_chunked_processing(self) -> bool:
         """Determine if chunked processing should be used."""
         return self.is_backfill_request() or self.get_processing_period_days() > 7
+
+    def is_catchup_request(self) -> bool:
+        """Check if this is a catchup request."""
+        return self.processing_context == ProcessingContext.CATCHUP
 
     def with_updated(self, **kwargs: object) -> "FeaturePreprocessingRequest":
         """
