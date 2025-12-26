@@ -7,7 +7,7 @@ HEXAGONAL ARCHITECTURE:
 - External interfaces live in adapter layer
 """
 
-from drl_trading_execution.infrastructure.bootstrap.execution_service_bootstrap import bootstrap_execution_service
+from drl_trading_execution.application.bootstrap.execution_service_bootstrap import bootstrap_execution_service
 
 
 def main() -> None:

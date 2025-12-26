@@ -17,8 +17,8 @@ from drl_trading_common.infrastructure.health.basic_health_checks import (
     ConfigurationHealthCheck,
 )
 from drl_trading_common.infrastructure.health.health_check import HealthCheck
-from drl_trading_execution.infrastructure.config.execution_config import ExecutionConfig
-from drl_trading_execution.infrastructure.di.execution_module import ExecutionModule
+from drl_trading_execution.application.config.execution_config import ExecutionConfig
+from drl_trading_execution.application.di.execution_module import ExecutionModule
 
 logger = logging.getLogger(__name__)
 
