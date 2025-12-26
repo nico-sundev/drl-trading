@@ -28,7 +28,7 @@ from drl_trading_common.infrastructure.health.basic_health_checks import (
 )
 from drl_trading_common.infrastructure.health.health_check import HealthCheck
 from drl_trading_common.messaging.kafka_handler_registry import KafkaHandlerRegistry
-from drl_trading_core.infrastructure.di.core_module import CoreModule
+from drl_trading_core.application.di.core_module import CoreModule
 from drl_trading_preprocess.application.config.preprocess_config import PreprocessConfig
 
 

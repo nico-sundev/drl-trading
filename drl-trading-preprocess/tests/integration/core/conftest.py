@@ -12,7 +12,7 @@ from drl_trading_core.core.service.feature.feature_factory_interface import IFea
 from drl_trading_core.core.port.technical_indicator_service_port import (
     ITechnicalIndicatorServicePort,
 )
-from drl_trading_core.infrastructure.di.core_module import CoreModule
+from drl_trading_core.application.di.core_module import CoreModule
 from drl_trading_preprocess.core.port.message_publisher_port import StoreResampledDataMessagePublisherPort
 from drl_trading_preprocess.core.port.preprocessing_message_publisher_port import (
     PreprocessingMessagePublisherPort,
