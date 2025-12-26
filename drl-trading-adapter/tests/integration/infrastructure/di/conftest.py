@@ -1,7 +1,7 @@
 import pytest
 from injector import Injector
 
-from drl_trading_adapter.infrastructure.di.adapter_module import AdapterModule
+from drl_trading_adapter.application.di.adapter_module import AdapterModule
 from drl_trading_common.config.feature_config import FeatureStoreConfig, LocalRepoConfig
 from drl_trading_common.enum.offline_repo_strategy_enum import OfflineRepoStrategyEnum
 

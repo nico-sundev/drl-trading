@@ -41,6 +41,9 @@ class FeatureStoreConfig(BaseSchema):
     local_repo_config: Optional[LocalRepoConfig] = None
     s3_repo_config: Optional[S3RepoConfig] = None
 
+    # Join keys for entity creation - column names used for joining feature views
+    join_keys: List[str] = Field(default_factory=lambda: ["symbol"])
+
 class FeatureDefinition(BaseSchema):
     """Feature definition configuration.
 

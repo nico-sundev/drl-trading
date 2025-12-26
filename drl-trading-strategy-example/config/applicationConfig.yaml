@@ -71,6 +71,8 @@ featureStoreConfig:
     region: us-east-1
     access_key_id: null
     secret_access_key: null
+  join_keys:
+    - symbol
 contextFeatureConfig:
   primaryContextColumns:
   - High

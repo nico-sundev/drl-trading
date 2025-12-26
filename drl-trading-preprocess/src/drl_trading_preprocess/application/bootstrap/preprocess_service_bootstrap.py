@@ -15,7 +15,7 @@ from typing import Dict, List, Optional
 
 from injector import Module
 
-from drl_trading_adapter.infrastructure.di.adapter_module import AdapterModule
+from drl_trading_adapter.application.di.adapter_module import AdapterModule
 from drl_trading_common.adapter.messaging.kafka_consumer_topic_adapter import (
     KafkaConsumerTopicAdapter,
 )

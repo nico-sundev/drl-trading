@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 from unittest.mock import Mock
-from drl_trading_adapter.infrastructure.di.adapter_module import AdapterModule
+from drl_trading_adapter.application.di.adapter_module import AdapterModule
 from injector import Injector, Binder, Module, provider, singleton
 
 from drl_trading_common.config.feature_config import (

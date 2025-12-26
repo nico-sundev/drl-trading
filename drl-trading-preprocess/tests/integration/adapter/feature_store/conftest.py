@@ -3,7 +3,7 @@ from datetime import datetime
 import pytest
 from injector import Injector
 
-from drl_trading_adapter.infrastructure.di.adapter_module import AdapterModule
+from drl_trading_adapter.application.di.adapter_module import AdapterModule
 from drl_trading_common.config.feature_config import (
     FeatureStoreConfig,
 )

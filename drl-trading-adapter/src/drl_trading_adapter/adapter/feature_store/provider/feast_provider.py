@@ -162,9 +162,9 @@ class FeastProvider:
 
         fields = self._create_fields_from_features([request.feature_metadata])
 
-        # Add symbol field to satisfy Feast entity join key requirement
-        # TODO: Consider making join keys configurable in the future
-        fields.append(Field(name="symbol", dtype=String))
+        # Add join key fields to satisfy Feast entity join key requirement
+        for join_key in self.feature_store_config.join_keys:
+            fields.append(Field(name=join_key, dtype=String))
 
         # Create entity
         entity = self._get_or_create_entity()
@@ -439,7 +439,7 @@ class FeastProvider:
 
         return Entity(
             name=entity_name,
-            join_keys=["symbol"],  # Column name in DataFrame, not the symbol value
+            join_keys=self.feature_store_config.join_keys,  # Column names from config
             description="Shared entity for all trading symbol asset price data",
             value_type=ValueType.STRING
         )

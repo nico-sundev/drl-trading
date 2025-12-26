@@ -4,7 +4,7 @@ from typing import Generator, Optional
 import boto3
 import pandas as pd
 import pytest
-from drl_trading_adapter.infrastructure.di.adapter_module import AdapterModule
+from drl_trading_adapter.application.di.adapter_module import AdapterModule
 from drl_trading_core.core.port.base_feature import BaseFeature
 from drl_trading_common.adapter.model.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.config.feature_config import (

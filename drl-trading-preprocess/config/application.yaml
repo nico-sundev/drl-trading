@@ -50,3 +50,11 @@ resample_config:
   state_backup_interval: 1000
   auto_cleanup_inactive_symbols: true
   inactive_symbol_threshold_hours: 24
+
+
+feature_store_config:
+  entity_name: "symbol"
+  service_name: "drl_trading_preprocess"
+  service_version: "1.0.0"
+  join_keys:
+    - "symbol"
