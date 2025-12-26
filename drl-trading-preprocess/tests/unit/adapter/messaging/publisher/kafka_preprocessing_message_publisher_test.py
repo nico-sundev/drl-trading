@@ -598,3 +598,54 @@ class TestKafkaPreprocessingMessagePublisherContextRouting:
         # Then
         call_args = mock_completion_producer.publish.call_args
         assert call_args.kwargs["topic"] == inference_topic
+
+    def test_context_routing_all_contexts_to_correct_topics(
+        self,
+        mock_completion_producer: Mock,
+        mock_error_producer: Mock,
+        default_completion_topic: str,
+        error_topic: str,
+        sample_request: FeaturePreprocessingRequest,
+    ) -> None:
+        """Test all processing contexts route to their appropriate .online, .offline, or .catchup topics."""
+        # Given
+        context_map = {
+            ProcessingContext.TRAINING: "completed.preprocess-data.offline",
+            ProcessingContext.INFERENCE: "completed.preprocess-data.online",
+            ProcessingContext.BACKFILL: "completed.preprocess-data.offline",
+            ProcessingContext.CATCHUP: "completed.preprocess-data.catchup",
+        }
+
+        publisher = KafkaPreprocessingMessagePublisher(
+            completion_producer=mock_completion_producer,
+            error_producer=mock_error_producer,
+            default_completion_topic=default_completion_topic,
+            error_topic=error_topic,
+            context_topic_map=context_map,
+        )
+
+        # Test each context
+        test_cases = [
+            (ProcessingContext.TRAINING, "completed.preprocess-data.offline"),
+            (ProcessingContext.INFERENCE, "completed.preprocess-data.online"),
+            (ProcessingContext.BACKFILL, "completed.preprocess-data.offline"),
+            (ProcessingContext.CATCHUP, "completed.preprocess-data.catchup"),
+        ]
+
+        for context, expected_topic in test_cases:
+            # When
+            mock_completion_producer.reset_mock()
+            publisher.publish_preprocessing_completed(
+                request=sample_request,
+                processing_context=context.value,
+                total_features_computed=100,
+                timeframes_processed=[Timeframe.MINUTE_5],
+                success_details={},
+            )
+
+            # Then
+            mock_completion_producer.publish.assert_called_once()
+            call_args = mock_completion_producer.publish.call_args
+            assert call_args.kwargs["topic"] == expected_topic, (
+                f"Context {context.value} should route to {expected_topic}"
+            )

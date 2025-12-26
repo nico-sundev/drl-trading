@@ -2,7 +2,6 @@
 
 ## Quick Thoughts
 
-- **Catchup Flow - Config-Driven Topic Routing**: Configure service config to map ProcessingContext.CATCHUP to completion topic "completed.preprocess-data.catchup" (avoid hardcoded logic in publishers)
 - **Catchup Flow - State Persistence**: Implement catchup state tracking for crash recovery (Redis/DB: dataset_id, status, last_processed_timestamp, warmup_satisfied, started_at, completed_at)
 - **Catchup Flow - Memory Optimization**: Implement chunked processing for large catchups (>1M records, multiple symbols) to prevent OOM
 - **Catchup Flow - Idempotency**: Add idempotency handling with Redis to allow safe retry of catchup requests without duplicate work
@@ -20,6 +19,5 @@
 - cleanup common package
   - leave common config stuff in there
 - remove hardcoded offline/online config setting for featureview creation in feast_provider.py and replace by dynamic configuration
-- remove service_name and service_version from feature_store_config and use search for references
 - implement Redis caching for OHLCV availability checks in FeatureCoverageAnalyzer to eliminate redundant database calls when processing multiple symbols/timeframes (e.g., training request with 10 symbols × 3 timeframes = 30 redundant base timeframe checks → cache with TTL)
 - refactor the whole system so not only OHLCV data is possible source for features, but also other kind of structured data (Context: in future we may want more than market data for features, for instance news data as timeseries or earning report data)
