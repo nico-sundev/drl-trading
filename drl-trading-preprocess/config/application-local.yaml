@@ -78,6 +78,9 @@ kafka_topics:
   preprocessing_error:
     topic: "error.preprocess-data"
     retry_config_key: "kafka_dlq_retry"
+  # Context-specific topic routing
+  context_completion_topics:
+    catchup: "completed.preprocess-data.catchup"
 
 
 feature_store_config:

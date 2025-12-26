@@ -56,7 +56,7 @@ class BaseArchitectureTest:
 
     def test_core_layer_independence(self, project_root: Path, rules: HexagonalArchitectureRules) -> None:
         """
-        Test that core layer does not import from adapter or infrastructure.
+        Test that core layer does not import from adapter or application.
 
         This is the most critical rule of hexagonal architecture.
         """
@@ -72,7 +72,7 @@ class BaseArchitectureTest:
             f"Core layer independence violation in {self.service_name}!\n"
             f"Rule: {rule.description}\n"
             f"Core package: {layers['core']}\n"
-            f"Forbidden imports: {layers['adapter']}, {layers['infrastructure']}\n\n"
+            f"Forbidden imports: {layers['adapter']}, {layers['application']}\n\n"
             f"Output:\n{result.stdout.decode()}"
         )
 
@@ -93,10 +93,10 @@ class BaseArchitectureTest:
             f"Output:\n{result.stdout.decode()}"
         )
 
-    def test_infrastructure_layer_integration(self, project_root: Path, rules: HexagonalArchitectureRules) -> None:
-        """Test that infrastructure layer properly integrates core and adapters."""
+    def test_application_layer_integration(self, project_root: Path, rules: HexagonalArchitectureRules) -> None:
+        """Test that application layer properly integrates core and adapters."""
         # Given
-        rule = rules.get_infrastructure_integration_rule(self.service_name)
+        rule = rules.get_application_integration_rule(self.service_name)
         layers = rules.get_layer_packages(self.service_package)
 
         # When
@@ -104,9 +104,9 @@ class BaseArchitectureTest:
 
         # Then
         assert result.returncode == 0, (
-            f"Infrastructure layer integration violation in {self.service_name}!\n"
+            f"Application layer integration violation in {self.service_name}!\n"
             f"Rule: {rule.description}\n"
-            f"Infrastructure package: {layers['infrastructure']}\n\n"
+            f"Application package: {layers['application']}\n\n"
             f"Output:\n{result.stdout.decode()}"
         )
 
@@ -182,7 +182,7 @@ class BaseArchitectureDocumentationTest:
         # Then
         assert "core" in layers
         assert "adapter" in layers
-        assert "infrastructure" in layers
+        assert "application" in layers
         assert all(self.service_package in pkg for pkg in layers.values())
 
     def test_all_rules_are_retrievable(self) -> None:

@@ -280,6 +280,9 @@ class PreprocessModule(Module):
         completion_topic = self._config.kafka_topics.preprocessing_completed.topic
         error_topic = self._config.kafka_topics.preprocessing_error.topic
 
+        # Get context-to-topic mapping from config
+        context_topic_map = self._config.kafka_topics.context_completion_topics
+
         # Create producer adapters with appropriate retry configs
         completion_producer = KafkaProducerAdapter(
             producer_config=producer_config,
@@ -296,6 +299,7 @@ class PreprocessModule(Module):
         return KafkaPreprocessingMessagePublisher(
             completion_producer=completion_producer,
             error_producer=error_producer,
-            completion_topic=completion_topic,
+            default_completion_topic=completion_topic,
             error_topic=error_topic,
+            context_topic_map=context_topic_map,
         )

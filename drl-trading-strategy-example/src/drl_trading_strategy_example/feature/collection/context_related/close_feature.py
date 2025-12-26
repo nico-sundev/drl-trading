@@ -8,7 +8,7 @@ from drl_trading_common.enum.feature_role_enum import FeatureRoleEnum
 from drl_trading_core.core.port.technical_indicator_service_port import (
     ITechnicalIndicatorServicePort,
 )
-from drl_trading_common.adapter.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 from drl_trading_strategy_example.decorator import feature_type
 from drl_trading_strategy_example.decorator.feature_type_decorator import (
     get_feature_type_from_class,

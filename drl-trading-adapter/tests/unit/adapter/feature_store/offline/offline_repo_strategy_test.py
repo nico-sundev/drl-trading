@@ -24,8 +24,6 @@ class TestOfflineRepoStrategy:
             config_directory="/test/config",
             entity_name="test_entity",
             ttl_days=30,
-            service_name="test_service",
-            service_version="1.0.0",
             offline_repo_strategy=OfflineRepoStrategyEnum.LOCAL,
             local_repo_config=local_config
         )
@@ -65,8 +63,6 @@ class TestOfflineRepoStrategy:
             config_directory="/test/config",
             entity_name="test_entity",
             ttl_days=30,
-            service_name="test_service",
-            service_version="1.0.0",
             offline_repo_strategy=OfflineRepoStrategyEnum.S3,
             s3_repo_config=s3_config
         )
@@ -103,8 +99,6 @@ class TestOfflineRepoStrategy:
             config_directory="/test/config",
             entity_name="test_entity",
             ttl_days=30,
-            service_name="test_service",
-            service_version="1.0.0",
             offline_repo_strategy=OfflineRepoStrategyEnum.LOCAL
         )
 
@@ -125,8 +119,6 @@ class TestOfflineRepoStrategy:
             config_directory="/test/config",
             entity_name="test_entity",
             ttl_days=30,
-            service_name="test_service",
-            service_version="1.0.0",
             offline_repo_strategy=OfflineRepoStrategyEnum.LOCAL
             # No local_repo_config provided
         )
@@ -145,8 +137,6 @@ class TestOfflineRepoStrategy:
             config_directory="/test/config",
             entity_name="test_entity",
             ttl_days=30,
-            service_name="test_service",
-            service_version="1.0.0",
             offline_repo_strategy=OfflineRepoStrategyEnum.S3
             # No s3_repo_config provided
         )

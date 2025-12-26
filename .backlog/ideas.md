@@ -20,8 +20,6 @@
 - cleanup common package
   - leave common config stuff in there
 - remove hardcoded offline/online config setting for featureview creation in feast_provider.py and replace by dynamic configuration
-- remove hardcoded "symbol" column in feast_provider.py and replace by a config array
-  - also consider this in JOIN KEYS Field creation in feast_provider.py
 - remove service_name and service_version from feature_store_config and use search for references
 - implement Redis caching for OHLCV availability checks in FeatureCoverageAnalyzer to eliminate redundant database calls when processing multiple symbols/timeframes (e.g., training request with 10 symbols × 3 timeframes = 30 redundant base timeframe checks → cache with TTL)
 - refactor the whole system so not only OHLCV data is possible source for features, but also other kind of structured data (Context: in future we may want more than market data for features, for instance news data as timeseries or earning report data)

@@ -28,7 +28,7 @@ class HexagonalArchitectureRules:
     @classmethod
     def get_core_independence_rule(cls, service_name: str) -> ArchitectureRule:
         """
-        Core layer must not depend on adapter or infrastructure layers.
+        Core layer must not depend on adapter or application layers.
 
         Args:
             service_name: Name of the service (e.g., 'preprocess', 'training')
@@ -36,8 +36,8 @@ class HexagonalArchitectureRules:
         return ArchitectureRule(
             name="core-independence",
             description=(
-                f"{service_name} core layer must not depend on adapter or infrastructure layers "
-                "(including all common adapter/infrastructure/application packages). "
+                f"{service_name} core layer must not depend on adapter or application layers "
+                "(including all common adapter/application packages). "
                 "Core defines ports (interfaces) that adapters implement."
             ),
             contract_type="forbidden",
@@ -46,7 +46,7 @@ class HexagonalArchitectureRules:
     @classmethod
     def get_adapter_dependency_rule(cls, service_name: str) -> ArchitectureRule:
         """
-        Adapter layer can use core but not infrastructure.
+        Adapter layer can use core but not application.
 
         Args:
             service_name: Name of the service (e.g., 'preprocess', 'training')
@@ -55,23 +55,23 @@ class HexagonalArchitectureRules:
             name="adapter-can-use-core",
             description=(
                 f"{service_name} adapter layer can depend on core layers "
-                "to implement ports, but not on infrastructure."
+                "to implement ports, but not on application."
             ),
             contract_type="layers",
         )
 
     @classmethod
-    def get_infrastructure_integration_rule(cls, service_name: str) -> ArchitectureRule:
+    def get_application_integration_rule(cls, service_name: str) -> ArchitectureRule:
         """
-        Infrastructure layer can use both core and adapter.
+        Application layer can use both core and adapter.
 
         Args:
             service_name: Name of the service (e.g., 'preprocess', 'training')
         """
         return ArchitectureRule(
-            name="infrastructure-can-use-all",
+            name="application-can-use-all",
             description=(
-                f"{service_name} infrastructure layer can depend on all layers "
+                f"{service_name} application layer can depend on all layers "
                 "(adapter, core, and common packages) to wire the application together."
             ),
             contract_type="layers",
@@ -88,7 +88,7 @@ class HexagonalArchitectureRules:
         return [
             cls.get_core_independence_rule(service_name),
             cls.get_adapter_dependency_rule(service_name),
-            cls.get_infrastructure_integration_rule(service_name),
+            cls.get_application_integration_rule(service_name),
         ]
 
     @staticmethod
@@ -105,5 +105,5 @@ class HexagonalArchitectureRules:
         return {
             "core": f"{service_package}.core",
             "adapter": f"{service_package}.adapter",
-            "infrastructure": f"{service_package}.infrastructure",
+            "application": f"{service_package}.application",
         }

@@ -126,8 +126,6 @@ def feature_store_config(temp_feast_repo: str) -> FeatureStoreConfig:
         entity_name="test_entity",
         ttl_days=30,
         online_enabled=True,
-        service_name="test-service",
-        service_version="1.0.0",
         config_directory=temp_feast_repo,
         offline_repo_strategy=OfflineRepoStrategyEnum.LOCAL,
         local_repo_config=local_repo_config,

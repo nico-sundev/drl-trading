@@ -28,8 +28,6 @@ class FeatureStoreConfig(BaseSchema):
     entity_name: str
     ttl_days: int
     online_enabled: bool = False
-    service_name: str
-    service_version: str
 
     # Feast configuration directory (where feature_store.yaml is stored)
     config_directory: str

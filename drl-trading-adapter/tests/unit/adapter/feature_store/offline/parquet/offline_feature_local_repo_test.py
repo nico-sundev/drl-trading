@@ -60,8 +60,6 @@ def local_config(temp_dir):
         cache_enabled=False,
         entity_name="test_entity",
         ttl_days=30,
-        service_name="test_service",
-        service_version="1.0.0",
         config_directory="/tmp/test"
     )
 

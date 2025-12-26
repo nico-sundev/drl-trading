@@ -31,8 +31,6 @@ class TestFeatureStoreWrapper:
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
-            service_name="test_service",
-            service_version="1.0.0",
         )
 
     @pytest.fixture
@@ -44,8 +42,6 @@ class TestFeatureStoreWrapper:
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
-            service_name="test_service",
-            service_version="1.0.0",
         )
 
     @pytest.fixture
@@ -104,8 +100,6 @@ entity_key_serialization_version: 3
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
-            service_name="test_service",
-            service_version="1.0.0",
         )
 
         mock_feast_instance = MagicMock(spec=FeatureStore)
@@ -143,8 +137,6 @@ entity_key_serialization_version: 3
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
-            service_name="test_service",
-            service_version="1.0.0",
         )
 
         mock_feast_instance = MagicMock(spec=FeatureStore)
@@ -183,8 +175,6 @@ entity_key_serialization_version: 3
                 entity_name="test_entity",
                 ttl_days=30,
                 online_enabled=False,
-                service_name="test_service",
-                service_version="1.0.0",
             )
 
             mock_feast_instance = MagicMock(spec=FeatureStore)
@@ -213,8 +203,6 @@ entity_key_serialization_version: 3
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
-            service_name="test_service",
-            service_version="1.0.0",
         )
 
         mock_feast_instance = MagicMock(spec=FeatureStore)
@@ -241,8 +229,6 @@ entity_key_serialization_version: 3
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
-            service_name="test_service",
-            service_version="1.0.0",
         )
 
         wrapper = FeatureStoreWrapper(config, "test")
@@ -258,8 +244,6 @@ entity_key_serialization_version: 3
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
-            service_name="test_service",
-            service_version="1.0.0",
         )
 
         wrapper = FeatureStoreWrapper(config, "test")
@@ -287,8 +271,6 @@ entity_key_serialization_version: 3
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
-            service_name="test_service",
-            service_version="1.0.0",
         )
 
         wrapper = FeatureStoreWrapper(config, "test")
@@ -317,8 +299,6 @@ entity_key_serialization_version: 3
                 entity_name="test_entity",
                 ttl_days=30,
                 online_enabled=False,
-                service_name="test_service",
-                service_version="1.0.0",
             )
 
             wrapper = FeatureStoreWrapper(config, "dev")
@@ -347,8 +327,6 @@ entity_key_serialization_version: 3
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
-            service_name="test_service",
-            service_version="1.0.0",
         )
 
         config2 = FeatureStoreConfig(
@@ -357,8 +335,6 @@ entity_key_serialization_version: 3
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
-            service_name="test_service",
-            service_version="1.0.0",
         )
 
         # Create two wrapper instances
@@ -395,8 +371,6 @@ entity_key_serialization_version: 3
                 entity_name="test_entity",
                 ttl_days=30,
                 online_enabled=False,
-                service_name="test_service",
-                service_version="1.0.0",
             )
 
             mock_feast_instance = MagicMock(spec=FeatureStore)
@@ -423,8 +397,6 @@ entity_key_serialization_version: 3
         assert wrapper._feature_store_config.entity_name == "test_entity"
         assert wrapper._feature_store_config.ttl_days == 30
         assert wrapper._feature_store_config.online_enabled is False
-        assert wrapper._feature_store_config.service_name == "test_service"
-        assert wrapper._feature_store_config.service_version == "1.0.0"
 
     @pytest.mark.parametrize(
         "enabled,expected_none",
@@ -454,8 +426,6 @@ entity_key_serialization_version: 3
                 entity_name="test_entity",
                 ttl_days=30,
                 online_enabled=False,
-                service_name="test_service",
-                service_version="1.0.0",
             )
 
             wrapper = FeatureStoreWrapper(config, "test")
@@ -507,8 +477,6 @@ entity_key_serialization_version: 3
                 entity_name="test_entity",
                 ttl_days=30,
                 online_enabled=False,
-                service_name="test_service",
-                service_version="1.0.0",
             )
 
             # Use injected stage directly (implementation no longer reads env)

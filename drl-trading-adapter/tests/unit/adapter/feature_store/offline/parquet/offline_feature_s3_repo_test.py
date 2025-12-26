@@ -30,8 +30,6 @@ def s3_config():
         cache_enabled=False,
         entity_name="test_entity",
         ttl_days=30,
-        service_name="test_service",
-        service_version="1.0.0",
         config_directory="/tmp/test"
     )
 
@@ -130,8 +128,6 @@ class TestOfflineS3ParquetFeatureRepoInit:
             entity_name="test_entity",
             ttl_days=30,
             online_enabled=False,
-            service_name="test_service",
-            service_version="1.0.0",
             offline_repo_strategy=OfflineRepoStrategyEnum.S3,
             s3_repo_config=s3_config
         )
@@ -147,7 +143,6 @@ class TestOfflineS3ParquetFeatureRepoInit:
         assert repo.bucket_name == "custom-bucket"
         assert repo.s3_prefix == "custom-prefix"
         mock_boto_client.assert_called_once_with(
-            service_name="s3",
             region_name="us-west-2",
             endpoint_url="http://localhost:9000",
             aws_access_key_id="test-key",
@@ -207,8 +202,6 @@ class TestOfflineS3ParquetFeatureRepoInit:
             cache_enabled=False,
             entity_name="test_entity",
             ttl_days=30,
-            service_name="test_service",
-            service_version="1.0.0",
             config_directory="/tmp/test"
         )
 

@@ -43,8 +43,8 @@ def mock_error_producer() -> Mock:
 
 
 @pytest.fixture
-def completion_topic() -> str:
-    """Kafka topic for completion events."""
+def default_completion_topic() -> str:
+    """Kafka topic for default completion events."""
     return "preprocessing.completed"
 
 
@@ -80,7 +80,7 @@ class TestKafkaPreprocessingMessagePublisherInitialization:
         self,
         mock_completion_producer: Mock,
         mock_error_producer: Mock,
-        completion_topic: str,
+        default_completion_topic: str,
         error_topic: str,
     ) -> None:
         """Test initialization with valid Kafka producers."""
@@ -88,15 +88,16 @@ class TestKafkaPreprocessingMessagePublisherInitialization:
         publisher = KafkaPreprocessingMessagePublisher(
             completion_producer=mock_completion_producer,
             error_producer=mock_error_producer,
-            completion_topic=completion_topic,
+            default_completion_topic=default_completion_topic,
             error_topic=error_topic,
         )
 
         # Then
         assert publisher._completion_producer == mock_completion_producer
         assert publisher._error_producer == mock_error_producer
-        assert publisher._completion_topic == completion_topic
+        assert publisher._default_completion_topic == default_completion_topic
         assert publisher._error_topic == error_topic
+        assert publisher._context_topic_map == {}
 
 
 class TestKafkaPreprocessingMessagePublisherPublishCompleted:
@@ -106,7 +107,7 @@ class TestKafkaPreprocessingMessagePublisherPublishCompleted:
         self,
         mock_completion_producer: Mock,
         mock_error_producer: Mock,
-        completion_topic: str,
+        default_completion_topic: str,
         error_topic: str,
         sample_request: FeaturePreprocessingRequest,
     ) -> None:
@@ -115,7 +116,7 @@ class TestKafkaPreprocessingMessagePublisherPublishCompleted:
         publisher = KafkaPreprocessingMessagePublisher(
             completion_producer=mock_completion_producer,
             error_producer=mock_error_producer,
-            completion_topic=completion_topic,
+            default_completion_topic=default_completion_topic,
             error_topic=error_topic,
         )
 
@@ -139,7 +140,7 @@ class TestKafkaPreprocessingMessagePublisherPublishCompleted:
         call_args = mock_completion_producer.publish.call_args
 
         # Verify topic and key
-        assert call_args.kwargs["topic"] == completion_topic
+        assert call_args.kwargs["topic"] == default_completion_topic
         assert call_args.kwargs["key"] == sample_request.request_id
 
         # Verify payload
@@ -166,7 +167,7 @@ class TestKafkaPreprocessingMessagePublisherPublishCompleted:
         self,
         mock_completion_producer: Mock,
         mock_error_producer: Mock,
-        completion_topic: str,
+        default_completion_topic: str,
         error_topic: str,
         sample_request: FeaturePreprocessingRequest,
     ) -> None:
@@ -175,7 +176,7 @@ class TestKafkaPreprocessingMessagePublisherPublishCompleted:
         publisher = KafkaPreprocessingMessagePublisher(
             completion_producer=mock_completion_producer,
             error_producer=mock_error_producer,
-            completion_topic=completion_topic,
+            default_completion_topic=default_completion_topic,
             error_topic=error_topic,
         )
 
@@ -208,7 +209,7 @@ class TestKafkaPreprocessingMessagePublisherPublishError:
         self,
         mock_completion_producer: Mock,
         mock_error_producer: Mock,
-        completion_topic: str,
+        default_completion_topic: str,
         error_topic: str,
         sample_request: FeaturePreprocessingRequest,
     ) -> None:
@@ -217,7 +218,7 @@ class TestKafkaPreprocessingMessagePublisherPublishError:
         publisher = KafkaPreprocessingMessagePublisher(
             completion_producer=mock_completion_producer,
             error_producer=mock_error_producer,
-            completion_topic=completion_topic,
+            default_completion_topic=default_completion_topic,
             error_topic=error_topic,
         )
 
@@ -269,7 +270,7 @@ class TestKafkaPreprocessingMessagePublisherPublishValidationError:
         self,
         mock_completion_producer: Mock,
         mock_error_producer: Mock,
-        completion_topic: str,
+        default_completion_topic: str,
         error_topic: str,
         sample_request: FeaturePreprocessingRequest,
     ) -> None:
@@ -278,7 +279,7 @@ class TestKafkaPreprocessingMessagePublisherPublishValidationError:
         publisher = KafkaPreprocessingMessagePublisher(
             completion_producer=mock_completion_producer,
             error_producer=mock_error_producer,
-            completion_topic=completion_topic,
+            default_completion_topic=default_completion_topic,
             error_topic=error_topic,
         )
 
@@ -326,7 +327,7 @@ class TestKafkaPreprocessingMessagePublisherHealthCheck:
         self,
         mock_completion_producer: Mock,
         mock_error_producer: Mock,
-        completion_topic: str,
+        default_completion_topic: str,
         error_topic: str,
     ) -> None:
         """Test health check when both producers are healthy."""
@@ -334,7 +335,7 @@ class TestKafkaPreprocessingMessagePublisherHealthCheck:
         publisher = KafkaPreprocessingMessagePublisher(
             completion_producer=mock_completion_producer,
             error_producer=mock_error_producer,
-            completion_topic=completion_topic,
+            default_completion_topic=default_completion_topic,
             error_topic=error_topic,
         )
 
@@ -353,7 +354,7 @@ class TestKafkaPreprocessingMessagePublisherHealthCheck:
         self,
         mock_completion_producer: Mock,
         mock_error_producer: Mock,
-        completion_topic: str,
+        default_completion_topic: str,
         error_topic: str,
     ) -> None:
         """Test health check when completion producer is unhealthy."""
@@ -361,7 +362,7 @@ class TestKafkaPreprocessingMessagePublisherHealthCheck:
         publisher = KafkaPreprocessingMessagePublisher(
             completion_producer=mock_completion_producer,
             error_producer=mock_error_producer,
-            completion_topic=completion_topic,
+            default_completion_topic=default_completion_topic,
             error_topic=error_topic,
         )
 
@@ -378,7 +379,7 @@ class TestKafkaPreprocessingMessagePublisherHealthCheck:
         self,
         mock_completion_producer: Mock,
         mock_error_producer: Mock,
-        completion_topic: str,
+        default_completion_topic: str,
         error_topic: str,
     ) -> None:
         """Test health check when error producer is unhealthy."""
@@ -386,7 +387,7 @@ class TestKafkaPreprocessingMessagePublisherHealthCheck:
         publisher = KafkaPreprocessingMessagePublisher(
             completion_producer=mock_completion_producer,
             error_producer=mock_error_producer,
-            completion_topic=completion_topic,
+            default_completion_topic=default_completion_topic,
             error_topic=error_topic,
         )
 
@@ -403,7 +404,7 @@ class TestKafkaPreprocessingMessagePublisherHealthCheck:
         self,
         mock_completion_producer: Mock,
         mock_error_producer: Mock,
-        completion_topic: str,
+        default_completion_topic: str,
         error_topic: str,
     ) -> None:
         """Test health check when both producers are unhealthy."""
@@ -411,7 +412,7 @@ class TestKafkaPreprocessingMessagePublisherHealthCheck:
         publisher = KafkaPreprocessingMessagePublisher(
             completion_producer=mock_completion_producer,
             error_producer=mock_error_producer,
-            completion_topic=completion_topic,
+            default_completion_topic=default_completion_topic,
             error_topic=error_topic,
         )
 
@@ -432,7 +433,7 @@ class TestKafkaPreprocessingMessagePublisherClose:
         self,
         mock_completion_producer: Mock,
         mock_error_producer: Mock,
-        completion_topic: str,
+        default_completion_topic: str,
         error_topic: str,
     ) -> None:
         """Test close calls close on both producers."""
@@ -440,7 +441,7 @@ class TestKafkaPreprocessingMessagePublisherClose:
         publisher = KafkaPreprocessingMessagePublisher(
             completion_producer=mock_completion_producer,
             error_producer=mock_error_producer,
-            completion_topic=completion_topic,
+            default_completion_topic=default_completion_topic,
             error_topic=error_topic,
         )
 
@@ -450,3 +451,150 @@ class TestKafkaPreprocessingMessagePublisherClose:
         # Then
         mock_completion_producer.close.assert_called_once()
         mock_error_producer.close.assert_called_once()
+
+
+class TestKafkaPreprocessingMessagePublisherContextRouting:
+    """Test context-driven topic routing for completion events."""
+
+    def test_context_routing_uses_catchup_topic(
+        self,
+        mock_completion_producer: Mock,
+        mock_error_producer: Mock,
+        default_completion_topic: str,
+        error_topic: str,
+        sample_request: FeaturePreprocessingRequest,
+    ) -> None:
+        """Test CATCHUP context routes to catchup-specific topic."""
+        # Given
+        catchup_topic = "preprocessing.completed.catchup"
+        context_map = {ProcessingContext.CATCHUP: catchup_topic}
+
+        publisher = KafkaPreprocessingMessagePublisher(
+            completion_producer=mock_completion_producer,
+            error_producer=mock_error_producer,
+            default_completion_topic=default_completion_topic,
+            error_topic=error_topic,
+            context_topic_map=context_map,
+        )
+
+        # When
+        publisher.publish_preprocessing_completed(
+            request=sample_request,
+            processing_context=ProcessingContext.CATCHUP.value,
+            total_features_computed=100,
+            timeframes_processed=[Timeframe.MINUTE_5],
+            success_details={},
+        )
+
+        # Then
+        mock_completion_producer.publish.assert_called_once()
+        call_args = mock_completion_producer.publish.call_args
+        assert call_args.kwargs["topic"] == catchup_topic
+
+    def test_context_routing_uses_default_for_unmapped_context(
+        self,
+        mock_completion_producer: Mock,
+        mock_error_producer: Mock,
+        default_completion_topic: str,
+        error_topic: str,
+        sample_request: FeaturePreprocessingRequest,
+    ) -> None:
+        """Test unmapped context (e.g., TRAINING) uses default topic."""
+        # Given
+        catchup_topic = "preprocessing.completed.catchup"
+        context_map = {ProcessingContext.CATCHUP: catchup_topic}
+
+        publisher = KafkaPreprocessingMessagePublisher(
+            completion_producer=mock_completion_producer,
+            error_producer=mock_error_producer,
+            default_completion_topic=default_completion_topic,
+            error_topic=error_topic,
+            context_topic_map=context_map,
+        )
+
+        # When
+        publisher.publish_preprocessing_completed(
+            request=sample_request,
+            processing_context=ProcessingContext.TRAINING.value,
+            total_features_computed=100,
+            timeframes_processed=[Timeframe.MINUTE_5],
+            success_details={},
+        )
+
+        # Then
+        mock_completion_producer.publish.assert_called_once()
+        call_args = mock_completion_producer.publish.call_args
+        assert call_args.kwargs["topic"] == default_completion_topic
+
+    def test_context_routing_handles_invalid_context_gracefully(
+        self,
+        mock_completion_producer: Mock,
+        mock_error_producer: Mock,
+        default_completion_topic: str,
+        error_topic: str,
+        sample_request: FeaturePreprocessingRequest,
+    ) -> None:
+        """Test invalid context string falls back to default topic."""
+        # Given
+        catchup_topic = "preprocessing.completed.catchup"
+        context_map = {ProcessingContext.CATCHUP: catchup_topic}
+
+        publisher = KafkaPreprocessingMessagePublisher(
+            completion_producer=mock_completion_producer,
+            error_producer=mock_error_producer,
+            default_completion_topic=default_completion_topic,
+            error_topic=error_topic,
+            context_topic_map=context_map,
+        )
+
+        # When
+        publisher.publish_preprocessing_completed(
+            request=sample_request,
+            processing_context="invalid_context",
+            total_features_computed=100,
+            timeframes_processed=[Timeframe.MINUTE_5],
+            success_details={},
+        )
+
+        # Then
+        mock_completion_producer.publish.assert_called_once()
+        call_args = mock_completion_producer.publish.call_args
+        assert call_args.kwargs["topic"] == default_completion_topic
+
+    def test_context_routing_supports_multiple_mappings(
+        self,
+        mock_completion_producer: Mock,
+        mock_error_producer: Mock,
+        default_completion_topic: str,
+        error_topic: str,
+        sample_request: FeaturePreprocessingRequest,
+    ) -> None:
+        """Test multiple context mappings work correctly."""
+        # Given
+        catchup_topic = "preprocessing.completed.catchup"
+        inference_topic = "preprocessing.completed.inference"
+        context_map = {
+            ProcessingContext.CATCHUP: catchup_topic,
+            ProcessingContext.INFERENCE: inference_topic,
+        }
+
+        publisher = KafkaPreprocessingMessagePublisher(
+            completion_producer=mock_completion_producer,
+            error_producer=mock_error_producer,
+            default_completion_topic=default_completion_topic,
+            error_topic=error_topic,
+            context_topic_map=context_map,
+        )
+
+        # When - Test INFERENCE context
+        publisher.publish_preprocessing_completed(
+            request=sample_request,
+            processing_context=ProcessingContext.INFERENCE.value,
+            total_features_computed=100,
+            timeframes_processed=[Timeframe.MINUTE_5],
+            success_details={},
+        )
+
+        # Then
+        call_args = mock_completion_producer.publish.call_args
+        assert call_args.kwargs["topic"] == inference_topic

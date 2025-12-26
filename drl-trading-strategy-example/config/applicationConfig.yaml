@@ -59,8 +59,6 @@ featureStoreConfig:
   entity_name: symbol
   ttl_days: 1
   online_enabled: false
-  service_name: ai_trading_feature_definitions
-  service_version: 0.0.1
   offline_repo_strategy: local
   local_repo_config:
     repo_path: tests/resources/test_feature_store_data

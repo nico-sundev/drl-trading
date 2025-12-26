@@ -46,8 +46,6 @@ def feature_store_config(temp_dir: str) -> FeatureStoreConfig:
         entity_name="trading_entity",
         ttl_days=30,
         online_enabled=True,
-        service_name="test_service",
-        service_version="1.0.0",
         offline_repo_strategy=OfflineRepoStrategyEnum.LOCAL,
         local_repo_config=local_repo_config
     )

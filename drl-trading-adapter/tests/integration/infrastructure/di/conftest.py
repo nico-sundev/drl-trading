@@ -14,8 +14,6 @@ def feature_store_config() -> FeatureStoreConfig:
         entity_name="test_entity",
         ttl_days=30,
         online_enabled=False,
-        service_name="test-service",
-        service_version="1.0.0",
         config_directory="tests/resources/feature_store",
         offline_repo_strategy=OfflineRepoStrategyEnum.LOCAL,
         local_repo_config=LocalRepoConfig(repo_path="tests/resources/features"),

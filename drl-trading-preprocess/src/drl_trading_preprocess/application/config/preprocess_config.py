@@ -1,5 +1,6 @@
 """Service-specific configuration for preprocess service."""
 from datetime import datetime
+from typing import Dict
 
 from pydantic import Field
 
@@ -11,6 +12,7 @@ from drl_trading_common.config.infrastructure_config import InfrastructureConfig
 from drl_trading_common.config.kafka_config import KafkaConsumerConfig, KafkaTopicConfig
 from drl_trading_common.config.service_logging_config import ServiceLoggingConfig
 from drl_trading_common.config.validators import StrictAfterMergeSchema
+from drl_trading_common.core.model.processing_context import ProcessingContext
 
 
 class FeatureComputationConfig(StrictAfterMergeSchema):
@@ -111,6 +113,8 @@ class KafkaTopicsConfig(BaseSchema):
         resampled_data: Topic for publishing resampled market data.
         preprocessing_completed: Topic for preprocessing completion events.
         preprocessing_error: Dead letter queue for preprocessing errors.
+        context_completion_topics: Mapping of ProcessingContext to completion topic names.
+            Allows different contexts (TRAINING, CATCHUP, etc.) to route to different topics.
     """
     resampled_data: KafkaTopicConfig = Field(
         ...,
@@ -118,11 +122,16 @@ class KafkaTopicsConfig(BaseSchema):
     )
     preprocessing_completed: KafkaTopicConfig = Field(
         ...,
-        description="Topic for preprocessing completion events"
+        description="Topic for preprocessing completion events (default/fallback)"
     )
     preprocessing_error: KafkaTopicConfig = Field(
         ...,
         description="Dead letter queue for preprocessing errors"
+    )
+    context_completion_topics: Dict[ProcessingContext, str] = Field(
+        default_factory=dict,
+        description="Map ProcessingContext to specific completion topic names. "
+                    "Contexts not in this map will use the default preprocessing_completed topic."
     )
 
 

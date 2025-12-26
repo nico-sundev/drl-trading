@@ -16,7 +16,7 @@ forbidden_modules =
     drl_trading_preprocess.adapter
     drl_trading_preprocess.application
     drl_trading_common.adapter
-    drl_trading_common.infrastructure
+    drl_trading_common.application
     drl_trading_common.application
     drl_trading_adapter.adapter
 
@@ -33,8 +33,8 @@ name = Application layer can use core and adapter
 type = layers
 layers =
     drl_trading_preprocess.application
+    drl_trading_common.application
     drl_trading_preprocess.adapter
+    drl_trading_common.adapter
     drl_trading_preprocess.core
     drl_trading_common.core
-    drl_trading_common.adapter
-    drl_trading_common.infrastructure

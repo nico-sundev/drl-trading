@@ -54,7 +54,5 @@ resample_config:
 
 feature_store_config:
   entity_name: "symbol"
-  service_name: "drl_trading_preprocess"
-  service_version: "1.0.0"
   join_keys:
     - "symbol"
