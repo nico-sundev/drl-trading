@@ -11,7 +11,7 @@ import signal
 import logging
 import sys
 import time
-from drl_trading_common.infrastructure.web.generic_flask_app_factory import (
+from drl_trading_common.application.web.generic_flask_app_factory import (
     RouteRegistrar,
 )
 from injector import Injector, Module
@@ -19,7 +19,7 @@ from flask import Flask
 
 from drl_trading_common.base.base_application_config import BaseApplicationConfig
 from drl_trading_common.logging.bootstrap_logging import retire_bootstrap_logger
-from drl_trading_common.infrastructure.bootstrap.startup_context import StartupContext
+from drl_trading_common.application.bootstrap.startup_context import StartupContext
 
 logger = logging.getLogger(__name__)
 
@@ -243,7 +243,7 @@ class ServiceBootstrap(ABC):
     def _setup_health_checks(self) -> None:
         """Setup standardized health check endpoints."""
         try:
-            from drl_trading_common.infrastructure.health.health_check_service import (
+            from drl_trading_common.application.health.health_check_service import (
                 HealthCheckService,
             )
 
@@ -262,7 +262,7 @@ class ServiceBootstrap(ABC):
         """Setup Flask web interface if enabled."""
         if self.enable_web_interface():
             try:
-                from drl_trading_common.infrastructure.web.generic_flask_app_factory import (
+                from drl_trading_common.application.web.generic_flask_app_factory import (
                     GenericFlaskAppFactory,
                     DefaultRouteRegistrar,
                 )

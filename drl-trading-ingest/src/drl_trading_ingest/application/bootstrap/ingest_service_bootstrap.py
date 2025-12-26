@@ -10,15 +10,15 @@ from typing import List
 
 from injector import Module
 
-from drl_trading_common.infrastructure.bootstrap.flask_service_bootstrap import (
+from drl_trading_common.application.bootstrap.flask_service_bootstrap import (
     FlaskServiceBootstrap,
 )
-from drl_trading_common.infrastructure.health.basic_health_checks import (
+from drl_trading_common.application.health.basic_health_checks import (
     ConfigurationHealthCheck,
     ServiceStartupHealthCheck,
     SystemResourcesHealthCheck,
 )
-from drl_trading_common.infrastructure.health.health_check import HealthCheck
+from drl_trading_common.application.health.health_check import HealthCheck
 from drl_trading_ingest.adapter.web.ingest_route_registrar import IngestRouteRegistrar
 from drl_trading_ingest.application.config.ingest_config import IngestConfig
 

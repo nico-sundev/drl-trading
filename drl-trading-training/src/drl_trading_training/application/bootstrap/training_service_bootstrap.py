@@ -10,15 +10,15 @@ from typing import List
 
 from injector import Module
 
-from drl_trading_common.infrastructure.bootstrap.service_bootstrap import ServiceBootstrap
-from drl_trading_common.infrastructure.health.basic_health_checks import (
+from drl_trading_common.application.bootstrap.service_bootstrap import ServiceBootstrap
+from drl_trading_common.application.health.basic_health_checks import (
     SystemResourcesHealthCheck,
     ServiceStartupHealthCheck,
     ConfigurationHealthCheck
 )
 from drl_trading_training.infrastructure.config.training_config import TrainingConfig
 from drl_trading_training.infrastructure.di.training_module import TrainingModule
-from drl_trading_common.infrastructure.health.health_check import HealthCheck
+from drl_trading_common.application.health.health_check import HealthCheck
 
 logger = logging.getLogger(__name__)
 

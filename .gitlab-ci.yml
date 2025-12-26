@@ -61,8 +61,7 @@ validate:env:
   script:
     - uv run pytest tests/ -v --ignore=tests/e2e --cov=src --cov-report=xml:coverage.xml --cov-report=html --cov-report=term --cov-fail-under=80
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH  # Run on main branch for coverage badge
+    - if : $CI_PIPELINE_SOURCE == "merge_request_event"
   artifacts:
     reports:
       coverage_report:

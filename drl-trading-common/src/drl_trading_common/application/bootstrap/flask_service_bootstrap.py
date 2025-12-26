@@ -1,7 +1,7 @@
 import logging
 import sys
 
-from drl_trading_common.infrastructure.bootstrap.service_bootstrap import (
+from drl_trading_common.application.bootstrap.service_bootstrap import (
     ServiceBootstrap,
 )
 

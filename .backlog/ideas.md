@@ -7,7 +7,6 @@
 - **Catchup Flow - Memory Optimization**: Implement chunked processing for large catchups (>1M records, multiple symbols) to prevent OOM
 - **Catchup Flow - Idempotency**: Add idempotency handling with Redis to allow safe retry of catchup requests without duplicate work
 - go on with e2e training test
-- reconsider naming standard for each services module: "infrastructure" -> "application"
 - refactoring the interface between drl-trading-core and drl-trading-strategy
   - currently: 100% decoupling, both depend on interfaces in drl-trading-common, coupling happens in service where both are needed (preprocessing), directly in injector setup
   - future expectation: treat drl-trading-strategy like an adapter, following existing hexarch design
@@ -17,7 +16,6 @@
     - evaluate best way to tie together both packages practically using DI injector (use drl-trading-preprocess to examine)
 - refactor drl-trading-strategy-example in terms of hexarch design and fix violations (like the TypeMapper dependency of core -> adapter [feature -> indicator])
 - refactoring kafka_consumer_topic_adapter.py: move to adapter package and use DI to instantiate, remove from service bootstrap
-- integrate archunit tests to test hexagonal achitecture
 - design abstract resiliency patters: combine tenacity retry logic with python circuit breakers
 - cleanup common package
   - leave common config stuff in there

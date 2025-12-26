@@ -10,7 +10,7 @@ import psutil
 import time
 from typing import Dict, Any, List, Optional
 
-from drl_trading_common.infrastructure.health.health_check import (
+from drl_trading_common.application.health.health_check import (
     HealthCheck,
     HealthStatus,
 )

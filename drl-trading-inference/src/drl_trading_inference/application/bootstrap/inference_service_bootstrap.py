@@ -11,13 +11,13 @@ from typing import List
 from drl_trading_inference.application.di.inference_module import InferenceModule
 from injector import Module
 
-from drl_trading_common.infrastructure.bootstrap.flask_service_bootstrap import FlaskServiceBootstrap
-from drl_trading_common.infrastructure.health.basic_health_checks import (
+from drl_trading_common.application.bootstrap.flask_service_bootstrap import FlaskServiceBootstrap
+from drl_trading_common.application.health.basic_health_checks import (
     SystemResourcesHealthCheck,
     ServiceStartupHealthCheck,
     ConfigurationHealthCheck,
 )
-from drl_trading_common.infrastructure.health.health_check import HealthCheck
+from drl_trading_common.application.health.health_check import HealthCheck
 from drl_trading_inference.application.config.inference_config import InferenceConfig
 
 logger = logging.getLogger(__name__)

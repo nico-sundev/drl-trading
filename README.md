@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![uv](https://img.shields.io/badge/dependency%20manager-uv-blue)](https://github.com/astral-sh/uv)
-[![Coverage](https://img.shields.io/gitlab/coverage/ai1473543/tradingbot3.0/main)](https://gitlab.com/ai1473543/tradingbot3.0/-/graphs/main/charts)
+[![Test Coverage](https://img.shields.io/badge/coverage-~90%25-brightgreen)](https://gitlab.com/ai1473543/tradingbot3.0)
 
 ## Current state
 

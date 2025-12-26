@@ -8,7 +8,7 @@ import logging
 from flask import Flask
 from injector import Injector
 
-from drl_trading_common.infrastructure.web.generic_flask_app_factory import RouteRegistrar
+from drl_trading_common.application.web.generic_flask_app_factory import RouteRegistrar
 
 logger = logging.getLogger(__name__)
 

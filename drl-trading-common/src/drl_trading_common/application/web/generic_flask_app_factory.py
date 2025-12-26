@@ -13,7 +13,7 @@ from flask import Flask, request, jsonify
 from injector import Injector
 
 from drl_trading_common.base.base_application_config import BaseApplicationConfig
-from drl_trading_common.infrastructure.health.health_check_service import (
+from drl_trading_common.application.health.health_check_service import (
     HealthCheckService,
 )
 

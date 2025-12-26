@@ -20,13 +20,13 @@ from drl_trading_common.adapter.messaging.kafka_consumer_topic_adapter import (
     KafkaConsumerTopicAdapter,
 )
 from drl_trading_common.config.kafka_config import ConsumerFailurePolicy
-from drl_trading_common.infrastructure.bootstrap.flask_service_bootstrap import FlaskServiceBootstrap
-from drl_trading_common.infrastructure.health.basic_health_checks import (
+from drl_trading_common.application.bootstrap.flask_service_bootstrap import FlaskServiceBootstrap
+from drl_trading_common.application.health.basic_health_checks import (
     SystemResourcesHealthCheck,
     ServiceStartupHealthCheck,
     ConfigurationHealthCheck,
 )
-from drl_trading_common.infrastructure.health.health_check import HealthCheck
+from drl_trading_common.application.health.health_check import HealthCheck
 from drl_trading_common.messaging.kafka_handler_registry import KafkaHandlerRegistry
 from drl_trading_core.application.di.core_module import CoreModule
 from drl_trading_preprocess.application.config.preprocess_config import PreprocessConfig

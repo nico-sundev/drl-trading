@@ -10,13 +10,13 @@ from typing import List
 
 from injector import Module
 
-from drl_trading_common.infrastructure.bootstrap.flask_service_bootstrap import FlaskServiceBootstrap
-from drl_trading_common.infrastructure.health.basic_health_checks import (
+from drl_trading_common.application.bootstrap.flask_service_bootstrap import FlaskServiceBootstrap
+from drl_trading_common.application.health.basic_health_checks import (
     SystemResourcesHealthCheck,
     ServiceStartupHealthCheck,
     ConfigurationHealthCheck,
 )
-from drl_trading_common.infrastructure.health.health_check import HealthCheck
+from drl_trading_common.application.health.health_check import HealthCheck
 from drl_trading_execution.application.config.execution_config import ExecutionConfig
 from drl_trading_execution.application.di.execution_module import ExecutionModule
 
