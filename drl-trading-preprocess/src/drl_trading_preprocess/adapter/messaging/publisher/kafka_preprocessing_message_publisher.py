@@ -77,7 +77,7 @@ class KafkaPreprocessingMessagePublisher(PreprocessingMessagePublisherPort):
 
         Args:
             request: Original preprocessing request.
-            processing_context: Processing mode ("training", "inference", "backfill").
+            processing_context: Processing mode ("training", "inference", "backfill", "catchup").
             total_features_computed: Number of features computed across all timeframes.
             timeframes_processed: List of timeframes that were successfully processed.
             success_details: Additional details about the successful processing.

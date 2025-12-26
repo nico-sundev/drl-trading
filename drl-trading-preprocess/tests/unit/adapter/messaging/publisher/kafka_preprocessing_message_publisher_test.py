@@ -15,6 +15,7 @@ from drl_trading_common.adapter.model.feature_preprocessing_request import (
     FeaturePreprocessingRequest,
 )
 from drl_trading_common.adapter.model.timeframe import Timeframe
+from drl_trading_common.core.model.processing_context import ProcessingContext
 from drl_trading_preprocess.adapter.messaging.publisher.kafka_preprocessing_message_publisher import (
     KafkaPreprocessingMessagePublisher,
 )
@@ -66,7 +67,7 @@ def sample_request() -> FeaturePreprocessingRequest:
             start=datetime(2024, 1, 1, 0, 0, 0),
             end=datetime(2024, 1, 1, 23, 59, 59),
         )
-        .with_processing_context("training")
+        .with_processing_context(ProcessingContext.TRAINING.value)
         .with_feature_names("sma_20", "rsi_14")
         .build()
     )
@@ -127,7 +128,7 @@ class TestKafkaPreprocessingMessagePublisherPublishCompleted:
         # When
         publisher.publish_preprocessing_completed(
             request=sample_request,
-            processing_context="training",
+            processing_context=ProcessingContext.TRAINING.value,
             total_features_computed=100,
             timeframes_processed=timeframes_processed,
             success_details=success_details,
@@ -187,7 +188,7 @@ class TestKafkaPreprocessingMessagePublisherPublishCompleted:
         # When
         publisher.publish_preprocessing_completed(
             request=sample_request,
-            processing_context="inference",
+            processing_context=ProcessingContext.INFERENCE.value,
             total_features_computed=250,
             timeframes_processed=timeframes_processed,
             success_details={},
@@ -228,7 +229,7 @@ class TestKafkaPreprocessingMessagePublisherPublishError:
         # When
         publisher.publish_preprocessing_error(
             request=sample_request,
-            processing_context="training",
+            processing_context=ProcessingContext.TRAINING.value,
             error_message="Failed to compute features",
             error_details=error_details,
             failed_step="feature_computation",

@@ -69,7 +69,7 @@ dev-full = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/pypi/drl_trading_inference"]
+packages = ["src/drl_trading_inference"]
 
 # Project-specific ruff configuration (overrides workspace defaults where needed)
 [tool.ruff.lint.isort]

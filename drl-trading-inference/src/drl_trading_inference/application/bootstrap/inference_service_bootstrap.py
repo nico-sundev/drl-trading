@@ -8,7 +8,7 @@ for health checks while maintaining the inference service's core functionality.
 import logging
 from typing import List
 
-from drl_trading_inference.infrastructure.di.InferenceModule import InferenceModule
+from drl_trading_inference.application.di.inference_module import InferenceModule
 from injector import Module
 
 from drl_trading_common.infrastructure.bootstrap.flask_service_bootstrap import FlaskServiceBootstrap
@@ -18,7 +18,7 @@ from drl_trading_common.infrastructure.health.basic_health_checks import (
     ConfigurationHealthCheck,
 )
 from drl_trading_common.infrastructure.health.health_check import HealthCheck
-from drl_trading_inference.infrastructure.config.inference_config import InferenceConfig
+from drl_trading_inference.application.config.inference_config import InferenceConfig
 
 logger = logging.getLogger(__name__)
 

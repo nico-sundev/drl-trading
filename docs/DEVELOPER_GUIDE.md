@@ -86,13 +86,8 @@ STAGE=local uv run python main.py
 # 4. (Optional) Tear down docker containers
 ./run-services.sh down
 
-# Startup observability
-# Each service startup is instrumented with StartupContext.
-# Wrap new bootstrap steps in ctx.phase("<name>") and add dependency probes instead of ad-hoc logs.
-# See OBSERVABILITY_STARTUP.md for schema & conventions.
-
-# Integration testing
-docker-compose -f docker-compose.training.yml up
+# E2e testing
+./run-services.sh training up
 ./scripts/e2e_test.sh
 ```
 
@@ -101,7 +96,9 @@ docker-compose -f docker-compose.training.yml up
 - **Testing**: Given/When/Then structure, 80%+ coverage
 - **Quality**: `ruff check . --fix` and `mypy src/`
 - **Architecture**: Hexagonal patterns, SOLID principles
-- **Startup Observability**: Maintain `STARTUP SUMMARY` schema (see OBSERVABILITY_STARTUP.md); add phases sparingly; prefer attributes & probes.
+  - **Architecture Tests**: Automated enforcement via import-linter (see [tests/README.md](../tests/README.md))
+  - Run per-service: `pytest tests/unit/architecture/ -v`
+  - Run all services: `pytest tests/architecture_all_services_test.py -v`
 - **Dependencies**: uv only, project-level groups
 
 ## Configuration

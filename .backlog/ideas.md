@@ -2,6 +2,10 @@
 
 ## Quick Thoughts
 
+- **Catchup Flow - Config-Driven Topic Routing**: Configure service config to map ProcessingContext.CATCHUP to completion topic "completed.preprocess-data.catchup" (avoid hardcoded logic in publishers)
+- **Catchup Flow - State Persistence**: Implement catchup state tracking for crash recovery (Redis/DB: dataset_id, status, last_processed_timestamp, warmup_satisfied, started_at, completed_at)
+- **Catchup Flow - Memory Optimization**: Implement chunked processing for large catchups (>1M records, multiple symbols) to prevent OOM
+- **Catchup Flow - Idempotency**: Add idempotency handling with Redis to allow safe retry of catchup requests without duplicate work
 - go on with e2e training test
 - reconsider naming standard for each services module: "infrastructure" -> "application"
 - refactoring the interface between drl-trading-core and drl-trading-strategy
@@ -13,7 +17,6 @@
     - evaluate best way to tie together both packages practically using DI injector (use drl-trading-preprocess to examine)
 - refactor drl-trading-strategy-example in terms of hexarch design and fix violations (like the TypeMapper dependency of core -> adapter [feature -> indicator])
 - refactoring kafka_consumer_topic_adapter.py: move to adapter package and use DI to instantiate, remove from service bootstrap
-- test cov in adapter too low -> 40%
 - integrate archunit tests to test hexagonal achitecture
 - design abstract resiliency patters: combine tenacity retry logic with python circuit breakers
 - cleanup common package
