@@ -44,8 +44,6 @@ def feature_store_config(temp_dir: str) -> FeatureStoreConfig:
         entity_name="trading_entity",
         ttl_days=30,
         online_enabled=True,
-        service_name="test_service",
-        service_version="1.0.0",
         offline_repo_strategy=OfflineRepoStrategyEnum.LOCAL,
         local_repo_config=local_repo_config
     )
@@ -200,7 +198,7 @@ def feature_view_requests(
     eurusd_h1_symbol: str,
 ) -> list[FeatureViewMetadata]:
     """Create sample FeatureViewRequest list for tests."""
-    from drl_trading_common.adapter.model.dataset_identifier import DatasetIdentifier
+    from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
     dataset_identifier = DatasetIdentifier(symbol=eurusd_h1_symbol, timeframe=Timeframe.HOUR_1)
     return [
         FeatureViewMetadata(

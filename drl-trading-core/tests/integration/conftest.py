@@ -27,7 +27,7 @@ from drl_trading_core.core.service.feature.feature_factory_interface import (
 from drl_trading_core.core.port.technical_indicator_service_port import (
     ITechnicalIndicatorServicePort,
 )
-from drl_trading_common.adapter.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.adapter.model.feature_config_version_info import (
     FeatureConfigVersionInfo,
 )
@@ -560,8 +560,6 @@ def real_feast_container(
             "entityName": config_fixture.feature_store_config.entity_name,
             "ttlDays": config_fixture.feature_store_config.ttl_days,
             "onlineEnabled": True,
-            "serviceName": config_fixture.feature_store_config.service_name,
-            "serviceVersion": config_fixture.feature_store_config.service_version,
             "offlineRepoStrategy": "local",
             "localRepoConfig": {"repoPath": str(temp_feast_repo)},
             "s3RepoConfig": {
@@ -872,8 +870,6 @@ entity_key_serialization_version: 3
             "entityName": s3_feature_store_config.entity_name,
             "ttlDays": s3_feature_store_config.ttl_days,
             "onlineEnabled": s3_feature_store_config.online_enabled,
-            "serviceName": s3_feature_store_config.service_name,
-            "serviceVersion": s3_feature_store_config.service_version,
             "offlineRepoStrategy": "s3",
             "s3RepoConfig": {
                 "bucketName": s3_feature_store_config.s3_repo_config.bucket_name,

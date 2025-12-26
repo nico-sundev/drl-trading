@@ -17,11 +17,11 @@ from drl_trading_ingest.core.port.migration_service_interface import (
     MigrationError,
     MigrationServiceInterface,
 )
-from drl_trading_ingest.infrastructure.config.data_ingestion_config import (
+from drl_trading_ingest.application.config.data_ingestion_config import (
     DataIngestionConfig,
 )
-from drl_trading_ingest.infrastructure.config.ingest_config import IngestConfig
-from drl_trading_ingest.infrastructure.di.ingest_module import IngestModule
+from drl_trading_ingest.application.config.ingest_config import IngestConfig
+from drl_trading_ingest.application.di.ingest_module import IngestModule
 
 
 class TestAlembicMigrationServiceIntegration:

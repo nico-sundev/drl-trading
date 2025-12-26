@@ -28,8 +28,6 @@ class FeatureStoreConfig(BaseSchema):
     entity_name: str
     ttl_days: int
     online_enabled: bool = False
-    service_name: str
-    service_version: str
 
     # Feast configuration directory (where feature_store.yaml is stored)
     config_directory: str
@@ -40,6 +38,9 @@ class FeatureStoreConfig(BaseSchema):
     # Repository-specific configurations
     local_repo_config: Optional[LocalRepoConfig] = None
     s3_repo_config: Optional[S3RepoConfig] = None
+
+    # Join keys for entity creation - column names used for joining feature views
+    join_keys: List[str] = Field(default_factory=lambda: ["symbol"])
 
 class FeatureDefinition(BaseSchema):
     """Feature definition configuration.

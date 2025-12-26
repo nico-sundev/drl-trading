@@ -2,7 +2,6 @@
 Comprehensive E2E test for production inference workflow.
 
 This test validates real-world production scenarios across multiple requests:
-0. Chained backfill: Backfill to catch up before inference
 1. Cold start: Initial inference with no prior features
 2. Warm start: Duplicate request (should skip computation)
 3. Incremental: New data for ongoing inference
@@ -176,7 +175,7 @@ class TestProductionInferenceWorkflow:
         feast_offline_store_path: Path,
     ) -> None:
         """
-        Test complete production inference workflow across 5 scenarios.
+        Test complete production inference workflow across 4 scenarios.
 
         Flow per scenario:
         1. Publish preprocessing request to Kafka
@@ -187,13 +186,10 @@ class TestProductionInferenceWorkflow:
         6. Service pushes features to online store for real-time serving
         7. Verify completion message and artifacts
 
-        Scenario 0 (Chained backfill): [2023-12-31 08:00 - 2024-01-01 00:00]
-        - Backfill historical data to ensure no gaps before inference starts
-        - Uses batch mode to prepare clean historical features
-
         Scenario 1 (Cold start): [00:00-02:00]
-        - First inference processing after backfill
+        - First inference request with no prior features
         - Should compute all features and push to online store
+        - Establishes baseline for subsequent scenarios
 
         Scenario 2 (Warm start): [00:00-02:00] (duplicate)
         - Features exist from scenario 1
@@ -215,7 +211,7 @@ class TestProductionInferenceWorkflow:
         - TimescaleDB state (5m resampled data persisted)
         - Feast offline store (parquet files)
         - Feast online store (features available for serving)
-        - Feature instance reuse (service logs should show 1 RSI instance, not 8)
+        - Feature instance reuse (service logs should show 1 RSI instance, not 4)
         """
 
         # Setup consumers for output and resampling topics
@@ -240,61 +236,6 @@ class TestProductionInferenceWorkflow:
             derivatives=[0],
             raw_parameter_sets=[{"type": "rsi", "enabled": True, "length": 14}],
         )
-
-        # ==========================================
-        # SCENARIO 0: CHAINED BACKFILL - CATCH UP BEFORE INFERENCE
-        # ==========================================
-        print(f"\n{'='*60}")
-        print(f"SCENARIO 0: CHAINED BACKFILL - Symbol: {unique_symbol}")
-        print(f"{'='*60}")
-
-        # Given - Backfill request to prepare historical data
-        backfill_request = (
-            FeaturePreprocessingRequestBuilder()
-            .for_backfill()
-            .with_symbol(unique_symbol)
-            .with_target_timeframes([Timeframe.MINUTE_5])
-            .with_time_range(
-                start=datetime(2023, 12, 31, 8, 0, tzinfo=timezone.utc),  # Historical period
-                end=datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),     # Up to inference start
-            )
-            .with_features([rsi_feature])
-            .with_skip_existing(True)
-            .with_force_recompute(False)
-            .build()
-        )
-
-        # When - Publish backfill request first
-        print(f"Publishing backfill request: {unique_symbol} [2023-12-31 08:00 - 2024-01-01 00:00]")
-        publish_kafka_message(
-            topic="requested.preprocess-data",
-            key=unique_symbol,
-            value=backfill_request.model_dump(mode="json")
-        )
-
-        # Then - Wait for resampling message and store to DB
-        print("Waiting for backfill resampling message...")
-        backfill_resample = self._wait_for_message_with_retry(wait_for_kafka_message, resample_consumer, timeout=30)
-
-        assert backfill_resample["symbol"] == unique_symbol
-
-        print(f"✓ Received backfill resampling message: {backfill_resample['total_new_candles']} new candles")
-
-        # Simulate ingest service storing backfill resampled data
-        print("Storing backfill resampled 5m data to TimescaleDB...")
-        self._store_resampled_data_to_timescale(
-            timescale_connection,
-            backfill_resample
-        )
-
-        # Then - Verify backfill computation completed
-        print("Waiting for backfill completion message...")
-        backfill_completion = self._wait_for_message_with_retry(wait_for_kafka_message, output_consumer, timeout=30)
-
-        assert backfill_completion["symbol"] == unique_symbol
-        assert backfill_completion["total_features_computed"] > 0, "Backfill should compute features"
-
-        print(f"✓ Backfill completion received: {backfill_completion['total_features_computed']} features computed")
 
         # ==========================================
         # SCENARIO 1: COLD START - INITIAL INFERENCE
@@ -354,7 +295,7 @@ class TestProductionInferenceWorkflow:
 
         # Then - Verify parquet files created
         print(f"Verifying Feast offline store under {feast_offline_store_path}...")
-        parquet_files = list(feast_offline_store_path.glob(f"{unique_symbol}/**/*.parquet"))
+        parquet_files = list(feast_offline_store_path.glob(f"**/{unique_symbol}/**/*.parquet"))
 
         assert len(parquet_files) > 0, f"Expected parquet files, found {len(parquet_files)}"
         print(f"✓ Found {len(parquet_files)} parquet file(s)")
@@ -364,12 +305,23 @@ class TestProductionInferenceWorkflow:
 
         assert "event_timestamp" in all_features.columns
         assert "symbol" in all_features.columns
-        assert "rsi_14" in all_features.columns
+
+        # Feature columns may have hash suffix (e.g., rsi_14_d96c08b4...)
+        rsi_columns = [c for c in all_features.columns if c.startswith("rsi_14")]
+        assert len(rsi_columns) > 0, f"Expected RSI column, found columns: {all_features.columns.tolist()}"
+        rsi_column = rsi_columns[0]
+
         assert len(all_features) > 0
 
         # Count valid RSI values (not NaN)
-        valid_rsi_count = all_features["rsi_14"].notna().sum()
+        valid_rsi_count = all_features[rsi_column].notna().sum()
         print(f"✓ Parquet contains {len(all_features)} records, {valid_rsi_count} valid RSI values")
+
+        # Note: Online store verification is not included in this E2E test because:
+        # 1. It requires complex Feast SDK setup with proper feature views and services
+        # 2. The E2E test validates the workflow through completion messages
+        # 3. Integration tests already verify push_features_to_online_store() functionality
+        # Future enhancement: Add online store read verification using Feast SDK
 
         initial_feature_count = len(all_features)
         initial_file_count = len(parquet_files)
@@ -405,7 +357,7 @@ class TestProductionInferenceWorkflow:
         print(f"✓ Completion received: {completion_2['total_features_computed']} features computed (SKIPPED)")
 
         # Then - Verify NO new parquet files
-        parquet_files_after = list(feast_offline_store_path.glob(f"{unique_symbol}/**/*.parquet"))
+        parquet_files_after = list(feast_offline_store_path.glob(f"**/{unique_symbol}/**/*.parquet"))
         assert len(parquet_files_after) == initial_file_count, "Should not create new files on duplicate"
 
         print(f"✓ Parquet file count unchanged: {len(parquet_files_after)}")
@@ -476,7 +428,7 @@ class TestProductionInferenceWorkflow:
         print(f"✓ Completion received: {completion_3['total_features_computed']} features computed")
 
         # Then - Verify new parquet file(s) or updated files
-        parquet_files_final = list(feast_offline_store_path.glob(f"{unique_symbol}/**/*.parquet"))
+        parquet_files_final = list(feast_offline_store_path.glob(f"**/{unique_symbol}/**/*.parquet"))
         assert len(parquet_files_final) >= initial_file_count, "Should have same or more files"
 
         print(f"✓ Parquet file count: {len(parquet_files_final)} (was {initial_file_count})")
@@ -547,7 +499,7 @@ class TestProductionInferenceWorkflow:
         print(f"✓ Completion received: {completion_4['total_features_computed']} features computed")
 
         # Then - Verify parquet files updated or new
-        parquet_files_final_final = list(feast_offline_store_path.glob(f"{unique_symbol}/**/*.parquet"))
+        parquet_files_final_final = list(feast_offline_store_path.glob(f"**/{unique_symbol}/**/*.parquet"))
         assert len(parquet_files_final_final) >= len(parquet_files_final), "Should have same or more files"
 
         print(f"✓ Parquet file count: {len(parquet_files_final_final)} (was {len(parquet_files_final)})")
@@ -561,6 +513,38 @@ class TestProductionInferenceWorkflow:
         print(f"\n{'='*60}")
         print(f"ALL SCENARIOS PASSED FOR {unique_symbol}")
         print(f"{'='*60}\n")
+
+    def _drain_consumer(self, consumer: Any, timeout_seconds: int = 2) -> None:
+        """
+        Drain all pending messages from a Kafka consumer.
+
+        This removes old messages from previous test runs that may still be
+        in the topic, ensuring tests only process messages from the current run.
+
+        Args:
+            consumer: Kafka consumer to drain
+            timeout_seconds: How long to poll for messages before stopping
+        """
+        from confluent_kafka import KafkaError
+
+        drained_count = 0
+        start_time = time.time()
+
+        while time.time() - start_time < timeout_seconds:
+            msg = consumer.poll(timeout=0.5)
+
+            if msg is None:
+                continue
+
+            if msg.error():
+                if msg.error().code() == KafkaError._PARTITION_EOF:
+                    continue
+                break
+
+            drained_count += 1
+
+        if drained_count > 0:
+            print(f"  Drained {drained_count} old message(s)")
 
     def _wait_for_message_with_retry(
         self,

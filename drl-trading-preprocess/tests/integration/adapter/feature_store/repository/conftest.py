@@ -4,7 +4,7 @@ from typing import Generator, Optional
 import boto3
 import pandas as pd
 import pytest
-from drl_trading_adapter.infrastructure.di.adapter_module import AdapterModule
+from drl_trading_adapter.application.di.adapter_module import AdapterModule
 from drl_trading_core.core.port.base_feature import BaseFeature
 from drl_trading_common.adapter.model.base_parameter_set_config import BaseParameterSetConfig
 from drl_trading_common.config.feature_config import (
@@ -25,8 +25,8 @@ from pandas import DataFrame
 from testcontainers.minio import MinioContainer
 
 
-from drl_trading_preprocess.infrastructure.config.preprocess_config import PreprocessConfig
-from drl_trading_preprocess.infrastructure.di.preprocess_module import PreprocessModule
+from drl_trading_preprocess.application.config.preprocess_config import PreprocessConfig
+from drl_trading_preprocess.application.di.preprocess_module import PreprocessModule
 from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
 from drl_trading_core.core.model.feature_config_version_info import FeatureConfigVersionInfo
 from datetime import datetime
@@ -455,8 +455,6 @@ def s3_feature_store_config(
         entity_name="test_entity",
         ttl_days=30,
         online_enabled=True,
-        service_name="test_service",
-        service_version="1.0.0",
         offline_repo_strategy=OfflineRepoStrategyEnum.S3,
         s3_repo_config=s3_config,
         config_directory=test_config_dir,
@@ -477,8 +475,6 @@ def local_feature_store_config(temp_feast_repo: str) -> FeatureStoreConfig:
         entity_name="test_entity",
         ttl_days=30,
         online_enabled=True,
-        service_name="test_service",
-        service_version="1.0.0",
         offline_repo_strategy=OfflineRepoStrategyEnum.LOCAL,
         local_repo_config=local_config,
         config_directory=test_config_dir,
@@ -522,7 +518,7 @@ def parametrized_integration_container(
 
     # Create the injector container with the temporary config
     app_module = AdapterModule()
-    from drl_trading_preprocess.infrastructure.config.preprocess_config import FeatureComputationConfig, ResampleConfig
+    from drl_trading_preprocess.application.config.preprocess_config import FeatureComputationConfig, ResampleConfig
     preprocess_module = PreprocessModule(PreprocessConfig(
         feature_store_config=parametrized_feature_store_config,
         feature_computation_config=FeatureComputationConfig(warmup_candles=10),

@@ -3,6 +3,7 @@ stages:
   - validate
   - test
   - build
+  - e2e
   - tag
   - train
   - backtest
@@ -20,11 +21,30 @@ variables:
   DOCKER_TLS_VERIFY: 1
   DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
 
+  # SECURITY: Configure these variables in GitLab Settings > CI/CD > Variables:
+  # AWS_ACCESS_KEY_ID:     Protected: YES | Masked: YES | Type: Variable
+  # AWS_SECRET_ACCESS_KEY: Protected: YES | Masked: YES | Type: Variable
+  # AWS_REGION:            Protected: NO  | Masked: NO  | Type: Variable
+  # AWS_ACCOUNT_ID:        Protected: NO  | Masked: NO  | Type: Variable
+  #
+  # Protected variables only run on protected branches (master) and tags.
+  # This prevents credential exposure in MR pipelines from untrusted branches.
+
 cache:
   paths:
     - .uv-cache/
 
+# BRANCH PROTECTION CONFIGURATION:
+# Go to Settings > Repository > Protected Branches and configure:
+# - Branch: master
+#   - Allowed to push: Maintainers only
+#   - Allowed to merge: Maintainers only
+#   - Require approval: Yes (minimum 1-2 reviewers)
+# - Protect tags matching: v*.*.*
+#   - Allowed to create: Maintainers only
+
 # Debug job to verify CI/CD variables are set correctly
+# Only runs on master and tags where AWS credentials are available
 validate:env:
   stage: validate
   image: alpine:latest
@@ -34,13 +54,14 @@ validate:env:
     - echo "CI_IMAGE=${CI_IMAGE}"
     - |
       if [ -z "$AWS_ACCOUNT_ID" ] || [ -z "$AWS_REGION" ]; then
-        echo "ERROR: Variables not set or not accessible"
-        echo "Check Settings > CI/CD > Variables"
-        echo "Ensure variables are NOT protected (unless branch is protected)"
-        echo "Ensure variables are NOT masked"
+        echo "ERROR: AWS_ACCOUNT_ID and AWS_REGION must be set in GitLab CI/CD variables"
+        echo "Go to: Settings > CI/CD > Variables"
         exit 1
       fi
     - echo "Variables validated successfully"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+    - if: $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/
 
 # Reusable test job template
 .test-template:
@@ -60,6 +81,8 @@ validate:env:
     - uv sync --group dev-full
   script:
     - uv run pytest tests/ -v --ignore=tests/e2e --cov=src --cov-report=xml:coverage.xml --cov-report=html --cov-report=term --cov-fail-under=80
+  rules:
+    - if : $CI_PIPELINE_SOURCE == "merge_request_event"
   artifacts:
     reports:
       coverage_report:
@@ -69,6 +92,7 @@ validate:env:
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
 
 # Reusable Docker build job template
+# Only builds on master branch to avoid ECR pollution and credential exposure
 .build-docker-template:
   stage: build
   image: docker:27
@@ -86,13 +110,18 @@ validate:env:
     - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
   script:
     - cd ${SERVICE_NAME}
+    - export IMAGE_TAG="${CI_COMMIT_SHORT_SHA:-${CI_COMMIT_SHA:0:8}}"
+    - export BRANCH_TAG="${CI_COMMIT_REF_SLUG:-latest}"
     - |
       docker build \
-        -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${SERVICE_NAME}:$CI_COMMIT_SHORT_SHA \
-        -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${SERVICE_NAME}:$CI_COMMIT_BRANCH \
+        -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${SERVICE_NAME}:${IMAGE_TAG} \
+        -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${SERVICE_NAME}:${BRANCH_TAG} \
         -f ${DOCKERFILE_PATH:-docker/Dockerfile} ..
-    - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${SERVICE_NAME}:$CI_COMMIT_SHORT_SHA
-    - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${SERVICE_NAME}:$CI_COMMIT_BRANCH
+    - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${SERVICE_NAME}:${IMAGE_TAG}
+    - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${SERVICE_NAME}:${BRANCH_TAG}
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+
 
 # Test stage - runs for all branches with changes
 test:adapter:
@@ -154,35 +183,152 @@ build:preprocess:
   extends: .build-docker-template
   variables:
     SERVICE_NAME: drl-trading-preprocess
+  needs:
+    - job: test:preprocess
+      optional: true
+
+# E2E Testing stage - deploys to ephemeral ECS environment
+# Runs on master after docker builds, before tagging
+.e2e-template:
+  stage: e2e
+  image: $CI_IMAGE
+  before_script:
+    # Install terraform and AWS CLI
+    - apk add --no-cache terraform aws-cli jq
+    - cd ${SERVICE_NAME}
+  script:
+    - |
+      # Set unique environment identifier
+      export ENV_ID="e2e-${CI_COMMIT_SHORT_SHA}"
+      export SERVICE_URL=""
+
+      echo "Deploying ephemeral environment: $ENV_ID"
+
+      # Deploy infrastructure and service
+      ../infrastructure/cloud/aws/deployment/deploy-ephemeral-env.shs \
+        ${SERVICE_NAME} \
+        ${CI_COMMIT_SHORT_SHA} \
+        ${ENV_ID}
+
+      # Extract service URL from terraform output
+      cd ../infrastructure/cloud/aws/deployment/terraform
+      SERVICE_URL=$(terraform output -raw service_url 2>/dev/null || echo "")
+      cd -
+
+      if [ -z "$SERVICE_URL" ]; then
+        echo "ERROR: Failed to retrieve service URL from deployment"
+        exit 1
+      fi
+
+      echo "Service deployed at: $SERVICE_URL"
+      echo "Running E2E tests..."
+
+      # Run E2E tests against ephemeral environment
+      uv sync --group dev-full
+      uv run pytest tests/e2e/ -v \
+        --env-url="$SERVICE_URL" \
+        --timeout=300
+  after_script:
+    # Always cleanup, even on failure
+    - |
+      export ENV_ID="e2e-${CI_COMMIT_SHORT_SHA}"
+      echo "Cleaning up ephemeral environment: $ENV_ID"
+      ../infrastructure/cloud/aws/deployment/cleanup-ephemeral-env.sh \
+        ${SERVICE_NAME} \
+        ${ENV_ID}
   rules:
-    - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
-      changes:
-        - drl-trading-preprocess/**/*
-        - drl-trading-common/**/*
-        - drl-trading-core/**/*
-        - drl-trading-adapter/**/*
-        - drl-trading-strategy-example/**/*
+    - if: $CI_COMMIT_BRANCH == "master"
+  environment:
+    name: e2e-$CI_COMMIT_SHORT_SHA
+    on_stop: cleanup:e2e
+    auto_stop_in: 2 hours
+  artifacts:
+    when: always
+    paths:
+      - ${SERVICE_NAME}/tests/e2e/reports/
+    expire_in: 1 week
+
+e2e:preprocess:
+  extends: .e2e-template
+  variables:
+    SERVICE_NAME: drl-trading-preprocess
+  needs:
+    - job: build:preprocess
+
+# Manual cleanup job if auto-cleanup fails
+cleanup:e2e:
+  stage: e2e
+  image: $CI_IMAGE
+  script:
+    - apk add --no-cache terraform aws-cli
+    - |
+      export ENV_ID="e2e-${CI_COMMIT_SHORT_SHA}"
+      ./infrastructure/cloud/aws/deployment/cleanup-ephemeral-env.sh \
+        drl-trading-preprocess \
+        ${ENV_ID}
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      when: manual
+  environment:
+    name: e2e-$CI_COMMIT_SHORT_SHA
+    action: stop
 
 # Tag stage - create release tag for deployable builds
 create:release-tag:
   stage: tag
   image: alpine/git:latest
   before_script:
+    - apk add --no-cache git
     - git config user.email "gitlab-ci@drl-trading.local"
     - git config user.name "GitLab CI"
   script:
     - |
-      # Create semantic version tag: v<major>.<minor>.<build-number>
-      # Build number is the pipeline IID (auto-incrementing per project)
-      TAG_NAME="v1.0.${CI_PIPELINE_IID}"
-      echo "Creating tag: $TAG_NAME"
-      git tag -a "$TAG_NAME" -m "Automated release build $CI_PIPELINE_IID from $CI_COMMIT_SHORT_SHA"
+      # Semantic versioning strategy:
+      # Read current version from a VERSION file or calculate from existing tags
+      # Format: v<major>.<minor>.<patch>
+
+      # Fetch all tags to determine next version
+      git fetch --tags
+
+      # Get the latest version tag, default to v0.0.0 if none exists
+      LATEST_TAG=$(git tag -l "v[0-9]*.[0-9]*.[0-9]*" | sort -V | tail -n 1)
+
+      if [ -z "$LATEST_TAG" ]; then
+        echo "No existing version tags found. Starting from v0.1.0"
+        MAJOR=0
+        MINOR=1
+        PATCH=0
+      else
+        echo "Latest version tag: $LATEST_TAG"
+        # Extract version components
+        VERSION=${LATEST_TAG#v}
+        MAJOR=$(echo $VERSION | cut -d. -f1)
+        MINOR=$(echo $VERSION | cut -d. -f2)
+        PATCH=$(echo $VERSION | cut -d. -f3)
+
+        # Auto-increment patch version
+        # TODO: In future, analyze commit messages for major/minor bumps
+        PATCH=$((PATCH + 1))
+      fi
+
+      NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+
+      # Validate tag doesn't already exist
+      if git rev-parse "$NEW_TAG" >/dev/null 2>&1; then
+        echo "ERROR: Tag $NEW_TAG already exists!"
+        echo "This indicates a race condition or manual tag creation."
+        exit 1
+      fi
+
+      echo "Creating new release tag: $NEW_TAG"
+      git tag -a "$NEW_TAG" -m "Release $NEW_TAG (build $CI_PIPELINE_IID from $CI_COMMIT_SHORT_SHA)"
 
       # Push tag using CI token
       git remote set-url origin https://oauth2:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git
-      git push origin "$TAG_NAME"
+      git push origin "$NEW_TAG"
 
-      echo "Tag $TAG_NAME created and pushed successfully"
+      echo "✓ Tag $NEW_TAG created and pushed successfully"
+      echo "Next steps: Deploy this version to staging/production"
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
       when: manual  # Require manual trigger to create release tags
@@ -197,7 +343,7 @@ deploy:preprocess:
   before_script:
     - apk add --no-cache bash aws-cli
   script:
-    - bash scripts/aws/deploy-to-ecs.sh drl-trading-preprocess $CI_COMMIT_TAG
+    - bash infrastructure/cloud/aws/deployment/deploy-to-ecs.sh drl-trading-preprocess $CI_COMMIT_TAG
   rules:
     - if: $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/  # Only run for semantic version tags
   environment:

@@ -8,7 +8,7 @@ from typing import Generator
 import pytest
 from injector import Injector
 
-from drl_trading_adapter.infrastructure.di.adapter_module import AdapterModule
+from drl_trading_adapter.application.di.adapter_module import AdapterModule
 from drl_trading_common.config.feature_config import (
     FeatureStoreConfig,
     LocalRepoConfig,
@@ -126,8 +126,6 @@ def feature_store_config(temp_feast_repo: str) -> FeatureStoreConfig:
         entity_name="test_entity",
         ttl_days=30,
         online_enabled=True,
-        service_name="test-service",
-        service_version="1.0.0",
         config_directory=temp_feast_repo,
         offline_repo_strategy=OfflineRepoStrategyEnum.LOCAL,
         local_repo_config=local_repo_config,

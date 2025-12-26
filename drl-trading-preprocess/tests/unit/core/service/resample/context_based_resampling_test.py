@@ -11,6 +11,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from drl_trading_common.core.model.processing_context import ProcessingContext
 from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_preprocess.core.service.resample.market_data_resampling_service import (
     MarketDataResamplingService,
@@ -18,7 +19,7 @@ from drl_trading_preprocess.core.service.resample.market_data_resampling_service
 from drl_trading_preprocess.core.service.resample.candle_accumulator_service import (
     CandleAccumulatorService,
 )
-from drl_trading_preprocess.infrastructure.config.preprocess_config import (
+from drl_trading_preprocess.application.config.preprocess_config import (
     ResampleConfig,
 )
 
@@ -114,7 +115,7 @@ class TestContextBasedResampling:
             symbol=symbol,
             base_timeframe=base_timeframe,
             target_timeframes=target_timeframes,
-            processing_context="backfill"  # Backfill mode
+            processing_context=ProcessingContext.BACKFILL.value  # Backfill mode
         )
 
         # Then
@@ -169,7 +170,7 @@ class TestContextBasedResampling:
             symbol=symbol,
             base_timeframe=base_timeframe,
             target_timeframes=target_timeframes,
-            processing_context="inference"  # Inference mode
+            processing_context=ProcessingContext.INFERENCE.value  # Inference mode
         )
 
         # Then
@@ -221,7 +222,7 @@ class TestContextBasedResampling:
             symbol=symbol,
             base_timeframe=base_timeframe,
             target_timeframes=target_timeframes,
-            processing_context="training"  # Training mode
+            processing_context=ProcessingContext.TRAINING.value  # Training mode
         )
 
         # Then
@@ -334,7 +335,7 @@ class TestContextBasedResampling:
             symbol=symbol,
             base_timeframe=base_timeframe,
             target_timeframes=target_timeframes,
-            processing_context="backfill"  # Backfill mode
+            processing_context=ProcessingContext.BACKFILL.value  # Backfill mode
         )
 
         # Then
@@ -388,7 +389,7 @@ class TestContextBasedResampling:
             symbol=symbol,
             base_timeframe=base_timeframe,
             target_timeframes=target_timeframes,
-            processing_context="backfill"  # Backfill mode
+            processing_context=ProcessingContext.BACKFILL.value  # Backfill mode
         )
 
         # Then
@@ -444,7 +445,7 @@ class TestContextBasedResampling:
             symbol=symbol,
             base_timeframe=base_timeframe,
             target_timeframes=target_timeframes,
-            processing_context="inference"  # Inference mode
+            processing_context=ProcessingContext.INFERENCE.value  # Inference mode
         )
 
         # Then

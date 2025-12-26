@@ -9,6 +9,7 @@ from unittest.mock import Mock
 
 from pandas import DataFrame
 
+from drl_trading_common.core.model.processing_context import ProcessingContext
 from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_preprocess.core.orchestrator.preprocessing_orchestrator import (
     PreprocessingOrchestrator,
@@ -412,7 +413,7 @@ class TestPreprocessingOrchestratorContextBehavior:
     ) -> None:
         """Test that inference context forces recomputation."""
         # Given
-        request = core_request_factory(processing_context="inference")
+        request = core_request_factory(processing_context=ProcessingContext.INFERENCE)
 
         # Configure successful processing
         resampling_response = resampling_response_factory()

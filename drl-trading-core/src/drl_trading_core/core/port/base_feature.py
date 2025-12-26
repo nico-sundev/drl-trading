@@ -3,11 +3,11 @@ from datetime import datetime
 from typing import Callable, Optional
 
 from drl_trading_common.base.base_parameter_set_config import BaseParameterSetConfig
+from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 from drl_trading_core.core.model.feature.feature_metadata import FeatureMetadata
 from drl_trading_core.core.port.feature_interface import IFeature
 from drl_trading_core.core.port.computable import Computable
 from drl_trading_core.core.port.technical_indicator_service_port import ITechnicalIndicatorServicePort
-from drl_trading_common.adapter.model.dataset_identifier import DatasetIdentifier
 from drl_trading_common.utils.utils import ensure_datetime_index
 from pandas import DataFrame
 

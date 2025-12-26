@@ -12,7 +12,7 @@ from drl_trading_core.core.port.technical_indicator_service_port import (
 from injector import Injector
 from pandas import DataFrame
 
-from drl_trading_core.infrastructure.di import CoreModule
+from drl_trading_core.application.di import CoreModule
 import numpy as np
 
 class RsiConfig(BaseParameterSetConfig):

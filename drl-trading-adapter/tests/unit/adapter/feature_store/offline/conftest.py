@@ -31,8 +31,6 @@ def feature_store_config(temp_dir: str) -> FeatureStoreConfig:
         entity_name="test_entity",
         ttl_days=30,
         online_enabled=False,
-        service_name="test_service",
-        service_version="1.0.0",
         offline_repo_strategy=OfflineRepoStrategyEnum.LOCAL,
         local_repo_config=LocalRepoConfig(repo_path=temp_dir)
     )
@@ -56,8 +54,6 @@ def s3_feature_store_config(temp_dir: str) -> FeatureStoreConfig:
         entity_name="test_entity",
         ttl_days=30,
         online_enabled=False,
-        service_name="test_service",
-        service_version="1.0.0",
         offline_repo_strategy=OfflineRepoStrategyEnum.S3,
         s3_repo_config=s3_config
     )

@@ -1,0 +1,40 @@
+[importlinter]
+root_package = drl_trading_preprocess
+root_packages =
+    drl_trading_preprocess
+    drl_trading_common
+    drl_trading_core
+    drl_trading_adapter
+include_external_packages = True
+
+[importlinter:contract:core-independence]
+name = Core layer must not depend on adapter or application layers
+type = forbidden
+source_modules =
+    drl_trading_preprocess.core
+forbidden_modules =
+    drl_trading_preprocess.adapter
+    drl_trading_preprocess.application
+    drl_trading_common.adapter
+    drl_trading_common.application
+    drl_trading_common.application
+    drl_trading_adapter.adapter
+
+[importlinter:contract:adapter-can-use-core]
+name = Adapter layer can use core but not application (except for its own submodules)
+type = layers
+layers =
+    drl_trading_preprocess.adapter
+    drl_trading_preprocess.core
+    drl_trading_common.core
+
+[importlinter:contract:application-can-use-all]
+name = Application layer can use core and adapter
+type = layers
+layers =
+    drl_trading_preprocess.application
+    drl_trading_common.application
+    drl_trading_preprocess.adapter
+    drl_trading_common.adapter
+    drl_trading_preprocess.core
+    drl_trading_common.core

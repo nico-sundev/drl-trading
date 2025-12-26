@@ -26,6 +26,7 @@ from drl_trading_adapter.adapter.database.entity.market_data_entity import (
 from drl_trading_adapter.adapter.feature_store.provider import FeatureStoreWrapper
 from injector import Injector
 
+from drl_trading_common.core.model.processing_context import ProcessingContext
 from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_core.core.dto.feature_preprocessing_request import (
     FeaturePreprocessingRequest,
@@ -152,7 +153,7 @@ class TestPreprocessingOrchestratorIntegration:
             start_time=datetime(2024, 1, 1, 9, 0, 0),
             end_time=datetime(2024, 1, 3, 9, 0, 0),  # ~48 hours of data
             skip_existing_features=True,
-            processing_context="training",
+            processing_context=ProcessingContext.TRAINING,
         )
 
         # When: Process the feature computation request
@@ -165,7 +166,7 @@ class TestPreprocessingOrchestratorIntegration:
         call_args = spy_publisher.publish_preprocessing_completed.call_args[1]  # Get kwargs
         assert call_args["request"].request_id == "test-request-001"
         assert call_args["request"].symbol == "EURUSD"
-        assert call_args["processing_context"] == "training"
+        assert call_args["processing_context"] == ProcessingContext.TRAINING.value
         assert call_args["total_features_computed"] > 0, "Should have computed features"
         assert Timeframe.HOUR_4 in call_args["timeframes_processed"]
 
@@ -234,7 +235,7 @@ class TestPreprocessingOrchestratorIntegration:
             start_time=datetime(2024, 1, 1, 9, 0, 0),
             end_time=datetime(2024, 1, 3, 9, 0, 0),
             skip_existing_features=True,  # Test that this flag doesn't break processing
-            processing_context="training",
+            processing_context=ProcessingContext.TRAINING,
         )
 
         # When: Request is processed
@@ -248,7 +249,7 @@ class TestPreprocessingOrchestratorIntegration:
         assert call_args["request"].request_id == "test-request-002"
         assert call_args["request"].symbol == "EURUSD"
         assert call_args["total_features_computed"] > 0, "Should compute features"
-        assert call_args["processing_context"] == "training"
+        assert call_args["processing_context"] == ProcessingContext.TRAINING.value
 
     def test_invalid_feature_definitions_trigger_validation_error(
         self,
@@ -300,7 +301,7 @@ class TestPreprocessingOrchestratorIntegration:
             start_time=datetime(2024, 1, 1, 9, 0, 0),
             end_time=datetime(2024, 1, 3, 9, 0, 0),
             skip_existing_features=True,
-            processing_context="training",
+            processing_context=ProcessingContext.TRAINING,
         )
 
         # When: Process request with invalid features
@@ -364,7 +365,7 @@ class TestPreprocessingOrchestratorIntegration:
             start_time=datetime(2024, 1, 1, 9, 0, 0),
             end_time=datetime(2024, 1, 3, 9, 0, 0),
             skip_existing_features=True,
-            processing_context="training",
+            processing_context=ProcessingContext.TRAINING,
         )
 
         # When: Process request
@@ -441,7 +442,7 @@ class TestPreprocessingOrchestratorIntegration:
                 start_time=datetime(2024, 1, 1, 9, 0, 0),
                 end_time=datetime(2024, 1, 3, 9, 0, 0),
                 skip_existing_features=True,
-                processing_context="training",
+                processing_context=ProcessingContext.TRAINING,
             )
 
         assert "At least one feature must be enabled" in str(exc_info.value)
@@ -455,7 +456,7 @@ class TestPreprocessingOrchestratorIntegration:
         """Test that processing_context is correctly propagated to notifications.
 
         This validates context routing for different use cases:
-        1. Request with processing_context="inference"
+        1. Request with processing_context=ProcessingContext.INFERENCE
         2. Should complete successfully
         3. Notification should include correct processing_context
 
@@ -495,7 +496,7 @@ class TestPreprocessingOrchestratorIntegration:
             start_time=datetime(2024, 1, 1, 9, 0, 0),
             end_time=datetime(2024, 1, 3, 9, 0, 0),
             skip_existing_features=True,
-            processing_context="inference",  # Different context
+            processing_context=ProcessingContext.INFERENCE,  # Different context
         )
 
         # When: Process request
@@ -504,8 +505,8 @@ class TestPreprocessingOrchestratorIntegration:
         # Then: Context should be propagated correctly
         spy_publisher.publish_preprocessing_completed.assert_called_once()
         call_args = spy_publisher.publish_preprocessing_completed.call_args[1]
-        assert call_args["processing_context"] == "inference"
-        assert call_args["request"].processing_context == "inference"
+        assert call_args["processing_context"] == ProcessingContext.INFERENCE.value
+        assert call_args["request"].processing_context == ProcessingContext.INFERENCE.value
 
     def test_force_recompute_overrides_existing_features(
         self,
@@ -555,7 +556,7 @@ class TestPreprocessingOrchestratorIntegration:
             start_time=datetime(2024, 1, 1, 9, 0, 0),
             end_time=datetime(2024, 1, 3, 9, 0, 0),
             skip_existing_features=False,  # Force recompute
-            processing_context="training",
+            processing_context=ProcessingContext.TRAINING,
         )
 
         # When: Process request with force recompute
@@ -620,7 +621,7 @@ class TestPreprocessingOrchestratorIntegration:
             start_time=datetime(2024, 1, 1, 9, 0, 0),
             end_time=datetime(2024, 1, 3, 9, 0, 0),
             skip_existing_features=True,
-            processing_context="training",
+            processing_context=ProcessingContext.TRAINING,
         )
 
         # When: Process request with no available data
@@ -704,7 +705,7 @@ class TestPreprocessingOrchestratorIntegration:
             start_time=datetime(2024, 1, 1, 9, 0, 0),
             end_time=datetime(2024, 1, 3, 9, 0, 0),
             skip_existing_features=True,
-            processing_context="training",
+            processing_context=ProcessingContext.TRAINING,
         )
 
         # When: Process request with mixed features
@@ -786,7 +787,7 @@ class TestPreprocessingOrchestratorIntegration:
             start_time=start_time,
             end_time=end_time,
             skip_existing_features=True,
-            processing_context="training",
+            processing_context=ProcessingContext.TRAINING,
         )
 
         # When: Process with full data range (measure time)

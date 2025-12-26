@@ -12,6 +12,7 @@ from typing import Any, Dict, List
 from drl_trading_common.adapter.messaging.kafka_producer_adapter import (
     KafkaProducerAdapter,
 )
+from drl_trading_common.core.model.processing_context import ProcessingContext
 from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_core.core.dto.feature_preprocessing_request import FeaturePreprocessingRequest
 from drl_trading_preprocess.core.port.preprocessing_message_publisher_port import (
@@ -26,19 +27,24 @@ class KafkaPreprocessingMessagePublisher(PreprocessingMessagePublisherPort):
     This implementation publishes preprocessing completion and error events
     to Kafka topics using the KafkaProducerAdapter for retry logic and resilience.
 
+    Supports context-driven topic routing: different ProcessingContexts can be
+    routed to different completion topics based on configuration.
+
     Attributes:
         _completion_producer: Producer for preprocessing completion events.
         _error_producer: Producer for error events (DLQ).
-        _completion_topic: Topic name for completion events.
+        _default_completion_topic: Default topic name for completion events.
         _error_topic: Topic name for errors (DLQ).
+        _context_topic_map: Mapping of ProcessingContext to specific topic names.
     """
 
     def __init__(
         self,
         completion_producer: KafkaProducerAdapter,
         error_producer: KafkaProducerAdapter,
-        completion_topic: str,
+        default_completion_topic: str,
         error_topic: str,
+        context_topic_map: Dict[ProcessingContext, str] | None = None,
     ) -> None:
         """
         Initialize Kafka preprocessing message publisher.
@@ -46,20 +52,52 @@ class KafkaPreprocessingMessagePublisher(PreprocessingMessagePublisherPort):
         Args:
             completion_producer: Producer for completion events (with appropriate retry config).
             error_producer: Producer for errors (typically minimal retry for DLQ).
-            completion_topic: Topic name for publishing completion events.
+            default_completion_topic: Default topic name for publishing completion events.
             error_topic: Topic name for publishing errors (DLQ).
+            context_topic_map: Optional mapping of ProcessingContext to specific topic names.
+                Contexts not in this map will use default_completion_topic.
         """
         self.logger = logging.getLogger(__name__)
         self._completion_producer = completion_producer
         self._error_producer = error_producer
-        self._completion_topic = completion_topic
+        self._default_completion_topic = default_completion_topic
         self._error_topic = error_topic
+        self._context_topic_map = context_topic_map or {}
 
         self.logger.info(
             f"KafkaPreprocessingMessagePublisher initialized: "
-            f"completion_topic={completion_topic}, "
-            f"error_topic={error_topic}"
+            f"default_completion_topic={default_completion_topic}, "
+            f"error_topic={error_topic}, "
+            f"context_topic_map={self._context_topic_map}"
         )
+
+    def _resolve_completion_topic(self, processing_context: str) -> str:
+        """
+        Resolve the appropriate completion topic based on processing context.
+
+        Args:
+            processing_context: Processing mode as string ("training", "catchup", etc.).
+
+        Returns:
+            Topic name to publish to. Returns context-specific topic if configured,
+            otherwise returns default completion topic.
+        """
+        try:
+            context_enum = ProcessingContext(processing_context)
+            topic = self._context_topic_map.get(context_enum, self._default_completion_topic)
+
+            if topic != self._default_completion_topic:
+                self.logger.debug(
+                    f"Using context-specific topic '{topic}' for context '{processing_context}'"
+                )
+
+            return topic
+        except ValueError:
+            # Invalid context - fall back to default
+            self.logger.warning(
+                f"Unknown processing_context '{processing_context}', using default topic"
+            )
+            return self._default_completion_topic
 
     def publish_preprocessing_completed(
         self,
@@ -73,11 +111,14 @@ class KafkaPreprocessingMessagePublisher(PreprocessingMessagePublisherPort):
         Publish preprocessing completion event to Kafka.
 
         Serializes the completion details to JSON and publishes to the configured
-        topic. Uses request_id as the message key for traceability.
+        topic. The target topic is determined by the processing_context, allowing
+        different contexts to route to different topics (e.g., CATCHUP to catchup-specific topic).
+
+        Uses request_id as the message key for traceability.
 
         Args:
             request: Original preprocessing request.
-            processing_context: Processing mode ("training", "inference", "backfill").
+            processing_context: Processing mode ("training", "inference", "backfill", "catchup").
             total_features_computed: Number of features computed across all timeframes.
             timeframes_processed: List of timeframes that were successfully processed.
             success_details: Additional details about the successful processing.
@@ -85,6 +126,9 @@ class KafkaPreprocessingMessagePublisher(PreprocessingMessagePublisherPort):
         Raises:
             KafkaException: If publishing fails after all retries.
         """
+        # Resolve topic based on context
+        target_topic = self._resolve_completion_topic(processing_context)
+
         payload = {
             "request_id": request.request_id,
             "symbol": request.symbol,
@@ -101,7 +145,7 @@ class KafkaPreprocessingMessagePublisher(PreprocessingMessagePublisherPort):
         }
 
         self._completion_producer.publish(
-            topic=self._completion_topic,
+            topic=target_topic,
             key=request.request_id,  # Partition by request_id for traceability
             value=payload,
             headers={
@@ -113,7 +157,7 @@ class KafkaPreprocessingMessagePublisher(PreprocessingMessagePublisherPort):
         )
 
         self.logger.info(
-            f"Published preprocessing completion: {request.symbol} "
+            f"Published preprocessing completion to '{target_topic}': {request.symbol} "
             f"(Request: {request.request_id}, Context: {processing_context}) "
             f"- {total_features_computed} features across {len(timeframes_processed)} timeframes"
         )

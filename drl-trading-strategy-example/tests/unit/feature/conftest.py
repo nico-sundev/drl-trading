@@ -8,7 +8,7 @@ from drl_trading_core.core.port.base_feature import BaseFeature
 from drl_trading_core.core.port.technical_indicator_service_port import (
     ITechnicalIndicatorServicePort,
 )
-from drl_trading_common.adapter.model.dataset_identifier import DatasetIdentifier
+from drl_trading_common.core.model.dataset_identifier import DatasetIdentifier
 
 
 class MockMacdFeature(BaseFeature):

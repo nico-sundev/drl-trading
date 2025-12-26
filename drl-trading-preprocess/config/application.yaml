@@ -50,3 +50,20 @@ resample_config:
   state_backup_interval: 1000
   auto_cleanup_inactive_symbols: true
   inactive_symbol_threshold_hours: 24
+
+# Kafka Topics Configuration
+kafka_topics:
+  # Context-specific topic routing based on trading workflow:
+  # - online: real-time inference workflows
+  # - offline: batch training and backfill workflows
+  # - catchup: initial catchup before live streaming
+  context_completion_topics:
+    training: "completed.preprocess-data.offline"
+    inference: "completed.preprocess-data.online"
+    backfill: "completed.preprocess-data.offline"
+    catchup: "completed.preprocess-data.catchup"
+
+feature_store_config:
+  entity_name: "symbol"
+  join_keys:
+    - "symbol"

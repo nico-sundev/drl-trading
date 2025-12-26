@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 from unittest.mock import Mock
-from drl_trading_adapter.infrastructure.di.adapter_module import AdapterModule
+from drl_trading_adapter.application.di.adapter_module import AdapterModule
 from injector import Injector, Binder, Module, provider, singleton
 
 from drl_trading_common.config.feature_config import (
@@ -12,16 +12,16 @@ from drl_trading_core.core.service.feature.feature_factory_interface import IFea
 from drl_trading_core.core.port.technical_indicator_service_port import (
     ITechnicalIndicatorServicePort,
 )
-from drl_trading_core.infrastructure.di.core_module import CoreModule
+from drl_trading_core.application.di.core_module import CoreModule
 from drl_trading_preprocess.core.port.message_publisher_port import StoreResampledDataMessagePublisherPort
 from drl_trading_preprocess.core.port.preprocessing_message_publisher_port import (
     PreprocessingMessagePublisherPort,
 )
-from drl_trading_preprocess.infrastructure.config.preprocess_config import (
+from drl_trading_preprocess.application.config.preprocess_config import (
     PreprocessConfig,
     ResampleConfig,
 )
-from drl_trading_preprocess.infrastructure.di.preprocess_module import PreprocessModule
+from drl_trading_preprocess.application.di.preprocess_module import PreprocessModule
 
 
 class TestBindingsModule(Module):
@@ -96,7 +96,7 @@ def test_preprocess_config(feature_store_config: FeatureStoreConfig) -> Preproce
     Returns:
         PreprocessConfig: Test configuration with optimized settings
     """
-    from drl_trading_preprocess.infrastructure.config.preprocess_config import DaskConfigs, FeatureComputationConfig
+    from drl_trading_preprocess.application.config.preprocess_config import DaskConfigs, FeatureComputationConfig
     from drl_trading_common.config.dask_config import DaskConfig
     from drl_trading_common.config.kafka_config import KafkaConsumerConfig
 
