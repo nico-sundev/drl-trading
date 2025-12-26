@@ -7,7 +7,7 @@ from datetime import datetime
 
 import pytest
 
-from drl_trading_preprocess.infrastructure.config.preprocess_config import (
+from drl_trading_preprocess.application.config.preprocess_config import (
     ResampleConfig,
 )
 

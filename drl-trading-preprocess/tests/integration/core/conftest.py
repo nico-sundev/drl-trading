@@ -17,11 +17,11 @@ from drl_trading_preprocess.core.port.message_publisher_port import StoreResampl
 from drl_trading_preprocess.core.port.preprocessing_message_publisher_port import (
     PreprocessingMessagePublisherPort,
 )
-from drl_trading_preprocess.infrastructure.config.preprocess_config import (
+from drl_trading_preprocess.application.config.preprocess_config import (
     PreprocessConfig,
     ResampleConfig,
 )
-from drl_trading_preprocess.infrastructure.di.preprocess_module import PreprocessModule
+from drl_trading_preprocess.application.di.preprocess_module import PreprocessModule
 
 
 class TestBindingsModule(Module):
@@ -96,7 +96,7 @@ def test_preprocess_config(feature_store_config: FeatureStoreConfig) -> Preproce
     Returns:
         PreprocessConfig: Test configuration with optimized settings
     """
-    from drl_trading_preprocess.infrastructure.config.preprocess_config import DaskConfigs, FeatureComputationConfig
+    from drl_trading_preprocess.application.config.preprocess_config import DaskConfigs, FeatureComputationConfig
     from drl_trading_common.config.dask_config import DaskConfig
     from drl_trading_common.config.kafka_config import KafkaConsumerConfig
 

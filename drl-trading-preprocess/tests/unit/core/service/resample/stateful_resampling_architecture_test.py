@@ -8,7 +8,7 @@ from drl_trading_common.core.model.timeframe import Timeframe
 from drl_trading_core.core.model.market_data_model import MarketDataModel
 from drl_trading_preprocess.core.service.resample.market_data_resampling_service import MarketDataResamplingService
 from drl_trading_preprocess.adapter.resampling.noop_state_persistence_service import NoOpStatePersistenceService
-from drl_trading_preprocess.infrastructure.config.preprocess_config import ResampleConfig
+from drl_trading_preprocess.application.config.preprocess_config import ResampleConfig
 
 
 @pytest.fixture

@@ -8,31 +8,31 @@ root_packages =
 include_external_packages = True
 
 [importlinter:contract:core-independence]
-name = Core layer must not depend on adapter or infrastructure layers
+name = Core layer must not depend on adapter or application layers
 type = forbidden
 source_modules =
     drl_trading_preprocess.core
 forbidden_modules =
     drl_trading_preprocess.adapter
-    drl_trading_preprocess.infrastructure
+    drl_trading_preprocess.application
     drl_trading_common.adapter
     drl_trading_common.infrastructure
     drl_trading_common.application
     drl_trading_adapter.adapter
 
 [importlinter:contract:adapter-can-use-core]
-name = Adapter layer can use core but not infrastructure (except for its own submodules)
+name = Adapter layer can use core but not application (except for its own submodules)
 type = layers
 layers =
     drl_trading_preprocess.adapter
     drl_trading_preprocess.core
     drl_trading_common.core
 
-[importlinter:contract:infrastructure-can-use-all]
-name = Infrastructure layer can use core and adapter
+[importlinter:contract:application-can-use-all]
+name = Application layer can use core and adapter
 type = layers
 layers =
-    drl_trading_preprocess.infrastructure
+    drl_trading_preprocess.application
     drl_trading_preprocess.adapter
     drl_trading_preprocess.core
     drl_trading_common.core

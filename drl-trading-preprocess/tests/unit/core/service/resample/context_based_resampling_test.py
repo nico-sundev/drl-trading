@@ -19,7 +19,7 @@ from drl_trading_preprocess.core.service.resample.market_data_resampling_service
 from drl_trading_preprocess.core.service.resample.candle_accumulator_service import (
     CandleAccumulatorService,
 )
-from drl_trading_preprocess.infrastructure.config.preprocess_config import (
+from drl_trading_preprocess.application.config.preprocess_config import (
     ResampleConfig,
 )
 

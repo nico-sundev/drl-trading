@@ -29,7 +29,7 @@ from drl_trading_common.infrastructure.health.basic_health_checks import (
 from drl_trading_common.infrastructure.health.health_check import HealthCheck
 from drl_trading_common.messaging.kafka_handler_registry import KafkaHandlerRegistry
 from drl_trading_core.infrastructure.di.core_module import CoreModule
-from drl_trading_preprocess.infrastructure.config.preprocess_config import PreprocessConfig
+from drl_trading_preprocess.application.config.preprocess_config import PreprocessConfig
 
 
 logger = logging.getLogger(__name__)
@@ -60,7 +60,7 @@ class PreprocessServiceBootstrap(FlaskServiceBootstrap):
 
         The provided app_config avoids redundant config reloads inside DI.
         """
-        from drl_trading_preprocess.infrastructure.di.preprocess_module import PreprocessModule  # type: ignore
+        from drl_trading_preprocess.application.di.preprocess_module import PreprocessModule  # type: ignore
         from drl_trading_strategy_example.infrastructure.di.feature_computation_module import (
             FeatureComputationModule,
         )
@@ -343,7 +343,7 @@ class PreprocessServiceBootstrap(FlaskServiceBootstrap):
             return None
 
         from drl_trading_common.adapter.messaging.kafka_producer_adapter import KafkaProducerAdapter
-        from drl_trading_preprocess.infrastructure.config.resilience_constants import RETRY_CONFIG_KAFKA_DLQ
+        from drl_trading_preprocess.application.config.resilience_constants import RETRY_CONFIG_KAFKA_DLQ
 
         logger.info(f"Creating DLQ producer for topics: {dlq_topics}")
 
@@ -390,7 +390,7 @@ class PreprocessServiceBootstrap(FlaskServiceBootstrap):
             return None
 
         from drl_trading_common.adapter.messaging.kafka_producer_adapter import KafkaProducerAdapter
-        from drl_trading_preprocess.infrastructure.config.resilience_constants import RETRY_CONFIG_KAFKA_DLQ
+        from drl_trading_preprocess.application.config.resilience_constants import RETRY_CONFIG_KAFKA_DLQ
 
         logger.info(f"Creating retry producer for topics: {retry_topics}")
 

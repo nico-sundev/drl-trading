@@ -20,7 +20,7 @@ from drl_trading_preprocess.core.service.compute.computing_service import (
 from drl_trading_preprocess.core.service.compute.feature_computation_coordinator import (
     FeatureComputationCoordinator,
 )
-from drl_trading_preprocess.infrastructure.config.preprocess_config import (
+from drl_trading_preprocess.application.config.preprocess_config import (
     FeatureComputationCoordinatorConfig,
 )
 

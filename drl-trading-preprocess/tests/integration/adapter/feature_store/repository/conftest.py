@@ -25,8 +25,8 @@ from pandas import DataFrame
 from testcontainers.minio import MinioContainer
 
 
-from drl_trading_preprocess.infrastructure.config.preprocess_config import PreprocessConfig
-from drl_trading_preprocess.infrastructure.di.preprocess_module import PreprocessModule
+from drl_trading_preprocess.application.config.preprocess_config import PreprocessConfig
+from drl_trading_preprocess.application.di.preprocess_module import PreprocessModule
 from drl_trading_core.core.dto.feature_view_metadata import FeatureViewMetadata
 from drl_trading_core.core.model.feature_config_version_info import FeatureConfigVersionInfo
 from datetime import datetime
@@ -522,7 +522,7 @@ def parametrized_integration_container(
 
     # Create the injector container with the temporary config
     app_module = AdapterModule()
-    from drl_trading_preprocess.infrastructure.config.preprocess_config import FeatureComputationConfig, ResampleConfig
+    from drl_trading_preprocess.application.config.preprocess_config import FeatureComputationConfig, ResampleConfig
     preprocess_module = PreprocessModule(PreprocessConfig(
         feature_store_config=parametrized_feature_store_config,
         feature_computation_config=FeatureComputationConfig(warmup_candles=10),

@@ -5,7 +5,7 @@ from drl_trading_preprocess.core.config.feature_coverage_analyzer_config import 
 from drl_trading_preprocess.core.config.preprocessing_orchestrator_config import (
     PreprocessingOrchestratorConfig,
 )
-from drl_trading_preprocess.infrastructure.config.preprocess_config import (
+from drl_trading_preprocess.application.config.preprocess_config import (
     PreprocessConfig,
 )
 

@@ -330,7 +330,7 @@ def preprocessing_orchestrator(mock_dependencies: dict) -> PreprocessingOrchestr
     go through mocks. This allows us to test the orchestration
     logic without hitting real databases or message queues.
     """
-    from drl_trading_preprocess.infrastructure.config.preprocess_config import DaskConfigs, FeatureComputationConfig
+    from drl_trading_preprocess.application.config.preprocess_config import DaskConfigs, FeatureComputationConfig
     from drl_trading_common.config.dask_config import DaskConfig
 
     # Create default DaskConfigs for tests (synchronous scheduler for deterministic behavior)

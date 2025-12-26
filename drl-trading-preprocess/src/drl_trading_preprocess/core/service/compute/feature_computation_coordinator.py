@@ -28,7 +28,7 @@ from drl_trading_core.core.port.market_data_reader_port import MarketDataReaderP
 from drl_trading_preprocess.core.service.compute.computing_service import (
     FeatureComputingService,
 )
-from drl_trading_preprocess.infrastructure.config.preprocess_config import (
+from drl_trading_preprocess.application.config.preprocess_config import (
     FeatureComputationCoordinatorConfig,
 )
 

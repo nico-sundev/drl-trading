@@ -53,21 +53,21 @@ from drl_trading_preprocess.core.port.preprocessing_message_publisher_port impor
 from drl_trading_preprocess.core.port.state_persistence_port import (
     IStatePersistencePort,
 )
-from drl_trading_preprocess.infrastructure.config.preprocess_config import (
+from drl_trading_preprocess.application.config.preprocess_config import (
     DaskConfigs,
     FeatureComputationCoordinatorConfig,
     PreprocessConfig,
     ResampleConfig,
 )
-from drl_trading_preprocess.infrastructure.config.preprocess_config import (
+from drl_trading_preprocess.application.config.preprocess_config import (
     FeatureComputationConfig as PreprocessFeatureComputationConfig,
 )
-from drl_trading_preprocess.infrastructure.config.resilience_constants import (
+from drl_trading_preprocess.application.config.resilience_constants import (
     RETRY_CONFIG_KAFKA_DLQ,
     RETRY_CONFIG_KAFKA_PREPROCESSING_COMPLETED,
     RETRY_CONFIG_KAFKA_RESAMPLED_DATA,
 )
-from drl_trading_preprocess.infrastructure.di.mapper import (
+from drl_trading_preprocess.application.di.mapper import (
     create_preprocessing_orchestrator_config,
 )
 
